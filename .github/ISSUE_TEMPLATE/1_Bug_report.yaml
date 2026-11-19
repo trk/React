@@ -6,7 +6,7 @@ body:
   - type: input
     id: affected-versions
     attributes:
-      label: ProcessReactWorkspace version(s) affected
+      label: React version(s) affected
       placeholder: 0.1.0
     validations:
       required: true
@@ -50,12 +50,13 @@ body:
         - label: Multi-language support (LanguageSupport) is installed
           required: false
   - type: dropdown
-    id: workspace-component
+    id: affected-component
     attributes:
       label: Affected Component
       options:
+        - React (Core Runtime / Inertia Bridge / ProcessReact)
         - Design System / CSS Tokens (--pw-*)
-        - ProcessReactWorkspace
+        - ProcessReactWorkspace (Optional Workspace Hub)
         - SchemaForm / FormSchemaSerializer
         - MarkupReactTable / MarkupReactCards
         - MarkupReactTab

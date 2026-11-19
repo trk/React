@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "ProcessReactWorkspace.module.php"
+      - "React.module.php"
   workflow_dispatch:
 
 concurrency:
@@ -16,7 +16,7 @@ jobs:
   tag_and_release:
     runs-on: ubuntu-latest
     env:
-      VERSION_FILE: "ProcessReactWorkspace.module.php"
+      VERSION_FILE: "React.module.php"
     permissions:
       contents: write
       packages: write
@@ -25,6 +25,12 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          coverage: none
 
       - name: Validate PHP syntax and composer.json
         run: |

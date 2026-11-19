@@ -5,4 +5,4 @@ contact_links:
     about: Ask questions and discuss usage with the ProcessWire community.
   - name: Support Question
     url: https://totoglu.com/support
-    about: We use GitHub issues only to track ProcessReactWorkspace module bugs and feature requests.
+    about: We use GitHub issues only to track React module bugs and feature requests.
