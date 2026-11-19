@@ -1,0 +1,1012 @@
+en,tr,description,file,hash
+"React File","React Dosya",,site/modules/React/InputfieldReactFile.module.php,085179f140b05e6c2841ca9a716edb68
+"File upload and management field supporting drag-and-drop, reordering, file replacement, multi-language descriptions, tags, and custom details.","Sürükle-bırak, yeniden sıralama, dosya değiştirme, çok dilli açıklamalar, etiketler ve özel detayları destekleyen dosya yükleme ve yönetim alanı.",,site/modules/React/InputfieldReactFile.module.php,f4cffb0f2915b3b587cd339737749d03
+"Selected icon is not valid.","Seçilen simge geçerli değil.",,site/modules/React/InputfieldReactIcon.module.php,670047db1d9f9450924af74c1f7ac5c9
+"Please select an icon.","Lütfen bir simge seçin.",,site/modules/React/InputfieldReactIcon.module.php,bf78192e5e2b20363eabc80358bfb39b
+"Trigger Preview Size (px)","Önizleme Boyutu (px)",,site/modules/React/InputfieldReactIcon.module.php,d4663b0b339085f3a02c1ab399a0b01e
+"Pixel dimensions for the selected icon preview inside the input button (12–64).","Giriş düğmesi içindeki seçili simge önizlemesinin piksel boyutu (12–64).",,site/modules/React/InputfieldReactIcon.module.php,299002088516dce1e586fb116fe8b0cd
+"Stored Name Format","Kaydedilen Ad Biçimi",,site/modules/React/InputfieldReactIcon.module.php,ce551599cf45141c4fff9af350d251c2
+"Controls how plain icon names are saved when appearance customization is disabled.","Görünüm özelleştirmesi devre dışıyken düz simge adlarının nasıl kaydedileceğini belirler.",,site/modules/React/InputfieldReactIcon.module.php,fd2556d84104635e698017a4e6a3b0ac
+"Standard Icon Name (e.g. sparkles)","Standart Simge Adı (örn. sparkles)",,site/modules/React/InputfieldReactIcon.module.php,ddc6554ec43eee9c67335200fd114662
+"Admin CSS Prefix","Yönetim CSS Öneki",,site/modules/React/InputfieldReactIcon.module.php,26fe5c23983346f7276d863c7dfe6f28
+"Allow Icon Appearance Customization","Simge Görünümü Özelleştirmesine İzin Ver",,site/modules/React/InputfieldReactIcon.module.php,e2c40bba9103236a111e18974b6db2cf
+"When enabled, editors can customize icon style, size, color, stroke width, and badge background after selecting an icon (stored as JSON).","Etkinleştirildiğinde editörler bir simge seçtikten sonra stil, boyut, renk, çizgi kalınlığı ve rozet arka planını özelleştirebilir (JSON olarak saklanır).",,site/modules/React/InputfieldReactIcon.module.php,affc67c59d5a9bc4f1823a6bbe90a367
+"Allow Style Variant (Outline / Filled)","Stil Varyantına İzin Ver (Çizgisel / Dolgulu)",,site/modules/React/InputfieldReactIcon.module.php,d7cc24dd8aef54d3af994b99c4afe06f
+"Allow Size Customization (px)","Boyut Özelleştirmesine İzin Ver (px)",,site/modules/React/InputfieldReactIcon.module.php,6256e8250f352a5013c561ad905ea7b3
+"Allow Stroke Width Customization","Çizgi Kalınlığı Özelleştirmesine İzin Ver",,site/modules/React/InputfieldReactIcon.module.php,970fcc9102483e11ca8b964af4fe4d62
+"Allow Icon Color Customization","Simge Rengi Özelleştirmesine İzin Ver",,site/modules/React/InputfieldReactIcon.module.php,5ad9c3a723324cebfb3817d3819c2ad6
+"Allow Badge Background & Radius Customization","Rozet Arka Planı ve Köşe Özelleştirmesine İzin Ver",,site/modules/React/InputfieldReactIcon.module.php,831164c2307ed50c18fe01bdb33c5494
+"React Icon","React Simge",,site/modules/React/InputfieldReactIcon.module.php,899981acab5ed4d477d9f2fd44b4cbdf
+"Searchable vector icon picker with optional style, size, color, stroke width, and badge customization.","İsteğe bağlı stil, boyut, renk, çizgi kalınlığı ve rozet özelleştirmeli aranabilir vektör simge seçici.",,site/modules/React/InputfieldReactIcon.module.php,794a827fc41f230dc533bca17292905a
+"React Image","React Görsel",,site/modules/React/InputfieldReactImage.module.php,74aa81a1e31ec0a49648bb7cda282a95
+"Image studio field with instant upload, focal point, zoom, crop/rotate/flip, color palette extraction, multi-language alt text, tags, and custom details.","Anında yükleme, odak noktası, yakınlaştırma, kırpma/döndürme/çevirme, renk paleti çıkarma, çok dilli alt metin, etiketler ve özel detaylar içeren görsel stüdyo alanı.",,site/modules/React/InputfieldReactImage.module.php,86c6b14fdcd62228fd750e0aa98bc5f9
+Key,Anahtar,,site/modules/React/InputfieldReactKeyValue.module.php,897356954c2cd3d41b221e3f24f99bba
+Value,Değer,,site/modules/React/InputfieldReactKeyValue.module.php,689202409e48743b914713f96d93947c
+"Add Row","Satır Ekle",,site/modules/React/InputfieldReactKeyValue.module.php,03e0c5bbd5488f1e5ec282529dac9635
+"Remove row","Satırı kaldır",,site/modules/React/InputfieldReactKeyValue.module.php,f22cc12954f8a6326b87efac5ab3bbd4
+"Reserved key name(s) are not allowed: %s","Ayrılmış anahtar adlarına izin verilmez: %s",,site/modules/React/InputfieldReactKeyValue.module.php,8888ff3f88044cb4b14e14b52c9d24fa
+"Duplicate key(s) detected: %s. Each key must be unique.","Yinelenen anahtar(lar) algılandı: %s. Her anahtar benzersiz olmalıdır.",,site/modules/React/InputfieldReactKeyValue.module.php,2a464a458c75d2e484e71132eff081a2
+"Invalid key format pattern configured.","Geçersiz anahtar biçim deseni yapılandırıldı.",,site/modules/React/InputfieldReactKeyValue.module.php,5b76a7419382adc2acc24da051d0640f
+"Invalid key format for: %s","Geçersiz anahtar biçimi: %s",,site/modules/React/InputfieldReactKeyValue.module.php,adbf3ad8de62449b889b04cba2f90874
+"Maximum of %d key-value pair(s) allowed.","En fazla %d anahtar-değer çiftine izin verilir.",,site/modules/React/InputfieldReactKeyValue.module.php,96e5a15059b470abf61df3a57f607a47
+"At least %d key-value pair(s) required.","En az %d anahtar-değer çifti gereklidir.",,site/modules/React/InputfieldReactKeyValue.module.php,765cbd68a109b774f378cab65875f72c
+"Key Column Label","Anahtar Sütunu Etiketi",,site/modules/React/InputfieldReactKeyValue.module.php,f84ef01cfa1a4f76ba8aab699185d605
+"Value Column Label","Değer Sütunu Etiketi",,site/modules/React/InputfieldReactKeyValue.module.php,3377c4b76e3539c1082c6662a651ab16
+"Key Input Placeholder","Anahtar Alanı Yer Tutucusu",,site/modules/React/InputfieldReactKeyValue.module.php,3897353e83ebe4ad702b4f96c5f0a9b1
+"Value Input Placeholder","Değer Alanı Yer Tutucusu",,site/modules/React/InputfieldReactKeyValue.module.php,f0e934704a521100c8f1c69923acd672
+"Add Row Button Label","Satır Ekleme Düğmesi Etiketi",,site/modules/React/InputfieldReactKeyValue.module.php,2ebcd639997c57ec8ea1246c652d606e
+"Remove Row Button Label","Satır Kaldırma Düğmesi Etiketi",,site/modules/React/InputfieldReactKeyValue.module.php,d1284df53ee2d8fd7e50405cbdc158de
+"Minimum Pairs (0 = Optional)","Minimum Çift Sayısı (0 = İsteğe Bağlı)",,site/modules/React/InputfieldReactKeyValue.module.php,4df5422c071bf656190d6bcf9f8fabc4
+"Maximum Pairs (0 = Unlimited)","Maksimum Çift Sayısı (0 = Sınırsız)",,site/modules/React/InputfieldReactKeyValue.module.php,351b11a93e00746ec149beed89ec7f2b
+"Allowed Key Format","İzin Verilen Anahtar Biçimi",,site/modules/React/InputfieldReactKeyValue.module.php,46bcd69928700a971e37da070dc19540
+"Optional pattern that every key name must match (e.g. ^[a-z0-9_]+$).","Her anahtar adının uyması gereken isteğe bağlı desen (örn. ^[a-z0-9_]+$).",,site/modules/React/InputfieldReactKeyValue.module.php,117bde8714c151de9fe31750cc67d8cb
+"Key Pattern Error Message","Anahtar Deseni Hata Mesajı",,site/modules/React/InputfieldReactKeyValue.module.php,e9dec702a6e7cebd3e0e027d8efabd4d
+"Allow Empty Values","Boş Değerlere İzin Ver",,site/modules/React/InputfieldReactKeyValue.module.php,80da426d1e5f441eec08caa2fd2fdd7f
+"Keep keys whose value is left blank instead of omitting them.","Değeri boş bırakılan anahtarları yoksaymak yerine koru.",,site/modules/React/InputfieldReactKeyValue.module.php,8f25b7ba51ae24620d095512bb3aaa1a
+"React Key-Value Pairs","React Anahtar-Değer Çiftleri",,site/modules/React/InputfieldReactKeyValue.module.php,601bb995149262338f67f8a2054be229
+"Manage ordered key-value pairs for custom attributes, metadata, or specifications.","Özel nitelikler, meta veriler veya teknik özellikler için sıralı anahtar-değer çiftlerini yönetin.",,site/modules/React/InputfieldReactKeyValue.module.php,f6d409b7fa3f4590ba31540530b34f5a
+"Phone number may only contain digits and a leading + sign.","Telefon numarası yalnızca rakamlar ve başta + işareti içerebilir.",,site/modules/React/InputfieldReactLink.module.php,0598e3665cdb9f3216db26f52e57ba93
+"Link type ""%s"" is not permitted on this field.","Bu alanda ""%s"" bağlantı türüne izin verilmiyor.",,site/modules/React/InputfieldReactLink.module.php,a6075e4e6bdbc370d673e7d67e48c5fa
+"Please enter a valid email address.","Lütfen geçerli bir e-posta adresi girin.",,site/modules/React/InputfieldReactLink.module.php,b5bccda6d3a04e1d8f79846355290435
+"A destination link is required.","Hedef bağlantı zorunludur.",,site/modules/React/InputfieldReactLink.module.php,cb311eaceec84e4ff0ca8c0157d55096
+"Allowed Target Types","İzin Verilen Hedef Türleri",,site/modules/React/InputfieldReactLink.module.php,f1cd66d64a739d24fa96dc925b54f80b
+Page,Sayfa,,site/modules/React/InputfieldReactLink.module.php,193cfc9be3b995831c6af2fea6650e60
+Entry,Kayıt,,site/modules/React/InputfieldReactLink.module.php,b948e8a02a7f8dc9f098c89e8df9892c
+"URL & Anchor (#)","URL ve Çapa (#)",,site/modules/React/InputfieldReactLink.module.php,c1ef16ed062f7fb8a0da64983519475b
+"Phone (+ & digits)","Telefon (+ ve rakamlar)",,site/modules/React/InputfieldReactLink.module.php,23231889af1f705df7ac3422bf86ee74
+Email,E-posta,,site/modules/React/InputfieldReactLink.module.php,ce8ae9da5b7cd6c3df2929543a9af92d
+"Media: File","Medya: Dosya",,site/modules/React/InputfieldReactLink.module.php,5f7b9d5782b299fcba0a3abda050471f
+"Media: Image","Medya: Görsel",,site/modules/React/InputfieldReactLink.module.php,d500e7c95997c1cc0ad5d5b21e073e83
+"Media: Video","Medya: Video",,site/modules/React/InputfieldReactLink.module.php,779a32ba9edc89809d0b27e6764342b2
+"Default Target Type","Varsayılan Hedef Türü",,site/modules/React/InputfieldReactLink.module.php,5901ff09bda8c8bf00de1ea9deb91da6
+"Media Upload Profiles","Medya Yükleme Profilleri",,site/modules/React/InputfieldReactLink.module.php,77ced2b23f1d0b3738f2ddb41b411826
+"Optional per-profile allowed file extensions (one per line as `profile: ext1 ext2` or JSON object, e.g. `image: jpg png webp`, `video: mp4 webm`, `file: pdf zip`).","Profil başına izin verilen isteğe bağlı dosya uzantıları (satır başına `profile: ext1 ext2` veya JSON nesnesi olarak, örn. `image: jpg png webp`, `video: mp4 webm`, `file: pdf zip`).",,site/modules/React/InputfieldReactLink.module.php,91ce497b8843b1d124ca5671c8f439d6
+"Enable Link Label","Bağlantı Etiketini Etkinleştir",,site/modules/React/InputfieldReactLink.module.php,e289053e411e24f58511cc53392258c8
+"Enable Anchor (#)","Çapayı (#) Etkinleştir",,site/modules/React/InputfieldReactLink.module.php,d8cc17bf84833cf1d80cd2ae3f3c743e
+"Enable Query (?)","Sorgu Parametrelerini (?) Etkinleştir",,site/modules/React/InputfieldReactLink.module.php,865d39779b680a728606720516de9506
+"Enable Target & Rel","Hedef ve Rel Niteliklerini Etkinleştir",,site/modules/React/InputfieldReactLink.module.php,3183d9403563356ae9eab5c0181241d9
+"Page Target Selector","Sayfa Hedef Seçicisi",,site/modules/React/InputfieldReactLink.module.php,bf0d0be8666b215319901f7a2a15cbed
+"Entry Target Blueprint","Kayıt Hedef Şablonu (Blueprint)",,site/modules/React/InputfieldReactLink.module.php,2772d73ea6021f1395c49f5055fde9de
+"React Link & Media Target","React Bağlantı ve Medya Hedefi",,site/modules/React/InputfieldReactLink.module.php,a531caf428140f5a29cf7d19fb3d2940
+"All-in-one link and media selector supporting Pages, Entries, URLs, Phone numbers, Email addresses, and uploaded files, images, or videos.","Sayfalar, Kayıtlar, URL'ler, Telefon numaraları, E-posta adresleri ile yüklenen dosya, görsel veya videoları destekleyen hepsi bir arada bağlantı ve medya seçici.",,site/modules/React/InputfieldReactLink.module.php,d1afaf6496b96ae57383b29fc69224ab
+"Please select at least %d item(s).","Lütfen en az %d öğe seçin.",,site/modules/React/InputfieldReactM2A.module.php,cfecdec3aa548f6f05dd7fb4aac1f0fa
+"Allowed Target Resources","İzin Verilen Hedef Kaynaklar",,site/modules/React/InputfieldReactM2A.module.php,001d06cf09a1564ff15ee7ffe5ccf813
+"Selection Interface","Seçim Arayüzü",,site/modules/React/InputfieldReactM2A.module.php,020bfcf134f4c815fba95e73e6ded8a7
+"Search Box with Resource Tabs","Kaynak Sekmeli Arama Kutusu",,site/modules/React/InputfieldReactM2A.module.php,d6231dd1dccd3c65683f1310b88d31b7
+"Slide-Out Picker Drawer with Resource Tabs","Kaynak Sekmeli Açılır Seçim Paneli",,site/modules/React/InputfieldReactM2A.module.php,6710b02c9df67f1cd3f2210292a723b9
+"Allow Multiple References","Çoklu Referansa İzin Ver",,site/modules/React/InputfieldReactM2A.module.php,0a6640d5916ffcbad62feb3bd98f2fad
+"Allow Reordering","Yeniden Sıralamaya İzin Ver",,site/modules/React/InputfieldReactM2A.module.php,0edc99a2ccd112d337826f182b77809b
+"Maximum Items (0 = Unlimited)","Maksimum Öğe Sayısı (0 = Sınırsız)",,site/modules/React/InputfieldReactM2A.module.php,dbe45001d5ec597e5e90987a4d6593b9
+"React Relation (M2A — Multi-Type)","React İlişki (M2A — Çoklu Tür)",,site/modules/React/InputfieldReactM2A.module.php,74ba65ee99beb54138156e3fd92da346
+"Select and organize related items across multiple resource types (such as pages, entries, or users) in one field.","Birden fazla kaynak türünden (sayfalar, kayıtlar veya kullanıcılar gibi) ilgili öğeleri tek bir alanda seçin ve düzenleyin.",,site/modules/React/InputfieldReactM2A.module.php,1375baeb80961f47b64e72039f749c5d
+"Please select at least %d item(s).","Lütfen en az %d öğe seçin.",,site/modules/React/InputfieldReactM2M.module.php,cfecdec3aa548f6f05dd7fb4aac1f0fa
+"UI Selection Widget","Arayüz Seçim Bileşeni",,site/modules/React/InputfieldReactM2M.module.php,e67a2d84a635294e2bee0d8da73f95ca
+"Auto (MultiSelect <= 30 items, else MultiAutocomplete)","Otomatik (<= 30 öğe için Çoklu Seçim, aksi halde Çoklu Otomatik Tamamlama)",,site/modules/React/InputfieldReactM2M.module.php,04169997901ccb34b0caca10512a37f6
+"Sortable MultiSelect (AsmSelect style)","Sıralanabilir Çoklu Seçim (AsmSelect stili)",,site/modules/React/InputfieldReactM2M.module.php,659fcf83bbdb0d87a65d93b1607c38ff
+"MultiCheckbox Grid (Search + Select All)","Çoklu Onay Kutusu Izgarası (Arama + Tümünü Seç)",,site/modules/React/InputfieldReactM2M.module.php,5af908afcefb210fdb8d94d223b8ef4a
+"MultiAutocomplete Chips","Çoklu Otomatik Tamamlama Etiketleri",,site/modules/React/InputfieldReactM2M.module.php,147dea3c8d28371a4ed34d02287b7d4a
+"Hierarchical Multi-TreeSelect (Pages)","Hiyerarşik Çoklu Ağaç Seçimi (Sayfalar)",,site/modules/React/InputfieldReactM2M.module.php,0f8cf635268cdf716fb8ae4ff795c009
+"Dual-List Shuttle / Transfer","Çift Listeli Aktarım / Transfer",,site/modules/React/InputfieldReactM2M.module.php,9ac22ed87ac9009545bf2b0628d1fd6b
+"Drawer Table/Card Picker","Çekmece Tablo/Kart Seçici",,site/modules/React/InputfieldReactM2M.module.php,ea49654e31b0b28c0e1c65fbf9fdef9c
+"Allow Drag / Reorder","Sürükleme / Yeniden Sıralamaya İzin Ver",,site/modules/React/InputfieldReactM2M.module.php,097d5694db78abf5e5099b37edf2fe24
+"Minimum Items","Minimum Öğe Sayısı",,site/modules/React/InputfieldReactM2M.module.php,c6abb84d6ccac3f0781bc60459a95cdc
+"Maximum Items (0 = Unlimited)","Maksimum Öğe Sayısı (0 = Sınırsız)",,site/modules/React/InputfieldReactM2M.module.php,dbe45001d5ec597e5e90987a4d6593b9
+"Checkbox Columns (0 = Auto)","Onay Kutusu Sütunları (0 = Otomatik)",,site/modules/React/InputfieldReactM2M.module.php,f49bfbc9c748a826166bfcfd3299fdaf
+"React Relation (M2M — Multiple)","React İlişkisi (M2M — Çoklu)",,site/modules/React/InputfieldReactM2M.module.php,bcd820f447a98c0be36489778c7e10a2
+"Select and reorder multiple related records using multi-select, checkboxes, autocomplete, tree picker, dual-list transfer, or a slide-out browser.","Çoklu seçim, onay kutuları, otomatik tamamlama, ağaç seçici, çift liste aktarımı veya açılır tarayıcı ile birden fazla ilgili kaydı seçin ve sıralayın.",,site/modules/React/InputfieldReactM2M.module.php,224a11d4e3e3c751a8237ba27ecd82d6
+"UI Selection Widget","Arayüz Seçim Bileşeni",,site/modules/React/InputfieldReactM2O.module.php,e67a2d84a635294e2bee0d8da73f95ca
+"Auto (Smart adaptation by item count & hierarchy)","Otomatik (Öğe sayısı ve hiyerarşiye göre akıllı uyum)",,site/modules/React/InputfieldReactM2O.module.php,80d09e8dcff820b32c7af12448566c54
+"Select Dropdown","Açılır Seçim Listesi",,site/modules/React/InputfieldReactM2O.module.php,151a7605042028324ed8b36e5d84c3d5
+"Radio List","Radyo Düğmesi Listesi",,site/modules/React/InputfieldReactM2O.module.php,7c7dcd8e252ff4c63f69ac7dd4b3bbc2
+"Radio Cards (Rich subtitle & icon)","Radyo Kartları (Zengin alt başlık ve simge)",,site/modules/React/InputfieldReactM2O.module.php,73b84464a85e312d27fb7dd610cc10dd
+"Autocomplete Search Combobox","Otomatik Tamamlamalı Arama Kutusu",,site/modules/React/InputfieldReactM2O.module.php,a297e193dbaaab48abb17d5cf4f1b2a7
+"Hierarchical TreeSelect (Pages)","Hiyerarşik Ağaç Seçimi (Sayfalar)",,site/modules/React/InputfieldReactM2O.module.php,0ca1260d3adc425c7ee301c8b78ce528
+"Drawer Table/Card Picker","Çekmece Tablo/Kart Seçici",,site/modules/React/InputfieldReactM2O.module.php,ea49654e31b0b28c0e1c65fbf9fdef9c
+"React Relation (M2O — Single)","React İlişkisi (M2O — Tekli)",,site/modules/React/InputfieldReactM2O.module.php,a7c97f1534a1c9f2d060f1ed098196fe
+"Select a single related record using a dropdown, radio cards, searchable autocomplete, tree picker, or slide-out browser.","Açılır liste, radyo kartları, aranabilir otomatik tamamlama, ağaç seçici veya açılır tarayıcı kullanarak tek bir ilgili kayıt seçin.",,site/modules/React/InputfieldReactM2O.module.php,2f68403e5a36617dac6113bc06a25f8c
+"Related Resource","İlgili Kaynak",,site/modules/React/InputfieldReactO2M.module.php,6a52a7bcef9b3f185510143f04fa7ebb
+"Link Field on Related Resource","İlgili Kaynaktaki Bağlantı Alanı",,site/modules/React/InputfieldReactO2M.module.php,ddbfc5931a656aef058f6e617d404be0
+"Field on the related resource that points back to this record.","İlgili kaynakta bu kayda geri işaret eden alan.",,site/modules/React/InputfieldReactO2M.module.php,03073aae55a9a9ce315538727affe530
+"Display Layout","Görünüm Düzeni",,site/modules/React/InputfieldReactO2M.module.php,4c68e096673f719e21a13dc561238f65
+"Compact Subtable","Kompakt Alt Tablo",,site/modules/React/InputfieldReactO2M.module.php,f3d970b01e144905e6c4c99284eb3c14
+"Cards Grid","Kart Izgarası",,site/modules/React/InputfieldReactO2M.module.php,378483f3184a3b709bf258259a121ed9
+"Compact List","Kompakt Liste",,site/modules/React/InputfieldReactO2M.module.php,8839d2fcfd24b0dcb6a74536636e3ab0
+"Allow Linking Existing Records","Mevcut Kayıtları Bağlamaya İzin Ver",,site/modules/React/InputfieldReactO2M.module.php,63d22198a1ab86f194cee030b70ac9ad
+"Allow Unlinking Records","Kayıt Bağlantısını Kaldırmaya İzin Ver",,site/modules/React/InputfieldReactO2M.module.php,ffd50702ff27be73948379831b786a69
+"React Relation (O2M — Reverse / Incoming)","React İlişkisi (O2M — Ters / Gelen)",,site/modules/React/InputfieldReactO2M.module.php,48c2e707478c4a052eddedc363704bbb
+"Display and manage records linking back to this item (as a table, cards, or list), with quick create, link, and unlink actions.","Bu öğeye geri bağlanan kayıtları hızlı oluşturma, bağlama ve bağlantıyı kaldırma işlemleriyle tablo, kart veya liste olarak görüntüleyin ve yönetin.",,site/modules/React/InputfieldReactO2M.module.php,741b6dda89e34b4401545fe42aece8a2
+"Write something...","Bir şeyler yazın...",,site/modules/React/InputfieldTiptap.module.php,f581ea795bc53e0fc0864ede394dbfe4
+"Write something, or type '/' for blocks...","Bir şeyler yazın veya bloklar için '/' yazın...",,site/modules/React/InputfieldTiptap.module.php,53a08b0bb6b64cee10af9526436f9139
+"Rich text formatting","Zengin metin biçimlendirme",,site/modules/React/InputfieldTiptap.module.php,b0d15f8c70d4d261d16cf42d89bf24fa
+"Selection formatting","Seçim biçimlendirme",,site/modules/React/InputfieldTiptap.module.php,c3bb32b5cdb5705d4952bee5ad904be0
+"Language tabs","Dil sekmeleri",,site/modules/React/InputfieldTiptap.module.php,918d2f0829149aba962987bfa50e8300
+"Copy {language}","{language} dilini kopyala",,site/modules/React/InputfieldTiptap.module.php,cfb18e0196a7d9859e909d10049acbf7
+"Copied content from {language}","{language} dilinden içerik kopyalandı",,site/modules/React/InputfieldTiptap.module.php,cf90f7917668ce48060823ad60d40eb2
+"Close dialog","İletişim kutusunu kapat",,site/modules/React/InputfieldTiptap.module.php,3c62b9dcfe365792b2fbb6e15dc82c80
+"Text style","Metin stili",,site/modules/React/InputfieldTiptap.module.php,f4ab8299a8f249826bf5ca6c14f9aa54
+"Inline formatting","Satır içi biçimlendirme",,site/modules/React/InputfieldTiptap.module.php,d78379e7a11e9a99a0bab0357468bbf2
+"Text alignment","Metin hizalama",,site/modules/React/InputfieldTiptap.module.php,bf6bee6d96403148e9cd065820514efb
+"Lists and blocks","Listeler ve bloklar",,site/modules/React/InputfieldTiptap.module.php,d4cc4ee7ed191ab03e5323bb2aeaa1e8
+"Insert elements","Öğe ekle",,site/modules/React/InputfieldTiptap.module.php,9d25389aec7c1c1c49020e85bc25af58
+History,Geçmiş,,site/modules/React/InputfieldTiptap.module.php,16d2b386b2034b9488996466aaae0b57
+"Editor utilities","Editör araçları",,site/modules/React/InputfieldTiptap.module.php,fe04df2097e684b41b8d13309117f9de
+"Formatting group {index}","Biçimlendirme grubu {index}",,site/modules/React/InputfieldTiptap.module.php,47217d1a538a5e469656f6e26aaaf903
+"Paragraph style","Paragraf stili",,site/modules/React/InputfieldTiptap.module.php,9c1a2af13f3c652d42d2f48ce173c554
+Paragraph,Paragraf,,site/modules/React/InputfieldTiptap.module.php,feaf0a320c3d678ad30dd179b7d21584
+"Heading {level}","Başlık {level}",,site/modules/React/InputfieldTiptap.module.php,6637c23d78403523cba7438db80aad38
+Bold,Kalın,,site/modules/React/InputfieldTiptap.module.php,114c3050111d8b8ddd830b99ccebd246
+Italic,İtalik,,site/modules/React/InputfieldTiptap.module.php,1d874710ccdcd46b95397049d2e7500c
+Underline,"Altı çizili",,site/modules/React/InputfieldTiptap.module.php,852721aa5fc738dfedff2945d71da439
+Strikethrough,"Üstü çizili",,site/modules/React/InputfieldTiptap.module.php,926a51baad949d12035107e5d06e2fdb
+"Inline code","Satır içi kod",,site/modules/React/InputfieldTiptap.module.php,9908b5feeb1dee676a41a9700873d646
+Highlight,Vurgula,,site/modules/React/InputfieldTiptap.module.php,0b90582f4589d84be89f5b847d4d1ed1
+Subscript,"Alt simge",,site/modules/React/InputfieldTiptap.module.php,928558e2f9712e38d447d674f2672200
+Superscript,"Üst simge",,site/modules/React/InputfieldTiptap.module.php,6316f99acec341fbdd5cc006dc5a7ba7
+"Align left","Sola hizala",,site/modules/React/InputfieldTiptap.module.php,ded0ea9d2cbb6e177900015adeb15cdf
+"Align center",Ortala,,site/modules/React/InputfieldTiptap.module.php,d5f99d7d9fdc1af3e236ae1833287bc6
+"Align right","Sağa hizala",,site/modules/React/InputfieldTiptap.module.php,acdc5a7bb60bf1fbc33eee11117fee61
+Justify,"İki yana yasla",,site/modules/React/InputfieldTiptap.module.php,4b425d212a2e7b36c38703bfdcd57823
+"Bullet list","Madde işaretli liste",,site/modules/React/InputfieldTiptap.module.php,54cc4792af10120e92b61096abc4dc19
+"Numbered list","Numaralı liste",,site/modules/React/InputfieldTiptap.module.php,4b985b57aabbd3110aac1d53b1a921c1
+"Task list","Görev listesi",,site/modules/React/InputfieldTiptap.module.php,65709fd2505ff82f0d43a3c97eb505f3
+Blockquote,"Alıntı bloğu",,site/modules/React/InputfieldTiptap.module.php,146aaf1333c7e82829fe9c5c52340b56
+"Code block","Kod bloğu",,site/modules/React/InputfieldTiptap.module.php,10a7314bd561c0d130bd189a6f836e5e
+Link,Bağlantı,,site/modules/React/InputfieldTiptap.module.php,97e7c9a7d06eac006a28bf05467fcc8b
+"Remove link","Bağlantıyı kaldır",,site/modules/React/InputfieldTiptap.module.php,79820c0aefba8326e5aebd0ecf1a8aaa
+"Insert anchor","Çapa ekle",,site/modules/React/InputfieldTiptap.module.php,e8550807200f55308bed9d36c0522e0c
+"Insert image","Görsel ekle",,site/modules/React/InputfieldTiptap.module.php,21051abf79012a1b2ee50d13b9731a16
+"Insert table","Tablo ekle",,site/modules/React/InputfieldTiptap.module.php,bdc40d5c3ebd2bfed5cd1447ab033359
+"Table active","Tablo etkin",,site/modules/React/InputfieldTiptap.module.php,960ac78ce8e5591804c4b9a2a3374775
+"Insert 3x3 table","3x3 tablo ekle",,site/modules/React/InputfieldTiptap.module.php,d70e084bf0d08441f9b5d7e82aa7d052
+"Insert horizontal rule","Yatay çizgi ekle",,site/modules/React/InputfieldTiptap.module.php,4f74d1e915dbe90847aaf6692911fc82
+"Insert block","Blok ekle",,site/modules/React/InputfieldTiptap.module.php,a1020668e25156f8e890f258f99e2f51
+Block,Blok,,site/modules/React/InputfieldTiptap.module.php,e1e4c8c9ccd9fc39c391da4bcd093fb2
+"Clear formatting","Biçimlendirmeyi temizle",,site/modules/React/InputfieldTiptap.module.php,4494691b92e1f195feb25bd63ee5468b
+"HTML source code","HTML kaynak kodu",,site/modules/React/InputfieldTiptap.module.php,239eccf4e5abd114e97207aae0d92197
+"Fullscreen editor","Tam ekran editör",,site/modules/React/InputfieldTiptap.module.php,95541eb590778e943f559eb56cd7e97c
+"Exit fullscreen","Tam ekrandan çık",,site/modules/React/InputfieldTiptap.module.php,b5607fef9c8acba81dc21eda39252e9e
+"Exit Fullscreen","Tam Ekrandan Çık",,site/modules/React/InputfieldTiptap.module.php,53d67f1a3519e1d85c6ce095d78eaea8
+Undo,"Geri al",,site/modules/React/InputfieldTiptap.module.php,1cdc076b28f70afac5fcedadf99fa119
+Redo,Yinele,,site/modules/React/InputfieldTiptap.module.php,5afeaba074ef570dc720caaa855d49f6
+"https://example.com or /page/","https://example.com veya /page/",,site/modules/React/InputfieldTiptap.module.php,3ff4d5e5cf852f9e7fc443388d54205f
+"New tab","Yeni sekme",,site/modules/React/InputfieldTiptap.module.php,c8a19ea6c79e23a1ee5372c8dbf3c6cf
+Unlink,"Bağlantıyı Kaldır",,site/modules/React/InputfieldTiptap.module.php,c1a39b6a60f8b2f87e23d60ab649d994
+Cancel,İptal,,site/modules/React/InputfieldTiptap.module.php,ea4788705e6873b424c65e91c2846b19
+"Enter a valid https://, http://, mailto:, tel:, or relative URL.","Geçerli bir https://, http://, mailto:, tel: veya göreli URL girin.",,site/modules/React/InputfieldTiptap.module.php,51df59363ba07f44658778e63a870e90
+"Insert Link","Bağlantı Ekle",,site/modules/React/InputfieldTiptap.module.php,259738ca35a086ce9d269623e5ab5d37
+"Edit Link","Bağlantıyı Düzenle",,site/modules/React/InputfieldTiptap.module.php,ff15d4e97d08c2ab0351169af757b0f2
+"Link text","Bağlantı metni",,site/modules/React/InputfieldTiptap.module.php,63a11faa3a692d4e00fa8e03bbe8a0d6
+"Visible text for this link","Bu bağlantı için görünür metin",,site/modules/React/InputfieldTiptap.module.php,cfb9069b3edd13bc9df5fb7a3b515bc3
+"Link to URL","Bağlantı adresi",,site/modules/React/InputfieldTiptap.module.php,f6f7f0f8aa1ef94fdf01a81f1cb24e7a
+"Enter a URL, email address, anchor, or word(s) to find a page.","Bir URL, e-posta adresi, çapa girin ya da sayfa bulmak için kelime yazın.",,site/modules/React/InputfieldTiptap.module.php,5ca94731e096d98ae0e649d70393c443
+"Enter a URL, or pick a page, file, or anchor below.","Bir URL girin veya aşağıdan bir sayfa, dosya ya da çapa seçin.",,site/modules/React/InputfieldTiptap.module.php,9a6aad7544939f1a88b074dcf283f3eb
+"Clear URL","Adresi temizle",,site/modules/React/InputfieldTiptap.module.php,778add79d51c47d969e5623b082b337e
+"Matching pages","Eşleşen sayfalar",,site/modules/React/InputfieldTiptap.module.php,4835e287e634d400f60312eec75c68fa
+"Select Child Page","Alt Sayfa Seç",,site/modules/React/InputfieldTiptap.module.php,d98192e3cb911892e861fde0f812f062
+"This page has no child pages yet.","Bu sayfanın henüz alt sayfası yok.",,site/modules/React/InputfieldTiptap.module.php,6e4cbfcf3d586a694b96e7728e402a36
+Unpublished,"Yayında değil",,site/modules/React/InputfieldTiptap.module.php,0774e163cd7df482edd2abd498189f8b
+Hidden,Gizli,,site/modules/React/InputfieldTiptap.module.php,7acdf85c69cc3c5305456a293524386e
+"File source","Dosya kaynağı",,site/modules/React/InputfieldTiptap.module.php,de7978a84c25bf4e86c1f2451249623d
+"Select Page","Sayfa Seç",,site/modules/React/InputfieldTiptap.module.php,99e7707748ae048e17c5810fad119e0b
+"Select File","Dosya Seç",,site/modules/React/InputfieldTiptap.module.php,1aa14e9f377b528b5537d70fbd35c6a2
+"Select Anchor","Çapa Seç",,site/modules/React/InputfieldTiptap.module.php,16fc67b7eaa1e52e2ad1ecd9d42917bc
+"Type page title, URL, email, or #anchor...","Sayfa başlığı, URL, e-posta veya #çapa yazın...",,site/modules/React/InputfieldTiptap.module.php,9f6f8df826d4539453ab482c3cf451ae
+"No matching pages found.","Eşleşen sayfa bulunamadı.",,site/modules/React/InputfieldTiptap.module.php,9aa45d2b5d98b8874f798e5e3ddffca6
+"Loading page tree...","Sayfa ağacı yükleniyor...",,site/modules/React/InputfieldTiptap.module.php,a5b824d199652ecdaca197736bb19f9d
+"Expand child pages","Alt sayfaları genişlet",,site/modules/React/InputfieldTiptap.module.php,3321bd8504a9db351954e013f3677c94
+"Collapse child pages","Alt sayfaları daralt",,site/modules/React/InputfieldTiptap.module.php,2ce850c9571d9d94d5ff666a9756210e
+"Files on {page}","{page} sayfasındaki dosyalar",,site/modules/React/InputfieldTiptap.module.php,f153d55c4989af3c1da98d52111ae198
+"Current item files","Mevcut öğe dosyaları",,site/modules/React/InputfieldTiptap.module.php,fef31870f1063e09c9516d35dec10920
+"Loading files...","Dosyalar yükleniyor...",,site/modules/React/InputfieldTiptap.module.php,1118898b357188ce4702f44b78aec012
+"No files are attached to this item.","Bu öğeye eklenmiş dosya yok.",,site/modules/React/InputfieldTiptap.module.php,eee9dbb57af9080d69fd9b9f9c528e77
+"Anchor ID","Çapa Kimliği (ID)",,site/modules/React/InputfieldTiptap.module.php,8cd18cba08c431ac7c4a497539c42a75
+section-heading,bolum-basligi,,site/modules/React/InputfieldTiptap.module.php,2bc5305834a2e9ed89b00de8a37e2142
+"Anchor ID must start with a letter and contain only letters, numbers, hyphens, or underscores.","Çapa kimliği bir harfle başlamalı ve yalnızca harf, rakam, tire veya alt çizgi içermelidir.",,site/modules/React/InputfieldTiptap.module.php,44e7c55ee7b930c51a50974d3ed141ee
+"Insert Named Anchor","Adlandırılmış Çapa Ekle",,site/modules/React/InputfieldTiptap.module.php,21acd11ce44fb4af7d5f4ca3f3aae3fe
+"Insert Anchor","Çapa Ekle",,site/modules/React/InputfieldTiptap.module.php,741f45009593e3e2a206e1350f6ef884
+"Remove Anchor","Çapayı Kaldır",,site/modules/React/InputfieldTiptap.module.php,4bd19ea92cece62cb89d5caa5903ef6b
+Attributes,Öznitelikler,,site/modules/React/InputfieldTiptap.module.php,287234a1ff35a314b5b6bc4e5828e745
+"Title attribute","Başlık (title) özniteliği",,site/modules/React/InputfieldTiptap.module.php,70e5a90fda0fca373f65e61df0840f77
+"Additional text to describe the link.","Bağlantıyı açıklayan ek metin.",,site/modules/React/InputfieldTiptap.module.php,e16e9828d7fde614ac138cfe20c8bfd3
+"Target window","Hedef pencere",,site/modules/React/InputfieldTiptap.module.php,1638aff8fb7ff24f562e168fed37c329
+"Where this link will open.","Bağlantının nerede açılacağı.",,site/modules/React/InputfieldTiptap.module.php,918dfcbd7b97a5aa266ceb37a76c3dee
+"Same window (default)","Aynı pencere (varsayılan)",,site/modules/React/InputfieldTiptap.module.php,b2b418960fca1c4a969fbedf71dc190e
+"Rel attributes","Rel öznitelikleri",,site/modules/React/InputfieldTiptap.module.php,9e97be0c2d3eb893b553132c46b2ea73
+"Relationship of the link to this document.","Bağlantının bu belgeyle ilişkisi.",,site/modules/React/InputfieldTiptap.module.php,0426d5f31f5255a5d1ff1cd28673e7ca
+"CSS classes","CSS sınıfları",,site/modules/React/InputfieldTiptap.module.php,bd4f409b3e6cabcbc96272193a3995bc
+"Update Link","Bağlantıyı Güncelle",,site/modules/React/InputfieldTiptap.module.php,979a1af731a79241ec0937f557676d1a
+"Image URL","Görsel URL’si",,site/modules/React/InputfieldTiptap.module.php,427b6d816d7fdd86cabe48d8180a3cc9
+"/site/assets/files/... or https://...","/site/assets/files/... veya https://...",,site/modules/React/InputfieldTiptap.module.php,d5f733e8b5dd72b4fb76c5d2dc411628
+"Image alt text","Görsel alternatif metni",,site/modules/React/InputfieldTiptap.module.php,390c85457d882307445484d4813faf0e
+"Alt description","Alternatif açıklama",,site/modules/React/InputfieldTiptap.module.php,a60b0112edf57d22b3631e6ed6d30543
+Insert,Ekle,,site/modules/React/InputfieldTiptap.module.php,a458be0f08b7e4ff3c0f633c100176c0
+"Enter a valid https://, http://, or site-relative image URL.","Geçerli bir https://, http:// veya site içi göreli görsel URL’si girin.",,site/modules/React/InputfieldTiptap.module.php,61bcb67b1abe9c4ec58213e7bd9bb9dc
+"Select Image","Görsel Seç",,site/modules/React/InputfieldTiptap.module.php,446a6000511ab6fb0711400379a62a04
+"Edit Image","Görseli Düzenle",,site/modules/React/InputfieldTiptap.module.php,03274f27f51f0c39e06e0e6cd07e01a9
+"Page Images","Sayfa Görselleri",,site/modules/React/InputfieldTiptap.module.php,ecfe6d928fdff5bb1b7e1435f093d98a
+"External URL","Harici URL",,site/modules/React/InputfieldTiptap.module.php,48b6dc1949d063860c1765ebd06bbc95
+"Image source","Görsel kaynağı",,site/modules/React/InputfieldTiptap.module.php,14048e0cc272bd8e68ceb86154de892a
+"Current item","Mevcut öğe",,site/modules/React/InputfieldTiptap.module.php,3f139cfffa58e524bf48e5c9e837147e
+"Choose another page","Başka bir sayfa seç",,site/modules/React/InputfieldTiptap.module.php,6828716d7f290f658bfc44cd3a337057
+"Hide page browser","Sayfa gezginini gizle",,site/modules/React/InputfieldTiptap.module.php,078e077ea81743490a6906ff040d1d98
+"Upload Image","Görsel Yükle",,site/modules/React/InputfieldTiptap.module.php,1f98842c354dc496970446bce14f4c50
+"Uploading image...","Görsel yükleniyor...",,site/modules/React/InputfieldTiptap.module.php,28f80664498023f890643efa086546c7
+"Upload to field","Yüklenecek alan",,site/modules/React/InputfieldTiptap.module.php,f5b802da3ada3c1bd6900fc7b04d0772
+"Loading images...","Görseller yükleniyor...",,site/modules/React/InputfieldTiptap.module.php,17ca0415d200c54478f4ed170e6eada3
+"There are no image fields on this page. Choose another page below to select or upload images.","Bu sayfada görsel alanı bulunmuyor. Görsel seçmek veya yüklemek için aşağıdan başka bir sayfa seçin.",,site/modules/React/InputfieldTiptap.module.php,52ccc59271edc7b1c77418d20f8bb8d0
+"No images found on this page. Choose another page to select images from.","Bu sayfada görsel bulunamadı. Görsel seçmek için başka bir sayfa seçin.",,site/modules/React/InputfieldTiptap.module.php,83f903a42b6bd2ab0fa68213d64d02f8
+"No images found on this source. Upload an image or choose another page.","Bu kaynakta görsel bulunamadı. Bir görsel yükleyin veya başka bir sayfa seçin.",,site/modules/React/InputfieldTiptap.module.php,b22f9ebe740238f294b30b8b58f50d93
+"Back to Images","Görsellere Dön",,site/modules/React/InputfieldTiptap.module.php,a6fc53bb43d0f9cbb5f870c1972d7e50
+"Dimensions & Quality","Boyutlar ve Kalite",,site/modules/React/InputfieldTiptap.module.php,4d4d7ddd35ae9a43deffd4b9a75bedb4
+"Width (px)","Genişlik (px)",,site/modules/React/InputfieldTiptap.module.php,ee8d82448ba8787a6ae043a53157f36e
+"Height (px)","Yükseklik (px)",,site/modules/React/InputfieldTiptap.module.php,e03b313cd093a6368ea5e16a8e2af335
+"Keep aspect ratio","En-boy oranını koru",,site/modules/React/InputfieldTiptap.module.php,a899dc2af338fa9316506646c65ae2ca
+"Original size ({width}x{height})","Orijinal boyut ({width}x{height})",,site/modules/React/InputfieldTiptap.module.php,f24f439664ac6ae773d42e1e7ff9080b
+"HiDPI / Retina","HiDPI / Retina",,site/modules/React/InputfieldTiptap.module.php,a383ac9cf4adcdadde6c646e2afb66fa
+Alignment,Hizalama,,site/modules/React/InputfieldTiptap.module.php,a63706eecfa33f67b315f978392ad7ae
+"No alignment","Hizalama yok",,site/modules/React/InputfieldTiptap.module.php,f5d0e7591f0d5da3cf09c599fd314c47
+"Show caption (<figure>)","Alt yazı göster (<figure>)",,site/modules/React/InputfieldTiptap.module.php,f82fea85cbd2eced26ed189329866d89
+"Caption text","Alt yazı metni",,site/modules/React/InputfieldTiptap.module.php,0859dc2279a778d36d21ed0f012a36fc
+"Enter image caption...","Görsel alt yazısı girin...",,site/modules/React/InputfieldTiptap.module.php,8788001f25ff9c0bad935d36e8645d29
+"Link to full-size original image","Tam boyutlu orijinal görsele bağlantı ver",,site/modules/React/InputfieldTiptap.module.php,1a00c4ab80e34d7d64e4073a31708225
+Crop,Kırp,,site/modules/React/InputfieldTiptap.module.php,d388632d05e8826abe4b95de0b110529
+"Cancel Crop","Kırpmayı İptal Et",,site/modules/React/InputfieldTiptap.module.php,426afb7d36a4bd61a451860d0eb8a5e9
+"Rotate 90° counter-clockwise","Saat yönünün tersine 90° döndür",,site/modules/React/InputfieldTiptap.module.php,711b2d3ad39641efad41242959cc26bb
+"Rotate 90° clockwise","Saat yönünde 90° döndür",,site/modules/React/InputfieldTiptap.module.php,c582c6fbe549d884cfdede85f5d4ed0e
+"Flip horizontal","Yatay çevir",,site/modules/React/InputfieldTiptap.module.php,2f96dd2b9788ed9ecbc6f41c312bf455
+"Flip vertical","Dikey çevir",,site/modules/React/InputfieldTiptap.module.php,8373d2f18e29920f78459f34d71040ad
+"Generating image variation...","Görsel varyasyonu oluşturuluyor...",,site/modules/React/InputfieldTiptap.module.php,66bb0d8094ec17522fdd40f198dcb937
+"Insert This Image","Bu Görseli Ekle",,site/modules/React/InputfieldTiptap.module.php,941c891be23b6a837de1d46c30efad2a
+"Update Image","Görseli Güncelle",,site/modules/React/InputfieldTiptap.module.php,9e3c5f97717a2e0757845fefe0ffcfd1
+"Edit image settings","Görsel ayarlarını düzenle",,site/modules/React/InputfieldTiptap.module.php,6452e82f027b43f8884bb0f65771512c
+"Remove image","Görseli kaldır",,site/modules/React/InputfieldTiptap.module.php,f4701af4852c350444ecdca3fe3ecfc5
+"Drag to resize image","Görseli yeniden boyutlandırmak için sürükleyin",,site/modules/React/InputfieldTiptap.module.php,e5e05476cc73f52a1a98cfedad41dc46
+"Table controls","Tablo denetimleri",,site/modules/React/InputfieldTiptap.module.php,4799f2bcbb614f86b00e53b60a45a78f
+Table:,Tablo:,,site/modules/React/InputfieldTiptap.module.php,4e77d096b16a8f7fd1658f9768e5d7c8
+"+ Row","+ Satır",,site/modules/React/InputfieldTiptap.module.php,9b84429085994afa0f063543620a381a
+"- Row","- Satır",,site/modules/React/InputfieldTiptap.module.php,bc72b2650697d1a93c5d35932de55cd2
+"+ Column","+ Sütun",,site/modules/React/InputfieldTiptap.module.php,7d1aca503b0b931ba353ac419e0b9bbf
+"- Column","- Sütun",,site/modules/React/InputfieldTiptap.module.php,87280d70adbb22e4b0fe6c2e4afcefe6
+"Delete Table","Tabloyu Sil",,site/modules/React/InputfieldTiptap.module.php,e1d0d5ce277f0e9d9f3adfaafceace96
+"{count} word","{count} kelime",,site/modules/React/InputfieldTiptap.module.php,e7969dd082ea56966ef3e39a64b66413
+"{count} words","{count} kelime",,site/modules/React/InputfieldTiptap.module.php,79765afedda46957e3ce132fa0db4fc0
+"{count} char","{count} karakter",,site/modules/React/InputfieldTiptap.module.php,aa1e2648b21bf2126e2b557f319f7841
+"{count} chars","{count} karakter",,site/modules/React/InputfieldTiptap.module.php,68d471b5229df8a529b26610ecfe2beb
+"{count} / {max} chars","{count} / {max} karakter",,site/modules/React/InputfieldTiptap.module.php,c235b1f1656f9ee551faa82084e4d92c
+Read-only,"Salt okunur",,site/modules/React/InputfieldTiptap.module.php,d8bd6e60adcc01ce20f509ea6800de8f
+"Switched to rich text view","Zengin metin görünümüne geçildi",,site/modules/React/InputfieldTiptap.module.php,689ac6fa65a3005184c57d4a1d6c22c8
+"Switched to HTML source view","HTML kaynak görünümüne geçildi",,site/modules/React/InputfieldTiptap.module.php,aeab0d00dad8d2c812a51b97ab4f1919
+"Link applied","Bağlantı uygulandı",,site/modules/React/InputfieldTiptap.module.php,23c212ddab1ba757e416c0ca67d585c8
+"Link removed","Bağlantı kaldırıldı",,site/modules/React/InputfieldTiptap.module.php,d6ea497dd00db5b29484dc0e12776e30
+"Anchor inserted","Çapa eklendi",,site/modules/React/InputfieldTiptap.module.php,62fa71a13d8a6572bde06c459489f671
+"Anchor removed","Çapa kaldırıldı",,site/modules/React/InputfieldTiptap.module.php,83224ad5896ea107588a537c0f0ca566
+"Image inserted","Görsel eklendi",,site/modules/React/InputfieldTiptap.module.php,ddf1039f2d8da26655a9be5157bd43b5
+"Image updated","Görsel güncellendi",,site/modules/React/InputfieldTiptap.module.php,1623e0ebd544b652aa9ad55d77328409
+"Image uploaded and inserted","Görsel yüklendi ve eklendi",,site/modules/React/InputfieldTiptap.module.php,e82d51a01724dcd069a00dd7f3f680aa
+"Image upload failed: {error}","Görsel yüklenemedi: {error}",,site/modules/React/InputfieldTiptap.module.php,290dc250f20faa31f7b3634817d5c7a7
+"Table inserted","Tablo eklendi",,site/modules/React/InputfieldTiptap.module.php,862f386b47bc039f75eacfc408bac47f
+"Table deleted","Tablo silindi",,site/modules/React/InputfieldTiptap.module.php,6a50201fb86d1d6b9522ae27b20fd6c7
+"Horizontal rule inserted","Yatay çizgi eklendi",,site/modules/React/InputfieldTiptap.module.php,e79cb413850757289e694bebbabd22f8
+"{block} inserted","{block} eklendi",,site/modules/React/InputfieldTiptap.module.php,4833b4de810788f4e0c068012b547039
+"Formatting cleared","Biçimlendirme temizlendi",,site/modules/React/InputfieldTiptap.module.php,eedc2904c80a48378f328ce1bc950339
+"Undid last change","Son değişiklik geri alındı",,site/modules/React/InputfieldTiptap.module.php,22c4ad0f1692d07da79cc3274f944095
+"Redid change","Değişiklik yinelendi",,site/modules/React/InputfieldTiptap.module.php,0cd439c05eddcc919331d9cce4721d0f
+"Insert block command menu","Blok ekleme komut menüsü",,site/modules/React/InputfieldTiptap.module.php,0b21d8d58dde5290e2ae084a9b3e39c5
+"No matching blocks","Eşleşen blok bulunamadı",,site/modules/React/InputfieldTiptap.module.php,83b92fb1656516f2482722ca0356fc33
+"Editorial blocks","Editöryal bloklar",,site/modules/React/InputfieldTiptap.module.php,7b719c5213a61fe98f3fc5761b008ef9
+"Basic formatting","Temel biçimlendirme",,site/modules/React/InputfieldTiptap.module.php,564ffb154f11b3b0d65eaabf8c986794
+"Plain body text paragraph","Düz gövde metni paragrafı",,site/modules/React/InputfieldTiptap.module.php,e733a6dcb062995f7f0385a2d65fc530
+"Section heading level {level}","Bölüm başlığı seviye {level}",,site/modules/React/InputfieldTiptap.module.php,8e896b2a2e078e71fd996694645629ae
+"Unordered bulleted list","Madde işaretli liste",,site/modules/React/InputfieldTiptap.module.php,e2f82e00faf06f932c0c9473e984e92c
+"Ordered numbered list","Numaralı sıralı liste",,site/modules/React/InputfieldTiptap.module.php,bf38911bfbbf04c8b2800ca46a8413be
+"Interactive checklist items","Etkileşimli görev listesi öğeleri",,site/modules/React/InputfieldTiptap.module.php,c160a8f1b23442bf603ad78bde796dd4
+"Standard inline quotation","Standart metin içi alıntı",,site/modules/React/InputfieldTiptap.module.php,018a5c20bdd02af0dbdeb1cef1b52f09
+"Monospace code snippet","Eş aralıklı kod bloğu",,site/modules/React/InputfieldTiptap.module.php,dc649a05c96f893d99b5e50216ed71f8
+"3x3 structured table with header row","Başlık satırlı 3x3 yapılandırılmış tablo",,site/modules/React/InputfieldTiptap.module.php,8979091e96f6380a3be732ee7f013d0e
+"Visual section divider line","Görsel bölüm ayırıcı çizgi",,site/modules/React/InputfieldTiptap.module.php,2a49c07bf90c6e03f1af927f6bcc5277
+"Block actions","Blok işlemleri",,site/modules/React/InputfieldTiptap.module.php,7cf47590adb4c5304ddfb6db70074bb7
+"Move block up","Bloğu yukarı taşı",,site/modules/React/InputfieldTiptap.module.php,9cd0bfb10f20ca5dcb447f624fdd34c0
+"Move block down","Bloğu aşağı taşı",,site/modules/React/InputfieldTiptap.module.php,41c5f55a1ac507f526d59c48d04dfc0f
+"Insert paragraph below","Altına paragraf ekle",,site/modules/React/InputfieldTiptap.module.php,3026a09012418d355d509b0b3caa7579
+"Remove block","Bloğu kaldır",,site/modules/React/InputfieldTiptap.module.php,c64153f401625d058ac73d8efd855ae3
+"Optional callout title...","İsteğe bağlı bilgi kutusu başlığı...",,site/modules/React/InputfieldTiptap.module.php,4142f7d45f36dd55112ef3b907b343ac
+"Callout title","Bilgi kutusu başlığı",,site/modules/React/InputfieldTiptap.module.php,20f27503a616f7a1b1e70b1bba97e1d4
+"Callout style","Bilgi kutusu stili",,site/modules/React/InputfieldTiptap.module.php,6a8b00b5aa7709eaf56ccbbef00bc747
+Info,Bilgi,,site/modules/React/InputfieldTiptap.module.php,4059b0251f66a18cb56f544728796875
+Tip,İpucu,,site/modules/React/InputfieldTiptap.module.php,12ae2a12586001e30745cb0457586ae3
+Warning,Uyarı,,site/modules/React/InputfieldTiptap.module.php,0eaadb4fcb48a0a0ed7bc9868be9fbaa
+Danger,Kritik,,site/modules/React/InputfieldTiptap.module.php,990816b607ebf99b1415760965e4d564
+Figure,"Görsel kutusu",,site/modules/React/InputfieldTiptap.module.php,666df2f48cd16f38212c093999248769
+"Figure alignment","Görsel hizalaması",,site/modules/React/InputfieldTiptap.module.php,690140430510d155c088630acee6e2a0
+Inline,"Satır içi",,site/modules/React/InputfieldTiptap.module.php,0125cf5f3ca38b312ca5d3b511c45a13
+Wide,Geniş,,site/modules/React/InputfieldTiptap.module.php,e7c770a61dbdf81ca922ae0260e327c1
+Full,"Tam genişlik",,site/modules/React/InputfieldTiptap.module.php,bbd47109890259c0127154db1af26c75
+Left,Sol,,site/modules/React/InputfieldTiptap.module.php,945d5e233cf7d6240f6b783b36a374ff
+Right,Sağ,,site/modules/React/InputfieldTiptap.module.php,92b09c7c48c520c3c55e497875da437c
+"Edit image URL and alt text","Görsel adresini ve alternatif metni düzenle",,site/modules/React/InputfieldTiptap.module.php,c89599958bfed8a5b295e8451da6b211
+"Paste an image URL above to preview the figure","Önizleme için yukarıya bir görsel adresi yapıştırın",,site/modules/React/InputfieldTiptap.module.php,f91b19f8889bcbaf03d09acc515a4eec
+"Optional figure caption...","İsteğe bağlı görsel altyazısı...",,site/modules/React/InputfieldTiptap.module.php,a46ac7388768a4cd452e9ca1ae3efd1b
+"Figure caption","Görsel altyazısı",,site/modules/React/InputfieldTiptap.module.php,8544c09141c6c71c4e7b942759a5ff0b
+"Toggle accordion preview","Akordeon önizlemesini aç/kapat",,site/modules/React/InputfieldTiptap.module.php,4d6fa081a9fa1ffbaf069b3cb1eccdfb
+"Accordion summary title...","Akordeon özet başlığı...",,site/modules/React/InputfieldTiptap.module.php,0a7a90777fb2566a6bacfba21b650642
+"Accordion summary","Akordeon özeti",,site/modules/React/InputfieldTiptap.module.php,bb4f9c320eb74a3ef523ed67ef016e6c
+Details,Detaylar,,site/modules/React/InputfieldTiptap.module.php,3ec365dd533ddb7ef3d1c111186ce872
+"Open by default","Varsayılan olarak açık",,site/modules/React/InputfieldTiptap.module.php,edbb805daf80b5f81eb6228807c5639d
+Pullquote,"Vurgulu alıntı",,site/modules/React/InputfieldTiptap.module.php,b68befd5d22055d45ed59015d1799f5f
+"Citation or author (optional)...","Kaynak veya yazar (isteğe bağlı)...",,site/modules/React/InputfieldTiptap.module.php,c9a39f8c2180e2e999174eac6b66d434
+"Quote citation","Alıntı kaynağı",,site/modules/React/InputfieldTiptap.module.php,353e19df544aeaf07ca16a5574e2ca09
+"Editorial mini-block","Editöryal mini blok",,site/modules/React/InputfieldTiptap.module.php,c2f1f08179fe25f94ee069adb1f7a3d4
+"Add block below","Aşağıya blok ekle",,site/modules/React/InputfieldTiptap.module.php,427e0d0f044cd65509b431606fda26f4
+"Block actions (drag to reorder or click for menu)","Blok eylemleri (sıralamak için sürükleyin veya menü için tıklayın)",,site/modules/React/InputfieldTiptap.module.php,d1e28c51bbe474f07cd39ca75cd3ce68
+"Turn into","Şuna dönüştür",,site/modules/React/InputfieldTiptap.module.php,2a514c858adedac8dc9796f958a02fd0
+"Move up","Yukarı taşı",,site/modules/React/InputfieldTiptap.module.php,f77af7695f71323808f9b6e2795cde86
+"Move down","Aşağı taşı",,site/modules/React/InputfieldTiptap.module.php,dd9f0c7e1bb3b749bd423e3544b4a8e3
+Duplicate,Çoğalt,,site/modules/React/InputfieldTiptap.module.php,ed75712b0eb1913c28a3872731ffd48d
+"Delete block","Bloğu sil",,site/modules/React/InputfieldTiptap.module.php,c613629aef5762bb8c3f646a4035b7fd
+"Block moved to position {position}","Blok {position}. konuma taşındı",,site/modules/React/InputfieldTiptap.module.php,c3557396a86d276224633efcfc1653e3
+"Block duplicated","Blok çoğaltıldı",,site/modules/React/InputfieldTiptap.module.php,660894298592581bff779586ee243599
+"Block deleted","Blok silindi",,site/modules/React/InputfieldTiptap.module.php,7a52f432b4633609fbfb8fb582d20987
+"Block reorder cancelled","Blok yeniden sıralama iptal edildi",,site/modules/React/InputfieldTiptap.module.php,dceeb603259c6b0c25aa70c69e98790e
+"Loading dialog...","İletişim kutusu yükleniyor...",,site/modules/React/InputfieldTiptap.module.php,1a89f3af761388df23eb23f1c1a4458e
+"Value exceeds maximum recommended length of %1$d characters (length=%2$d).","Değer önerilen maksimum %1$d karakter uzunluğunu aşıyor (uzunluk=%2$d).",,site/modules/React/InputfieldTiptap.module.php,8fe5e05f660fa7d2db7f9bd444d77358
+Tiptap,Tiptap,,site/modules/React/InputfieldTiptap.module.php,da560e1075ec0ffe2da39361aafad4c5
+"Rich text editor with customizable toolbars, content blocks, HTML cleanup, and multi-language support.","Özelleştirilebilir araç çubukları, içerik blokları, HTML temizleme ve çok dilli destek sunan zengin metin düzenleyici.",,site/modules/React/InputfieldTiptap.module.php,5fad4bbc356d9e98c87459e275779f84
+"React Cards Viewport","React Kart Görünümü",,site/modules/React/MarkupReactCards.module.php,8492cf2ce465c3229a396650598d237c
+"Interactive responsive card grid with search, filters, bulk actions, and pagination.","Arama, filtreler, toplu işlemler ve sayfalama özellikli etkileşimli duyarlı kart ızgarası.",,site/modules/React/MarkupReactCards.module.php,5978e6de4cd6f6cf8294fbeeb7f0729b
+General,Genel,,site/modules/React/MarkupReactTab.module.php,0db377921f4ce762c62526131097968f
+Sections,Bölümler,,site/modules/React/MarkupReactTab.module.php,855c3eca6c7aaef477b4f03e4699944d
+"Tab Bar Style Variant","Sekme Çubuğu Stil Varyantı",,site/modules/React/MarkupReactTab.module.php,ba01477907bfa826253790e6c5605d16
+"Line (Standard Tabs)","Çizgili (Standart Sekmeler)",,site/modules/React/MarkupReactTab.module.php,2f9cc5e6dfd7e41c8cae6b5634a73b3d
+"Segmented (Compact Pill Bar)","Segmentli (Kompakt Hap Çubuğu)",,site/modules/React/MarkupReactTab.module.php,2ef3c75cb7726580a9b9109e233756c8
+"Vertical (Side Navigation)","Dikey (Yan Gezinme)",,site/modules/React/MarkupReactTab.module.php,26c6c99dd68e9dc87f5d9ed6915f5cca
+"Tab Badge Text","Sekme Rozeti Metni",,site/modules/React/MarkupReactTab.module.php,95fc76ff043e1a56678c85c23deb4924
+"Load Inactive Tabs on Demand","Etkin Olmayan Sekmeleri Açıldığında Yükle",,site/modules/React/MarkupReactTab.module.php,887d711a56356f28de1f0f52bedda828
+"Wait to render hidden tab contents until the editor opens that tab.","Düzenleyici ilgili sekmeyi açana kadar gizli sekme içeriklerinin oluşturulmasını bekletir.",,site/modules/React/MarkupReactTab.module.php,6e8058acfcea2ad40dde4e2b57778c73
+"React Tab Viewport & Container","React Sekme Görünümü ve Kapsayıcısı",,site/modules/React/MarkupReactTab.module.php,977257fd63d7f2029f28f0649ded249b
+"Organize fields and panels into accessible tabs (line, segmented, or vertical layout).","Alanları ve panelleri erişilebilir sekmeler halinde düzenleyin (çizgili, parçalı veya dikey düzen).",,site/modules/React/MarkupReactTab.module.php,4781564a5e10bb746bd7589e2773cb1b
+"%d validation error","%d doğrulama hatası","Singular Version",site/modules/React/MarkupReactTab.module.php,fb73c11c1e48504bae175fc13f45129c
+"%d validation errors","%d doğrulama hatası","Plural Version",site/modules/React/MarkupReactTab.module.php,ec828fd611b57248325002f413e64b32
+"React Table Viewport","React Tablo Görünümü",,site/modules/React/MarkupReactTable.module.php,0d06a2a4eb05a7e835a3e9a4572fe325
+"Interactive data table with search, filters, inline editing, bulk actions, and pagination.","Arama, filtreler, satır içi düzenleme, toplu işlemler ve sayfalama özellikli etkileşimli veri tablosu.",,site/modules/React/MarkupReactTable.module.php,81fbcc4d713141339befa98baa9a66f0
+Panel,Panel,,site/modules/React/React.module.php,b8da6df14bf06283cbf588df6998722e
+"Vector Icon","Vektör Simge",,site/modules/React/React.module.php,3b8ba766a67302eea93b73f89375cf76
+"Select a vector icon. When populated, this overrides the standard ProcessWire icon above.","Bir vektör simge seçin. Doldurulduğunda yukarıdaki standart ProcessWire simgesinin yerine geçer.",,site/modules/React/React.module.php,7cd34d6d99b289c33e05ccaf30109f55
+"Relation request failed.","İlişki isteği başarısız oldu.",,site/modules/React/React.module.php,417311c0a499db762f631392d723fa39
+Save,Kaydet,,site/modules/React/React.module.php,c9cc8cce247e49bae79f15173ce97354
+Saving...,Kaydediliyor...,,site/modules/React/React.module.php,575f5f86d2c7ea113c6710c1037c4465
+Cancel,İptal,,site/modules/React/React.module.php,ea4788705e6873b424c65e91c2846b19
+Close,Kapat,,site/modules/React/React.module.php,d3d2e617335f08df83599665eef8a418
+Done,Tamamlandı,,site/modules/React/React.module.php,f92965e2c8a7afb3c1b9a5c09a263636
+Open,Aç,,site/modules/React/React.module.php,c3bf447eabe632720a3aa1a7ce401274
+Apply,Uygula,,site/modules/React/React.module.php,9639e32cab248434a17ab32237cb3b71
+Applying...,Uygulanıyor...,,site/modules/React/React.module.php,2d36bbeac4e19bf400214726dd626cdb
+Executing...,Çalıştırılıyor...,,site/modules/React/React.module.php,3d202de4cde88726a42cedcd4d1b28c3
+Reset,Sıfırla,,site/modules/React/React.module.php,526d688f37a86d3c3f27d0c5016eb71d
+Refresh,Yenile,,site/modules/React/React.module.php,63a6a88c066880c5ac42394a22803ca6
+Refreshing...,Yenileniyor...,,site/modules/React/React.module.php,01b08e48869f180ff19a7f7aa3c3f18f
+Reload,"Yeniden Yükle",,site/modules/React/React.module.php,4d1c8263ba1036754f8db14a98f9f006
+Search,Ara,,site/modules/React/React.module.php,13348442cc6a27032d2b4aa28b75a5d3
+Clear,Temizle,,site/modules/React/React.module.php,dc30bc0c7914db5918da4263fce93ad2
+Create,Oluştur,,site/modules/React/React.module.php,686e697538050e4664636337cc3b834f
+Edit,Düzenle,,site/modules/React/React.module.php,7dce122004969d56ae2e0245cb754d35
+Delete,Sil,,site/modules/React/React.module.php,f2a6c498fb90ee345d997f888fce3b18
+Remove,Kaldır,,site/modules/React/React.module.php,1063e38cb53d94d386f21227fcd84717
+Dismiss,Kapat,,site/modules/React/React.module.php,c8a59e7135a20b362f9c768b09454fdb
+Confirm,Onayla,,site/modules/React/React.module.php,70d9be9b139893aa6c69b5e77e614311
+"Confirm & Execute","Onayla ve Çalıştır",,site/modules/React/React.module.php,4b8fa648bd96b68b3f5c6477c2a0ae91
+"I understand the impact of this operation and wish to proceed.","Bu işlemin etkisini anlıyorum ve devam etmek istiyorum.",,site/modules/React/React.module.php,719ddb902afa805552fb15479a75fee1
+Copy,Kopyala,,site/modules/React/React.module.php,5fb63579fc981698f97d55bfecb213ea
+Copied,Kopyalandı,,site/modules/React/React.module.php,a588b1abc58b8b758c4b34b69b9e10bb
+"Copy command","Komutu kopyala",,site/modules/React/React.module.php,ec5eefe5a1b8d46ef1126992881fd5d4
+Export,"Dışa Aktar",,site/modules/React/React.module.php,0095a9fa74d1713e43e370a7d7846224
+Import,"İçe Aktar",,site/modules/React/React.module.php,72d6d7a1885885bb55a565fd1070581a
+Loading...,Yükleniyor...,,site/modules/React/React.module.php,8524de963f07201e5c086830d370797f
+Actions,İşlemler,,site/modules/React/React.module.php,06df33001c1d7187fdd81ea1f5b277aa
+Languages,Diller,,site/modules/React/React.module.php,3a08e2e340ab29fd9263af48193cbf8e
+Error,Hata,,site/modules/React/React.module.php,902b0d55fddef6f8d651fe1035b7d4bd
+Warning,Uyarı,,site/modules/React/React.module.php,0eaadb4fcb48a0a0ed7bc9868be9fbaa
+Notice,Bildirim,,site/modules/React/React.module.php,24efa7ee4511563b16144f39706d594f
+All,Tümü,,site/modules/React/React.module.php,b1c94ca2fbc3e78fc30069c8d0f01680
+None,Hiçbiri,,site/modules/React/React.module.php,6adf97f83acf6453d4a6a4b1070f3754
+Yes,Evet,,site/modules/React/React.module.php,93cba07454f06a4a960172bbd6e2a435
+No,Hayır,,site/modules/React/React.module.php,bafd7322c6e97d25b6299b5d6fe8920b
+More,Diğer,,site/modules/React/React.module.php,d3da97e2d9aee5c8fbe03156ad051c99
+"No matching options","Eşleşen seçenek yok",,site/modules/React/React.module.php,2911d2dd34d4e33b692661c26348cf49
+Unavailable,Kullanılamıyor,,site/modules/React/React.module.php,453e6aa38d87b28ccae545967c53004f
+Workspace,"Çalışma Alanı",,site/modules/React/React.module.php,03a21915504df93cf5dba0636080f62e
+Workspaces,"Çalışma Alanları",,site/modules/React/React.module.php,d5e92609cf510f5f97ac326e907a0540
+"Workspace Dashboard","Çalışma Alanı Paneli",,site/modules/React/React.module.php,9ed7329637f544d772bdba0d61398d04
+"All modules, favorites, and customizable dashboard widgets","Tüm modüller, favoriler ve özelleştirilebilir pano bileşenleri",,site/modules/React/React.module.php,e68b79df7f2d4278eb0960fd444fdf1d
+"Current workspace section","Geçerli çalışma alanı bölümü",,site/modules/React/React.module.php,5e20a96b94291c93caaf1dce0e254cbc
+"Workspace navigation","Çalışma alanı gezintisi",,site/modules/React/React.module.php,8908efdd3ec402154d562f6487b92f1a
+Navigation,Gezinme,,site/modules/React/React.module.php,846495f9ceed11accf8879f555936a7d
+"Open workspace navigation menu","Çalışma alanı gezinti menüsünü aç",,site/modules/React/React.module.php,60e439470c45c239b2e25a510fceb428
+"Close navigation menu","Gezinti menüsünü kapat",,site/modules/React/React.module.php,d302e7fbcdb33e2877353e7f703fd4a9
+"Search workspaces...","Çalışma alanlarında ara...",,site/modules/React/React.module.php,6350e80efab2bb6dc30cea9dba50dac7
+"Search workspaces","Çalışma alanlarında ara",,site/modules/React/React.module.php,28ba707df5d8962217e5a32a08f712f2
+"Find workspace...","Çalışma alanı bul...",,site/modules/React/React.module.php,a59403457c95f98f52aa1e83c7b0a3ca
+"No matching workspaces","Eşleşen çalışma alanı yok",,site/modules/React/React.module.php,c7d00daca755a67628aad03a442fa01b
+"No matching destinations found.","Eşleşen hedef bulunamadı.",,site/modules/React/React.module.php,a8cf450cedad306f1ef0981292eda677
+"Quick Jump","Hızlı Geçiş",,site/modules/React/React.module.php,ae69932309b0c8fbd2565f85e2729961
+"Quick Switcher","Hızlı Geçiş Menüsü",,site/modules/React/React.module.php,33a8d8c8002c17b26e545ee67595825f
+"Quick Switcher (Cmd/Ctrl+K)","Hızlı Geçiş (Cmd/Ctrl+K)",,site/modules/React/React.module.php,a6d3e2a4b7e5ea93da96575262eb33aa
+"Jump to workspace or section...","Çalışma alanına veya bölüme git...",,site/modules/React/React.module.php,9c0902ca5c76e62c37dde2c59b158356
+"Return to {target}","{target} ekranına dön",,site/modules/React/React.module.php,f6f53af1527f750b7046b85beee500d3
+"Open in Workspace","Çalışma Alanında Aç",,site/modules/React/React.module.php,8509b1db3b9493f2aba2a88439edb1b4
+"Switch to full-screen Workspace view","Tam ekran Çalışma Alanı görünümüne geç",,site/modules/React/React.module.php,1c7f26dd5993adca7f5e2d79f997f8cd
+Light,Açık,,site/modules/React/React.module.php,9914a0ce04a7b7b6a8e39bec55064b82
+Dark,Koyu,,site/modules/React/React.module.php,a18366b217ebf811ad1886e4f4f865b2
+System,Sistem,,site/modules/React/React.module.php,a45da96d0bf6575970f2d27af22be28a
+"Toggle theme","Temayı değiştir",,site/modules/React/React.module.php,5a9663b09544b4cfe12a13a805d7ac2b
+"Theme mode: {mode} (click to switch)","Tema modu: {mode} (değiştirmek için tıklayın)",,site/modules/React/React.module.php,ed66a4fc75e940c960bb14f16063194f
+"Keyboard shortcuts","Klavye kısayolları",,site/modules/React/React.module.php,de334061ddee0a9008edd133af533c04
+"Dismiss errors","Hataları kapat",,site/modules/React/React.module.php,ef12db18801e484d0d785f73cd9604b4
+"Dismiss warnings","Uyarıları kapat",,site/modules/React/React.module.php,990f649a83a3fbbee1d350a1ebf60a06
+"Dismiss notices","Bildirimleri kapat",,site/modules/React/React.module.php,b4c60e29e6ea44ad2d45ba8ed6b7d594
+"Quick overview, live status cards, and all admin workspaces.","Hızlı genel bakış, canlı durum kartları ve tüm yönetim çalışma alanları.",,site/modules/React/React.module.php,52c2b43875b6d96f10a81b71b16b145a
+Overview,"Genel Bakış",,site/modules/React/React.module.php,3b878279a04dc47d60932cb294d96259
+"Operational Overview","Operasyonel Genel Bakış",,site/modules/React/React.module.php,46966912240d4bc4c19fc9389727943b
+"All Workspaces","Tüm Çalışma Alanları",,site/modules/React/React.module.php,ab0a66d5e7f3e6b0db0f96721d64c245
+"Module Directory","Modül Dizini",,site/modules/React/React.module.php,6a51ac3b146536a407f3429c8f2f2a6f
+Module,Modül,,site/modules/React/React.module.php,e55f75a29310d7b60f7ac1d390c8ae42
+Favorites,Favoriler,,site/modules/React/React.module.php,d78986947356ddd37b43d57df289dee9
+Pinned,Sabitlenenler,,site/modules/React/React.module.php,3c5e891bff07947cbae2fda89162df9f
+"Pinned Shortcuts","Sabitlenen Kısayollar",,site/modules/React/React.module.php,8f1f46957a9aa8224c8e93f56d57a598
+"Pin to top bar","Üst çubuğa sabitle",,site/modules/React/React.module.php,2fa2c585863a83a9024a0ec877848d73
+"Unpin from top bar","Üst çubuktan kaldır",,site/modules/React/React.module.php,da80cbcfd56f935cfb9a329f43498112
+"Pin {title}","{title} öğesini sabitle",,site/modules/React/React.module.php,ab6cdb7b7a64b4c924c47bd793c2efb4
+"Unpin {title}","{title} sabitlemesini kaldır",,site/modules/React/React.module.php,08775dfb2eeb84f0daf59a8cd3306b4b
+Customize,Özelleştir,,site/modules/React/React.module.php,63a78ed4647f7c63c2929e35ec1c95e3
+"Customize Layout","Düzeni Özelleştir",,site/modules/React/React.module.php,c5b7cb3159ecf84ffc87b9725b1225e1
+"Done Customizing","Özelleştirmeyi Bitir",,site/modules/React/React.module.php,08ee89aac2ef96b48c9c2e718b11b687
+"Export Layout","Düzeni Dışa Aktar",,site/modules/React/React.module.php,304278e931b0f6f2ff0148dde89436cc
+"Export JSON","JSON Dışa Aktar",,site/modules/React/React.module.php,b7b35e678fac8e3ac6493d09e6bf8ec4
+"Import Layout","Düzeni İçe Aktar",,site/modules/React/React.module.php,de5f3994e77a62b31078014c34cdcbed
+"Apply a saved workspace layout preset (.json) to update your pinned shortcuts, widget order, widths, and visibility.","Sabitlenen kısayolları, bileşen sırasını, genişlikleri ve görünürlüğü güncellemek için kayıtlı bir çalışma alanı düzenini (.json) uygulayın.",,site/modules/React/React.module.php,c009bdc2ef160c5b6dc71628b7c3d5b8
+"Workspace layout preset JSON","Çalışma alanı düzeni JSON verisi",,site/modules/React/React.module.php,180714e8ef26f4474a47f2a98602e0c1
+"Import JSON","JSON İçe Aktar",,site/modules/React/React.module.php,786df2cec47f9e9c005483f4c7ec9632
+"Apply Layout","Düzeni Uygula",,site/modules/React/React.module.php,40ff1f28a90b7724a0653403e9056bfb
+"Choose JSON File","JSON Dosyası Seç",,site/modules/React/React.module.php,276e42ebd90183f60b19ae95fa54864a
+"Reset Layout","Düzeni Sıfırla",,site/modules/React/React.module.php,6dc6e32ad3860bd9cf4e567673bcafbf
+"Reset Default","Varsayılana Sıfırla",,site/modules/React/React.module.php,d6ed253ff449bbd9606eff83124f1f2e
+"Reset Default Layout","Varsayılan Düzeni Sıfırla",,site/modules/React/React.module.php,1050bc9cb8b00a00620f2aa03bc35d6f
+"Reset your pinned shortcuts, widget order, widths, and hidden widget settings back to defaults?","Sabitlenmiş kısayollar, bileşen sırası, genişlikler ve gizli bileşen ayarları varsayılana sıfırlansın mı?",,site/modules/React/React.module.php,7ef2e15cc260153efe4516aaf6d53ca3
+"Choose Widgets","Bileşenleri Seç",,site/modules/React/React.module.php,b14eac5358d6997de83ef1a66ed53767
+"{count} hidden widget(s)","{count} gizli bileşen",,site/modules/React/React.module.php,f825d68e168242bb62a01fcf2f7c4390
+"Hide widget from dashboard","Bileşeni panelden gizle",,site/modules/React/React.module.php,3a271cded492b1af00f478afb36dff88
+"Hide {title}","{title} bileşenini gizle",,site/modules/React/React.module.php,989687042589d0714062081623af4493
+"Show {title}","{title} bileşenini göster",,site/modules/React/React.module.php,0995ce286e32d12920a7cbd90265f4c7
+"Looking for a specific capability or administration tool?","Belirli bir yetenek veya yönetim aracı mı arıyorsunuz?",,site/modules/React/React.module.php,0466da2abbb3b4b8c7d2a8d666eb76e5
+"Browse all {count} modules","Tüm {count} modüle göz at",,site/modules/React/React.module.php,fee875c9d7d6f816f968d2f387309b86
+"No live widgets registered","Kayıtlı canlı bileşen yok",,site/modules/React/React.module.php,9c56c5f5edf8e03b459db2c5b249edae
+"Installed modules have not registered live summary widgets yet. Open the Module Directory to launch any workspace.","Kurulu modüller henüz canlı özet bileşeni kaydetmedi. Herhangi bir çalışma alanını açmak için Modül Dizini’ne geçin.",,site/modules/React/React.module.php,f9ce53c3bca4a20c7704248094bf868e
+"All dashboard widgets are hidden","Tüm panel bileşenleri gizlendi",,site/modules/React/React.module.php,6bdac11628cbad1b72ef18fcc0f06357
+"You have hidden all widgets for your profile. Re-enable widgets or reset your layout to view live module status.","Profiliniz için tüm bileşenleri gizlediniz. Canlı modül durumunu görmek için bileşenleri yeniden etkinleştirin veya düzeninizi sıfırlayın.",,site/modules/React/React.module.php,e5936720f3724385253842dccc5a0564
+"Open Module Directory","Modül Dizinini Aç",,site/modules/React/React.module.php,25dc1ae20edec7b8eabfdc2bc53f80a1
+"Open {title}","{title} Aç",,site/modules/React/React.module.php,aa7230bade66b8b21ac6744ccc6819dd
+"Search modules by name, capability, or topic...","Modülleri ada, yeteneğe veya konuya göre arayın...",,site/modules/React/React.module.php,00240549c08261b54bb8a19821613919
+"No matching workspaces found.","Eşleşen çalışma alanı bulunamadı.",,site/modules/React/React.module.php,da75bcd7ecf5b0a8624c1e01b780ee87
+"No matching modules found","Eşleşen modül bulunamadı",,site/modules/React/React.module.php,6e1fe1d3cc72b89885d1f65b4735ae5d
+"No installed module matched your current search or category filter.","Mevcut arama veya kategori filtrenizle eşleşen kurulu modül bulunamadı.",,site/modules/React/React.module.php,bbd1d8458fa333c5437b513d289316f6
+"No workspaces available","Kullanılabilir çalışma alanı yok",,site/modules/React/React.module.php,5ec633fc43306fc36c3cf968b9428a80
+"Install or enable a workspace module to access it here.","Buradan erişmek için bir çalışma alanı modülü kurun veya etkinleştirin.",,site/modules/React/React.module.php,92829baaf46a7f41b1201d8cb5ec2c4c
+"Reset Filter","Filtreyi Sıfırla",,site/modules/React/React.module.php,831b1cff02a12da1b010f8cb39147c8d
+"just now","az önce",,site/modules/React/React.module.php,2654992d78afbd40bad349302a6f2b6a
+"{seconds}s ago","{seconds} sn önce",,site/modules/React/React.module.php,b0f776690c4ba484158a8d04bc119e1d
+"{minutes}m ago","{minutes} dk önce",,site/modules/React/React.module.php,6c0cef977fba600c9517c8a0c8dff73d
+"Updated by {user}","{user} tarafından güncellendi",,site/modules/React/React.module.php,3fe86196f9f5f89c8c10394b56aa3f29
+"This record was saved in another session while you had it open. Reload the latest version before saving to avoid overwriting those changes.","Bu kayıt siz açık tutarken başka bir oturumda kaydedildi. Bu değişikliklerin üzerine yazmamak için kaydetmeden önce en son sürümü yeniden yükleyin.",,site/modules/React/React.module.php,b2286b53112eac23e803d62d29a3cb04
+"Reload Latest","En Son Sürümü Yükle",,site/modules/React/React.module.php,24353cfc254f52144a8ee7a604b78e2e
+"Dismiss remote save warning","Uzak kayıt uyarısını kapat",,site/modules/React/React.module.php,04e340552c787fa0de7e9bb886824196
+"is currently editing this record ({age}).","şu anda bu kaydı düzenliyor ({age}).",,site/modules/React/React.module.php,d747c52f62546f81bf5ef65a8bd67ffd
+"are currently editing this record.","şu anda bu kaydı düzenliyor.",,site/modules/React/React.module.php,db9ab4c9b4f4d56676e285c7014a2604
+"Coordinate changes before saving","Kaydetmeden önce değişiklikleri koordine edin",,site/modules/React/React.module.php,0e750f0fe1702dd4a27233eaed9f6c7b
+"Search records...","Kayıtlarda ara...",,site/modules/React/React.module.php,46878f3052876993d095fb186ece42ee
+Search...,Ara...,,site/modules/React/React.module.php,2a37324bb4c331c859044121df3f576b
+Filters,Filtreler,,site/modules/React/React.module.php,f3f43e30c8c7d78c6ac0173515e57a00
+"Filter view","Görünümü filtrele",,site/modules/React/React.module.php,5f2338679d4a0e08885fd7c0176eb6e6
+"Filter options...","Seçenekleri filtrele...",,site/modules/React/React.module.php,e6c46618cf501e7229c8bba662560b1c
+"Clear filters","Filtreleri temizle",,site/modules/React/React.module.php,0b275442d6556cff30b75f37f1918899
+Columns,Sütunlar,,site/modules/React/React.module.php,168b82d33f8073018c50a4f658a02559
+"Toggle Columns","Sütunları Göster/Gizle",,site/modules/React/React.module.php,29f4c433c598a0d91bf3c3920d2cd645
+"Reset columns","Sütunları sıfırla",,site/modules/React/React.module.php,1eb64ecf3802fac71df227dc50ae1c8c
+"Saved Views","Kayıtlı Görünümler",,site/modules/React/React.module.php,368ae15de538213cd25b68560eb50521
+"Save View","Görünümü Kaydet",,site/modules/React/React.module.php,753c2861dde3b99d1714edc57004b907
+"Delete saved view","Kayıtlı görünümü sil",,site/modules/React/React.module.php,d8388976b5db163929cfdd07f96d4f20
+"Delete the saved view ""{label}""?","""{label}"" kayıtlı görünümü silinsin mi?",,site/modules/React/React.module.php,3706d830efe9fe00dd509aaadb61d105
+"Preset name...","Görünüm adı...",,site/modules/React/React.module.php,51a75ab261668b0d24a1e031a6828717
+"Bulk actions","Toplu işlemler",,site/modules/React/React.module.php,9ffa4765d2da990741800bbe1ad4e7f8
+"Select all rows","Tüm satırları seç",,site/modules/React/React.module.php,2d73c7eae2d36003755c343ddf607e71
+"{count} selected","{count} seçildi",,site/modules/React/React.module.php,ef1b031573031a3eca39e4b16e1eacec
+Order,Sıra,,site/modules/React/React.module.php,a240fa27925a635b08dc28c9e4f9216d
+"Click to edit inline","Satır içi düzenlemek için tıklayın",,site/modules/React/React.module.php,ccbbf00a2560a1789ef802f9254868db
+"No records found","Kayıt bulunamadı",,site/modules/React/React.module.php,087fb8756d4add87f2d162304ccd486b
+"Try adjusting your search or filter criteria.","Arama veya filtre ölçütlerinizi değiştirmeyi deneyin.",,site/modules/React/React.module.php,992535ae7666175356cdab4154658065
+"No items yet","Henüz öğe yok",,site/modules/React/React.module.php,529bd24c0f1522f793c736f65df9e8b5
+"Try changing your search or filters.","Arama teriminizi veya filtrelerinizi değiştirmeyi deneyin.",,site/modules/React/React.module.php,54e5c834b186eb672b5579a7e468d624
+"Network error while updating this list.","Bu liste güncellenirken ağ hatası oluştu.",,site/modules/React/React.module.php,6fce21b16a2046460d7b37c52d73d363
+Previous,Önceki,,site/modules/React/React.module.php,dd1f775e443ff3b9a89270713580a51b
+Next,Sonraki,,site/modules/React/React.module.php,10ac3d04253ef7e1ddc73e6091c0cd55
+"Page {page} of {totalPages}","Sayfa {page} / {totalPages}",,site/modules/React/React.module.php,c55db04c8c3722f2e1d9b2d618134a6c
+"{count} items","{count} öğe",,site/modules/React/React.module.php,ad3da129e14b05ef4090066697b98487
+"New Item","Yeni Öğe",,site/modules/React/React.module.php,0534f4f9b4506ce58165489e030886fb
+"Quick Edit","Hızlı Düzenle",,site/modules/React/React.module.php,73f79dd90cb67b7438919d31aef50a3f
+"Quick Edit: {title}","Hızlı Düzenle: {title}",,site/modules/React/React.module.php,ae42467b63eb56e2d015c6fa83963e2b
+"Edit key fields without leaving this list.","Bu listeden ayrılmadan temel alanları düzenleyin.",,site/modules/React/React.module.php,52e4769238ce64e4e6cd49d5ac3ab64d
+"Save Changes","Değişiklikleri Kaydet",,site/modules/React/React.module.php,f5d6040ed78ca86ddc73296a49b18510
+Required,Zorunlu,,site/modules/React/React.module.php,b651efdb98a5d6bd2b3935d0c3f4a5e2
+"You have unsaved changes.","Kaydedilmemiş değişiklikleriniz var.",,site/modules/React/React.module.php,604a9a8f13d447df5c82b824ef2de820
+"Unsaved changes","Kaydedilmemiş değişiklikler",,site/modules/React/React.module.php,c227ad77f168e7fd3e21583b324eddf4
+"Leaving or reloading this page will discard the edits you have not saved.","Bu sayfadan ayrılmak veya sayfayı yenilemek kaydetmediğiniz düzenlemeleri silecektir.",,site/modules/React/React.module.php,bd426a1b74c862fd727bd7807affbcd8
+"Discard & Leave","Vazgeç ve Ayrıl",,site/modules/React/React.module.php,e4dd258ef1d11b3df71dcc7511814bc3
+"Next Step","Sonraki Adım",,site/modules/React/React.module.php,2bb4cbbf4c51025867d47131e79ad05f
+"Please review the highlighted fields.","Lütfen vurgulanan alanları kontrol edin.",,site/modules/React/React.module.php,2d7d932a4de2d9a02bb502fd0bd44940
+"Add item","Öğe ekle",,site/modules/React/React.module.php,ff19c966036b4a0c7350b2fc7e2861c2
+"No items selected.","Seçili öğe yok.",,site/modules/React/React.module.php,e3540df61299a71ee0a3dba1e3a988d5
+"Search items...","Öğelerde ara...",,site/modules/React/React.module.php,b41f8031cebdec8ec27ea418116b82b1
+Select...,Seçin...,,site/modules/React/React.module.php,777475dcd2749b94375fe07762d9d76f
+"Quick column presets","Hızlı sütun genişlikleri",,site/modules/React/React.module.php,30b31807f23b112303cbe88e4bd3885d
+"Close field settings","Alan ayarlarını kapat",,site/modules/React/React.module.php,a5efa83fa11035324583a048ee851d8a
+"Click to switch this field · Double-click to switch all fields","Bu alanı değiştirmek için tıklayın · Tüm alanları değiştirmek için çift tıklayın",,site/modules/React/React.module.php,a0c692cb508669a5983a56f72ed26840
+Now,Şimdi,,site/modules/React/React.module.php,1e1cc9bdeb2f29f5480106aec7e9bc48
+Today,Bugün,,site/modules/React/React.module.php,1dd1c5fb7f25cd41b291d43a89e3aefd
+"Clear date","Tarihi temizle",,site/modules/React/React.module.php,4239f67c37eed41d01bce841e2409c08
+"Copy secret","Gizli anahtarı kopyala",,site/modules/React/React.module.php,6185b626d083b9955fe99d0f04027add
+"Generate new secret","Yeni gizli anahtar üret",,site/modules/React/React.module.php,64481fb3129df05f8fcb93180631a4ad
+Generate,Üret,,site/modules/React/React.module.php,32b919d18cfaca89383f6000dcc9c031
+"More submit actions","Diğer gönderim işlemleri",,site/modules/React/React.module.php,c37a7a14d4f44c0210494b5fa42c9e37
+"Signature pad","İmza alanı",,site/modules/React/React.module.php,abd47bec49607672c9c93600b8371983
+"Sign above inside the pad","Yukarıdaki alanın içine imzalayın",,site/modules/React/React.module.php,1c517f38d389db1cbab621070b374f8d
+Key,Anahtar,,site/modules/React/React.module.php,897356954c2cd3d41b221e3f24f99bba
+Value,Değer,,site/modules/React/React.module.php,689202409e48743b914713f96d93947c
+"Add Row","Satır Ekle",,site/modules/React/React.module.php,03e0c5bbd5488f1e5ec282529dac9635
+"Remove row","Satırı kaldır",,site/modules/React/React.module.php,f22cc12954f8a6326b87efac5ab3bbd4
+"Remove {key}","{key} öğesini kaldır",,site/modules/React/React.module.php,ce3c8cbb3dc37630f83efba07e9b8268
+"Remove row {index}","{index}. satırı kaldır",,site/modules/React/React.module.php,31fffc08b26f9624d2f3fd27f3ce08f2
+"{label} for row {index}","{index}. satır için {label}",,site/modules/React/React.module.php,cb52d5dd3a9ad68a8e5868a4f9a3b741
+"{label} for {key}","{key} için {label}",,site/modules/React/React.module.php,783c12811d863273263544624cba931c
+"Move row {index} up","{index}. satırı yukarı taşı",,site/modules/React/React.module.php,ffbf572468485f1f1fcd17fde801a432
+"Move row {index} down","{index}. satırı aşağı taşı",,site/modules/React/React.module.php,66a970ee9ff587601c9642de1254c3de
+"Duplicate key ""{key}"". Each key must be unique.","Yinelenen anahtar ""{key}"". Her anahtar benzersiz olmalıdır.",,site/modules/React/React.module.php,a6dc8c8c04e2a649a533e79f857d521b
+"""{key}"" is a reserved key name.","""{key}"" ayrılmış bir anahtar adıdır.",,site/modules/React/React.module.php,1dfe2368b96d2aac54553c2dca729981
+"""{key}"" does not match the required key format.","""{key}"" gerekli anahtar biçimiyle eşleşmiyor.",,site/modules/React/React.module.php,a7e31f9bb0061070a747b3904a1926a8
+"{count} pair(s)","{count} çift",,site/modules/React/React.module.php,d6a91fddfdad84b2fb4cbf660c4926ab
+"{count} / {max}","{count} / {max}",,site/modules/React/React.module.php,9805fee7dc9e56ac789467789cc569d2
+"No key-value pairs","Anahtar-değer çifti yok",,site/modules/React/React.module.php,f078e5e545e92e15558c86cdc39aa7af
+"Select item...","Öğe seçin...",,site/modules/React/React.module.php,5c6b43c904ee7affd80f5570dd399c63
+"Select items...","Öğeleri seçin...",,site/modules/React/React.module.php,f558c7000390c00127ceb4582e767ae3
+"No matching items found.","Eşleşen öğe bulunamadı.",,site/modules/React/React.module.php,e726430042d35ba7a01645e426fb53b9
+"No matching pages found.","Eşleşen sayfa bulunamadı.",,site/modules/React/React.module.php,9aa45d2b5d98b8874f798e5e3ddffca6
+"No selectable pages found.","Seçilebilir sayfa bulunamadı.",,site/modules/React/React.module.php,ca8915abba799128a5651c5827936136
+"Loading options...","Seçenekler yükleniyor...",,site/modules/React/React.module.php,0d3fbc55dae8e0a41ace8f0dd46140b4
+"Filter available items","Mevcut öğeleri filtrele",,site/modules/React/React.module.php,d2314e129617756e066162f5ef5acfd0
+"Filter available...","Mevcutları filtrele...",,site/modules/React/React.module.php,3d70a168f9c147ba1e22a84465ac5370
+"Filter selected items","Seçili öğeleri filtrele",,site/modules/React/React.module.php,a13d1c8ec35ba47884ec9576353517fe
+"Filter selected...","Seçilileri filtrele...",,site/modules/React/React.module.php,5b2f45b143e3078a3ae8ebcfa5330ae9
+"Search pages or browse hierarchy below...","Sayfalarda arayın veya aşağıdaki hiyerarşiye göz atın...",,site/modules/React/React.module.php,b31d925a8164bd9e3658d6f2d2d1f9e2
+"Search by title, slug, ID, or path...","Başlık, kısa ad, ID veya yola göre arayın...",,site/modules/React/React.module.php,6a69a62e382f6174c726cba9c4d28ef1
+"Move up","Yukarı taşı",,site/modules/React/React.module.php,f77af7695f71323808f9b6e2795cde86
+"Move down","Aşağı taşı",,site/modules/React/React.module.php,dd9f0c7e1bb3b749bd423e3544b4a8e3
+"Quick create","Hızlı oluştur",,site/modules/React/React.module.php,956eaa6186169471a13345860cad0757
+Creating...,Oluşturuluyor...,,site/modules/React/React.module.php,d930f4451cc35bdcd216273a273cb891
+"Create & Select","Oluştur ve Seç",,site/modules/React/React.module.php,5fbf6630ad0e74e257c6221f551d6e13
+Title,Başlık,,site/modules/React/React.module.php,b78a3223503896721cca1303f776159b
+"Name / Slug (optional)","Ad / Kısa Ad (isteğe bağlı)",,site/modules/React/React.module.php,b3cdb9702e78f45ebd3faeea0f0ed5b3
+Reference,Referans,,site/modules/React/React.module.php,63d5049791d9d79d86e9a108b0a999ca
+"Type / Status","Tür / Durum",,site/modules/React/React.module.php,88cf1d6af905d5a419bbb35f779cd96e
+"Link existing","Mevcut olanı bağla",,site/modules/React/React.module.php,18add7649141635f4ba1dff73c13b5c9
+Unlink,"Bağlantıyı Kaldır",,site/modules/React/React.module.php,c1a39b6a60f8b2f87e23d60ab649d994
+"Unlink {label}","{label} bağlantısını kaldır",,site/modules/React/React.module.php,400c37fc5635f0ed1793e997cdb2ba1c
+"Click to choose images, paste, or drag and drop","Görsel seçmek için tıklayın, yapıştırın veya sürükleyip bırakın",,site/modules/React/React.module.php,03e3ef1655ba17ad045259b94555a2d9
+"Click to choose files, paste, or drag and drop","Dosya seçmek için tıklayın, yapıştırın veya sürükleyip bırakın",,site/modules/React/React.module.php,79427c5a78e6e0275a50f59ea1619728
+"Choose image","Görsel seç",,site/modules/React/React.module.php,5a31ca938eff79f9dd79786b57b19173
+"Choose file","Dosya seç",,site/modules/React/React.module.php,cbe55e77ffa67d13322eb1ce7d22f1ba
+"Choose images","Görsel seç",,site/modules/React/React.module.php,1fecb03bc5392b317485c838c1e84ef3
+"Choose files","Dosya seç",,site/modules/React/React.module.php,cdfe673a8db758eb8fa1809f899aa03b
+"Drop or paste","Sürükleyin veya yapıştırın",,site/modules/React/React.module.php,f0a4d55c89d2229f32c9d91a586a5e9e
+"Drop to upload","Yüklemek için bırakın",,site/modules/React/React.module.php,3f2bd2ae95d2e7c605f5629fb10b0e41
+"Drop file to replace","Değiştirmek için dosyayı bırakın",,site/modules/React/React.module.php,ca0f915653f081b70adc5fd7ca4c7333
+"Add images","Görsel ekle",,site/modules/React/React.module.php,959485bd1014cd6d96ed0482b52dd43e
+"Add files","Dosya ekle",,site/modules/React/React.module.php,d39ec66f08507e26fe86aa5325d070df
+Replace,Değiştir,,site/modules/React/React.module.php,0ebe6df8a3ac338e0512acc741823fdb
+Replacing...,Değiştiriliyor...,,site/modules/React/React.module.php,35d0feeb4bf8f406835933903f60d09f
+"Uploading {count} item(s)...","{count} öğe yükleniyor...",,site/modules/React/React.module.php,97f805ed63fefb1c2aea4bd780e6b419
+"Uploading {name} ({percent}%)","{name} yükleniyor (%{percent})",,site/modules/React/React.module.php,66ef5476db18dd11bb2dd4017241a2d3
+"Upload failed.","Yükleme başarısız oldu.",,site/modules/React/React.module.php,cde28f5998d2dd5da84a4ab21143bc67
+"Max {size}","Maks. {size}",,site/modules/React/React.module.php,f808ad8dcf7d15d9fa3a3491d0d0fb5e
+"Up to {count} items","En fazla {count} öğe",,site/modules/React/React.module.php,6f8df2165780ddddf60d042fe5f30480
+"Maximum file limit ({max}) reached.","Maksimum dosya sınırına ({max}) ulaşıldı.",,site/modules/React/React.module.php,24e421b6a02813b4914e7278f2db14fe
+"Only one file can be dropped when replacing an item.","Bir öğeyi değiştirirken yalnızca tek bir dosya bırakılabilir.",,site/modules/React/React.module.php,707e57f6a32903d027bb68340d314e79
+"Single item","Tek öğe",,site/modules/React/React.module.php,317af23d2bfd619621001d50e7b4d49f
+"{count} item(s)","{count} öğe",,site/modules/React/React.module.php,e6396734a11282f165c6f4302f3e49cd
+"Grid view","Izgara görünümü",,site/modules/React/React.module.php,b3d7c37eb8d31a2ca32fdc5850306f60
+"Table view","Tablo görünümü",,site/modules/React/React.module.php,a02440b6c5ae80c41c0cceb53e494807
+"Drag or use arrow keys to reorder {name}","{name} öğesini yeniden sıralamak için sürükleyin veya ok tuşlarını kullanın",,site/modules/React/React.module.php,56b5ebf8bba7b715d82f00f1558c5881
+"Edit Media Details","Medya Detaylarını Düzenle",,site/modules/React/React.module.php,298110a1a84578b0358e84d902baf39f
+"Configure alt text, multi-language descriptions, tags, focal point, crop, and metadata.","Alt metni, çok dilli açıklamaları, etiketleri, odak noktasını, kırpmayı ve meta verileri yapılandırın.",,site/modules/React/React.module.php,e291cdf0521fffd9324b9e2fd8008a06
+Details,Detaylar,,site/modules/React/React.module.php,3ec365dd533ddb7ef3d1c111186ce872
+"Focal Point","Odak Noktası",,site/modules/React/React.module.php,39c3c90e90e174f42f16493a20320cd0
+"Crop & Transform","Kırp ve Dönüştür",,site/modules/React/React.module.php,2fcb83faab71283be03272ed826af689
+"Custom Fields","Özel Alanlar",,site/modules/React/React.module.php,833956a760d996ae61ea8b385e9fb6f0
+"Alt text / description","Alt metin / açıklama",,site/modules/React/React.module.php,2927039bc4525f9f53ce7b30946a6fa4
+Description,Açıklama,,site/modules/React/React.module.php,b5a7adde1af5c87d7fd797b6245c2a39
+"Describe this image for screen readers and SEO...","Ekran okuyucular ve SEO için bu görseli açıklayın...",,site/modules/React/React.module.php,55e6985522f9685200948139eb189f94
+"Add file description...","Dosya açıklaması ekleyin...",,site/modules/React/React.module.php,c7d134733e9ce852ba0788c86517afbe
+"Missing alt","Alt metin eksik",,site/modules/React/React.module.php,2bbf23509000f5e3f083cb540047c9ba
+"{filled}/{total} langs","{filled}/{total} dil",,site/modules/React/React.module.php,d0dfb6667480f648febe27aa1cba2496
+"All languages","Tüm diller",,site/modules/React/React.module.php,abdffc07f137a3b4b3e4df13d2cafee4
+"Single tab","Tek sekme",,site/modules/React/React.module.php,c52ea324b7f45ea118dea2e1ebf9abff
+Tags,Etiketler,,site/modules/React/React.module.php,189f63f277cd73395561651753563065
+"Type a tag and press Enter...","Etiket yazıp Enter tuşuna basın...",,site/modules/React/React.module.php,d41b1f563e8bc4e2a60951e438a5687d
+"Suggested tags","Önerilen etiketler",,site/modules/React/React.module.php,02bdc086e3ca9bc63dbc2e91f1e7f18a
+"Select a tag below...","Aşağıdan bir etiket seçin...",,site/modules/React/React.module.php,3ad8313ea124bec9192af51722379a25
+"Inspector sections","Denetçi bölümleri",,site/modules/React/React.module.php,962d0f3184a7b6b18cb84f4e0dc2060c
+"Select crop area","Kırpma alanı seç",,site/modules/React/React.module.php,152004221c80f3b7576dbf4f5c476f3b
+"Focal point","Odak noktası",,site/modules/React/React.module.php,88cf7d8a95820c1ae46677696f705093
+"Click anywhere on the image to set the focal point used by smart crops.","Akıllı kırpmalarda kullanılacak odak noktasını belirlemek için görselin üzerine tıklayın.",,site/modules/React/React.module.php,e42a8c430f3c251acdb1703133f94d3c
+"Top {top}% · Left {left}%","Üst %{top} · Sol %{left}",,site/modules/React/React.module.php,596c3125a0760d54518166d28f005e74
+Zoom,Yakınlaştırma,,site/modules/React/React.module.php,4252b72e6ebcd4d4b4c2e46a786f03d2
+"Center focus","Odağı ortala",,site/modules/React/React.module.php,8cc442b86232a6c6281af310110789f7
+"Smart crop previews","Akıllı kırpma önizlemeleri",,site/modules/React/React.module.php,2860e75905a5686de6c0ece062bb69d9
+Free,Serbest,,site/modules/React/React.module.php,b24ce0cd392a5b0b8dedc66c25213594
+Original,Orijinal,,site/modules/React/React.module.php,0a52da7a03a6de3beefe54f8c03ad80d
+"Apply crop","Kırpmayı uygula",,site/modules/React/React.module.php,2575788607dc3187209eb5de1f25d04c
+"Clear selection","Seçimi temizle",,site/modules/React/React.module.php,80ffff123555bd5173345bc8f144edeb
+"Rotate -90°","-90° döndür",,site/modules/React/React.module.php,702c5f0c445ec4b1b58c15fed5ebb5da
+"Rotate +90°","+90° döndür",,site/modules/React/React.module.php,7fac3b0f85aa2d977fd48909539cd6d1
+"Rotate 180°","180° döndür",,site/modules/React/React.module.php,c3f606a2e1fae204da410754e5823017
+"Flip horizontal","Yatay çevir",,site/modules/React/React.module.php,2f96dd2b9788ed9ecbc6f41c312bf455
+"Flip vertical","Dikey çevir",,site/modules/React/React.module.php,8373d2f18e29920f78459f34d71040ad
+"Applying image transform...","Görsel dönüşümü uygulanıyor...",,site/modules/React/React.module.php,6fd250eded829d856bd37598518b1963
+"Drag on the image to select a crop area, or use quick rotate and flip actions.","Kırpma alanı seçmek için görsel üzerinde sürükleyin veya hızlı döndürme ve çevirme işlemlerini kullanın.",,site/modules/React/React.module.php,b65b7eaa6acece3048f0248fd245273f
+Dimensions,Boyutlar,,site/modules/React/React.module.php,f4843c1c797abf1a256c8802b6cd9f51
+"File size","Dosya boyutu",,site/modules/React/React.module.php,1908624a0bca678cd26b99bfd405324e
+Format,Biçim,,site/modules/React/React.module.php,520d0db389f362bf79ef56ca0af3dcab
+"Extracted palette","Çıkarılan renk paleti",,site/modules/React/React.module.php,b6b8492978a983cd73b24953f65bf6e4
+"Extract colors","Renkleri çıkar",,site/modules/React/React.module.php,941cf87e001156906fd9cbe73c40f9c4
+"Copied {hex}","{hex} kopyalandı",,site/modules/React/React.module.php,8f3c87ddda603f0268ced2da81cb4d43
+"Copy URL","URL kopyala",,site/modules/React/React.module.php,9de711d6eb379d46caa26e86cdafa0e9
+"URL copied","URL kopyalandı",,site/modules/React/React.module.php,5dc60c29c1e588a9c66eed361410fccb
+"Open original","Orijinali aç",,site/modules/React/React.module.php,9d8d8f8322da0dee6443d8d9b4f1d431
+Download,İndir,,site/modules/React/React.module.php,801ab24683a4a8c433c6eb40c48bcd9d
+"More actions","Diğer işlemler",,site/modules/React/React.module.php,284716247b12b363fd6b6a71bff0918e
+"Cancel upload","Yüklemeyi iptal et",,site/modules/React/React.module.php,59af3165c0a8fb51f60f666aa36827e1
+"Crop selection. Drag to move, or use arrow keys to nudge.","Kırpma seçimi. Taşımak için sürükleyin veya ok tuşlarıyla kaydırın.",,site/modules/React/React.module.php,66022acfa27249d3e437077717d7e15d
+"Crop selection updated","Kırpma seçimi güncellendi",,site/modules/React/React.module.php,9557e20351cb7308d552387707580bcd
+"Pending save","Kaydedilmeyi bekliyor",,site/modules/React/React.module.php,118fecf21b98faf1e34d87b25027794e
+"Marked for deletion","Silinmek üzere işaretlendi",,site/modules/React/React.module.php,064315db8457fb92899575dde95d9aa3
+Undo,"Geri al",,site/modules/React/React.module.php,1cdc076b28f70afac5fcedadf99fa119
+"Remove {name}","{name} öğesini kaldır",,site/modules/React/React.module.php,37eb9bbace3a75b7364dd9efdb1169b6
+"Inspect & edit {name}","{name} öğesini incele ve düzenle",,site/modules/React/React.module.php,06abf2bba16bc1841811668bf3855006
+"Previous item","Önceki öğe",,site/modules/React/React.module.php,e472ee92cadec6aa540597fd71def57b
+"Next item","Sonraki öğe",,site/modules/React/React.module.php,f032241504d7b559c7dd5f986e6947c4
+File,Dosya,,site/modules/React/React.module.php,0b27918290ff5323bea1e3b78a9cf04e
+"Alt / Description","Alt Metin / Açıklama",,site/modules/React/React.module.php,b7e92f96751d3993796fb15fa1d812a4
+Info,Bilgi,,site/modules/React/React.module.php,4059b0251f66a18cb56f544728796875
+"Link type","Bağlantı türü",,site/modules/React/React.module.php,e40e5cf7707c8efd70e8c220cb692b5e
+"Choose video","Video seç",,site/modules/React/React.module.php,cbe18bc3cdf4dba823a85578f261ae14
+Drop,Bırak,,site/modules/React/React.module.php,3e679cff5b3a6f6f8f32aead541a0a12
+"Upload progress","Yükleme durumu",,site/modules/React/React.module.php,22af9d321feab79bcba1a07feb3fd31d
+"Open {name}","{name} dosyasını aç",,site/modules/React/React.module.php,a64c86443dd775087f080bc37105a756
+"Replace {name}","{name} dosyasını değiştir",,site/modules/React/React.module.php,1b44146a304770f514430e0e91b55319
+"Replace file","Dosyayı değiştir",,site/modules/React/React.module.php,82c8ebc9209c20ea618ffe60b58096a5
+"Remove file","Dosyayı kaldır",,site/modules/React/React.module.php,b21f085d08623fc7a5a9da204cc66c8c
+"Clear selected target","Seçili hedefi temizle",,site/modules/React/React.module.php,3444f11aee6d3919024746cfa34331e8
+"Search entries","Kayıtlarda ara",,site/modules/React/React.module.php,39cfbd4c7c25bd8e49c6e3fd859a66cd
+"Search pages","Sayfalarda ara",,site/modules/React/React.module.php,9003fc7489e6aec510d20674d0495601
+"Cancel search","Aramayı iptal et",,site/modules/React/React.module.php,036934cf9842451c835a9981a067d0c3
+"Email address","E-posta adresi",,site/modules/React/React.module.php,b357b524e740bc85b9790a0712d84a30
+"Phone number","Telefon numarası",,site/modules/React/React.module.php,1f8261d17452a959e013666c5df45e07
+"Link URL or #anchor","Bağlantı URL’si veya #çapa",,site/modules/React/React.module.php,833c9f57f8dda097dfce3bab0900592a
+"Clear link target","Bağlantı hedefini temizle",,site/modules/React/React.module.php,a17a700e7f4c79b8ee3fabb53366be82
+"Link label","Bağlantı etiketi",,site/modules/React/React.module.php,b9f110a8326f63c00c794d9e91a476f4
+"Link label (optional)","Bağlantı etiketi (isteğe bağlı)",,site/modules/React/React.module.php,c5781485b71aedb383635ee88657118a
+"Link options","Bağlantı seçenekleri",,site/modules/React/React.module.php,192d035ffb07b34f98ade39b20944c49
+Searching...,Aranıyor...,,site/modules/React/React.module.php,1243daf593fa297e07ab03bf06d925af
+"Link Options","Bağlantı Seçenekleri",,site/modules/React/React.module.php,0fb7010ec16c91ec543a440daab8917b
+"Close link options","Bağlantı seçeneklerini kapat",,site/modules/React/React.module.php,dd061f3a1eb06d25ee1af9e5b50a9ced
+"Open Target","Açılış Hedefi",,site/modules/React/React.module.php,ee8fc50fbc2bce466f44e66d3aecd60c
+"Same tab (_self)","Aynı sekme (_self)",,site/modules/React/React.module.php,e60b30326ec2eb67e109e0b586640381
+"New tab (_blank)","Yeni sekme (_blank)",,site/modules/React/React.module.php,c706fdfc0d0b28c44c28d7f3ce648a2b
+"Anchor Fragment (#)","Çapa Bölümü (#)",,site/modules/React/React.module.php,7d4a1ce8e6774a43290e424eaa30b818
+"Query Parameters (?)","Sorgu Parametreleri (?)",,site/modules/React/React.module.php,092d68d0dc6bb122560ce4ceff8d2764
+"Title Attribute","Title Niteliği",,site/modules/React/React.module.php,d79162782feef239dca92bdaf1d87485
+"Accessible link title (optional)","Erişilebilir bağlantı başlığı (isteğe bağlı)",,site/modules/React/React.module.php,3b65caffe66f7665a832bdfd517fa0f5
+"Rel Attribute","Rel Niteliği",,site/modules/React/React.module.php,a72ed7c691daedb26de8a6a9ecdaa0c0
+"Phone number may only contain digits (0-9) and an optional leading + sign.","Telefon numarası yalnızca rakamlar (0-9) ve isteğe bağlı başta + işareti içerebilir.",,site/modules/React/React.module.php,565a52271fd5b9146aad6020c91cb361
+"Enter a valid email address.","Geçerli bir e-posta adresi girin.",,site/modules/React/React.module.php,d68c7cd2cdc561bc55a5b8e6d8c4dd6c
+"Unsafe URL protocol is not allowed.","Güvenli olmayan URL protokolüne izin verilmiyor.",,site/modules/React/React.module.php,540e3c510aeea10f4e39ed95557c5c64
+"Media upload context is not available for this field.","Bu alan için medya yükleme bağlamı kullanılamıyor.",,site/modules/React/React.module.php,6a2a95bddcd94963944c67435da617cb
+"Selected file is not supported.","Seçilen dosya desteklenmiyor.",,site/modules/React/React.module.php,a37cf8f4caea217468dca76878c83251
+"Failed to upload file.","Dosya yüklenemedi.",,site/modules/React/React.module.php,74318b4d780ce06c8dbf781c22c73a3a
+"Edit media details & alt text for {name}","{name} için medya ayrıntılarını ve alt metni düzenle",,site/modules/React/React.module.php,c2e087a3a42a5ca4e023631c84894ca5
+"Edit media details, alt text & focal point","Medya ayrıntılarını, alternatif metni ve odak noktasını düzenle",,site/modules/React/React.module.php,15455322cb5ed157ae075a5e6c553741
+"New tab","Yeni sekme",,site/modules/React/React.module.php,c8a19ea6c79e23a1ee5372c8dbf3c6cf
+title,başlık,,site/modules/React/React.module.php,d5d3db1765287eef77d7927cc956f50a
+"Selected icon","Seçili simge",,site/modules/React/React.module.php,c3f172d89f52a265985eab184b7c2f20
+"Select an icon...","Simge seçin...",,site/modules/React/React.module.php,cd625882db0b286414cedd94738e8b32
+"Clear icon","Simgeyi temizle",,site/modules/React/React.module.php,18276346bd3773253fdc4c1c5e496eb2
+"Reset Style","Stili Sıfırla",,site/modules/React/React.module.php,e86a54e13ae40856b7c38b514dc6974b
+"Size (px)","Boyut (px)",,site/modules/React/React.module.php,4c36ec3ac2cb9bda46e6dacc2974d282
+"Stroke Width","Çizgi Kalınlığı",,site/modules/React/React.module.php,6d999904323d1dbe38ec7ce97aaff0ef
+"Icon Color","Simge Rengi",,site/modules/React/React.module.php,4315faf12d817f66b65bc0323c514c88
+"Auto (currentColor)","Otomatik (currentColor)",,site/modules/React/React.module.php,9f00f77ff0d3dc50a92474949b1b2908
+"Custom icon hex color","Özel simge HEX rengi",,site/modules/React/React.module.php,88115bf701716c2e29c26f9184efbf40
+"Badge Background & Shape","Rozet Arka Planı ve Şekli",,site/modules/React/React.module.php,d2ac054ec2a32159792b9e4de3c2a27a
+"No background","Arka plan yok",,site/modules/React/React.module.php,7291417479be88cf7dc61910d3bfae0e
+"Custom badge hex color","Özel rozet HEX rengi",,site/modules/React/React.module.php,277229ed1d0014f6eea9a11c1da88490
+Icons,Simgeler,,site/modules/React/React.module.php,8f67973007158337346584551b093be8
+Appearance,Görünüm,,site/modules/React/React.module.php,a1c58e94227389415de133efdf78ea6e
+"Search icons...","Simge ara...",,site/modules/React/React.module.php,96e7dafae5db47a9df8b1c07af9e0421
+"Search {count} icons","{count} simge ara",,site/modules/React/React.module.php,85bdf2af0dcf18702347117874747126
+Category,Kategori,,site/modules/React/React.module.php,3adbdb3ac060038aa0e6e6c138ef9873
+"All categories","Tüm kategoriler",,site/modules/React/React.module.php,62f5d708d6ad1fa1ddd9429a65cccbea
+Style,Stil,,site/modules/React/React.module.php,ae284f900f9d6e21ba69144cfc91e41b
+"All styles","Tüm stiller",,site/modules/React/React.module.php,964f10b2515883ce73cd5db07fff012e
+Outline,Çizgisel,,site/modules/React/React.module.php,606b51cc1c9d0b4af394419a22f2ff1f
+Filled,Dolgulu,,site/modules/React/React.module.php,d9d586f8c792f8f661052af42536323c
+Popular,"Sık Kullanılanlar",,site/modules/React/React.module.php,2cc1943d4c0b46bfcf503a75c44f988b
+"All icons","Tüm simgeler",,site/modules/React/React.module.php,b50d4ff0ac4f73bcb419a4396a3989f5
+"No matching icons found.","Eşleşen simge bulunamadı.",,site/modules/React/React.module.php,6fe730153d19457d273abdb1d0b92039
+icon,simge,,site/modules/React/React.module.php,baec6461b0d69dde1b861aefbe375d8a
+icons,simge,,site/modules/React/React.module.php,bd21190449b7e88db48fa0f580a8f666
+"Default Theme Mode","Varsayılan Tema Modu",,site/modules/React/React.module.php,74435ddc2833dc22de4b519833b95a8d
+"Select the default color theme for React admin pages and data views.","React yönetim sayfaları ve veri görünümleri için varsayılan renk temasını seçin.",,site/modules/React/React.module.php,dd43061a8373ea4ab8e131b563764c0c
+"System Preference (Auto)","Sistem Tercihi (Otomatik)",,site/modules/React/React.module.php,6e8284e1277a7f10aee3ee1ab96c56a7
+"Light Mode","Açık Mod",,site/modules/React/React.module.php,370104a87f84d72ef9a9a525fc3296fb
+"Dark Mode","Koyu Mod",,site/modules/React/React.module.php,51b5e76089f5da04cf725ec11b16716d
+"Enable Keyboard Shortcuts","Klavye Kısayollarını Etkinleştir",,site/modules/React/React.module.php,b6a366ab30c40f2933bcb2376a180f6b
+"Enable Cmd/Ctrl+K command palette and keyboard navigation inside React workspaces.","React çalışma alanlarında Cmd/Ctrl+K komut paletini ve klavye ile gezinmeyi etkinleştirin.",,site/modules/React/React.module.php,864eab57e155b062751d228ca86c1853
+"Admin Return Button Label","Yönetim Paneline Dönüş Düğmesi Etiketi",,site/modules/React/React.module.php,0e6a93844e1ec5ebdf37abee7dbb4687
+"Label displayed on the top-left button that returns from a Workspace to the main Admin panel (default: Panel). Supports multi-language values.","Bir Çalışma Alanından ana Yönetim paneline dönen sol üst düğmede gösterilen etiket (varsayılan: Panel). Çoklu dil değerlerini destekler.",,site/modules/React/React.module.php,262fa3a43401ba36d210a9932a1e0039
+"Use React Image & File Editors on Pages","Sayfalarda React Görsel ve Dosya Düzenleyicilerini Kullan",,site/modules/React/React.module.php,8130edf14262ef525727ccbe0606d589
+"Automatically upgrade standard Image and File fields on Pages (including Repeaters) to use the React Image and React File editors while keeping existing stored data unchanged.","Mevcut kayıtlı verileri değiştirmeden sayfalardaki (tekrarlayıcılar dahil) standart Görsel ve Dosya alanlarını otomatik olarak React Görsel ve React Dosya düzenleyicilerine yükseltir.",,site/modules/React/React.module.php,dad753b9005e22fc2fc1148ade90fff9
+"Individual fields can also select React Image or React File under Setup > Fields > Details > Inputfield Type.","Tekil alanlar ayrıca Kurulum > Alanlar > Detaylar > Inputfield Türü altından React Görsel veya React Dosya olarak seçilebilir.",,site/modules/React/React.module.php,49ec2a6f572106f9310cc651f81c0aed
+"Enable Vector Icons for ProcessWire Templates, Fields & Admin Pages","ProcessWire Şablonları, Alanları ve Yönetim Sayfaları için Vektör Simgeleri Etkinleştir",,site/modules/React/React.module.php,05911916e0fdd97d90ff878dbcfc043b
+"Adds a Vector Icon picker below the standard Icon field on Setup > Templates and Setup > Fields (as well as admin page settings), showing your chosen icon in crisp vector quality across the admin panel.","Kurulum > Şablonlar ve Kurulum > Alanlar (ayrıca yönetici sayfa ayarları) üzerindeki standart Simge alanının altına bir Vektör Simge seçici ekler ve seçtiğiniz simgeyi yönetim paneli genelinde net vektör kalitesinde gösterir.",,site/modules/React/React.module.php,cc7cc9430d73719467c1b7e9e68f84c3
+"Admin Icon Picker Preview Size (px)","Admin Simge Seçici Önizleme Boyutu (px)",,site/modules/React/React.module.php,9d920b0b473219ed4c53e831fac3688f
+"Preview icon size on Edit Template and Edit Field screens (16–64).","Şablon Düzenle ve Alan Düzenle ekranlarındaki önizleme simgesi boyutu (16–64).",,site/modules/React/React.module.php,6230677443f310b60dfb59d7c228f10f
+"Tiptap Mini-Blocks Renderer","Tiptap Mini-Blok İşleyici",,site/modules/React/TextformatterTiptapMiniBlocks.module.php,7c3faead0795ac6b3010fb3c157f2feb
+"Renders inline content blocks from the Tiptap rich text editor using templates in ./site/templates/tiptap/.","Tiptap zengin metin editöründeki satır içi içerik bloklarını ./site/templates/tiptap/ şablonlarıyla işler.",,site/modules/React/TextformatterTiptapMiniBlocks.module.php,41713bc7294132fb564cbd8708c8b016
+Yes,Evet,,site/modules/React/src/Data/ReactRecord.php,93cba07454f06a4a960172bbd6e2a435
+Submit,Gönder,,site/modules/React/src/Form/FormSchemaSerializer.php,a4d3b161ce1309df1c4e25df28694b7b
+Yes,Evet,,site/modules/React/src/Form/FormSchemaSerializer.php,93cba07454f06a4a960172bbd6e2a435
+No,Hayır,,site/modules/React/src/Form/FormSchemaSerializer.php,bafd7322c6e97d25b6299b5d6fe8920b
+Other,Diğer,,site/modules/React/src/Form/FormSchemaSerializer.php,6311ae17c1ee52b36e68aaf4ad066387
+Delete,Sil,,site/modules/React/src/Form/FormSchemaSerializer.php,f2a6c498fb90ee345d997f888fce3b18
+"Confirm Deletion","Silmeyi Onayla",,site/modules/React/src/Form/FormSchemaSerializer.php,44928cfda52bc66163d158d1ff69d415
+record,kayıt,,site/modules/React/src/Form/FormSchemaSerializer.php,de17f0f24b49f8364187891f8550ffbb
+"Permanently delete this %s on save","Kaydedildiğinde bu %s kaydını kalıcı olarak sil",,site/modules/React/src/Form/FormSchemaSerializer.php,92dcde4a2ed9b39c700e3da1ed261b70
+"Check this box and click Save to permanently delete this record. This action cannot be undone.","Bu kaydı kalıcı olarak silmek için bu kutuyu işaretleyin ve Kaydet düğmesine tıklayın. Bu işlem geri alınamaz.",,site/modules/React/src/Form/FormSchemaSerializer.php,05e71e018fc5049302c5d3b5264cf908
+Configuration,Yapılandırma,,site/modules/React/src/Form/FormSchemaSerializer.php,254f642527b45bc260048e30704edb39
+"Please select at least %d item(s).","Lütfen en az %d öğe seçin.",,site/modules/React/src/Media/InteractWithReactMediaInputfield.php,cfecdec3aa548f6f05dd7fb4aac1f0fa
+"Authentication required.","Kimlik doğrulaması gerekiyor.",,site/modules/React/src/Media/MediaGateway.php,27d1d715bcd77c610edb102f776c63c6
+"Missing mediaToken.","mediaToken eksik.",,site/modules/React/src/Media/MediaGateway.php,2800ea5493d7e5e07b3dac69293b5215
+"Invalid or expired mediaToken.","Geçersiz veya süresi dolmuş mediaToken.",,site/modules/React/src/Media/MediaGateway.php,65e1f21ef5fcc9ecca093efc3222b256
+"Method not allowed. POST required.","Yönteme izin verilmiyor. POST gereklidir.",,site/modules/React/src/Media/MediaGateway.php,ca1b5305d7c7bec2f322612a92dd8f57
+"This media field is read-only.","Bu medya alanı salt okunurdur.",,site/modules/React/src/Media/MediaGateway.php,0e6811647e410201c01c5d5ffd202f9d
+"CSRF token validation failed.","CSRF belirteci doğrulaması başarısız oldu.",,site/modules/React/src/Media/MediaGateway.php,e1b850614e8638b71a2de10cbfd31e49
+"Uploads are disabled for this media field.","Bu medya alanı için dosya yüklemeleri devre dışı bırakıldı.",,site/modules/React/src/Media/MediaGateway.php,5f10421c4857ccc6c0ae73276e6bba55
+"Unsupported media action.","Desteklenmeyen medya işlemi.",,site/modules/React/src/Media/MediaGateway.php,2605d0824424fcc89ceab992b21ef0ba
+"Requested media host adapter is not available.","İstenen medya barındırıcı bağdaştırıcısı kullanılamıyor.",,site/modules/React/src/Media/MediaGateway.php,ac2974081c2b1fd3140def6b66c35f47
+"Invalid page media context.","Geçersiz sayfa medya bağlamı.",,site/modules/React/src/Media/MediaGateway.php,54758b6836d3f4c855c48bd950ca15cc
+"Target page not found.","Hedef sayfa bulunamadı.",,site/modules/React/src/Media/MediaGateway.php,1d6fd845f454b5776b511ba27868dbed
+"Target field is not a ProcessWire file or image field.","Hedef alan bir ProcessWire dosya veya görsel alanı değil.",,site/modules/React/src/Media/MediaGateway.php,cf6491fc1d4794fa7bd62eb9ba3aaaaa
+"You do not have permission to modify this media field.","Bu medya alanını değiştirme yetkiniz yok.",,site/modules/React/src/Media/MediaGateway.php,d2f581f3d229fd1815c90fe601858913
+"No uploaded files received.","Yüklenen dosya alınamadı.",,site/modules/React/src/Media/MediaGateway.php,8a6b65fb98fe3c23aa890fec73c3db44
+"Maximum file limit (%d) reached.","Maksimum dosya sınırına (%d) ulaşıldı.",,site/modules/React/src/Media/MediaGateway.php,5cbe9a0599729cfbb631c5af3e367a3a
+"File upload failed validation.","Dosya yükleme doğrulaması başarısız oldu.",,site/modules/React/src/Media/MediaGateway.php,e515bb37d0b2b257512fc385d4ac5046
+"Target file to replace was not found.","Değiştirilecek hedef dosya bulunamadı.",,site/modules/React/src/Media/MediaGateway.php,556dbf32ef527824fca9759c6f71fae0
+"No replacement file received.","Değiştirme dosyası alınamadı.",,site/modules/React/src/Media/MediaGateway.php,6e4620f8bbe4ff2a337d9b8176ffb34d
+"Replacement file failed validation.","Değiştirme dosyası doğrulamadan geçemedi.",,site/modules/React/src/Media/MediaGateway.php,500617b105ab0b02df42ec12cf7e7b8c
+"Invalid replacement image.","Geçersiz değiştirme görseli.",,site/modules/React/src/Media/MediaGateway.php,d4c97868c611d52c611f3472f9b4d1eb
+"Image (%dx%d) does not meet minimum size (%dx%d).","Görsel (%dx%d), minimum boyut koşulunu (%dx%d) karşılamıyor.",,site/modules/React/src/Media/MediaGateway.php,f73c625295716f4b7cfb48454a19b6bb
+"Image (%dx%d) exceeds maximum allowed dimensions (%dx%d).","Görsel (%dx%d), izin verilen maksimum boyutları (%dx%d) aşıyor.",,site/modules/React/src/Media/MediaGateway.php,57c2e9119c2e11ee8003862b7e1e7a30
+"Failed to attach replacement file.","Değiştirme dosyası eklenemedi.",,site/modules/React/src/Media/MediaGateway.php,f50e8c0b28af6e14767bcc2c2401dd1f
+"You do not have image editing permission.","Görsel düzenleme yetkiniz yok.",,site/modules/React/src/Media/MediaGateway.php,8d3ea5fb052a462020aea95122df6af4
+"Target image was not found.","Hedef görsel bulunamadı.",,site/modules/React/src/Media/MediaGateway.php,a51924291b57b4b24bdebf1860a6332b
+"Vector SVG images cannot be raster-transformed.","Vektörel SVG görsellerine piksel dönüşümü uygulanamaz.",,site/modules/React/src/Media/MediaGateway.php,7a31eba930554089c865fa9af687a863
+"Image file does not exist on disk.","Görsel dosyası diskte mevcut değil.",,site/modules/React/src/Media/MediaGateway.php,b6916bc480286d54932221a8b28a22d8
+"Cropped area (%dx%d) is smaller than minimum required dimensions (%dx%d).","Kırpılan alan (%dx%d), gereken minimum boyutlardan (%dx%d) daha küçük.",,site/modules/React/src/Media/MediaGateway.php,77ae999489a1bb20938097eec8595dc9
+"Failed to crop image.","Görsel kırpılamadı.",,site/modules/React/src/Media/MediaGateway.php,806957aa377b80432a64ec359d425c24
+"Invalid rotation angle.","Geçersiz döndürme açısı.",,site/modules/React/src/Media/MediaGateway.php,398c6ced70396e22f603d43a515f15fd
+"Failed to rotate image.","Görsel döndürülemedi.",,site/modules/React/src/Media/MediaGateway.php,713d3dafc21d8f797c672a3e5d890c4f
+"Failed to flip image horizontally.","Görsel yatay çevrilemedi.",,site/modules/React/src/Media/MediaGateway.php,09d61192256294cd04e27a927ee7b42e
+"Failed to flip image vertically.","Görsel dikey çevrilemedi.",,site/modules/React/src/Media/MediaGateway.php,142bba9d103360812ac7628da65abe8b
+"Unsupported transform operation.","Desteklenmeyen dönüştürme işlemi.",,site/modules/React/src/Media/MediaGateway.php,71ec2e768c401bbd2a3d82cf72f6a41e
+"Media cloning is not supported for this host.","Bu ana bilgisayarda medya kopyalama desteklenmiyor.",,site/modules/React/src/Media/MediaGateway.php,77bdac9dcf5f2775df50d107335c2fe0
+"Target file was not found.","Hedef dosya bulunamadı.",,site/modules/React/src/Media/MediaGateway.php,b396e9122197921fbfffdaa91d322d22
+"File ""%s"" failed content security validation.","""%s"" dosyası içerik güvenliği doğrulamasından geçemedi.",,site/modules/React/src/Media/MediaGateway.php,cd774e936bb0933082266765669fbef4
+"Invalid image dimensions.","Geçersiz görsel boyutları.",,site/modules/React/src/Media/MediaGateway.php,ad236873b8e6a03a14c4c217560895a8
+"Image resolution exceeds maximum safe pixel limit.","Görsel çözünürlüğü maksimum güvenli piksel sınırını aşıyor.",,site/modules/React/src/Media/MediaGateway.php,ad53542ddcbff32755883947caf0766e
+"Image (%dx%d) does not meet minimum size requirements (%dx%d).","Görsel (%dx%d), minimum boyut gereksinimlerini (%dx%d) karşılamıyor.",,site/modules/React/src/Media/MediaGateway.php,9c454c8f8befc57c47bba7331ea7b563
+"Invalid page link media identifier.","Geçersiz sayfa bağlantı medyası tanımlayıcısı.",,site/modules/React/src/Media/PageLinkMediaHostAdapter.php,d0662f56d95c67cb6e6663e58057cfe7
+"Target page link field not found.","Hedef sayfa bağlantı alanı bulunamadı.",,site/modules/React/src/Media/PageLinkMediaHostAdapter.php,32520c9554c10ccfbcb049ada646b456
+"You do not have permission to modify this link media field.","Bu bağlantı medya alanını değiştirme izniniz yok.",,site/modules/React/src/Media/PageLinkMediaHostAdapter.php,cd9d5ea980837bc70e94cdcbe7be9098
+"Requested media profile is not enabled on this link field.","İstenen medya profili bu bağlantı alanında etkin değil.",,site/modules/React/src/Media/PageLinkMediaHostAdapter.php,ce65978501e94a100eefa52250efea9b
+Records,Kayıtlar,,site/modules/React/src/Provider/ArrayDataProvider.php,db231ec39f2ce4d5ad1de0abfc8970d9
+Title,Başlık,,site/modules/React/src/Provider/ArrayDataProvider.php,b78a3223503896721cca1303f776159b
+Published,Yayında,,site/modules/React/src/Provider/ArrayDataProvider.php,9b9d8a976b42e0bd66381797644943d5
+Draft,Taslak,,site/modules/React/src/Provider/ArrayDataProvider.php,f03ab16cd58372c77ba45a3d9a5a1cb9
+Trash,"Çöp Kutusu",,site/modules/React/src/Provider/ArrayDataProvider.php,a7e253cd8dd95da3e20daf45519a8dc2
+"To Do",Yapılacak,,site/modules/React/src/Provider/ArrayDataProvider.php,0a386db7267f3ca1e5eb587bcc9ccc7e
+"In Progress","Devam Ediyor",,site/modules/React/src/Provider/ArrayDataProvider.php,c9413dd7682a45da9ecc9efa8cea47d7
+Done,Tamamlandı,,site/modules/React/src/Provider/ArrayDataProvider.php,f92965e2c8a7afb3c1b9a5c09a263636
+Sum,Toplam,,site/modules/React/src/Provider/ArrayDataProvider.php,a0ec87054b5e5b7847d0d8780a01a3d5
+Avg,Ort.,,site/modules/React/src/Provider/ArrayDataProvider.php,5c0c148daa2c67922abe6018b87a759f
+Min,Min,,site/modules/React/src/Provider/ArrayDataProvider.php,78d811e98514cd165dda532286610fd2
+Max,Maks,,site/modules/React/src/Provider/ArrayDataProvider.php,6a061313d22e51e0f25b7cd4dc065233
+Count,Adet,,site/modules/React/src/Provider/ArrayDataProvider.php,e93f994f01c537c4e2f7d8528c3eb5e9
+"Provider is locked.","Veri sağlayıcı kilitli.",,site/modules/React/src/Provider/ArrayDataProvider.php,658752e259aa3cb793ee404b4d347bde
+"Title is required.","Başlık zorunludur.",,site/modules/React/src/Provider/ArrayDataProvider.php,c1e190918f029b350e2c7cc16298abcd
+"Created record.","Kayıt oluşturuldu.",,site/modules/React/src/Provider/ArrayDataProvider.php,0e8fe2f605fec7f47aaabb8e3812d72c
+"Saved record.","Kayıt kaydedildi.",,site/modules/React/src/Provider/ArrayDataProvider.php,a088a84d9a3162ca3e209d202abd694c
+"Record not found.","Kayıt bulunamadı.",,site/modules/React/src/Provider/ArrayDataProvider.php,a22645bb48b7bc050a1de2dccbb49bc8
+Pages,Sayfalar,,site/modules/React/src/Provider/PagesDataProvider.php,453aceb005ceaf54a47da15fee8b2a26
+Title,Başlık,,site/modules/React/src/Provider/PagesDataProvider.php,b78a3223503896721cca1303f776159b
+Name,Ad,,site/modules/React/src/Provider/PagesDataProvider.php,49ee3087348e8d44e1feda1917443987
+Modified,Değiştirilme,,site/modules/React/src/Provider/PagesDataProvider.php,35e0c8c0b180c95d4e122e55ed62cc64
+Status,Durum,,site/modules/React/src/Provider/PagesDataProvider.php,ec53a8c4f07baed5d8825072c89799be
+Published,Yayında,,site/modules/React/src/Provider/PagesDataProvider.php,9b9d8a976b42e0bd66381797644943d5
+Draft,Taslak,,site/modules/React/src/Provider/PagesDataProvider.php,f03ab16cd58372c77ba45a3d9a5a1cb9
+Hidden,Gizli,,site/modules/React/src/Provider/PagesDataProvider.php,7acdf85c69cc3c5305456a293524386e
+Trash,"Çöp Kutusu",,site/modules/React/src/Provider/PagesDataProvider.php,a7e253cd8dd95da3e20daf45519a8dc2
+Edit,Düzenle,,site/modules/React/src/Provider/PagesDataProvider.php,7dce122004969d56ae2e0245cb754d35
+"View Page","Sayfayı Görüntüle",,site/modules/React/src/Provider/PagesDataProvider.php,e4b846392f10f46b032cf155c39a0eaf
+Unpublish,"Yayından Kaldır",,site/modules/React/src/Provider/PagesDataProvider.php,181e9a13059454fb2212f1bf10f394ac
+"Move to Trash","Çöpe Taşı",,site/modules/React/src/Provider/PagesDataProvider.php,7a289ea949902e8fa53efb4b3b4ccea0
+"Move this page to the trash?","Bu sayfa çöp kutusuna taşınsın mı?",,site/modules/React/src/Provider/PagesDataProvider.php,33615f2cfa0bfa77144f488a75e5d178
+Restore,"Geri Yükle",,site/modules/React/src/Provider/PagesDataProvider.php,2bd339d85ee3b33e513359ce781b60cc
+"Delete Permanently","Kalıcı Olarak Sil",,site/modules/React/src/Provider/PagesDataProvider.php,aa47bb0913144619a0a9abc59d59d6ed
+"Permanently delete this page? This cannot be undone.","Bu sayfa kalıcı olarak silinsin mi? Bu işlem geri alınamaz.",,site/modules/React/src/Provider/PagesDataProvider.php,fa6cc4b6c461758d2b18070576eedfd7
+"Provider descriptor cannot be empty.","Sağlayıcı tanımlayıcısı boş olamaz.",,site/modules/React/src/Provider/ProviderRegistry.php,6151eeb136331a45d4eaae6cbafa3c69
+"Provider descriptor '%s' is missing a scheme prefix (expected '<scheme>:<target>') or is not registered.","'%s' sağlayıcı tanımlayıcısında şema öneki eksik ('<scheme>:<target>' bekleniyordu) veya kayıtlı değil.",,site/modules/React/src/Provider/ProviderRegistry.php,debf09b06f6ea3548d56814c10f5f1fd
+"Provider descriptor '%s' has an empty scheme prefix.","'%s' sağlayıcı tanımlayıcısının şema öneki boş.",,site/modules/React/src/Provider/ProviderRegistry.php,565cc9a004b582c559b3170645b557e8
+"Unregistered provider scheme '%s' for descriptor '%s'.","'%s' şeması, '%s' tanımlayıcısı için kayıtlı değil.",,site/modules/React/src/Provider/ProviderRegistry.php,fb94ec5f28f64a8ea72160dd07c8dae3
+"Target Resource","Hedef Kaynak",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,34d9ca00e5e9cae408d6486052f88ab3
+"Select the ProcessWire or registered resource this field references.","Bu alanın referans verdiği ProcessWire kaynağını veya kayıtlı kaynağı seçin.",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,00dc6b49aa9486cb7b9716d2682d189c
+"Stored Value Attribute","Saklanan Değer Niteliği",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,14d25cfd2c49aea4caf32076f2905127
+"Resource Default (ID for Page/User, Name for Template/Field/Role)","Kaynak Varsayılanı (Sayfa/Kullanıcı için ID, Şablon/Alan/Rol için Ad)",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,b15bc73ef5c8fa647c0e4a7727879572
+"Numeric / UUID ID (id)","Sayısal / UUID Kimlik (id)",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,00ff05e70c2081e934b4c185861dd564
+"Slug / Machine Name (name)","Kısa Ad / Makine Adı (name)",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,35f713c5db99db1a0a23b98ab3e334d2
+"Page Path (path)","Sayfa Yolu (path)",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,c005df55ff8b1add6754b806fa2dec0d
+"Filter Selector","Filtre Seçicisi",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,bc180d51b5e2db422a7fdcb24b9d9646
+"Optional server-signed ProcessWire selector constraint (e.g. template=blog-post, sort=-created).","İsteğe bağlı sunucu imzalı ProcessWire seçici kısıtlaması (örn. template=blog-post, sort=-created).",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,bb06b98579f05399820e7dd4dead00b0
+"Root Parent Page ID","Kök Üst Sayfa ID’si",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,375add29e6bbf9402423876b1c5aed97
+"Depends On Field","Bağımlı Olduğu Alan",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,49e1384fe1f5d49c432f3b0c825b0067
+"Optional sibling field name for cascading filtering.","Kademeli filtreleme için isteğe bağlı kardeş alan adı.",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,5c80a18822486fbd081d7044e84ecf34
+"Allow Inline Quick Create","Satır İçi Hızlı Oluşturmaya İzin Ver",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,4f2f55e4fc2b10f739f67704cdfe67ba
+"Allow Custom Free-Text Value","Özel Serbest Metin Değerine İzin Ver",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,fb45974d23738865bb9f9aa8ba0c28db
+"Show Quick Edit Link","Hızlı Düzenleme Bağlantısını Göster",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,00a50f5a25c047c56272ce0815116644
+Field,Alan,,site/modules/React/src/Relation/Resource/FieldResourceAdapter.php,6f16a5f8ff5d75ab84c018adacdfcbb7
+Language,Dil,,site/modules/React/src/Relation/Resource/LanguageResourceAdapter.php,4994a8ffeba4ac3140beb89e8d41f174
+"Default language","Varsayılan dil",,site/modules/React/src/Relation/Resource/LanguageResourceAdapter.php,c96a77fb323a41898c3b6941a58dc741
+Module,Modül,,site/modules/React/src/Relation/Resource/ModuleResourceAdapter.php,e55f75a29310d7b60f7ac1d390c8ae42
+Page,Sayfa,,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,193cfc9be3b995831c6af2fea6650e60
+"Quick creation is not enabled for this field.","Bu alan için hızlı oluşturma etkin değil.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,a46075624a41bed5ef3b48e8887b83bd
+"Title is required to create a page.","Sayfa oluşturmak için başlık zorunludur.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,ff18d6ee9bebcb23f4f1aa98ae4f82f2
+"Target parent page does not exist.","Hedef üst sayfa mevcut değil.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,59218d74256d9c13c5b562e26e5695bc
+"Cannot create pages under system or trash roots.","Sistem veya çöp kutusu kökleri altında sayfa oluşturulamaz.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,36917d7a51db803a7dafddb825f63395
+"Selected parent page is outside the allowed hierarchy for this field.","Seçilen üst sayfa bu alan için izin verilen hiyerarşinin dışında.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,8f8214cd7f6cc560653dbc6dccb07ca8
+"You do not have permission to add pages under the selected parent.","Seçilen üst sayfanın altına sayfa ekleme izniniz yok.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,00342e3291b08e6f6cb5b0fae9a9c098
+"A target template must be configured to quick-create pages.","Hızlı sayfa oluşturmak için bir hedef şablon yapılandırılmalıdır.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,48eca31391fe73ee493dc6afe61e46bf
+"Selected template is not allowed for this relation field.","Seçilen şablona bu ilişki alanı için izin verilmiyor.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,ed7e42bcc4ec0365a82fa35247114df1
+"Invalid or system template specified for quick create.","Hızlı oluşturma için geçersiz veya sistem şablonu belirtildi.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,e947024044075ed447c710c122ad8f95
+Permission,İzin,,site/modules/React/src/Relation/Resource/PermissionResourceAdapter.php,ed5dea09095f671b801bee34ea28a319
+Role,Rol,,site/modules/React/src/Relation/Resource/RoleResourceAdapter.php,bbbabdbe1b262f75d99d62880b953be1
+"%d permissions","%d izin",,site/modules/React/src/Relation/Resource/RoleResourceAdapter.php,f2387342894ffddabc85cd8f0551c18a
+Template,Şablon,,site/modules/React/src/Relation/Resource/TemplateResourceAdapter.php,278c491bdd8a53618c149c4ac790da34
+"%s · %d fields","%s · %d alan",,site/modules/React/src/Relation/Resource/TemplateResourceAdapter.php,0bada80a587bb611c1eb7ce9cd6a08ac
+User,Kullanıcı,,site/modules/React/src/Relation/Resource/UserResourceAdapter.php,8f9bfe9d1345237cb3b2b205864da075
+"Tiptap Rich Text Editor","Tiptap Zengin Metin Editörü",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,9804aa3a4781cad65c3c0c50e5872d56
+"Inherit Settings From Field","Ayarları Başka Alandan Devral",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,aa367ba283ce7ad5128d2f1fa29f195e
+"Optionally inherit Tiptap toolbar, headline, and feature settings from another Tiptap field.","İsteğe bağlı olarak Tiptap araç çubuğu, başlık ve özellik ayarlarını başka bir Tiptap alanından devralın.",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,0f0d701a604a5d57649f94c631462c85
+"None (configure on this field)","Yok (bu alanda yapılandır)",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,7891e668970584fbbe2c101332a73c05
+"Custom Settings JSON","Özel Ayarlar JSON",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,ef4d1876385443348a7cd20ca9ebeb5f
+"Optional JSON overrides for this field. Supports `replace_*` and `add_*` / `append_*` prefixes (e.g. `{""add_toolbar"": ""subscript superscript""}`).","Bu alan için isteğe bağlı JSON geçersiz kılmaları. `replace_*` ve `add_*` / `append_*` öneklerini destekler (örn. `{""add_toolbar"": ""subscript superscript""}`).",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,172b11600d2259f8c17bf9c557969fc5
+"Default Tiptap Editor Settings","Varsayılan Tiptap Editör Ayarları",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,cef1559de1ff1d128fac90c89eec7f33
+"These defaults apply to all Tiptap fields unless overridden on an individual field.","Bu varsayılanlar, tekil bir alanda geçersiz kılınmadıkça tüm Tiptap alanlarına uygulanır.",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,92eb1ab7994ce94f147cd6ded034b914
+"Module Defaults JSON","Modül Varsayılanları JSON",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,2c7c290928d3fb9f033061fb146510db
+"Optional global JSON overrides merged into all Tiptap instances before per-field settings.","Alan bazlı ayarlardan önce tüm Tiptap örneklerine birleştirilen isteğe bağlı genel JSON geçersiz kılmaları.",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,ef02cba281bb88b5a43d57e3a7b825b9
+"Extra Editor Content CSS","Ek Editör İçerik CSS’i",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,665e001a4dcf8a61658859a7c34b4a4f
+"Optional CSS rules applied to `.rw-tiptap-prose` inside the editor.","Editör içindeki `.rw-tiptap-prose` seçicisine uygulanan isteğe bağlı CSS kuralları.",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,44dfe8c32b2c294a5f8e8e01ad9afba7
+"Editor Profile & Asset Bundle","Düzenleyici Profili ve Varlık Paketi",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,db2c4d24e72e4797006f1a082cf8fc44
+"Choose an editor profile to tailor UI complexity and load only the JavaScript capability packs needed by this field. Customizing tools or blocks below remains supported.","Arayüz karmaşıklığını ayarlamak ve yalnızca bu alanın ihtiyaç duyduğu JavaScript özellik paketlerini yüklemek için bir düzenleyici profili seçin. Aşağıdaki araçları veya blokları özelleştirmeye devam edebilirsiniz.",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,7ca0bb5eeff68594a22388145bd34868
+"Core — Minimal formatted text, lists, and links (loads Core runtime only)","Core — Minimal biçimli metin, listeler ve bağlantılar (yalnızca Çekirdek çalışma zamanını yükler)",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,ee58b81f823e1e99b6ce6bfd28dfc431
+"Editor — Classic CMS toolbar, tables, image studio, alignment, and source view","Editor — Klasik CMS araç çubuğu, tablolar, görsel stüdyosu, hizalama ve kaynak görünümü",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,be5d785052fa2418058d7383c03fe2c0
+"Canvas — Chromeless document surface with ""/"" slash menu, bubble bar, and block handles","Canvas — ""/"" eğik çizgi menüsü, yüzen seçim çubuğu ve blok tutamaçları içeren çerçevesiz belge yüzeyi",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,f80c49f784eea05486f1cbd87f2d8b3d
+"Blocks — Full editorial suite with inline content blocks and custom block templates","Blocks — Satır içi içerik blokları ve özel blok şablonlarıyla tam editoryal paket",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,d0bbcbbe536e080b6b5c32ed54d6ec4f
+"Toolbar Buttons","Araç Çubuğu Düğmeleri",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,53706e5d90693de38a3486ddaaaba926
+"Space-separated toolbar tools; use `|` to separate button groups.","Boşlukla ayrılmış araç çubuğu öğeleri; düğme gruplarını ayırmak için `|` kullanın.",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,e547313b1d354a15fa057b6269c830c7
+"Available tools:","Kullanılabilir araçlar:",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,4ff29cf1e63bababb974efd99f1d63c8
+"Bubble Selection Toolbar","Seçim Balonu Araç Çubuğu",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,41dadad0df7837abcc00b129f1f51d35
+"Floating inline toolbar shown when text is selected. Leave blank to disable.","Metin seçildiğinde gösterilen yüzer araç çubuğu. Devre dışı bırakmak için boş bırakın.",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,f69a94a197607bbbbe43bdb65508339a
+"Allowed Heading Levels","İzin Verilen Başlık Düzeyleri",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,ef4df191153c5ad95ecdf53ffd28007d
+"Editor Display Mode","Editör Görünüm Modu",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,696c0b988d683f35dd8f716cc5a1840c
+"Framed editor with top bar","Üst çubuklu çerçeveli editör",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,3476ef39f6e9508e4e7b2880d1369f82
+"Inline chromeless editor (bubble toolbar focus)","Çerçevesiz satır içi editör (balon araç çubuğu odaklı)",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,1ca15b49d8ea7350d1aa4bdf86797505
+"Editor Features","Editör Özellikleri",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,3b29fbecf014c20adce7256da387d40b
+"Show top formatting toolbar","Üst biçimlendirme araç çubuğunu göster",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,1fde0a8a2a48aa4b9dbad8e9ee8e2a65
+"Sticky top toolbar when scrolling","Kaydırırken sabitlenen üst araç çubuğu",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,7e6ba98556752ed87e8662cf9668ddcd
+"Floating selection bubble toolbar","Yüzer seçim balonu araç çubuğu",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,14f4ec443c741325e4f71a289bd07be1
+"Bottom word & character count bar","Alt kelime ve karakter sayacı çubuğu",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,849f9fec801c27eaa7e11bef1085be96
+"Enable browser spellcheck","Tarayıcı yazım denetimini etkinleştir",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,6299fd97f1b346599b98fba9dc1ef19d
+"Server-side HTML Purifier on save","Kaydederken sunucu taraflı HTML Purifier uygula",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,1ad92cfd70a1f4e0338d0587e06706e4
+"Clean pasted markup via editor schema","Yapıştırılan biçimlendirmeyi editör şemasıyla temizle",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,30cce169fea8e66fa3a2ea51c33fdf2f
+"Allow HTML source code toggle","HTML kaynak kodu görünümüne geçişe izin ver",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,3149842e44796af209767dde957b9558
+"Drag-and-drop & paste image upload","Sürükle-bırak ve yapıştır ile görsel yükleme",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,891dc6a3bfd50ae7b263ff204cff2828
+"Interactive inline image resizing","Etkileşimli satır içi görsel boyutlandırma",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,d7d9a9bfeb334375c0ff7c8d735b6442
+"Enable ""/"" slash command menu","""/"" eğik çizgi komut menüsünü etkinleştir",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,4847be0dc530d0c22bb1e57e722ea0cf
+"Show canvas block handles (+ / drag & block actions)","Tuval blok tutamaçlarını göster (+ / sürükleme ve blok eylemleri)",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,4e3e82f276816e04ed9b1d8805cab401
+"Image Upload Target Fields","Görsel Yükleme Hedef Alanları",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,b5a2a8ad5a3eec49cda3dfc6a024b373
+"Optionally restrict which image fields accept drag-and-drop or modal uploads. Leave empty to auto-detect multi-image fields on the edited page.","Sürükle-bırak veya pencere içi yüklemeleri kabul eden görsel alanlarını isteğe bağlı olarak sınırlandırın. Düzenlenen sayfadaki çoklu görsel alanlarını otomatik algılamak için boş bırakın.",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,c8ae546e4bbb6ea1015da8ae740dad53
+"Disable direct image uploads","Doğrudan görsel yüklemeyi devre dışı bırak",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,a0410773d583dca151cd189b48eb95ab
+"Inline Content Blocks (Optional)","Satır İçi İçerik Blokları (İsteğe Bağlı)",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,983343c52ebf7d4db6892742093db916
+"Select inline content blocks editors can insert via the ""/"" slash menu or toolbar.","Editörlerin ""/"" eğik çizgi menüsü veya araç çubuğundan ekleyebileceği satır içi içerik bloklarını seçin.",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,74007762cb1c63727f7e8ead87276e7f
+"Add custom inline content blocks in ./site/tiptap/*.yaml or register them in PHP.","Özel satır içi içerik bloklarını ./site/tiptap/*.yaml içine ekleyin veya PHP'den kaydedin.",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,5172aa9bba035102b704ae29a9c37b9d
+"Markup Cleanup Toggles","HTML Temizleme Seçenekleri",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,792b3304ffd9f31c8d7a5f3448acb602
+"Remove <div> wrapper tags","<div> sarmalayıcı etiketlerini kaldır",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,1932e5f3cea3046538e8d7aa59748ce4
+"Remove empty <p> paragraphs","Boş <p> paragraflarını kaldır",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,6733229b5903c8224f715303046d9f4b
+"Convert &nbsp; entities to regular spaces","&nbsp; öğelerini normal boşluğa dönüştür",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,410742c18cfed9a90bf6985c908577e7
+"Remove inline style attributes (preserves text-align)","Satır içi style niteliklerini kaldır (text-align korunur)",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,e1296429452dcfb078f99efd2a792751
+"Minimum Height (px)","Minimum Yükseklik (px)",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,43e52818b2b64bf871b45d0476017910
+"Set `0` to size automatically from field `rows`.","Alanın `rows` değerine göre otomatik boyutlandırmak için `0` girin.",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,3d1a5fc9b204ce7932feb80c4635ea1c
+"Maximum Height (px)","Maksimum Yükseklik (px)",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,23569868e84a8ee1df3d6dd88fe7d58a
+"Set `0` for unlimited auto-growing height.","Sınırsız otomatik büyüyen yükseklik için `0` girin.",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,87f9ac43213ac60c0fe400615a229c15
+"Authentication required.","Kimlik doğrulaması gerekiyor.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,27d1d715bcd77c610edb102f776c63c6
+"Missing editor context token.","Editör bağlam belirteci eksik.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,3faedbc4f2c02bf85f21d04e65d29749
+"Invalid or expired editor context token.","Geçersiz veya süresi dolmuş editör bağlam belirteci.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,b8fbe87e6ed6910fdb21b88487e79201
+"Method not allowed. POST required.","Yönteme izin verilmiyor. POST gereklidir.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,ca1b5305d7c7bec2f322612a92dd8f57
+"This rich text field is read-only.","Bu zengin metin alanı salt okunurdur.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,5548d948da3deef8a297168317cd50ec
+"CSRF token validation failed.","CSRF belirteci doğrulaması başarısız oldu.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,e1b850614e8638b71a2de10cbfd31e49
+"Unsupported Tiptap action.","Desteklenmeyen Tiptap işlemi.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,6da4f9440a35d70d865d9daf98d3c04f
+"You do not have permission to view files on this page.","Bu sayfadaki dosyaları görüntüleme izniniz yok.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,e4572028bf98ff039bf24f02c8127af8
+"You do not have permission to view images on this page.","Bu sayfadaki görselleri görüntüleme izniniz yok.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,99b67101323158dc795c9502a91d431c
+"Missing image URL.","Görsel URL adresi eksik.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,ab5790a09d961a5a461e191a2651bdbb
+"Missing source image filename.","Kaynak görsel dosya adı eksik.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,0722ddc57a247778a31203174bd4a28f
+"Target image page could not be determined.","Hedef görsel sayfası belirlenemedi.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,eba148c1975162347a55185b6b6f7c2c
+"You do not have permission to access this image.","Bu görsele erişim izniniz yok.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,e8207fecc844fcb3cfb9461ae4efbf54
+"You do not have permission to resize images here.","Buradaki görselleri yeniden boyutlandırma izniniz yok.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,f72aabe8eb750870837b1a4f20a11b5b
+"Source image was not found.","Kaynak görsel bulunamadı.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,fbf5d0007053b9338d48b4cce31fc3c9
+"No target page available for image upload.","Görsel yüklemesi için uygun hedef sayfa yok.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,c20306bb59ba8611f6ceea3494b79e0a
+"Target page not found.","Hedef sayfa bulunamadı.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,1d6fd845f454b5776b511ba27868dbed
+"No editable image field is available on this page.","Bu sayfada düzenlenebilir görsel alanı bulunmuyor.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,791377fb2873431f4d1dc66ed403fd08
+"No image file was received.","Herhangi bir görsel dosyası alınmadı.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,395d0eedbef7b95fa77bbc02930168bd
+"No valid image file was received.","Geçerli bir görsel dosyası alınamadı.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,14f8277e1a08ec9a65c9074d51277a4a
+"Target field does not hold an image collection.","Hedef alan bir görsel koleksiyonu içermiyor.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,f5356f992b38eb5fd4d55abf3873484f
+"The image field on this page has reached its maximum file limit.","Bu sayfadaki görsel alanı maksimum dosya sınırına ulaştı.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,922ef24ed4c87b3d935fef3ddaf84c01
+"Image upload failed validation.","Görsel yükleme doğrulaması başarısız oldu.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,be84925b5a7fb8858728f885395b1faf
+"Temporary upload directory is unavailable.","Geçici yükleme dizini kullanılamıyor.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,8323b7d2177c5fdd2580494d826c8c7f
+"Uploaded image was rejected by security validation.","Yüklenen görsel güvenlik doğrulaması tarafından reddedildi.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,6d04f9af2abbc878f29f57ef50f53229
+"Uploaded file is not a valid raster image.","Yüklenen dosya geçerli bir raster görsel değil.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,0956d593fe9bd69f281f27b834a25c92
+"Uploaded image dimensions exceed the maximum allowed pixel limit.","Yüklenen görsel boyutları izin verilen maksimum piksel sınırını aşıyor.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,c09e86b29f3403feaeb90239cfb46364
+"Uploaded image could not be saved to the page field.","Yüklenen görsel sayfa alanına kaydedilemedi.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,037660c79aadf4d49018f946c2ebd59b
+"Emptied trash.","Çöp kutusu boşaltıldı.",,site/modules/React/src/Viewport/MarkupReactViewport.php,8758e1979803e88020ed42aca37210f4
+"Updated %d record(s).","%d kayıt güncellendi.",,site/modules/React/src/Viewport/MarkupReactViewport.php,2ef993b35328d6a5e000e0908a84a10f
+"Shifted dates on %d record(s).","%d kaydın tarihleri kaydırıldı.",,site/modules/React/src/Viewport/MarkupReactViewport.php,9dc33cb5c391141a7962dde8f17b658c
+Publish,Yayınla,,site/modules/React/src/Viewport/MarkupReactViewport.php,110a4b01beabd53b661a47d4b44bd7a8
+"Set Draft","Taslağa Al",,site/modules/React/src/Viewport/MarkupReactViewport.php,5c657df85958ec041cd9de39ecab133b
+"Move to Trash","Çöpe Taşı",,site/modules/React/src/Viewport/MarkupReactViewport.php,7a289ea949902e8fa53efb4b3b4ccea0
+"Move selected records to trash?","Seçili kayıtlar çöp kutusuna taşınsın mı?",,site/modules/React/src/Viewport/MarkupReactViewport.php,bb3d3e97d788b9700e12e7f149580b84
+"Create New","Yeni Oluştur",,site/modules/React/src/Viewport/MarkupReactViewport.php,49e5878c7a1901b0a9baae9e0c774150
+"Saved view ""%s"".","""%s"" görünümü kaydedildi.",,site/modules/React/src/Viewport/MarkupReactViewport.php,65192d3077f22c24ade9e797bdfe9405
+"Toggled record status.","Kayıt durumu değiştirildi.",,site/modules/React/src/Viewport/MarkupReactViewport.php,64e755510cb927e82b1d25145e0cfdb9
+"Item duplicated.","Öğe çoğaltıldı.",,site/modules/React/src/Viewport/MarkupReactViewport.php,b5e22a378685019bc0759c70208333bb
+"Moved to trash.","Çöp kutusuna taşındı.",,site/modules/React/src/Viewport/MarkupReactViewport.php,ce36abf00ef96bbeeb44cdec5b34d67d
+"Restored from trash.","Çöp kutusundan geri yüklendi.",,site/modules/React/src/Viewport/MarkupReactViewport.php,5a6286b4d02e296d2c9172742b8c2e28
+"Deleted permanently.","Kalıcı olarak silindi.",,site/modules/React/src/Viewport/MarkupReactViewport.php,12f84adf43d4bcae7c99cb01eb5aaa55
+"Changes saved.","Değişiklikler kaydedildi.",,site/modules/React/src/Viewport/MarkupReactViewport.php,3c158cce6f10b3097a0eb760c2e89fa3
+"No changes made.","Hiçbir değişiklik yapılmadı.",,site/modules/React/src/Viewport/MarkupReactViewport.php,e81d5b7d71ccab9a02048bdc0ed94d4c
+"Field updated.","Alan güncellendi.",,site/modules/React/src/Viewport/MarkupReactViewport.php,2a960a09651d0b77d7f8904a5e3e7e7a
+"Field toggled.","Alan durumu değiştirildi.",,site/modules/React/src/Viewport/MarkupReactViewport.php,e2c3b13a1b261546ace4cfa01ad0d010
+"Updated stage.","Aşama güncellendi.",,site/modules/React/src/Viewport/MarkupReactViewport.php,ae24c849b1f625812d31e311225b6229
+"Order updated.","Sıralama güncellendi.",,site/modules/React/src/Viewport/MarkupReactViewport.php,e23a93e36d3e960c48a736f681a5e370
+"Updated item dates.","Öğe tarihleri güncellendi.",,site/modules/React/src/Viewport/MarkupReactViewport.php,9492980b6762d6efbc0032b70591f2f5
+"Rescheduled item.","Öğe yeniden planlandı.",,site/modules/React/src/Viewport/MarkupReactViewport.php,980b221107a5f5443a3e11f0920fb40f
+"Record updated.","Kayıt güncellendi.",,site/modules/React/src/Viewport/MarkupReactViewport.php,83d4b207495d6d8e7d0ea9e31391da94
+"Created ""%s"".","""%s"" oluşturuldu.",,site/modules/React/src/Viewport/MarkupReactViewport.php,a1df15e8235050cfb7b8adc51769aeee
+"Exported %s.","%s dışa aktarıldı.",,site/modules/React/src/Viewport/MarkupReactViewport.php,cba243b6c3b232050531edccfb21f961
+Status,Durum,,site/modules/React/src/Viewport/MarkupReactViewport.php,ec53a8c4f07baed5d8825072c89799be
+Title,Başlık,,site/modules/React/src/Viewport/MarkupReactViewport.php,b78a3223503896721cca1303f776159b
+Workspace,"Çalışma Alanı",,site/modules/React/src/Workspace/WorkspaceLauncherProcess.php,03a21915504df93cf5dba0636080f62e
+"Manage site content, menus, forms, SEO, API access, and system operations from your personalized dashboard.","Kişiselleştirilmiş kontrol panelinizden site içeriğini, menüleri, formları, SEO’yu, API erişimini ve sistem işlemlerini yönetin.",,site/modules/React/src/Workspace/WorkspaceLauncherProcess.php,983a78b14f319f495894d70da7b761f0

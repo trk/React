@@ -1,0 +1,1012 @@
+en,es,description,file,hash
+"React File","Archivo React",,site/modules/React/InputfieldReactFile.module.php,085179f140b05e6c2841ca9a716edb68
+"File upload and management field supporting drag-and-drop, reordering, file replacement, multi-language descriptions, tags, and custom details.","Campo de carga y gestión de archivos con arrastrar y soltar, reordenamiento, reemplazo de archivos, descripciones multilingües, etiquetas y detalles personalizados.",,site/modules/React/InputfieldReactFile.module.php,f4cffb0f2915b3b587cd339737749d03
+"Selected icon is not valid.","El icono seleccionado no es válido.",,site/modules/React/InputfieldReactIcon.module.php,670047db1d9f9450924af74c1f7ac5c9
+"Please select an icon.","Por favor, seleccione un icono.",,site/modules/React/InputfieldReactIcon.module.php,bf78192e5e2b20363eabc80358bfb39b
+"Trigger Preview Size (px)","Tamaño de vista previa (px)",,site/modules/React/InputfieldReactIcon.module.php,d4663b0b339085f3a02c1ab399a0b01e
+"Pixel dimensions for the selected icon preview inside the input button (12–64).","Dimensiones en píxeles de la vista previa del icono seleccionado en el botón (12–64).",,site/modules/React/InputfieldReactIcon.module.php,299002088516dce1e586fb116fe8b0cd
+"Stored Name Format","Formato del nombre guardado",,site/modules/React/InputfieldReactIcon.module.php,ce551599cf45141c4fff9af350d251c2
+"Controls how plain icon names are saved when appearance customization is disabled.","Controla cómo se guardan los nombres simples de iconos cuando la personalización de apariencia está desactivada.",,site/modules/React/InputfieldReactIcon.module.php,fd2556d84104635e698017a4e6a3b0ac
+"Standard Icon Name (e.g. sparkles)","Nombre de icono estándar (p. ej. sparkles)",,site/modules/React/InputfieldReactIcon.module.php,ddc6554ec43eee9c67335200fd114662
+"Admin CSS Prefix","Prefijo CSS de administración",,site/modules/React/InputfieldReactIcon.module.php,26fe5c23983346f7276d863c7dfe6f28
+"Allow Icon Appearance Customization","Permitir personalización de apariencia del icono",,site/modules/React/InputfieldReactIcon.module.php,e2c40bba9103236a111e18974b6db2cf
+"When enabled, editors can customize icon style, size, color, stroke width, and badge background after selecting an icon (stored as JSON).","Cuando está activado, los editores pueden personalizar estilo, tamaño, color, grosor de trazo y fondo de insignia tras seleccionar un icono (guardado como JSON).",,site/modules/React/InputfieldReactIcon.module.php,affc67c59d5a9bc4f1823a6bbe90a367
+"Allow Style Variant (Outline / Filled)","Permitir variante de estilo (Contorno / Relleno)",,site/modules/React/InputfieldReactIcon.module.php,d7cc24dd8aef54d3af994b99c4afe06f
+"Allow Size Customization (px)","Permitir personalización de tamaño (px)",,site/modules/React/InputfieldReactIcon.module.php,6256e8250f352a5013c561ad905ea7b3
+"Allow Stroke Width Customization","Permitir personalización del grosor de trazo",,site/modules/React/InputfieldReactIcon.module.php,970fcc9102483e11ca8b964af4fe4d62
+"Allow Icon Color Customization","Permitir personalización del color del icono",,site/modules/React/InputfieldReactIcon.module.php,5ad9c3a723324cebfb3817d3819c2ad6
+"Allow Badge Background & Radius Customization","Permitir personalización de fondo y radio de insignia",,site/modules/React/InputfieldReactIcon.module.php,831164c2307ed50c18fe01bdb33c5494
+"React Icon","Icono React",,site/modules/React/InputfieldReactIcon.module.php,899981acab5ed4d477d9f2fd44b4cbdf
+"Searchable vector icon picker with optional style, size, color, stroke width, and badge customization.","Selector de iconos vectoriales con búsqueda y personalización opcional de estilo, tamaño, color, grosor de trazo y distintivo.",,site/modules/React/InputfieldReactIcon.module.php,794a827fc41f230dc533bca17292905a
+"React Image","Imagen React",,site/modules/React/InputfieldReactImage.module.php,74aa81a1e31ec0a49648bb7cda282a95
+"Image studio field with instant upload, focal point, zoom, crop/rotate/flip, color palette extraction, multi-language alt text, tags, and custom details.","Campo estudio de imágenes con carga instantánea, punto focal, zoom, recorte/rotación/volteo, extracción de paleta de colores, texto alternativo multilingüe, etiquetas y detalles personalizados.",,site/modules/React/InputfieldReactImage.module.php,86c6b14fdcd62228fd750e0aa98bc5f9
+Key,Clave,,site/modules/React/InputfieldReactKeyValue.module.php,897356954c2cd3d41b221e3f24f99bba
+Value,Valor,,site/modules/React/InputfieldReactKeyValue.module.php,689202409e48743b914713f96d93947c
+"Add Row","Añadir fila",,site/modules/React/InputfieldReactKeyValue.module.php,03e0c5bbd5488f1e5ec282529dac9635
+"Remove row","Eliminar fila",,site/modules/React/InputfieldReactKeyValue.module.php,f22cc12954f8a6326b87efac5ab3bbd4
+"Reserved key name(s) are not allowed: %s","No se permiten nombres de clave reservados: %s",,site/modules/React/InputfieldReactKeyValue.module.php,8888ff3f88044cb4b14e14b52c9d24fa
+"Duplicate key(s) detected: %s. Each key must be unique.","Se detectaron claves duplicadas: %s. Cada clave debe ser única.",,site/modules/React/InputfieldReactKeyValue.module.php,2a464a458c75d2e484e71132eff081a2
+"Invalid key format pattern configured.","Se configuró un patrón de formato de clave no válido.",,site/modules/React/InputfieldReactKeyValue.module.php,5b76a7419382adc2acc24da051d0640f
+"Invalid key format for: %s","Formato de clave no válido para: %s",,site/modules/React/InputfieldReactKeyValue.module.php,adbf3ad8de62449b889b04cba2f90874
+"Maximum of %d key-value pair(s) allowed.","Se permite un máximo de %d par(es) clave-valor.",,site/modules/React/InputfieldReactKeyValue.module.php,96e5a15059b470abf61df3a57f607a47
+"At least %d key-value pair(s) required.","Se requiere al menos %d par(es) clave-valor.",,site/modules/React/InputfieldReactKeyValue.module.php,765cbd68a109b774f378cab65875f72c
+"Key Column Label","Etiqueta de la columna Clave",,site/modules/React/InputfieldReactKeyValue.module.php,f84ef01cfa1a4f76ba8aab699185d605
+"Value Column Label","Etiqueta de la columna Valor",,site/modules/React/InputfieldReactKeyValue.module.php,3377c4b76e3539c1082c6662a651ab16
+"Key Input Placeholder","Marcador del campo de clave",,site/modules/React/InputfieldReactKeyValue.module.php,3897353e83ebe4ad702b4f96c5f0a9b1
+"Value Input Placeholder","Marcador del campo de valor",,site/modules/React/InputfieldReactKeyValue.module.php,f0e934704a521100c8f1c69923acd672
+"Add Row Button Label","Etiqueta del botón de añadir fila",,site/modules/React/InputfieldReactKeyValue.module.php,2ebcd639997c57ec8ea1246c652d606e
+"Remove Row Button Label","Etiqueta del botón para eliminar fila",,site/modules/React/InputfieldReactKeyValue.module.php,d1284df53ee2d8fd7e50405cbdc158de
+"Minimum Pairs (0 = Optional)","Pares mínimos (0 = Opcional)",,site/modules/React/InputfieldReactKeyValue.module.php,4df5422c071bf656190d6bcf9f8fabc4
+"Maximum Pairs (0 = Unlimited)","Máximo de pares (0 = Ilimitado)",,site/modules/React/InputfieldReactKeyValue.module.php,351b11a93e00746ec149beed89ec7f2b
+"Allowed Key Format","Formato de clave permitido",,site/modules/React/InputfieldReactKeyValue.module.php,46bcd69928700a971e37da070dc19540
+"Optional pattern that every key name must match (e.g. ^[a-z0-9_]+$).","Patrón opcional con el que debe coincidir cada nombre de clave (p. ej., ^[a-z0-9_]+$).",,site/modules/React/InputfieldReactKeyValue.module.php,117bde8714c151de9fe31750cc67d8cb
+"Key Pattern Error Message","Mensaje de error del patrón de clave",,site/modules/React/InputfieldReactKeyValue.module.php,e9dec702a6e7cebd3e0e027d8efabd4d
+"Allow Empty Values","Permitir valores vacíos",,site/modules/React/InputfieldReactKeyValue.module.php,80da426d1e5f441eec08caa2fd2fdd7f
+"Keep keys whose value is left blank instead of omitting them.","Conservar las claves cuyo valor se deje en blanco en lugar de omitirlas.",,site/modules/React/InputfieldReactKeyValue.module.php,8f25b7ba51ae24620d095512bb3aaa1a
+"React Key-Value Pairs","Pares clave-valor React",,site/modules/React/InputfieldReactKeyValue.module.php,601bb995149262338f67f8a2054be229
+"Manage ordered key-value pairs for custom attributes, metadata, or specifications.","Gestione pares clave-valor ordenados para atributos personalizados, metadatos o especificaciones.",,site/modules/React/InputfieldReactKeyValue.module.php,f6d409b7fa3f4590ba31540530b34f5a
+"Phone number may only contain digits and a leading + sign.","El número de teléfono solo puede contener dígitos y un signo + inicial.",,site/modules/React/InputfieldReactLink.module.php,0598e3665cdb9f3216db26f52e57ba93
+"Link type ""%s"" is not permitted on this field.","El tipo de enlace ""%s"" no está permitido en este campo.",,site/modules/React/InputfieldReactLink.module.php,a6075e4e6bdbc370d673e7d67e48c5fa
+"Please enter a valid email address.","Por favor, introduzca una dirección de correo electrónico válida.",,site/modules/React/InputfieldReactLink.module.php,b5bccda6d3a04e1d8f79846355290435
+"A destination link is required.","Se requiere un enlace de destino.",,site/modules/React/InputfieldReactLink.module.php,cb311eaceec84e4ff0ca8c0157d55096
+"Allowed Target Types","Tipos de destino permitidos",,site/modules/React/InputfieldReactLink.module.php,f1cd66d64a739d24fa96dc925b54f80b
+Page,Página,,site/modules/React/InputfieldReactLink.module.php,193cfc9be3b995831c6af2fea6650e60
+Entry,Entrada,,site/modules/React/InputfieldReactLink.module.php,b948e8a02a7f8dc9f098c89e8df9892c
+"URL & Anchor (#)","URL y ancla (#)",,site/modules/React/InputfieldReactLink.module.php,c1ef16ed062f7fb8a0da64983519475b
+"Phone (+ & digits)","Teléfono (+ y dígitos)",,site/modules/React/InputfieldReactLink.module.php,23231889af1f705df7ac3422bf86ee74
+Email,"Correo electrónico",,site/modules/React/InputfieldReactLink.module.php,ce8ae9da5b7cd6c3df2929543a9af92d
+"Media: File","Multimedia: Archivo",,site/modules/React/InputfieldReactLink.module.php,5f7b9d5782b299fcba0a3abda050471f
+"Media: Image","Multimedia: Imagen",,site/modules/React/InputfieldReactLink.module.php,d500e7c95997c1cc0ad5d5b21e073e83
+"Media: Video","Multimedia: Vídeo",,site/modules/React/InputfieldReactLink.module.php,779a32ba9edc89809d0b27e6764342b2
+"Default Target Type","Tipo de destino predeterminado",,site/modules/React/InputfieldReactLink.module.php,5901ff09bda8c8bf00de1ea9deb91da6
+"Media Upload Profiles","Perfiles de carga multimedia",,site/modules/React/InputfieldReactLink.module.php,77ced2b23f1d0b3738f2ddb41b411826
+"Optional per-profile allowed file extensions (one per line as `profile: ext1 ext2` or JSON object, e.g. `image: jpg png webp`, `video: mp4 webm`, `file: pdf zip`).","Extensiones de archivo permitidas opcionales por perfil (una por línea como `profile: ext1 ext2` u objeto JSON, p. ej., `image: jpg png webp`, `video: mp4 webm`, `file: pdf zip`).",,site/modules/React/InputfieldReactLink.module.php,91ce497b8843b1d124ca5671c8f439d6
+"Enable Link Label","Habilitar etiqueta del enlace",,site/modules/React/InputfieldReactLink.module.php,e289053e411e24f58511cc53392258c8
+"Enable Anchor (#)","Habilitar ancla (#)",,site/modules/React/InputfieldReactLink.module.php,d8cc17bf84833cf1d80cd2ae3f3c743e
+"Enable Query (?)","Habilitar parámetros de consulta (?)",,site/modules/React/InputfieldReactLink.module.php,865d39779b680a728606720516de9506
+"Enable Target & Rel","Habilitar atributos Target y Rel",,site/modules/React/InputfieldReactLink.module.php,3183d9403563356ae9eab5c0181241d9
+"Page Target Selector","Selector de páginas de destino",,site/modules/React/InputfieldReactLink.module.php,bf0d0be8666b215319901f7a2a15cbed
+"Entry Target Blueprint","Blueprint de entradas de destino",,site/modules/React/InputfieldReactLink.module.php,2772d73ea6021f1395c49f5055fde9de
+"React Link & Media Target","Enlace y destino multimedia React",,site/modules/React/InputfieldReactLink.module.php,a531caf428140f5a29cf7d19fb3d2940
+"All-in-one link and media selector supporting Pages, Entries, URLs, Phone numbers, Email addresses, and uploaded files, images, or videos.","Selector todo en uno de enlaces y medios compatible con Páginas, Entradas, URL, números de teléfono, correos electrónicos y archivos, imágenes o vídeos subidos.",,site/modules/React/InputfieldReactLink.module.php,d1afaf6496b96ae57383b29fc69224ab
+"Please select at least %d item(s).","Seleccione al menos %d elemento(s).",,site/modules/React/InputfieldReactM2A.module.php,cfecdec3aa548f6f05dd7fb4aac1f0fa
+"Allowed Target Resources","Recursos de destino permitidos",,site/modules/React/InputfieldReactM2A.module.php,001d06cf09a1564ff15ee7ffe5ccf813
+"Selection Interface","Interfaz de selección",,site/modules/React/InputfieldReactM2A.module.php,020bfcf134f4c815fba95e73e6ded8a7
+"Search Box with Resource Tabs","Cuadro de búsqueda con pestañas de recursos",,site/modules/React/InputfieldReactM2A.module.php,d6231dd1dccd3c65683f1310b88d31b7
+"Slide-Out Picker Drawer with Resource Tabs","Panel deslizable de selección con pestañas de recursos",,site/modules/React/InputfieldReactM2A.module.php,6710b02c9df67f1cd3f2210292a723b9
+"Allow Multiple References","Permitir múltiples referencias",,site/modules/React/InputfieldReactM2A.module.php,0a6640d5916ffcbad62feb3bd98f2fad
+"Allow Reordering","Permitir reordenar",,site/modules/React/InputfieldReactM2A.module.php,0edc99a2ccd112d337826f182b77809b
+"Maximum Items (0 = Unlimited)","Máximo de elementos (0 = Ilimitado)",,site/modules/React/InputfieldReactM2A.module.php,dbe45001d5ec597e5e90987a4d6593b9
+"React Relation (M2A — Multi-Type)","Relación React (M2A — Multitipo)",,site/modules/React/InputfieldReactM2A.module.php,74ba65ee99beb54138156e3fd92da346
+"Select and organize related items across multiple resource types (such as pages, entries, or users) in one field.","Seleccione y organice elementos relacionados de múltiples tipos de recursos (como páginas, entradas o usuarios) en un único campo.",,site/modules/React/InputfieldReactM2A.module.php,1375baeb80961f47b64e72039f749c5d
+"Please select at least %d item(s).","Seleccione al menos %d elemento(s).",,site/modules/React/InputfieldReactM2M.module.php,cfecdec3aa548f6f05dd7fb4aac1f0fa
+"UI Selection Widget","Widget de selección UI",,site/modules/React/InputfieldReactM2M.module.php,e67a2d84a635294e2bee0d8da73f95ca
+"Auto (MultiSelect <= 30 items, else MultiAutocomplete)","Automático (Selección múltiple <= 30 elementos, si no autocompletado múltiple)",,site/modules/React/InputfieldReactM2M.module.php,04169997901ccb34b0caca10512a37f6
+"Sortable MultiSelect (AsmSelect style)","Selección múltiple ordenable (estilo AsmSelect)",,site/modules/React/InputfieldReactM2M.module.php,659fcf83bbdb0d87a65d93b1607c38ff
+"MultiCheckbox Grid (Search + Select All)","Cuadrícula de casillas múltiples (Buscar + Seleccionar todo)",,site/modules/React/InputfieldReactM2M.module.php,5af908afcefb210fdb8d94d223b8ef4a
+"MultiAutocomplete Chips","Etiquetas de autocompletado múltiple",,site/modules/React/InputfieldReactM2M.module.php,147dea3c8d28371a4ed34d02287b7d4a
+"Hierarchical Multi-TreeSelect (Pages)","Selección en árbol múltiple jerárquica (Páginas)",,site/modules/React/InputfieldReactM2M.module.php,0f8cf635268cdf716fb8ae4ff795c009
+"Dual-List Shuttle / Transfer","Transferencia de doble lista",,site/modules/React/InputfieldReactM2M.module.php,9ac22ed87ac9009545bf2b0628d1fd6b
+"Drawer Table/Card Picker","Selector lateral de tabla/tarjetas",,site/modules/React/InputfieldReactM2M.module.php,ea49654e31b0b28c0e1c65fbf9fdef9c
+"Allow Drag / Reorder","Permitir arrastrar / reordenar",,site/modules/React/InputfieldReactM2M.module.php,097d5694db78abf5e5099b37edf2fe24
+"Minimum Items","Mínimo de elementos",,site/modules/React/InputfieldReactM2M.module.php,c6abb84d6ccac3f0781bc60459a95cdc
+"Maximum Items (0 = Unlimited)","Máximo de elementos (0 = Ilimitado)",,site/modules/React/InputfieldReactM2M.module.php,dbe45001d5ec597e5e90987a4d6593b9
+"Checkbox Columns (0 = Auto)","Columnas de casillas (0 = Automático)",,site/modules/React/InputfieldReactM2M.module.php,f49bfbc9c748a826166bfcfd3299fdaf
+"React Relation (M2M — Multiple)","Relación React (M2M — Múltiple)",,site/modules/React/InputfieldReactM2M.module.php,bcd820f447a98c0be36489778c7e10a2
+"Select and reorder multiple related records using multi-select, checkboxes, autocomplete, tree picker, dual-list transfer, or a slide-out browser.","Seleccione y reordene múltiples registros relacionados mediante selección múltiple, casillas, autocompletado, selector en árbol, doble lista o panel deslizable.",,site/modules/React/InputfieldReactM2M.module.php,224a11d4e3e3c751a8237ba27ecd82d6
+"UI Selection Widget","Widget de selección UI",,site/modules/React/InputfieldReactM2O.module.php,e67a2d84a635294e2bee0d8da73f95ca
+"Auto (Smart adaptation by item count & hierarchy)","Automático (Adaptación inteligente según cantidad y jerarquía)",,site/modules/React/InputfieldReactM2O.module.php,80d09e8dcff820b32c7af12448566c54
+"Select Dropdown","Lista desplegable",,site/modules/React/InputfieldReactM2O.module.php,151a7605042028324ed8b36e5d84c3d5
+"Radio List","Lista de botones de opción",,site/modules/React/InputfieldReactM2O.module.php,7c7dcd8e252ff4c63f69ac7dd4b3bbc2
+"Radio Cards (Rich subtitle & icon)","Tarjetas de opción (Subtítulo enriquecido e icono)",,site/modules/React/InputfieldReactM2O.module.php,73b84464a85e312d27fb7dd610cc10dd
+"Autocomplete Search Combobox","Cuadro combinado de búsqueda con autocompletado",,site/modules/React/InputfieldReactM2O.module.php,a297e193dbaaab48abb17d5cf4f1b2a7
+"Hierarchical TreeSelect (Pages)","Selección jerárquica en árbol (Páginas)",,site/modules/React/InputfieldReactM2O.module.php,0ca1260d3adc425c7ee301c8b78ce528
+"Drawer Table/Card Picker","Selector lateral de tabla/tarjetas",,site/modules/React/InputfieldReactM2O.module.php,ea49654e31b0b28c0e1c65fbf9fdef9c
+"React Relation (M2O — Single)","Relación React (M2O — Individual)",,site/modules/React/InputfieldReactM2O.module.php,a7c97f1534a1c9f2d060f1ed098196fe
+"Select a single related record using a dropdown, radio cards, searchable autocomplete, tree picker, or slide-out browser.","Seleccione un único registro relacionado mediante lista desplegable, tarjetas de radio, autocompletado con búsqueda, selector en árbol o panel deslizable.",,site/modules/React/InputfieldReactM2O.module.php,2f68403e5a36617dac6113bc06a25f8c
+"Related Resource","Recurso relacionado",,site/modules/React/InputfieldReactO2M.module.php,6a52a7bcef9b3f185510143f04fa7ebb
+"Link Field on Related Resource","Campo de enlace en el recurso relacionado",,site/modules/React/InputfieldReactO2M.module.php,ddbfc5931a656aef058f6e617d404be0
+"Field on the related resource that points back to this record.","Campo en el recurso relacionado que apunta de vuelta a este registro.",,site/modules/React/InputfieldReactO2M.module.php,03073aae55a9a9ce315538727affe530
+"Display Layout","Diseño de visualización",,site/modules/React/InputfieldReactO2M.module.php,4c68e096673f719e21a13dc561238f65
+"Compact Subtable","Subtabla compacta",,site/modules/React/InputfieldReactO2M.module.php,f3d970b01e144905e6c4c99284eb3c14
+"Cards Grid","Cuadrícula de tarjetas",,site/modules/React/InputfieldReactO2M.module.php,378483f3184a3b709bf258259a121ed9
+"Compact List","Lista compacta",,site/modules/React/InputfieldReactO2M.module.php,8839d2fcfd24b0dcb6a74536636e3ab0
+"Allow Linking Existing Records","Permitir vincular registros existentes",,site/modules/React/InputfieldReactO2M.module.php,63d22198a1ab86f194cee030b70ac9ad
+"Allow Unlinking Records","Permitir desvincular registros",,site/modules/React/InputfieldReactO2M.module.php,ffd50702ff27be73948379831b786a69
+"React Relation (O2M — Reverse / Incoming)","Relación React (O2M — Inversa / Entrante)",,site/modules/React/InputfieldReactO2M.module.php,48c2e707478c4a052eddedc363704bbb
+"Display and manage records linking back to this item (as a table, cards, or list), with quick create, link, and unlink actions.","Muestre y gestione registros que enlazan a este elemento (en tabla, tarjetas o lista) con acciones rápidas para crear, vincular y desvincular.",,site/modules/React/InputfieldReactO2M.module.php,741b6dda89e34b4401545fe42aece8a2
+"Write something...","Escribe algo...",,site/modules/React/InputfieldTiptap.module.php,f581ea795bc53e0fc0864ede394dbfe4
+"Write something, or type '/' for blocks...","Escribe algo o pulsa '/' para insertar bloques...",,site/modules/React/InputfieldTiptap.module.php,53a08b0bb6b64cee10af9526436f9139
+"Rich text formatting","Formato de texto enriquecido",,site/modules/React/InputfieldTiptap.module.php,b0d15f8c70d4d261d16cf42d89bf24fa
+"Selection formatting","Formato de selección",,site/modules/React/InputfieldTiptap.module.php,c3bb32b5cdb5705d4952bee5ad904be0
+"Language tabs","Pestañas de idioma",,site/modules/React/InputfieldTiptap.module.php,918d2f0829149aba962987bfa50e8300
+"Copy {language}","Copiar {language}",,site/modules/React/InputfieldTiptap.module.php,cfb18e0196a7d9859e909d10049acbf7
+"Copied content from {language}","Contenido copiado de {language}",,site/modules/React/InputfieldTiptap.module.php,cf90f7917668ce48060823ad60d40eb2
+"Close dialog","Cerrar diálogo",,site/modules/React/InputfieldTiptap.module.php,3c62b9dcfe365792b2fbb6e15dc82c80
+"Text style","Estilo de texto",,site/modules/React/InputfieldTiptap.module.php,f4ab8299a8f249826bf5ca6c14f9aa54
+"Inline formatting","Formato en línea",,site/modules/React/InputfieldTiptap.module.php,d78379e7a11e9a99a0bab0357468bbf2
+"Text alignment","Alineación del texto",,site/modules/React/InputfieldTiptap.module.php,bf6bee6d96403148e9cd065820514efb
+"Lists and blocks","Listas y bloques",,site/modules/React/InputfieldTiptap.module.php,d4cc4ee7ed191ab03e5323bb2aeaa1e8
+"Insert elements","Insertar elementos",,site/modules/React/InputfieldTiptap.module.php,9d25389aec7c1c1c49020e85bc25af58
+History,Historial,,site/modules/React/InputfieldTiptap.module.php,16d2b386b2034b9488996466aaae0b57
+"Editor utilities","Utilidades del editor",,site/modules/React/InputfieldTiptap.module.php,fe04df2097e684b41b8d13309117f9de
+"Formatting group {index}","Grupo de formato {index}",,site/modules/React/InputfieldTiptap.module.php,47217d1a538a5e469656f6e26aaaf903
+"Paragraph style","Estilo de párrafo",,site/modules/React/InputfieldTiptap.module.php,9c1a2af13f3c652d42d2f48ce173c554
+Paragraph,Párrafo,,site/modules/React/InputfieldTiptap.module.php,feaf0a320c3d678ad30dd179b7d21584
+"Heading {level}","Encabezado {level}",,site/modules/React/InputfieldTiptap.module.php,6637c23d78403523cba7438db80aad38
+Bold,Negrita,,site/modules/React/InputfieldTiptap.module.php,114c3050111d8b8ddd830b99ccebd246
+Italic,Cursiva,,site/modules/React/InputfieldTiptap.module.php,1d874710ccdcd46b95397049d2e7500c
+Underline,Subrayado,,site/modules/React/InputfieldTiptap.module.php,852721aa5fc738dfedff2945d71da439
+Strikethrough,Tachado,,site/modules/React/InputfieldTiptap.module.php,926a51baad949d12035107e5d06e2fdb
+"Inline code","Código en línea",,site/modules/React/InputfieldTiptap.module.php,9908b5feeb1dee676a41a9700873d646
+Highlight,Resaltar,,site/modules/React/InputfieldTiptap.module.php,0b90582f4589d84be89f5b847d4d1ed1
+Subscript,Subíndice,,site/modules/React/InputfieldTiptap.module.php,928558e2f9712e38d447d674f2672200
+Superscript,Superíndice,,site/modules/React/InputfieldTiptap.module.php,6316f99acec341fbdd5cc006dc5a7ba7
+"Align left","Alinear a la izquierda",,site/modules/React/InputfieldTiptap.module.php,ded0ea9d2cbb6e177900015adeb15cdf
+"Align center",Centrar,,site/modules/React/InputfieldTiptap.module.php,d5f99d7d9fdc1af3e236ae1833287bc6
+"Align right","Alinear a la derecha",,site/modules/React/InputfieldTiptap.module.php,acdc5a7bb60bf1fbc33eee11117fee61
+Justify,Justificar,,site/modules/React/InputfieldTiptap.module.php,4b425d212a2e7b36c38703bfdcd57823
+"Bullet list","Lista con viñetas",,site/modules/React/InputfieldTiptap.module.php,54cc4792af10120e92b61096abc4dc19
+"Numbered list","Lista numerada",,site/modules/React/InputfieldTiptap.module.php,4b985b57aabbd3110aac1d53b1a921c1
+"Task list","Lista de tareas",,site/modules/React/InputfieldTiptap.module.php,65709fd2505ff82f0d43a3c97eb505f3
+Blockquote,"Cita en bloque",,site/modules/React/InputfieldTiptap.module.php,146aaf1333c7e82829fe9c5c52340b56
+"Code block","Bloque de código",,site/modules/React/InputfieldTiptap.module.php,10a7314bd561c0d130bd189a6f836e5e
+Link,Enlace,,site/modules/React/InputfieldTiptap.module.php,97e7c9a7d06eac006a28bf05467fcc8b
+"Remove link","Quitar enlace",,site/modules/React/InputfieldTiptap.module.php,79820c0aefba8326e5aebd0ecf1a8aaa
+"Insert anchor","Insertar ancla",,site/modules/React/InputfieldTiptap.module.php,e8550807200f55308bed9d36c0522e0c
+"Insert image","Insertar imagen",,site/modules/React/InputfieldTiptap.module.php,21051abf79012a1b2ee50d13b9731a16
+"Insert table","Insertar tabla",,site/modules/React/InputfieldTiptap.module.php,bdc40d5c3ebd2bfed5cd1447ab033359
+"Table active","Tabla activa",,site/modules/React/InputfieldTiptap.module.php,960ac78ce8e5591804c4b9a2a3374775
+"Insert 3x3 table","Insertar tabla 3x3",,site/modules/React/InputfieldTiptap.module.php,d70e084bf0d08441f9b5d7e82aa7d052
+"Insert horizontal rule","Insertar línea horizontal",,site/modules/React/InputfieldTiptap.module.php,4f74d1e915dbe90847aaf6692911fc82
+"Insert block","Insertar bloque",,site/modules/React/InputfieldTiptap.module.php,a1020668e25156f8e890f258f99e2f51
+Block,Bloque,,site/modules/React/InputfieldTiptap.module.php,e1e4c8c9ccd9fc39c391da4bcd093fb2
+"Clear formatting","Limpiar formato",,site/modules/React/InputfieldTiptap.module.php,4494691b92e1f195feb25bd63ee5468b
+"HTML source code","Código fuente HTML",,site/modules/React/InputfieldTiptap.module.php,239eccf4e5abd114e97207aae0d92197
+"Fullscreen editor","Editor en pantalla completa",,site/modules/React/InputfieldTiptap.module.php,95541eb590778e943f559eb56cd7e97c
+"Exit fullscreen","Salir de pantalla completa",,site/modules/React/InputfieldTiptap.module.php,b5607fef9c8acba81dc21eda39252e9e
+"Exit Fullscreen","Salir de pantalla completa",,site/modules/React/InputfieldTiptap.module.php,53d67f1a3519e1d85c6ce095d78eaea8
+Undo,Deshacer,,site/modules/React/InputfieldTiptap.module.php,1cdc076b28f70afac5fcedadf99fa119
+Redo,Rehacer,,site/modules/React/InputfieldTiptap.module.php,5afeaba074ef570dc720caaa855d49f6
+"https://example.com or /page/","https://example.com o /page/",,site/modules/React/InputfieldTiptap.module.php,3ff4d5e5cf852f9e7fc443388d54205f
+"New tab","Nueva pestaña",,site/modules/React/InputfieldTiptap.module.php,c8a19ea6c79e23a1ee5372c8dbf3c6cf
+Unlink,Desvincular,,site/modules/React/InputfieldTiptap.module.php,c1a39b6a60f8b2f87e23d60ab649d994
+Cancel,Cancelar,,site/modules/React/InputfieldTiptap.module.php,ea4788705e6873b424c65e91c2846b19
+"Enter a valid https://, http://, mailto:, tel:, or relative URL.","Introduce una URL válida con https://, http://, mailto:, tel: o relativa.",,site/modules/React/InputfieldTiptap.module.php,51df59363ba07f44658778e63a870e90
+"Insert Link","Insertar enlace",,site/modules/React/InputfieldTiptap.module.php,259738ca35a086ce9d269623e5ab5d37
+"Edit Link","Editar enlace",,site/modules/React/InputfieldTiptap.module.php,ff15d4e97d08c2ab0351169af757b0f2
+"Link text","Texto del enlace",,site/modules/React/InputfieldTiptap.module.php,63a11faa3a692d4e00fa8e03bbe8a0d6
+"Visible text for this link","Texto visible para este enlace",,site/modules/React/InputfieldTiptap.module.php,cfb9069b3edd13bc9df5fb7a3b515bc3
+"Link to URL","Dirección del enlace",,site/modules/React/InputfieldTiptap.module.php,f6f7f0f8aa1ef94fdf01a81f1cb24e7a
+"Enter a URL, email address, anchor, or word(s) to find a page.","Introduzca una URL, un correo, un ancla o palabras para buscar una página.",,site/modules/React/InputfieldTiptap.module.php,5ca94731e096d98ae0e649d70393c443
+"Enter a URL, or pick a page, file, or anchor below.","Introduzca una URL o elija abajo una página, un archivo o un ancla.",,site/modules/React/InputfieldTiptap.module.php,9a6aad7544939f1a88b074dcf283f3eb
+"Clear URL","Borrar URL",,site/modules/React/InputfieldTiptap.module.php,778add79d51c47d969e5623b082b337e
+"Matching pages","Páginas coincidentes",,site/modules/React/InputfieldTiptap.module.php,4835e287e634d400f60312eec75c68fa
+"Select Child Page","Seleccionar subpágina",,site/modules/React/InputfieldTiptap.module.php,d98192e3cb911892e861fde0f812f062
+"This page has no child pages yet.","Esta página aún no tiene subpáginas.",,site/modules/React/InputfieldTiptap.module.php,6e4cbfcf3d586a694b96e7728e402a36
+Unpublished,"No publicada",,site/modules/React/InputfieldTiptap.module.php,0774e163cd7df482edd2abd498189f8b
+Hidden,Oculto,,site/modules/React/InputfieldTiptap.module.php,7acdf85c69cc3c5305456a293524386e
+"File source","Origen de archivos",,site/modules/React/InputfieldTiptap.module.php,de7978a84c25bf4e86c1f2451249623d
+"Select Page","Seleccionar página",,site/modules/React/InputfieldTiptap.module.php,99e7707748ae048e17c5810fad119e0b
+"Select File","Seleccionar archivo",,site/modules/React/InputfieldTiptap.module.php,1aa14e9f377b528b5537d70fbd35c6a2
+"Select Anchor","Seleccionar ancla",,site/modules/React/InputfieldTiptap.module.php,16fc67b7eaa1e52e2ad1ecd9d42917bc
+"Type page title, URL, email, or #anchor...","Escriba el título de la página, URL, correo o #ancla...",,site/modules/React/InputfieldTiptap.module.php,9f6f8df826d4539453ab482c3cf451ae
+"No matching pages found.","No se encontraron páginas coincidentes.",,site/modules/React/InputfieldTiptap.module.php,9aa45d2b5d98b8874f798e5e3ddffca6
+"Loading page tree...","Cargando árbol de páginas...",,site/modules/React/InputfieldTiptap.module.php,a5b824d199652ecdaca197736bb19f9d
+"Expand child pages","Expandir subpáginas",,site/modules/React/InputfieldTiptap.module.php,3321bd8504a9db351954e013f3677c94
+"Collapse child pages","Contraer subpáginas",,site/modules/React/InputfieldTiptap.module.php,2ce850c9571d9d94d5ff666a9756210e
+"Files on {page}","Archivos en {page}",,site/modules/React/InputfieldTiptap.module.php,f153d55c4989af3c1da98d52111ae198
+"Current item files","Archivos del elemento actual",,site/modules/React/InputfieldTiptap.module.php,fef31870f1063e09c9516d35dec10920
+"Loading files...","Cargando archivos...",,site/modules/React/InputfieldTiptap.module.php,1118898b357188ce4702f44b78aec012
+"No files are attached to this item.","No hay archivos adjuntos a este elemento.",,site/modules/React/InputfieldTiptap.module.php,eee9dbb57af9080d69fd9b9f9c528e77
+"Anchor ID","ID del ancla",,site/modules/React/InputfieldTiptap.module.php,8cd18cba08c431ac7c4a497539c42a75
+section-heading,titulo-seccion,,site/modules/React/InputfieldTiptap.module.php,2bc5305834a2e9ed89b00de8a37e2142
+"Anchor ID must start with a letter and contain only letters, numbers, hyphens, or underscores.","El ID del ancla debe comenzar con una letra y contener solo letras, números, guiones o guiones bajos.",,site/modules/React/InputfieldTiptap.module.php,44e7c55ee7b930c51a50974d3ed141ee
+"Insert Named Anchor","Insertar ancla con nombre",,site/modules/React/InputfieldTiptap.module.php,21acd11ce44fb4af7d5f4ca3f3aae3fe
+"Insert Anchor","Insertar ancla",,site/modules/React/InputfieldTiptap.module.php,741f45009593e3e2a206e1350f6ef884
+"Remove Anchor","Eliminar ancla",,site/modules/React/InputfieldTiptap.module.php,4bd19ea92cece62cb89d5caa5903ef6b
+Attributes,Atributos,,site/modules/React/InputfieldTiptap.module.php,287234a1ff35a314b5b6bc4e5828e745
+"Title attribute","Atributo title",,site/modules/React/InputfieldTiptap.module.php,70e5a90fda0fca373f65e61df0840f77
+"Additional text to describe the link.","Texto adicional que describe el enlace.",,site/modules/React/InputfieldTiptap.module.php,e16e9828d7fde614ac138cfe20c8bfd3
+"Target window","Ventana de destino",,site/modules/React/InputfieldTiptap.module.php,1638aff8fb7ff24f562e168fed37c329
+"Where this link will open.","Dónde se abrirá este enlace.",,site/modules/React/InputfieldTiptap.module.php,918dfcbd7b97a5aa266ceb37a76c3dee
+"Same window (default)","Misma ventana (predeterminado)",,site/modules/React/InputfieldTiptap.module.php,b2b418960fca1c4a969fbedf71dc190e
+"Rel attributes","Atributos rel",,site/modules/React/InputfieldTiptap.module.php,9e97be0c2d3eb893b553132c46b2ea73
+"Relationship of the link to this document.","Relación del enlace con este documento.",,site/modules/React/InputfieldTiptap.module.php,0426d5f31f5255a5d1ff1cd28673e7ca
+"CSS classes","Clases CSS",,site/modules/React/InputfieldTiptap.module.php,bd4f409b3e6cabcbc96272193a3995bc
+"Update Link","Actualizar enlace",,site/modules/React/InputfieldTiptap.module.php,979a1af731a79241ec0937f557676d1a
+"Image URL","URL de la imagen",,site/modules/React/InputfieldTiptap.module.php,427b6d816d7fdd86cabe48d8180a3cc9
+"/site/assets/files/... or https://...","/site/assets/files/... o https://...",,site/modules/React/InputfieldTiptap.module.php,d5f733e8b5dd72b4fb76c5d2dc411628
+"Image alt text","Texto alternativo de la imagen",,site/modules/React/InputfieldTiptap.module.php,390c85457d882307445484d4813faf0e
+"Alt description","Descripción alternativa",,site/modules/React/InputfieldTiptap.module.php,a60b0112edf57d22b3631e6ed6d30543
+Insert,Insertar,,site/modules/React/InputfieldTiptap.module.php,a458be0f08b7e4ff3c0f633c100176c0
+"Enter a valid https://, http://, or site-relative image URL.","Introduce una URL de imagen válida con https://, http:// o relativa al sitio.",,site/modules/React/InputfieldTiptap.module.php,61bcb67b1abe9c4ec58213e7bd9bb9dc
+"Select Image","Seleccionar imagen",,site/modules/React/InputfieldTiptap.module.php,446a6000511ab6fb0711400379a62a04
+"Edit Image","Editar imagen",,site/modules/React/InputfieldTiptap.module.php,03274f27f51f0c39e06e0e6cd07e01a9
+"Page Images","Imágenes de la página",,site/modules/React/InputfieldTiptap.module.php,ecfe6d928fdff5bb1b7e1435f093d98a
+"External URL","URL externa",,site/modules/React/InputfieldTiptap.module.php,48b6dc1949d063860c1765ebd06bbc95
+"Image source","Origen de la imagen",,site/modules/React/InputfieldTiptap.module.php,14048e0cc272bd8e68ceb86154de892a
+"Current item","Elemento actual",,site/modules/React/InputfieldTiptap.module.php,3f139cfffa58e524bf48e5c9e837147e
+"Choose another page","Elegir otra página",,site/modules/React/InputfieldTiptap.module.php,6828716d7f290f658bfc44cd3a337057
+"Hide page browser","Ocultar explorador de páginas",,site/modules/React/InputfieldTiptap.module.php,078e077ea81743490a6906ff040d1d98
+"Upload Image","Subir imagen",,site/modules/React/InputfieldTiptap.module.php,1f98842c354dc496970446bce14f4c50
+"Uploading image...","Subiendo imagen...",,site/modules/React/InputfieldTiptap.module.php,28f80664498023f890643efa086546c7
+"Upload to field","Subir al campo",,site/modules/React/InputfieldTiptap.module.php,f5b802da3ada3c1bd6900fc7b04d0772
+"Loading images...","Cargando imágenes...",,site/modules/React/InputfieldTiptap.module.php,17ca0415d200c54478f4ed170e6eada3
+"There are no image fields on this page. Choose another page below to select or upload images.","No hay campos de imagen en esta página. Elija otra página abajo para seleccionar o subir imágenes.",,site/modules/React/InputfieldTiptap.module.php,52ccc59271edc7b1c77418d20f8bb8d0
+"No images found on this page. Choose another page to select images from.","No se encontraron imágenes en esta página. Elija otra página para seleccionar imágenes.",,site/modules/React/InputfieldTiptap.module.php,83f903a42b6bd2ab0fa68213d64d02f8
+"No images found on this source. Upload an image or choose another page.","No se encontraron imágenes en este origen. Suba una imagen o elija otra página.",,site/modules/React/InputfieldTiptap.module.php,b22f9ebe740238f294b30b8b58f50d93
+"Back to Images","Volver a las imágenes",,site/modules/React/InputfieldTiptap.module.php,a6fc53bb43d0f9cbb5f870c1972d7e50
+"Dimensions & Quality","Dimensiones y calidad",,site/modules/React/InputfieldTiptap.module.php,4d4d7ddd35ae9a43deffd4b9a75bedb4
+"Width (px)","Ancho (px)",,site/modules/React/InputfieldTiptap.module.php,ee8d82448ba8787a6ae043a53157f36e
+"Height (px)","Alto (px)",,site/modules/React/InputfieldTiptap.module.php,e03b313cd093a6368ea5e16a8e2af335
+"Keep aspect ratio","Mantener proporción",,site/modules/React/InputfieldTiptap.module.php,a899dc2af338fa9316506646c65ae2ca
+"Original size ({width}x{height})","Tamaño original ({width}x{height})",,site/modules/React/InputfieldTiptap.module.php,f24f439664ac6ae773d42e1e7ff9080b
+"HiDPI / Retina","HiDPI / Retina",,site/modules/React/InputfieldTiptap.module.php,a383ac9cf4adcdadde6c646e2afb66fa
+Alignment,Alineación,,site/modules/React/InputfieldTiptap.module.php,a63706eecfa33f67b315f978392ad7ae
+"No alignment","Sin alineación",,site/modules/React/InputfieldTiptap.module.php,f5d0e7591f0d5da3cf09c599fd314c47
+"Show caption (<figure>)","Mostrar pie de foto (<figure>)",,site/modules/React/InputfieldTiptap.module.php,f82fea85cbd2eced26ed189329866d89
+"Caption text","Texto del pie de foto",,site/modules/React/InputfieldTiptap.module.php,0859dc2279a778d36d21ed0f012a36fc
+"Enter image caption...","Introducir pie de foto...",,site/modules/React/InputfieldTiptap.module.php,8788001f25ff9c0bad935d36e8645d29
+"Link to full-size original image","Enlazar a la imagen original a tamaño completo",,site/modules/React/InputfieldTiptap.module.php,1a00c4ab80e34d7d64e4073a31708225
+Crop,Recortar,,site/modules/React/InputfieldTiptap.module.php,d388632d05e8826abe4b95de0b110529
+"Cancel Crop","Cancelar recorte",,site/modules/React/InputfieldTiptap.module.php,426afb7d36a4bd61a451860d0eb8a5e9
+"Rotate 90° counter-clockwise","Girar 90° en sentido antihorario",,site/modules/React/InputfieldTiptap.module.php,711b2d3ad39641efad41242959cc26bb
+"Rotate 90° clockwise","Girar 90° en sentido horario",,site/modules/React/InputfieldTiptap.module.php,c582c6fbe549d884cfdede85f5d4ed0e
+"Flip horizontal","Voltear horizontalmente",,site/modules/React/InputfieldTiptap.module.php,2f96dd2b9788ed9ecbc6f41c312bf455
+"Flip vertical","Voltear verticalmente",,site/modules/React/InputfieldTiptap.module.php,8373d2f18e29920f78459f34d71040ad
+"Generating image variation...","Generando variación de imagen...",,site/modules/React/InputfieldTiptap.module.php,66bb0d8094ec17522fdd40f198dcb937
+"Insert This Image","Insertar esta imagen",,site/modules/React/InputfieldTiptap.module.php,941c891be23b6a837de1d46c30efad2a
+"Update Image","Actualizar imagen",,site/modules/React/InputfieldTiptap.module.php,9e3c5f97717a2e0757845fefe0ffcfd1
+"Edit image settings","Editar ajustes de imagen",,site/modules/React/InputfieldTiptap.module.php,6452e82f027b43f8884bb0f65771512c
+"Remove image","Eliminar imagen",,site/modules/React/InputfieldTiptap.module.php,f4701af4852c350444ecdca3fe3ecfc5
+"Drag to resize image","Arrastrar para cambiar el tamaño de la imagen",,site/modules/React/InputfieldTiptap.module.php,e5e05476cc73f52a1a98cfedad41dc46
+"Table controls","Controles de tabla",,site/modules/React/InputfieldTiptap.module.php,4799f2bcbb614f86b00e53b60a45a78f
+Table:,Tabla:,,site/modules/React/InputfieldTiptap.module.php,4e77d096b16a8f7fd1658f9768e5d7c8
+"+ Row","+ Fila",,site/modules/React/InputfieldTiptap.module.php,9b84429085994afa0f063543620a381a
+"- Row","- Fila",,site/modules/React/InputfieldTiptap.module.php,bc72b2650697d1a93c5d35932de55cd2
+"+ Column","+ Columna",,site/modules/React/InputfieldTiptap.module.php,7d1aca503b0b931ba353ac419e0b9bbf
+"- Column","- Columna",,site/modules/React/InputfieldTiptap.module.php,87280d70adbb22e4b0fe6c2e4afcefe6
+"Delete Table","Eliminar tabla",,site/modules/React/InputfieldTiptap.module.php,e1d0d5ce277f0e9d9f3adfaafceace96
+"{count} word","{count} palabra",,site/modules/React/InputfieldTiptap.module.php,e7969dd082ea56966ef3e39a64b66413
+"{count} words","{count} palabras",,site/modules/React/InputfieldTiptap.module.php,79765afedda46957e3ce132fa0db4fc0
+"{count} char","{count} carácter",,site/modules/React/InputfieldTiptap.module.php,aa1e2648b21bf2126e2b557f319f7841
+"{count} chars","{count} caracteres",,site/modules/React/InputfieldTiptap.module.php,68d471b5229df8a529b26610ecfe2beb
+"{count} / {max} chars","{count} / {max} caracteres",,site/modules/React/InputfieldTiptap.module.php,c235b1f1656f9ee551faa82084e4d92c
+Read-only,"Solo lectura",,site/modules/React/InputfieldTiptap.module.php,d8bd6e60adcc01ce20f509ea6800de8f
+"Switched to rich text view","Cambiado a la vista de texto enriquecido",,site/modules/React/InputfieldTiptap.module.php,689ac6fa65a3005184c57d4a1d6c22c8
+"Switched to HTML source view","Cambiado a la vista de código HTML",,site/modules/React/InputfieldTiptap.module.php,aeab0d00dad8d2c812a51b97ab4f1919
+"Link applied","Enlace aplicado",,site/modules/React/InputfieldTiptap.module.php,23c212ddab1ba757e416c0ca67d585c8
+"Link removed","Enlace eliminado",,site/modules/React/InputfieldTiptap.module.php,d6ea497dd00db5b29484dc0e12776e30
+"Anchor inserted","Ancla insertada",,site/modules/React/InputfieldTiptap.module.php,62fa71a13d8a6572bde06c459489f671
+"Anchor removed","Ancla eliminada",,site/modules/React/InputfieldTiptap.module.php,83224ad5896ea107588a537c0f0ca566
+"Image inserted","Imagen insertada",,site/modules/React/InputfieldTiptap.module.php,ddf1039f2d8da26655a9be5157bd43b5
+"Image updated","Imagen actualizada",,site/modules/React/InputfieldTiptap.module.php,1623e0ebd544b652aa9ad55d77328409
+"Image uploaded and inserted","Imagen subida e insertada",,site/modules/React/InputfieldTiptap.module.php,e82d51a01724dcd069a00dd7f3f680aa
+"Image upload failed: {error}","Error al subir la imagen: {error}",,site/modules/React/InputfieldTiptap.module.php,290dc250f20faa31f7b3634817d5c7a7
+"Table inserted","Tabla insertada",,site/modules/React/InputfieldTiptap.module.php,862f386b47bc039f75eacfc408bac47f
+"Table deleted","Tabla eliminada",,site/modules/React/InputfieldTiptap.module.php,6a50201fb86d1d6b9522ae27b20fd6c7
+"Horizontal rule inserted","Línea horizontal insertada",,site/modules/React/InputfieldTiptap.module.php,e79cb413850757289e694bebbabd22f8
+"{block} inserted","{block} insertado",,site/modules/React/InputfieldTiptap.module.php,4833b4de810788f4e0c068012b547039
+"Formatting cleared","Formato limpiado",,site/modules/React/InputfieldTiptap.module.php,eedc2904c80a48378f328ce1bc950339
+"Undid last change","Último cambio deshecho",,site/modules/React/InputfieldTiptap.module.php,22c4ad0f1692d07da79cc3274f944095
+"Redid change","Cambio rehecho",,site/modules/React/InputfieldTiptap.module.php,0cd439c05eddcc919331d9cce4721d0f
+"Insert block command menu","Menú de comandos para insertar bloques",,site/modules/React/InputfieldTiptap.module.php,0b21d8d58dde5290e2ae084a9b3e39c5
+"No matching blocks","No hay bloques coincidentes",,site/modules/React/InputfieldTiptap.module.php,83b92fb1656516f2482722ca0356fc33
+"Editorial blocks","Bloques editoriales",,site/modules/React/InputfieldTiptap.module.php,7b719c5213a61fe98f3fc5761b008ef9
+"Basic formatting","Formato básico",,site/modules/React/InputfieldTiptap.module.php,564ffb154f11b3b0d65eaabf8c986794
+"Plain body text paragraph","Párrafo de texto normal",,site/modules/React/InputfieldTiptap.module.php,e733a6dcb062995f7f0385a2d65fc530
+"Section heading level {level}","Encabezado de sección nivel {level}",,site/modules/React/InputfieldTiptap.module.php,8e896b2a2e078e71fd996694645629ae
+"Unordered bulleted list","Lista con viñetas",,site/modules/React/InputfieldTiptap.module.php,e2f82e00faf06f932c0c9473e984e92c
+"Ordered numbered list","Lista numerada",,site/modules/React/InputfieldTiptap.module.php,bf38911bfbbf04c8b2800ca46a8413be
+"Interactive checklist items","Lista de tareas interactiva",,site/modules/React/InputfieldTiptap.module.php,c160a8f1b23442bf603ad78bde796dd4
+"Standard inline quotation","Cita estándar",,site/modules/React/InputfieldTiptap.module.php,018a5c20bdd02af0dbdeb1cef1b52f09
+"Monospace code snippet","Fragmento de código monoespaciado",,site/modules/React/InputfieldTiptap.module.php,dc649a05c96f893d99b5e50216ed71f8
+"3x3 structured table with header row","Tabla estructurada 3x3 con encabezado",,site/modules/React/InputfieldTiptap.module.php,8979091e96f6380a3be732ee7f013d0e
+"Visual section divider line","Línea divisoria de sección",,site/modules/React/InputfieldTiptap.module.php,2a49c07bf90c6e03f1af927f6bcc5277
+"Block actions","Acciones del bloque",,site/modules/React/InputfieldTiptap.module.php,7cf47590adb4c5304ddfb6db70074bb7
+"Move block up","Mover bloque arriba",,site/modules/React/InputfieldTiptap.module.php,9cd0bfb10f20ca5dcb447f624fdd34c0
+"Move block down","Mover bloque abajo",,site/modules/React/InputfieldTiptap.module.php,41c5f55a1ac507f526d59c48d04dfc0f
+"Insert paragraph below","Insertar párrafo debajo",,site/modules/React/InputfieldTiptap.module.php,3026a09012418d355d509b0b3caa7579
+"Remove block","Eliminar bloque",,site/modules/React/InputfieldTiptap.module.php,c64153f401625d058ac73d8efd855ae3
+"Optional callout title...","Título opcional del aviso...",,site/modules/React/InputfieldTiptap.module.php,4142f7d45f36dd55112ef3b907b343ac
+"Callout title","Título del aviso",,site/modules/React/InputfieldTiptap.module.php,20f27503a616f7a1b1e70b1bba97e1d4
+"Callout style","Estilo del aviso",,site/modules/React/InputfieldTiptap.module.php,6a8b00b5aa7709eaf56ccbbef00bc747
+Info,Información,,site/modules/React/InputfieldTiptap.module.php,4059b0251f66a18cb56f544728796875
+Tip,Consejo,,site/modules/React/InputfieldTiptap.module.php,12ae2a12586001e30745cb0457586ae3
+Warning,Aviso,,site/modules/React/InputfieldTiptap.module.php,0eaadb4fcb48a0a0ed7bc9868be9fbaa
+Danger,Peligro,,site/modules/React/InputfieldTiptap.module.php,990816b607ebf99b1415760965e4d564
+Figure,Figura,,site/modules/React/InputfieldTiptap.module.php,666df2f48cd16f38212c093999248769
+"Figure alignment","Alineación de la figura",,site/modules/React/InputfieldTiptap.module.php,690140430510d155c088630acee6e2a0
+Inline,"En línea",,site/modules/React/InputfieldTiptap.module.php,0125cf5f3ca38b312ca5d3b511c45a13
+Wide,Ancho,,site/modules/React/InputfieldTiptap.module.php,e7c770a61dbdf81ca922ae0260e327c1
+Full,"Ancho completo",,site/modules/React/InputfieldTiptap.module.php,bbd47109890259c0127154db1af26c75
+Left,Izquierda,,site/modules/React/InputfieldTiptap.module.php,945d5e233cf7d6240f6b783b36a374ff
+Right,Derecha,,site/modules/React/InputfieldTiptap.module.php,92b09c7c48c520c3c55e497875da437c
+"Edit image URL and alt text","Editar URL y texto alternativo de la imagen",,site/modules/React/InputfieldTiptap.module.php,c89599958bfed8a5b295e8451da6b211
+"Paste an image URL above to preview the figure","Pega una URL de imagen arriba para previsualizar",,site/modules/React/InputfieldTiptap.module.php,f91b19f8889bcbaf03d09acc515a4eec
+"Optional figure caption...","Pie de foto opcional...",,site/modules/React/InputfieldTiptap.module.php,a46ac7388768a4cd452e9ca1ae3efd1b
+"Figure caption","Pie de figura",,site/modules/React/InputfieldTiptap.module.php,8544c09141c6c71c4e7b942759a5ff0b
+"Toggle accordion preview","Alternar vista previa del acordeón",,site/modules/React/InputfieldTiptap.module.php,4d6fa081a9fa1ffbaf069b3cb1eccdfb
+"Accordion summary title...","Título del acordeón...",,site/modules/React/InputfieldTiptap.module.php,0a7a90777fb2566a6bacfba21b650642
+"Accordion summary","Resumen del acordeón",,site/modules/React/InputfieldTiptap.module.php,bb4f9c320eb74a3ef523ed67ef016e6c
+Details,Detalles,,site/modules/React/InputfieldTiptap.module.php,3ec365dd533ddb7ef3d1c111186ce872
+"Open by default","Abierto por defecto",,site/modules/React/InputfieldTiptap.module.php,edbb805daf80b5f81eb6228807c5639d
+Pullquote,"Cita destacada",,site/modules/React/InputfieldTiptap.module.php,b68befd5d22055d45ed59015d1799f5f
+"Citation or author (optional)...","Fuente o autor (opcional)...",,site/modules/React/InputfieldTiptap.module.php,c9a39f8c2180e2e999174eac6b66d434
+"Quote citation","Fuente de la cita",,site/modules/React/InputfieldTiptap.module.php,353e19df544aeaf07ca16a5574e2ca09
+"Editorial mini-block","Minibloque editorial",,site/modules/React/InputfieldTiptap.module.php,c2f1f08179fe25f94ee069adb1f7a3d4
+"Add block below","Añadir bloque debajo",,site/modules/React/InputfieldTiptap.module.php,427e0d0f044cd65509b431606fda26f4
+"Block actions (drag to reorder or click for menu)","Acciones del bloque (arrastrar para reordenar o hacer clic para el menú)",,site/modules/React/InputfieldTiptap.module.php,d1e28c51bbe474f07cd39ca75cd3ce68
+"Turn into","Convertir en",,site/modules/React/InputfieldTiptap.module.php,2a514c858adedac8dc9796f958a02fd0
+"Move up","Mover arriba",,site/modules/React/InputfieldTiptap.module.php,f77af7695f71323808f9b6e2795cde86
+"Move down","Mover abajo",,site/modules/React/InputfieldTiptap.module.php,dd9f0c7e1bb3b749bd423e3544b4a8e3
+Duplicate,Duplicar,,site/modules/React/InputfieldTiptap.module.php,ed75712b0eb1913c28a3872731ffd48d
+"Delete block","Eliminar bloque",,site/modules/React/InputfieldTiptap.module.php,c613629aef5762bb8c3f646a4035b7fd
+"Block moved to position {position}","Bloque movido a la posición {position}",,site/modules/React/InputfieldTiptap.module.php,c3557396a86d276224633efcfc1653e3
+"Block duplicated","Bloque duplicado",,site/modules/React/InputfieldTiptap.module.php,660894298592581bff779586ee243599
+"Block deleted","Bloque eliminado",,site/modules/React/InputfieldTiptap.module.php,7a52f432b4633609fbfb8fb582d20987
+"Block reorder cancelled","Reordenación de bloques cancelada",,site/modules/React/InputfieldTiptap.module.php,dceeb603259c6b0c25aa70c69e98790e
+"Loading dialog...","Cargando diálogo...",,site/modules/React/InputfieldTiptap.module.php,1a89f3af761388df23eb23f1c1a4458e
+"Value exceeds maximum recommended length of %1$d characters (length=%2$d).","El valor supera la longitud máxima recomendada de %1$d caracteres (longitud=%2$d).",,site/modules/React/InputfieldTiptap.module.php,8fe5e05f660fa7d2db7f9bd444d77358
+Tiptap,Tiptap,,site/modules/React/InputfieldTiptap.module.php,da560e1075ec0ffe2da39361aafad4c5
+"Rich text editor with customizable toolbars, content blocks, HTML cleanup, and multi-language support.","Editor de texto enriquecido con barras de herramientas personalizables, bloques de contenido, limpieza de HTML y soporte multilingüe.",,site/modules/React/InputfieldTiptap.module.php,5fad4bbc356d9e98c87459e275779f84
+"React Cards Viewport","Vista de tarjetas React",,site/modules/React/MarkupReactCards.module.php,8492cf2ce465c3229a396650598d237c
+"Interactive responsive card grid with search, filters, bulk actions, and pagination.","Cuadrícula de tarjetas interactiva y adaptable con búsqueda, filtros, acciones masivas y paginación.",,site/modules/React/MarkupReactCards.module.php,5978e6de4cd6f6cf8294fbeeb7f0729b
+General,General,,site/modules/React/MarkupReactTab.module.php,0db377921f4ce762c62526131097968f
+Sections,Secciones,,site/modules/React/MarkupReactTab.module.php,855c3eca6c7aaef477b4f03e4699944d
+"Tab Bar Style Variant","Variante de estilo de pestañas",,site/modules/React/MarkupReactTab.module.php,ba01477907bfa826253790e6c5605d16
+"Line (Standard Tabs)","Línea (Pestañas estándar)",,site/modules/React/MarkupReactTab.module.php,2f9cc5e6dfd7e41c8cae6b5634a73b3d
+"Segmented (Compact Pill Bar)","Segmentado (Barra compacta)",,site/modules/React/MarkupReactTab.module.php,2ef3c75cb7726580a9b9109e233756c8
+"Vertical (Side Navigation)","Vertical (Navegación lateral)",,site/modules/React/MarkupReactTab.module.php,26c6c99dd68e9dc87f5d9ed6915f5cca
+"Tab Badge Text","Texto de insignia de pestaña",,site/modules/React/MarkupReactTab.module.php,95fc76ff043e1a56678c85c23deb4924
+"Load Inactive Tabs on Demand","Cargar pestañas inactivas bajo demanda",,site/modules/React/MarkupReactTab.module.php,887d711a56356f28de1f0f52bedda828
+"Wait to render hidden tab contents until the editor opens that tab.","Espera a renderizar el contenido de las pestañas ocultas hasta que el editor abra esa pestaña.",,site/modules/React/MarkupReactTab.module.php,6e8058acfcea2ad40dde4e2b57778c73
+"React Tab Viewport & Container","Contenedor y vista de pestañas React",,site/modules/React/MarkupReactTab.module.php,977257fd63d7f2029f28f0649ded249b
+"Organize fields and panels into accessible tabs (line, segmented, or vertical layout).","Organice campos y paneles en pestañas accesibles (diseño en línea, segmentado o vertical).",,site/modules/React/MarkupReactTab.module.php,4781564a5e10bb746bd7589e2773cb1b
+"%d validation error","%d error de validación","Singular Version",site/modules/React/MarkupReactTab.module.php,fb73c11c1e48504bae175fc13f45129c
+"%d validation errors","%d errores de validación","Plural Version",site/modules/React/MarkupReactTab.module.php,ec828fd611b57248325002f413e64b32
+"React Table Viewport","Vista de tabla React",,site/modules/React/MarkupReactTable.module.php,0d06a2a4eb05a7e835a3e9a4572fe325
+"Interactive data table with search, filters, inline editing, bulk actions, and pagination.","Tabla de datos interactiva con búsqueda, filtros, edición en línea, acciones masivas y paginación.",,site/modules/React/MarkupReactTable.module.php,81fbcc4d713141339befa98baa9a66f0
+Panel,Panel,,site/modules/React/React.module.php,b8da6df14bf06283cbf588df6998722e
+"Vector Icon","Icono vectorial",,site/modules/React/React.module.php,3b8ba766a67302eea93b73f89375cf76
+"Select a vector icon. When populated, this overrides the standard ProcessWire icon above.","Seleccione un icono vectorial. Cuando se completa, reemplaza el icono estándar de ProcessWire anterior.",,site/modules/React/React.module.php,7cd34d6d99b289c33e05ccaf30109f55
+"Relation request failed.","Error en la solicitud de relación.",,site/modules/React/React.module.php,417311c0a499db762f631392d723fa39
+Save,Guardar,,site/modules/React/React.module.php,c9cc8cce247e49bae79f15173ce97354
+Saving...,Guardando...,,site/modules/React/React.module.php,575f5f86d2c7ea113c6710c1037c4465
+Cancel,Cancelar,,site/modules/React/React.module.php,ea4788705e6873b424c65e91c2846b19
+Close,Cerrar,,site/modules/React/React.module.php,d3d2e617335f08df83599665eef8a418
+Done,Listo,,site/modules/React/React.module.php,f92965e2c8a7afb3c1b9a5c09a263636
+Open,Abrir,,site/modules/React/React.module.php,c3bf447eabe632720a3aa1a7ce401274
+Apply,Aplicar,,site/modules/React/React.module.php,9639e32cab248434a17ab32237cb3b71
+Applying...,Aplicando...,,site/modules/React/React.module.php,2d36bbeac4e19bf400214726dd626cdb
+Executing...,Ejecutando...,,site/modules/React/React.module.php,3d202de4cde88726a42cedcd4d1b28c3
+Reset,Restablecer,,site/modules/React/React.module.php,526d688f37a86d3c3f27d0c5016eb71d
+Refresh,Actualizar,,site/modules/React/React.module.php,63a6a88c066880c5ac42394a22803ca6
+Refreshing...,Actualizando...,,site/modules/React/React.module.php,01b08e48869f180ff19a7f7aa3c3f18f
+Reload,Recargar,,site/modules/React/React.module.php,4d1c8263ba1036754f8db14a98f9f006
+Search,Buscar,,site/modules/React/React.module.php,13348442cc6a27032d2b4aa28b75a5d3
+Clear,Limpiar,,site/modules/React/React.module.php,dc30bc0c7914db5918da4263fce93ad2
+Create,Crear,,site/modules/React/React.module.php,686e697538050e4664636337cc3b834f
+Edit,Editar,,site/modules/React/React.module.php,7dce122004969d56ae2e0245cb754d35
+Delete,Eliminar,,site/modules/React/React.module.php,f2a6c498fb90ee345d997f888fce3b18
+Remove,Quitar,,site/modules/React/React.module.php,1063e38cb53d94d386f21227fcd84717
+Dismiss,Descartar,,site/modules/React/React.module.php,c8a59e7135a20b362f9c768b09454fdb
+Confirm,Confirmar,,site/modules/React/React.module.php,70d9be9b139893aa6c69b5e77e614311
+"Confirm & Execute","Confirmar y ejecutar",,site/modules/React/React.module.php,4b8fa648bd96b68b3f5c6477c2a0ae91
+"I understand the impact of this operation and wish to proceed.","Comprendo el impacto de esta operación y deseo continuar.",,site/modules/React/React.module.php,719ddb902afa805552fb15479a75fee1
+Copy,Copiar,,site/modules/React/React.module.php,5fb63579fc981698f97d55bfecb213ea
+Copied,Copiado,,site/modules/React/React.module.php,a588b1abc58b8b758c4b34b69b9e10bb
+"Copy command","Copiar comando",,site/modules/React/React.module.php,ec5eefe5a1b8d46ef1126992881fd5d4
+Export,Exportar,,site/modules/React/React.module.php,0095a9fa74d1713e43e370a7d7846224
+Import,Importar,,site/modules/React/React.module.php,72d6d7a1885885bb55a565fd1070581a
+Loading...,Cargando...,,site/modules/React/React.module.php,8524de963f07201e5c086830d370797f
+Actions,Acciones,,site/modules/React/React.module.php,06df33001c1d7187fdd81ea1f5b277aa
+Languages,Idiomas,,site/modules/React/React.module.php,3a08e2e340ab29fd9263af48193cbf8e
+Error,Error,,site/modules/React/React.module.php,902b0d55fddef6f8d651fe1035b7d4bd
+Warning,Aviso,,site/modules/React/React.module.php,0eaadb4fcb48a0a0ed7bc9868be9fbaa
+Notice,Aviso,,site/modules/React/React.module.php,24efa7ee4511563b16144f39706d594f
+All,Todos,,site/modules/React/React.module.php,b1c94ca2fbc3e78fc30069c8d0f01680
+None,Ninguno,,site/modules/React/React.module.php,6adf97f83acf6453d4a6a4b1070f3754
+Yes,Sí,,site/modules/React/React.module.php,93cba07454f06a4a960172bbd6e2a435
+No,No,,site/modules/React/React.module.php,bafd7322c6e97d25b6299b5d6fe8920b
+More,Más,,site/modules/React/React.module.php,d3da97e2d9aee5c8fbe03156ad051c99
+"No matching options","No hay opciones coincidentes",,site/modules/React/React.module.php,2911d2dd34d4e33b692661c26348cf49
+Unavailable,"No disponible",,site/modules/React/React.module.php,453e6aa38d87b28ccae545967c53004f
+Workspace,"Espacio de trabajo",,site/modules/React/React.module.php,03a21915504df93cf5dba0636080f62e
+Workspaces,"Espacios de trabajo",,site/modules/React/React.module.php,d5e92609cf510f5f97ac326e907a0540
+"Workspace Dashboard","Panel del espacio de trabajo",,site/modules/React/React.module.php,9ed7329637f544d772bdba0d61398d04
+"All modules, favorites, and customizable dashboard widgets","Todos los módulos, favoritos y widgets personalizables del panel",,site/modules/React/React.module.php,e68b79df7f2d4278eb0960fd444fdf1d
+"Current workspace section","Sección actual del espacio de trabajo",,site/modules/React/React.module.php,5e20a96b94291c93caaf1dce0e254cbc
+"Workspace navigation","Navegación del espacio de trabajo",,site/modules/React/React.module.php,8908efdd3ec402154d562f6487b92f1a
+Navigation,Navegación,,site/modules/React/React.module.php,846495f9ceed11accf8879f555936a7d
+"Open workspace navigation menu","Abrir menú de navegación",,site/modules/React/React.module.php,60e439470c45c239b2e25a510fceb428
+"Close navigation menu","Cerrar menú de navegación",,site/modules/React/React.module.php,d302e7fbcdb33e2877353e7f703fd4a9
+"Search workspaces...","Buscar espacios de trabajo...",,site/modules/React/React.module.php,6350e80efab2bb6dc30cea9dba50dac7
+"Search workspaces","Buscar espacios de trabajo",,site/modules/React/React.module.php,28ba707df5d8962217e5a32a08f712f2
+"Find workspace...","Buscar espacio de trabajo...",,site/modules/React/React.module.php,a59403457c95f98f52aa1e83c7b0a3ca
+"No matching workspaces","No hay espacios coincidentes",,site/modules/React/React.module.php,c7d00daca755a67628aad03a442fa01b
+"No matching destinations found.","No se encontraron destinos coincidentes.",,site/modules/React/React.module.php,a8cf450cedad306f1ef0981292eda677
+"Quick Jump","Salto rápido",,site/modules/React/React.module.php,ae69932309b0c8fbd2565f85e2729961
+"Quick Switcher","Selector rápido",,site/modules/React/React.module.php,33a8d8c8002c17b26e545ee67595825f
+"Quick Switcher (Cmd/Ctrl+K)","Selector rápido (Cmd/Ctrl+K)",,site/modules/React/React.module.php,a6d3e2a4b7e5ea93da96575262eb33aa
+"Jump to workspace or section...","Ir a un espacio o sección...",,site/modules/React/React.module.php,9c0902ca5c76e62c37dde2c59b158356
+"Return to {target}","Volver a {target}",,site/modules/React/React.module.php,f6f53af1527f750b7046b85beee500d3
+"Open in Workspace","Abrir en el espacio de trabajo",,site/modules/React/React.module.php,8509b1db3b9493f2aba2a88439edb1b4
+"Switch to full-screen Workspace view","Cambiar a la vista de pantalla completa del espacio de trabajo",,site/modules/React/React.module.php,1c7f26dd5993adca7f5e2d79f997f8cd
+Light,Claro,,site/modules/React/React.module.php,9914a0ce04a7b7b6a8e39bec55064b82
+Dark,Oscuro,,site/modules/React/React.module.php,a18366b217ebf811ad1886e4f4f865b2
+System,Sistema,,site/modules/React/React.module.php,a45da96d0bf6575970f2d27af22be28a
+"Toggle theme","Cambiar tema",,site/modules/React/React.module.php,5a9663b09544b4cfe12a13a805d7ac2b
+"Theme mode: {mode} (click to switch)","Modo de tema: {mode} (clic para cambiar)",,site/modules/React/React.module.php,ed66a4fc75e940c960bb14f16063194f
+"Keyboard shortcuts","Atajos de teclado",,site/modules/React/React.module.php,de334061ddee0a9008edd133af533c04
+"Dismiss errors","Descartar errores",,site/modules/React/React.module.php,ef12db18801e484d0d785f73cd9604b4
+"Dismiss warnings","Descartar advertencias",,site/modules/React/React.module.php,990f649a83a3fbbee1d350a1ebf60a06
+"Dismiss notices","Descartar avisos",,site/modules/React/React.module.php,b4c60e29e6ea44ad2d45ba8ed6b7d594
+"Quick overview, live status cards, and all admin workspaces.","Resumen rápido, tarjetas de estado en vivo y todos los espacios de administración.",,site/modules/React/React.module.php,52c2b43875b6d96f10a81b71b16b145a
+Overview,Resumen,,site/modules/React/React.module.php,3b878279a04dc47d60932cb294d96259
+"Operational Overview","Resumen operativo",,site/modules/React/React.module.php,46966912240d4bc4c19fc9389727943b
+"All Workspaces","Todos los espacios",,site/modules/React/React.module.php,ab0a66d5e7f3e6b0db0f96721d64c245
+"Module Directory","Directorio de módulos",,site/modules/React/React.module.php,6a51ac3b146536a407f3429c8f2f2a6f
+Module,Módulo,,site/modules/React/React.module.php,e55f75a29310d7b60f7ac1d390c8ae42
+Favorites,Favoritos,,site/modules/React/React.module.php,d78986947356ddd37b43d57df289dee9
+Pinned,Fijados,,site/modules/React/React.module.php,3c5e891bff07947cbae2fda89162df9f
+"Pinned Shortcuts","Accesos fijados",,site/modules/React/React.module.php,8f1f46957a9aa8224c8e93f56d57a598
+"Pin to top bar","Fijar en la barra superior",,site/modules/React/React.module.php,2fa2c585863a83a9024a0ec877848d73
+"Unpin from top bar","Desfijar de la barra superior",,site/modules/React/React.module.php,da80cbcfd56f935cfb9a329f43498112
+"Pin {title}","Fijar {title}",,site/modules/React/React.module.php,ab6cdb7b7a64b4c924c47bd793c2efb4
+"Unpin {title}","Desfijar {title}",,site/modules/React/React.module.php,08775dfb2eeb84f0daf59a8cd3306b4b
+Customize,Personalizar,,site/modules/React/React.module.php,63a78ed4647f7c63c2929e35ec1c95e3
+"Customize Layout","Personalizar diseño",,site/modules/React/React.module.php,c5b7cb3159ecf84ffc87b9725b1225e1
+"Done Customizing","Finalizar personalización",,site/modules/React/React.module.php,08ee89aac2ef96b48c9c2e718b11b687
+"Export Layout","Exportar diseño",,site/modules/React/React.module.php,304278e931b0f6f2ff0148dde89436cc
+"Export JSON","Exportar JSON",,site/modules/React/React.module.php,b7b35e678fac8e3ac6493d09e6bf8ec4
+"Import Layout","Importar diseño",,site/modules/React/React.module.php,de5f3994e77a62b31078014c34cdcbed
+"Apply a saved workspace layout preset (.json) to update your pinned shortcuts, widget order, widths, and visibility.","Aplique un diseño guardado (.json) para actualizar sus accesos fijados, orden, anchos y visibilidad de widgets.",,site/modules/React/React.module.php,c009bdc2ef160c5b6dc71628b7c3d5b8
+"Workspace layout preset JSON","JSON de diseño del espacio de trabajo",,site/modules/React/React.module.php,180714e8ef26f4474a47f2a98602e0c1
+"Import JSON","Importar JSON",,site/modules/React/React.module.php,786df2cec47f9e9c005483f4c7ec9632
+"Apply Layout","Aplicar diseño",,site/modules/React/React.module.php,40ff1f28a90b7724a0653403e9056bfb
+"Choose JSON File","Elegir archivo JSON",,site/modules/React/React.module.php,276e42ebd90183f60b19ae95fa54864a
+"Reset Layout","Restablecer diseño",,site/modules/React/React.module.php,6dc6e32ad3860bd9cf4e567673bcafbf
+"Reset Default","Restablecer predeterminado",,site/modules/React/React.module.php,d6ed253ff449bbd9606eff83124f1f2e
+"Reset Default Layout","Restablecer diseño predeterminado",,site/modules/React/React.module.php,1050bc9cb8b00a00620f2aa03bc35d6f
+"Reset your pinned shortcuts, widget order, widths, and hidden widget settings back to defaults?","¿Restablecer los accesos fijados, el orden, los anchos y la visibilidad de los widgets a los valores predeterminados?",,site/modules/React/React.module.php,7ef2e15cc260153efe4516aaf6d53ca3
+"Choose Widgets","Elegir widgets",,site/modules/React/React.module.php,b14eac5358d6997de83ef1a66ed53767
+"{count} hidden widget(s)","{count} widget(s) oculto(s)",,site/modules/React/React.module.php,f825d68e168242bb62a01fcf2f7c4390
+"Hide widget from dashboard","Ocultar widget del panel",,site/modules/React/React.module.php,3a271cded492b1af00f478afb36dff88
+"Hide {title}","Ocultar {title}",,site/modules/React/React.module.php,989687042589d0714062081623af4493
+"Show {title}","Mostrar {title}",,site/modules/React/React.module.php,0995ce286e32d12920a7cbd90265f4c7
+"Looking for a specific capability or administration tool?","¿Busca una capacidad o herramienta de administración específica?",,site/modules/React/React.module.php,0466da2abbb3b4b8c7d2a8d666eb76e5
+"Browse all {count} modules","Explorar los {count} módulos",,site/modules/React/React.module.php,fee875c9d7d6f816f968d2f387309b86
+"No live widgets registered","No hay widgets en vivo registrados",,site/modules/React/React.module.php,9c56c5f5edf8e03b459db2c5b249edae
+"Installed modules have not registered live summary widgets yet. Open the Module Directory to launch any workspace.","Los módulos instalados aún no han registrado widgets de resumen. Abra el directorio de módulos para iniciar cualquier espacio.",,site/modules/React/React.module.php,f9ce53c3bca4a20c7704248094bf868e
+"All dashboard widgets are hidden","Todos los widgets del panel están ocultos",,site/modules/React/React.module.php,6bdac11628cbad1b72ef18fcc0f06357
+"You have hidden all widgets for your profile. Re-enable widgets or reset your layout to view live module status.","Ha ocultado todos los widgets de su perfil. Vuelva a activar widgets o restablezca su diseño para ver el estado en vivo de los módulos.",,site/modules/React/React.module.php,e5936720f3724385253842dccc5a0564
+"Open Module Directory","Abrir directorio de módulos",,site/modules/React/React.module.php,25dc1ae20edec7b8eabfdc2bc53f80a1
+"Open {title}","Abrir {title}",,site/modules/React/React.module.php,aa7230bade66b8b21ac6744ccc6819dd
+"Search modules by name, capability, or topic...","Buscar módulos por nombre, capacidad o tema...",,site/modules/React/React.module.php,00240549c08261b54bb8a19821613919
+"No matching workspaces found.","No se encontraron espacios de trabajo coincidentes.",,site/modules/React/React.module.php,da75bcd7ecf5b0a8624c1e01b780ee87
+"No matching modules found","No se encontraron módulos coincidentes",,site/modules/React/React.module.php,6e1fe1d3cc72b89885d1f65b4735ae5d
+"No installed module matched your current search or category filter.","Ningún módulo instalado coincide con su búsqueda o filtro de categoría actual.",,site/modules/React/React.module.php,bbd1d8458fa333c5437b513d289316f6
+"No workspaces available","No hay espacios de trabajo disponibles",,site/modules/React/React.module.php,5ec633fc43306fc36c3cf968b9428a80
+"Install or enable a workspace module to access it here.","Instale o habilite un módulo de espacio de trabajo para acceder a él aquí.",,site/modules/React/React.module.php,92829baaf46a7f41b1201d8cb5ec2c4c
+"Reset Filter","Restablecer filtro",,site/modules/React/React.module.php,831b1cff02a12da1b010f8cb39147c8d
+"just now","justo ahora",,site/modules/React/React.module.php,2654992d78afbd40bad349302a6f2b6a
+"{seconds}s ago","hace {seconds}s",,site/modules/React/React.module.php,b0f776690c4ba484158a8d04bc119e1d
+"{minutes}m ago","hace {minutes} min",,site/modules/React/React.module.php,6c0cef977fba600c9517c8a0c8dff73d
+"Updated by {user}","Actualizado por {user}",,site/modules/React/React.module.php,3fe86196f9f5f89c8c10394b56aa3f29
+"This record was saved in another session while you had it open. Reload the latest version before saving to avoid overwriting those changes.","Este registro se guardó en otra sesión mientras lo tenías abierto. Recarga la última versión antes de guardar para evitar sobrescribir esos cambios.",,site/modules/React/React.module.php,b2286b53112eac23e803d62d29a3cb04
+"Reload Latest","Recargar última versión",,site/modules/React/React.module.php,24353cfc254f52144a8ee7a604b78e2e
+"Dismiss remote save warning","Descartar aviso de guardado remoto",,site/modules/React/React.module.php,04e340552c787fa0de7e9bb886824196
+"is currently editing this record ({age}).","está editando este registro ({age}).",,site/modules/React/React.module.php,d747c52f62546f81bf5ef65a8bd67ffd
+"are currently editing this record.","están editando este registro.",,site/modules/React/React.module.php,db9ab4c9b4f4d56676e285c7014a2604
+"Coordinate changes before saving","Coordina los cambios antes de guardar",,site/modules/React/React.module.php,0e750f0fe1702dd4a27233eaed9f6c7b
+"Search records...","Buscar registros...",,site/modules/React/React.module.php,46878f3052876993d095fb186ece42ee
+Search...,Buscar...,,site/modules/React/React.module.php,2a37324bb4c331c859044121df3f576b
+Filters,Filtros,,site/modules/React/React.module.php,f3f43e30c8c7d78c6ac0173515e57a00
+"Filter view","Filtrar vista",,site/modules/React/React.module.php,5f2338679d4a0e08885fd7c0176eb6e6
+"Filter options...","Filtrar opciones...",,site/modules/React/React.module.php,e6c46618cf501e7229c8bba662560b1c
+"Clear filters","Limpiar filtros",,site/modules/React/React.module.php,0b275442d6556cff30b75f37f1918899
+Columns,Columnas,,site/modules/React/React.module.php,168b82d33f8073018c50a4f658a02559
+"Toggle Columns","Mostrar/ocultar columnas",,site/modules/React/React.module.php,29f4c433c598a0d91bf3c3920d2cd645
+"Reset columns","Restablecer columnas",,site/modules/React/React.module.php,1eb64ecf3802fac71df227dc50ae1c8c
+"Saved Views","Vistas guardadas",,site/modules/React/React.module.php,368ae15de538213cd25b68560eb50521
+"Save View","Guardar vista",,site/modules/React/React.module.php,753c2861dde3b99d1714edc57004b907
+"Delete saved view","Eliminar vista guardada",,site/modules/React/React.module.php,d8388976b5db163929cfdd07f96d4f20
+"Delete the saved view ""{label}""?","¿Eliminar la vista guardada ""{label}""?",,site/modules/React/React.module.php,3706d830efe9fe00dd509aaadb61d105
+"Preset name...","Nombre de la vista...",,site/modules/React/React.module.php,51a75ab261668b0d24a1e031a6828717
+"Bulk actions","Acciones masivas",,site/modules/React/React.module.php,9ffa4765d2da990741800bbe1ad4e7f8
+"Select all rows","Seleccionar todas las filas",,site/modules/React/React.module.php,2d73c7eae2d36003755c343ddf607e71
+"{count} selected","{count} seleccionado(s)",,site/modules/React/React.module.php,ef1b031573031a3eca39e4b16e1eacec
+Order,Orden,,site/modules/React/React.module.php,a240fa27925a635b08dc28c9e4f9216d
+"Click to edit inline","Clic para editar en línea",,site/modules/React/React.module.php,ccbbf00a2560a1789ef802f9254868db
+"No records found","No se encontraron registros",,site/modules/React/React.module.php,087fb8756d4add87f2d162304ccd486b
+"Try adjusting your search or filter criteria.","Prueba a ajustar tus criterios de búsqueda o filtrado.",,site/modules/React/React.module.php,992535ae7666175356cdab4154658065
+"No items yet","Aún no hay elementos",,site/modules/React/React.module.php,529bd24c0f1522f793c736f65df9e8b5
+"Try changing your search or filters.","Intente cambiar su búsqueda o filtros.",,site/modules/React/React.module.php,54e5c834b186eb672b5579a7e468d624
+"Network error while updating this list.","Error de red al actualizar esta lista.",,site/modules/React/React.module.php,6fce21b16a2046460d7b37c52d73d363
+Previous,Anterior,,site/modules/React/React.module.php,dd1f775e443ff3b9a89270713580a51b
+Next,Siguiente,,site/modules/React/React.module.php,10ac3d04253ef7e1ddc73e6091c0cd55
+"Page {page} of {totalPages}","Página {page} de {totalPages}",,site/modules/React/React.module.php,c55db04c8c3722f2e1d9b2d618134a6c
+"{count} items","{count} elementos",,site/modules/React/React.module.php,ad3da129e14b05ef4090066697b98487
+"New Item","Nuevo elemento",,site/modules/React/React.module.php,0534f4f9b4506ce58165489e030886fb
+"Quick Edit","Edición rápida",,site/modules/React/React.module.php,73f79dd90cb67b7438919d31aef50a3f
+"Quick Edit: {title}","Edición rápida: {title}",,site/modules/React/React.module.php,ae42467b63eb56e2d015c6fa83963e2b
+"Edit key fields without leaving this list.","Edite los campos principales sin salir de esta lista.",,site/modules/React/React.module.php,52e4769238ce64e4e6cd49d5ac3ab64d
+"Save Changes","Guardar cambios",,site/modules/React/React.module.php,f5d6040ed78ca86ddc73296a49b18510
+Required,Obligatorio,,site/modules/React/React.module.php,b651efdb98a5d6bd2b3935d0c3f4a5e2
+"You have unsaved changes.","Tienes cambios sin guardar.",,site/modules/React/React.module.php,604a9a8f13d447df5c82b824ef2de820
+"Unsaved changes","Cambios sin guardar",,site/modules/React/React.module.php,c227ad77f168e7fd3e21583b324eddf4
+"Leaving or reloading this page will discard the edits you have not saved.","Salir o recargar esta página descartará los cambios que no haya guardado.",,site/modules/React/React.module.php,bd426a1b74c862fd727bd7807affbcd8
+"Discard & Leave","Descartar y salir",,site/modules/React/React.module.php,e4dd258ef1d11b3df71dcc7511814bc3
+"Next Step","Siguiente paso",,site/modules/React/React.module.php,2bb4cbbf4c51025867d47131e79ad05f
+"Please review the highlighted fields.","Revisa los campos resaltados.",,site/modules/React/React.module.php,2d7d932a4de2d9a02bb502fd0bd44940
+"Add item","Añadir elemento",,site/modules/React/React.module.php,ff19c966036b4a0c7350b2fc7e2861c2
+"No items selected.","No hay elementos seleccionados.",,site/modules/React/React.module.php,e3540df61299a71ee0a3dba1e3a988d5
+"Search items...","Buscar elementos...",,site/modules/React/React.module.php,b41f8031cebdec8ec27ea418116b82b1
+Select...,Seleccionar...,,site/modules/React/React.module.php,777475dcd2749b94375fe07762d9d76f
+"Quick column presets","Ajustes rápidos de columnas",,site/modules/React/React.module.php,30b31807f23b112303cbe88e4bd3885d
+"Close field settings","Cerrar ajustes del campo",,site/modules/React/React.module.php,a5efa83fa11035324583a048ee851d8a
+"Click to switch this field · Double-click to switch all fields","Clic para este campo · Doble clic para todos los campos",,site/modules/React/React.module.php,a0c692cb508669a5983a56f72ed26840
+Now,Ahora,,site/modules/React/React.module.php,1e1cc9bdeb2f29f5480106aec7e9bc48
+Today,Hoy,,site/modules/React/React.module.php,1dd1c5fb7f25cd41b291d43a89e3aefd
+"Clear date","Borrar fecha",,site/modules/React/React.module.php,4239f67c37eed41d01bce841e2409c08
+"Copy secret","Copiar clave secreta",,site/modules/React/React.module.php,6185b626d083b9955fe99d0f04027add
+"Generate new secret","Generar nueva clave secreta",,site/modules/React/React.module.php,64481fb3129df05f8fcb93180631a4ad
+Generate,Generar,,site/modules/React/React.module.php,32b919d18cfaca89383f6000dcc9c031
+"More submit actions","Más acciones de envío",,site/modules/React/React.module.php,c37a7a14d4f44c0210494b5fa42c9e37
+"Signature pad","Área de firma",,site/modules/React/React.module.php,abd47bec49607672c9c93600b8371983
+"Sign above inside the pad","Firme arriba dentro del recuadro",,site/modules/React/React.module.php,1c517f38d389db1cbab621070b374f8d
+Key,Clave,,site/modules/React/React.module.php,897356954c2cd3d41b221e3f24f99bba
+Value,Valor,,site/modules/React/React.module.php,689202409e48743b914713f96d93947c
+"Add Row","Añadir fila",,site/modules/React/React.module.php,03e0c5bbd5488f1e5ec282529dac9635
+"Remove row","Eliminar fila",,site/modules/React/React.module.php,f22cc12954f8a6326b87efac5ab3bbd4
+"Remove {key}","Eliminar {key}",,site/modules/React/React.module.php,ce3c8cbb3dc37630f83efba07e9b8268
+"Remove row {index}","Eliminar fila {index}",,site/modules/React/React.module.php,31fffc08b26f9624d2f3fd27f3ce08f2
+"{label} for row {index}","{label} para la fila {index}",,site/modules/React/React.module.php,cb52d5dd3a9ad68a8e5868a4f9a3b741
+"{label} for {key}","{label} para {key}",,site/modules/React/React.module.php,783c12811d863273263544624cba931c
+"Move row {index} up","Mover fila {index} hacia arriba",,site/modules/React/React.module.php,ffbf572468485f1f1fcd17fde801a432
+"Move row {index} down","Mover fila {index} hacia abajo",,site/modules/React/React.module.php,66a970ee9ff587601c9642de1254c3de
+"Duplicate key ""{key}"". Each key must be unique.","Clave duplicada ""{key}"". Cada clave debe ser única.",,site/modules/React/React.module.php,a6dc8c8c04e2a649a533e79f857d521b
+"""{key}"" is a reserved key name.","""{key}"" es un nombre de clave reservado.",,site/modules/React/React.module.php,1dfe2368b96d2aac54553c2dca729981
+"""{key}"" does not match the required key format.","""{key}"" no coincide con el formato de clave requerido.",,site/modules/React/React.module.php,a7e31f9bb0061070a747b3904a1926a8
+"{count} pair(s)","{count} par(es)",,site/modules/React/React.module.php,d6a91fddfdad84b2fb4cbf660c4926ab
+"{count} / {max}","{count} / {max}",,site/modules/React/React.module.php,9805fee7dc9e56ac789467789cc569d2
+"No key-value pairs","Sin pares clave-valor",,site/modules/React/React.module.php,f078e5e545e92e15558c86cdc39aa7af
+"Select item...","Seleccionar elemento...",,site/modules/React/React.module.php,5c6b43c904ee7affd80f5570dd399c63
+"Select items...","Seleccionar elementos...",,site/modules/React/React.module.php,f558c7000390c00127ceb4582e767ae3
+"No matching items found.","No se encontraron elementos coincidentes.",,site/modules/React/React.module.php,e726430042d35ba7a01645e426fb53b9
+"No matching pages found.","No se encontraron páginas coincidentes.",,site/modules/React/React.module.php,9aa45d2b5d98b8874f798e5e3ddffca6
+"No selectable pages found.","No se encontraron páginas seleccionables.",,site/modules/React/React.module.php,ca8915abba799128a5651c5827936136
+"Loading options...","Cargando opciones...",,site/modules/React/React.module.php,0d3fbc55dae8e0a41ace8f0dd46140b4
+"Filter available items","Filtrar elementos disponibles",,site/modules/React/React.module.php,d2314e129617756e066162f5ef5acfd0
+"Filter available...","Filtrar disponibles...",,site/modules/React/React.module.php,3d70a168f9c147ba1e22a84465ac5370
+"Filter selected items","Filtrar elementos seleccionados",,site/modules/React/React.module.php,a13d1c8ec35ba47884ec9576353517fe
+"Filter selected...","Filtrar seleccionados...",,site/modules/React/React.module.php,5b2f45b143e3078a3ae8ebcfa5330ae9
+"Search pages or browse hierarchy below...","Buscar páginas o explorar la jerarquía abajo...",,site/modules/React/React.module.php,b31d925a8164bd9e3658d6f2d2d1f9e2
+"Search by title, slug, ID, or path...","Buscar por título, slug, ID o ruta...",,site/modules/React/React.module.php,6a69a62e382f6174c726cba9c4d28ef1
+"Move up","Mover arriba",,site/modules/React/React.module.php,f77af7695f71323808f9b6e2795cde86
+"Move down","Mover abajo",,site/modules/React/React.module.php,dd9f0c7e1bb3b749bd423e3544b4a8e3
+"Quick create","Creación rápida",,site/modules/React/React.module.php,956eaa6186169471a13345860cad0757
+Creating...,Creando...,,site/modules/React/React.module.php,d930f4451cc35bdcd216273a273cb891
+"Create & Select","Crear y seleccionar",,site/modules/React/React.module.php,5fbf6630ad0e74e257c6221f551d6e13
+Title,Título,,site/modules/React/React.module.php,b78a3223503896721cca1303f776159b
+"Name / Slug (optional)","Nombre / Slug (opcional)",,site/modules/React/React.module.php,b3cdb9702e78f45ebd3faeea0f0ed5b3
+Reference,Referencia,,site/modules/React/React.module.php,63d5049791d9d79d86e9a108b0a999ca
+"Type / Status","Tipo / Estado",,site/modules/React/React.module.php,88cf1d6af905d5a419bbb35f779cd96e
+"Link existing","Vincular existente",,site/modules/React/React.module.php,18add7649141635f4ba1dff73c13b5c9
+Unlink,Desvincular,,site/modules/React/React.module.php,c1a39b6a60f8b2f87e23d60ab649d994
+"Unlink {label}","Desvincular {label}",,site/modules/React/React.module.php,400c37fc5635f0ed1793e997cdb2ba1c
+"Click to choose images, paste, or drag and drop","Haz clic para elegir imágenes, pega o arrastra y suelta",,site/modules/React/React.module.php,03e3ef1655ba17ad045259b94555a2d9
+"Click to choose files, paste, or drag and drop","Haz clic para elegir archivos, pega o arrastra y suelta",,site/modules/React/React.module.php,79427c5a78e6e0275a50f59ea1619728
+"Choose image","Elegir imagen",,site/modules/React/React.module.php,5a31ca938eff79f9dd79786b57b19173
+"Choose file","Elegir archivo",,site/modules/React/React.module.php,cbe55e77ffa67d13322eb1ce7d22f1ba
+"Choose images","Elegir imágenes",,site/modules/React/React.module.php,1fecb03bc5392b317485c838c1e84ef3
+"Choose files","Elegir archivos",,site/modules/React/React.module.php,cdfe673a8db758eb8fa1809f899aa03b
+"Drop or paste","Soltar o pegar",,site/modules/React/React.module.php,f0a4d55c89d2229f32c9d91a586a5e9e
+"Drop to upload","Soltar para subir",,site/modules/React/React.module.php,3f2bd2ae95d2e7c605f5629fb10b0e41
+"Drop file to replace","Suelta el archivo para reemplazar",,site/modules/React/React.module.php,ca0f915653f081b70adc5fd7ca4c7333
+"Add images","Añadir imágenes",,site/modules/React/React.module.php,959485bd1014cd6d96ed0482b52dd43e
+"Add files","Añadir archivos",,site/modules/React/React.module.php,d39ec66f08507e26fe86aa5325d070df
+Replace,Reemplazar,,site/modules/React/React.module.php,0ebe6df8a3ac338e0512acc741823fdb
+Replacing...,Reemplazando...,,site/modules/React/React.module.php,35d0feeb4bf8f406835933903f60d09f
+"Uploading {count} item(s)...","Subiendo {count} elemento(s)...",,site/modules/React/React.module.php,97f805ed63fefb1c2aea4bd780e6b419
+"Uploading {name} ({percent}%)","Subiendo {name} ({percent}%)",,site/modules/React/React.module.php,66ef5476db18dd11bb2dd4017241a2d3
+"Upload failed.","Error al subir el archivo.",,site/modules/React/React.module.php,cde28f5998d2dd5da84a4ab21143bc67
+"Max {size}","Máx. {size}",,site/modules/React/React.module.php,f808ad8dcf7d15d9fa3a3491d0d0fb5e
+"Up to {count} items","Hasta {count} elementos",,site/modules/React/React.module.php,6f8df2165780ddddf60d042fe5f30480
+"Maximum file limit ({max}) reached.","Se alcanzó el límite máximo de archivos ({max}).",,site/modules/React/React.module.php,24e421b6a02813b4914e7278f2db14fe
+"Only one file can be dropped when replacing an item.","Solo se puede soltar un archivo al reemplazar un elemento.",,site/modules/React/React.module.php,707e57f6a32903d027bb68340d314e79
+"Single item","Elemento único",,site/modules/React/React.module.php,317af23d2bfd619621001d50e7b4d49f
+"{count} item(s)","{count} elemento(s)",,site/modules/React/React.module.php,e6396734a11282f165c6f4302f3e49cd
+"Grid view","Vista de cuadrícula",,site/modules/React/React.module.php,b3d7c37eb8d31a2ca32fdc5850306f60
+"Table view","Vista de tabla",,site/modules/React/React.module.php,a02440b6c5ae80c41c0cceb53e494807
+"Drag or use arrow keys to reorder {name}","Arrastra o usa las flechas para reordenar {name}",,site/modules/React/React.module.php,56b5ebf8bba7b715d82f00f1558c5881
+"Edit Media Details","Editar detalles del medio",,site/modules/React/React.module.php,298110a1a84578b0358e84d902baf39f
+"Configure alt text, multi-language descriptions, tags, focal point, crop, and metadata.","Configura texto alternativo, descripciones multilingües, etiquetas, punto focal, recorte y metadatos.",,site/modules/React/React.module.php,e291cdf0521fffd9324b9e2fd8008a06
+Details,Detalles,,site/modules/React/React.module.php,3ec365dd533ddb7ef3d1c111186ce872
+"Focal Point","Punto focal",,site/modules/React/React.module.php,39c3c90e90e174f42f16493a20320cd0
+"Crop & Transform","Recortar y transformar",,site/modules/React/React.module.php,2fcb83faab71283be03272ed826af689
+"Custom Fields","Campos personalizados",,site/modules/React/React.module.php,833956a760d996ae61ea8b385e9fb6f0
+"Alt text / description","Texto alternativo / descripción",,site/modules/React/React.module.php,2927039bc4525f9f53ce7b30946a6fa4
+Description,Descripción,,site/modules/React/React.module.php,b5a7adde1af5c87d7fd797b6245c2a39
+"Describe this image for screen readers and SEO...","Describe esta imagen para lectores de pantalla y SEO...",,site/modules/React/React.module.php,55e6985522f9685200948139eb189f94
+"Add file description...","Añadir descripción del archivo...",,site/modules/React/React.module.php,c7d134733e9ce852ba0788c86517afbe
+"Missing alt","Sin alt",,site/modules/React/React.module.php,2bbf23509000f5e3f083cb540047c9ba
+"{filled}/{total} langs","{filled}/{total} idiomas",,site/modules/React/React.module.php,d0dfb6667480f648febe27aa1cba2496
+"All languages","Todos los idiomas",,site/modules/React/React.module.php,abdffc07f137a3b4b3e4df13d2cafee4
+"Single tab","Pestaña única",,site/modules/React/React.module.php,c52ea324b7f45ea118dea2e1ebf9abff
+Tags,Etiquetas,,site/modules/React/React.module.php,189f63f277cd73395561651753563065
+"Type a tag and press Enter...","Escribe una etiqueta y pulsa Intro...",,site/modules/React/React.module.php,d41b1f563e8bc4e2a60951e438a5687d
+"Suggested tags","Etiquetas sugeridas",,site/modules/React/React.module.php,02bdc086e3ca9bc63dbc2e91f1e7f18a
+"Select a tag below...","Seleccione una etiqueta abajo...",,site/modules/React/React.module.php,3ad8313ea124bec9192af51722379a25
+"Inspector sections","Secciones del inspector",,site/modules/React/React.module.php,962d0f3184a7b6b18cb84f4e0dc2060c
+"Select crop area","Seleccionar área de recorte",,site/modules/React/React.module.php,152004221c80f3b7576dbf4f5c476f3b
+"Focal point","Punto focal",,site/modules/React/React.module.php,88cf7d8a95820c1ae46677696f705093
+"Click anywhere on the image to set the focal point used by smart crops.","Haz clic en cualquier punto de la imagen para definir el punto focal de los recortes inteligentes.",,site/modules/React/React.module.php,e42a8c430f3c251acdb1703133f94d3c
+"Top {top}% · Left {left}%","Arriba {top}% · Izquierda {left}%",,site/modules/React/React.module.php,596c3125a0760d54518166d28f005e74
+Zoom,Zoom,,site/modules/React/React.module.php,4252b72e6ebcd4d4b4c2e46a786f03d2
+"Center focus","Centrar enfoque",,site/modules/React/React.module.php,8cc442b86232a6c6281af310110789f7
+"Smart crop previews","Vistas previas de recorte inteligente",,site/modules/React/React.module.php,2860e75905a5686de6c0ece062bb69d9
+Free,Libre,,site/modules/React/React.module.php,b24ce0cd392a5b0b8dedc66c25213594
+Original,Original,,site/modules/React/React.module.php,0a52da7a03a6de3beefe54f8c03ad80d
+"Apply crop","Aplicar recorte",,site/modules/React/React.module.php,2575788607dc3187209eb5de1f25d04c
+"Clear selection","Limpiar selección",,site/modules/React/React.module.php,80ffff123555bd5173345bc8f144edeb
+"Rotate -90°","Girar -90°",,site/modules/React/React.module.php,702c5f0c445ec4b1b58c15fed5ebb5da
+"Rotate +90°","Girar +90°",,site/modules/React/React.module.php,7fac3b0f85aa2d977fd48909539cd6d1
+"Rotate 180°","Girar 180°",,site/modules/React/React.module.php,c3f606a2e1fae204da410754e5823017
+"Flip horizontal","Voltear horizontalmente",,site/modules/React/React.module.php,2f96dd2b9788ed9ecbc6f41c312bf455
+"Flip vertical","Voltear verticalmente",,site/modules/React/React.module.php,8373d2f18e29920f78459f34d71040ad
+"Applying image transform...","Aplicando transformación de imagen...",,site/modules/React/React.module.php,6fd250eded829d856bd37598518b1963
+"Drag on the image to select a crop area, or use quick rotate and flip actions.","Arrastra sobre la imagen para seleccionar un área de recorte o usa las acciones rápidas de giro y volteo.",,site/modules/React/React.module.php,b65b7eaa6acece3048f0248fd245273f
+Dimensions,Dimensiones,,site/modules/React/React.module.php,f4843c1c797abf1a256c8802b6cd9f51
+"File size","Tamaño del archivo",,site/modules/React/React.module.php,1908624a0bca678cd26b99bfd405324e
+Format,Formato,,site/modules/React/React.module.php,520d0db389f362bf79ef56ca0af3dcab
+"Extracted palette","Paleta extraída",,site/modules/React/React.module.php,b6b8492978a983cd73b24953f65bf6e4
+"Extract colors","Extraer colores",,site/modules/React/React.module.php,941cf87e001156906fd9cbe73c40f9c4
+"Copied {hex}","{hex} copiado",,site/modules/React/React.module.php,8f3c87ddda603f0268ced2da81cb4d43
+"Copy URL","Copiar URL",,site/modules/React/React.module.php,9de711d6eb379d46caa26e86cdafa0e9
+"URL copied","URL copiada",,site/modules/React/React.module.php,5dc60c29c1e588a9c66eed361410fccb
+"Open original","Abrir original",,site/modules/React/React.module.php,9d8d8f8322da0dee6443d8d9b4f1d431
+Download,Descargar,,site/modules/React/React.module.php,801ab24683a4a8c433c6eb40c48bcd9d
+"More actions","Más acciones",,site/modules/React/React.module.php,284716247b12b363fd6b6a71bff0918e
+"Cancel upload","Cancelar subida",,site/modules/React/React.module.php,59af3165c0a8fb51f60f666aa36827e1
+"Crop selection. Drag to move, or use arrow keys to nudge.","Selección de recorte. Arrastre para mover o use las teclas de flecha.",,site/modules/React/React.module.php,66022acfa27249d3e437077717d7e15d
+"Crop selection updated","Selección de recorte actualizada",,site/modules/React/React.module.php,9557e20351cb7308d552387707580bcd
+"Pending save","Pendiente de guardar",,site/modules/React/React.module.php,118fecf21b98faf1e34d87b25027794e
+"Marked for deletion","Marcado para eliminar",,site/modules/React/React.module.php,064315db8457fb92899575dde95d9aa3
+Undo,Deshacer,,site/modules/React/React.module.php,1cdc076b28f70afac5fcedadf99fa119
+"Remove {name}","Eliminar {name}",,site/modules/React/React.module.php,37eb9bbace3a75b7364dd9efdb1169b6
+"Inspect & edit {name}","Inspeccionar y editar {name}",,site/modules/React/React.module.php,06abf2bba16bc1841811668bf3855006
+"Previous item","Elemento anterior",,site/modules/React/React.module.php,e472ee92cadec6aa540597fd71def57b
+"Next item","Elemento siguiente",,site/modules/React/React.module.php,f032241504d7b559c7dd5f986e6947c4
+File,Archivo,,site/modules/React/React.module.php,0b27918290ff5323bea1e3b78a9cf04e
+"Alt / Description","Alt / Descripción",,site/modules/React/React.module.php,b7e92f96751d3993796fb15fa1d812a4
+Info,Información,,site/modules/React/React.module.php,4059b0251f66a18cb56f544728796875
+"Link type","Tipo de enlace",,site/modules/React/React.module.php,e40e5cf7707c8efd70e8c220cb692b5e
+"Choose video","Elegir vídeo",,site/modules/React/React.module.php,cbe18bc3cdf4dba823a85578f261ae14
+Drop,Soltar,,site/modules/React/React.module.php,3e679cff5b3a6f6f8f32aead541a0a12
+"Upload progress","Progreso de carga",,site/modules/React/React.module.php,22af9d321feab79bcba1a07feb3fd31d
+"Open {name}","Abrir {name}",,site/modules/React/React.module.php,a64c86443dd775087f080bc37105a756
+"Replace {name}","Reemplazar {name}",,site/modules/React/React.module.php,1b44146a304770f514430e0e91b55319
+"Replace file","Reemplazar archivo",,site/modules/React/React.module.php,82c8ebc9209c20ea618ffe60b58096a5
+"Remove file","Eliminar archivo",,site/modules/React/React.module.php,b21f085d08623fc7a5a9da204cc66c8c
+"Clear selected target","Borrar destino seleccionado",,site/modules/React/React.module.php,3444f11aee6d3919024746cfa34331e8
+"Search entries","Buscar entradas",,site/modules/React/React.module.php,39cfbd4c7c25bd8e49c6e3fd859a66cd
+"Search pages","Buscar páginas",,site/modules/React/React.module.php,9003fc7489e6aec510d20674d0495601
+"Cancel search","Cancelar búsqueda",,site/modules/React/React.module.php,036934cf9842451c835a9981a067d0c3
+"Email address","Dirección de correo electrónico",,site/modules/React/React.module.php,b357b524e740bc85b9790a0712d84a30
+"Phone number","Número de teléfono",,site/modules/React/React.module.php,1f8261d17452a959e013666c5df45e07
+"Link URL or #anchor","URL del enlace o #ancla",,site/modules/React/React.module.php,833c9f57f8dda097dfce3bab0900592a
+"Clear link target","Borrar destino del enlace",,site/modules/React/React.module.php,a17a700e7f4c79b8ee3fabb53366be82
+"Link label","Etiqueta del enlace",,site/modules/React/React.module.php,b9f110a8326f63c00c794d9e91a476f4
+"Link label (optional)","Etiqueta del enlace (opcional)",,site/modules/React/React.module.php,c5781485b71aedb383635ee88657118a
+"Link options","Opciones del enlace",,site/modules/React/React.module.php,192d035ffb07b34f98ade39b20944c49
+Searching...,Buscando...,,site/modules/React/React.module.php,1243daf593fa297e07ab03bf06d925af
+"Link Options","Opciones del enlace",,site/modules/React/React.module.php,0fb7010ec16c91ec543a440daab8917b
+"Close link options","Cerrar opciones del enlace",,site/modules/React/React.module.php,dd061f3a1eb06d25ee1af9e5b50a9ced
+"Open Target","Destino de apertura",,site/modules/React/React.module.php,ee8fc50fbc2bce466f44e66d3aecd60c
+"Same tab (_self)","Misma pestaña (_self)",,site/modules/React/React.module.php,e60b30326ec2eb67e109e0b586640381
+"New tab (_blank)","Nueva pestaña (_blank)",,site/modules/React/React.module.php,c706fdfc0d0b28c44c28d7f3ce648a2b
+"Anchor Fragment (#)","Fragmento de ancla (#)",,site/modules/React/React.module.php,7d4a1ce8e6774a43290e424eaa30b818
+"Query Parameters (?)","Parámetros de consulta (?)",,site/modules/React/React.module.php,092d68d0dc6bb122560ce4ceff8d2764
+"Title Attribute","Atributo Title",,site/modules/React/React.module.php,d79162782feef239dca92bdaf1d87485
+"Accessible link title (optional)","Título accesible del enlace (opcional)",,site/modules/React/React.module.php,3b65caffe66f7665a832bdfd517fa0f5
+"Rel Attribute","Atributo Rel",,site/modules/React/React.module.php,a72ed7c691daedb26de8a6a9ecdaa0c0
+"Phone number may only contain digits (0-9) and an optional leading + sign.","El número de teléfono solo puede contener dígitos (0-9) y un signo + inicial opcional.",,site/modules/React/React.module.php,565a52271fd5b9146aad6020c91cb361
+"Enter a valid email address.","Introduzca una dirección de correo electrónico válida.",,site/modules/React/React.module.php,d68c7cd2cdc561bc55a5b8e6d8c4dd6c
+"Unsafe URL protocol is not allowed.","No se permite un protocolo de URL no seguro.",,site/modules/React/React.module.php,540e3c510aeea10f4e39ed95557c5c64
+"Media upload context is not available for this field.","El contexto de carga multimedia no está disponible para este campo.",,site/modules/React/React.module.php,6a2a95bddcd94963944c67435da617cb
+"Selected file is not supported.","El archivo seleccionado no es compatible.",,site/modules/React/React.module.php,a37cf8f4caea217468dca76878c83251
+"Failed to upload file.","Error al subir el archivo.",,site/modules/React/React.module.php,74318b4d780ce06c8dbf781c22c73a3a
+"Edit media details & alt text for {name}","Editar detalles multimedia y texto alternativo de {name}",,site/modules/React/React.module.php,c2e087a3a42a5ca4e023631c84894ca5
+"Edit media details, alt text & focal point","Editar detalles del medio, texto alternativo y punto focal",,site/modules/React/React.module.php,15455322cb5ed157ae075a5e6c553741
+"New tab","Nueva pestaña",,site/modules/React/React.module.php,c8a19ea6c79e23a1ee5372c8dbf3c6cf
+title,título,,site/modules/React/React.module.php,d5d3db1765287eef77d7927cc956f50a
+"Selected icon","Icono seleccionado",,site/modules/React/React.module.php,c3f172d89f52a265985eab184b7c2f20
+"Select an icon...","Seleccionar un icono...",,site/modules/React/React.module.php,cd625882db0b286414cedd94738e8b32
+"Clear icon","Borrar icono",,site/modules/React/React.module.php,18276346bd3773253fdc4c1c5e496eb2
+"Reset Style","Restablecer estilo",,site/modules/React/React.module.php,e86a54e13ae40856b7c38b514dc6974b
+"Size (px)","Tamaño (px)",,site/modules/React/React.module.php,4c36ec3ac2cb9bda46e6dacc2974d282
+"Stroke Width","Grosor del trazo",,site/modules/React/React.module.php,6d999904323d1dbe38ec7ce97aaff0ef
+"Icon Color","Color del icono",,site/modules/React/React.module.php,4315faf12d817f66b65bc0323c514c88
+"Auto (currentColor)","Automático (currentColor)",,site/modules/React/React.module.php,9f00f77ff0d3dc50a92474949b1b2908
+"Custom icon hex color","Color hexadecimal personalizado del icono",,site/modules/React/React.module.php,88115bf701716c2e29c26f9184efbf40
+"Badge Background & Shape","Fondo y forma de la insignia",,site/modules/React/React.module.php,d2ac054ec2a32159792b9e4de3c2a27a
+"No background","Sin fondo",,site/modules/React/React.module.php,7291417479be88cf7dc61910d3bfae0e
+"Custom badge hex color","Color hexadecimal personalizado de la insignia",,site/modules/React/React.module.php,277229ed1d0014f6eea9a11c1da88490
+Icons,Iconos,,site/modules/React/React.module.php,8f67973007158337346584551b093be8
+Appearance,Apariencia,,site/modules/React/React.module.php,a1c58e94227389415de133efdf78ea6e
+"Search icons...","Buscar iconos...",,site/modules/React/React.module.php,96e7dafae5db47a9df8b1c07af9e0421
+"Search {count} icons","Buscar en {count} iconos",,site/modules/React/React.module.php,85bdf2af0dcf18702347117874747126
+Category,Categoría,,site/modules/React/React.module.php,3adbdb3ac060038aa0e6e6c138ef9873
+"All categories","Todas las categorías",,site/modules/React/React.module.php,62f5d708d6ad1fa1ddd9429a65cccbea
+Style,Estilo,,site/modules/React/React.module.php,ae284f900f9d6e21ba69144cfc91e41b
+"All styles","Todos los estilos",,site/modules/React/React.module.php,964f10b2515883ce73cd5db07fff012e
+Outline,Contorno,,site/modules/React/React.module.php,606b51cc1c9d0b4af394419a22f2ff1f
+Filled,Relleno,,site/modules/React/React.module.php,d9d586f8c792f8f661052af42536323c
+Popular,Populares,,site/modules/React/React.module.php,2cc1943d4c0b46bfcf503a75c44f988b
+"All icons","Todos los iconos",,site/modules/React/React.module.php,b50d4ff0ac4f73bcb419a4396a3989f5
+"No matching icons found.","No se encontraron iconos coincidentes.",,site/modules/React/React.module.php,6fe730153d19457d273abdb1d0b92039
+icon,icono,,site/modules/React/React.module.php,baec6461b0d69dde1b861aefbe375d8a
+icons,iconos,,site/modules/React/React.module.php,bd21190449b7e88db48fa0f580a8f666
+"Default Theme Mode","Modo de tema predeterminado",,site/modules/React/React.module.php,74435ddc2833dc22de4b519833b95a8d
+"Select the default color theme for React admin pages and data views.","Selecciona el tema de color predeterminado para las páginas de administración y vistas de datos React.",,site/modules/React/React.module.php,dd43061a8373ea4ab8e131b563764c0c
+"System Preference (Auto)","Preferencia del sistema (Auto)",,site/modules/React/React.module.php,6e8284e1277a7f10aee3ee1ab96c56a7
+"Light Mode","Modo claro",,site/modules/React/React.module.php,370104a87f84d72ef9a9a525fc3296fb
+"Dark Mode","Modo oscuro",,site/modules/React/React.module.php,51b5e76089f5da04cf725ec11b16716d
+"Enable Keyboard Shortcuts","Activar atajos de teclado",,site/modules/React/React.module.php,b6a366ab30c40f2933bcb2376a180f6b
+"Enable Cmd/Ctrl+K command palette and keyboard navigation inside React workspaces.","Activa la paleta de comandos Cmd/Ctrl+K y la navegación por teclado en los espacios React.",,site/modules/React/React.module.php,864eab57e155b062751d228ca86c1853
+"Admin Return Button Label","Etiqueta del botón de retorno al panel",,site/modules/React/React.module.php,0e6a93844e1ec5ebdf37abee7dbb4687
+"Label displayed on the top-left button that returns from a Workspace to the main Admin panel (default: Panel). Supports multi-language values.","Etiqueta mostrada en el botón superior izquierdo que vuelve desde un espacio de trabajo al panel principal de administración (predeterminado: Panel). Admite valores multiidioma.",,site/modules/React/React.module.php,262fa3a43401ba36d210a9932a1e0039
+"Use React Image & File Editors on Pages","Usar editores de imágenes y archivos React en las páginas",,site/modules/React/React.module.php,8130edf14262ef525727ccbe0606d589
+"Automatically upgrade standard Image and File fields on Pages (including Repeaters) to use the React Image and React File editors while keeping existing stored data unchanged.","Actualiza automáticamente los campos estándar de Imagen y Archivo en las páginas (incluidos repetidores) para usar los editores React manteniendo intactos los datos guardados.",,site/modules/React/React.module.php,dad753b9005e22fc2fc1148ade90fff9
+"Individual fields can also select React Image or React File under Setup > Fields > Details > Inputfield Type.","Los campos individuales también pueden seleccionar Imagen React o Archivo React en Configuración > Campos > Detalles > Tipo de Inputfield.",,site/modules/React/React.module.php,49ec2a6f572106f9310cc651f81c0aed
+"Enable Vector Icons for ProcessWire Templates, Fields & Admin Pages","Habilitar iconos vectoriales para plantillas, campos y páginas de administración de ProcessWire",,site/modules/React/React.module.php,05911916e0fdd97d90ff878dbcfc043b
+"Adds a Vector Icon picker below the standard Icon field on Setup > Templates and Setup > Fields (as well as admin page settings), showing your chosen icon in crisp vector quality across the admin panel.","Agrega un selector de iconos vectoriales debajo del campo Icono estándar en Configuración > Plantillas y Configuración > Campos (y en páginas de administración), mostrando su icono con nitidez vectorial en todo el panel.",,site/modules/React/React.module.php,cc7cc9430d73719467c1b7e9e68f84c3
+"Admin Icon Picker Preview Size (px)","Tamaño de vista previa del selector en administración (px)",,site/modules/React/React.module.php,9d920b0b473219ed4c53e831fac3688f
+"Preview icon size on Edit Template and Edit Field screens (16–64).","Tamaño del icono de vista previa en las pantallas Editar plantilla y Editar campo (16–64).",,site/modules/React/React.module.php,6230677443f310b60dfb59d7c228f10f
+"Tiptap Mini-Blocks Renderer","Renderizador de minibloques Tiptap",,site/modules/React/TextformatterTiptapMiniBlocks.module.php,7c3faead0795ac6b3010fb3c157f2feb
+"Renders inline content blocks from the Tiptap rich text editor using templates in ./site/templates/tiptap/.","Renderiza bloques de contenido del editor Tiptap usando las plantillas de ./site/templates/tiptap/.",,site/modules/React/TextformatterTiptapMiniBlocks.module.php,41713bc7294132fb564cbd8708c8b016
+Yes,Sí,,site/modules/React/src/Data/ReactRecord.php,93cba07454f06a4a960172bbd6e2a435
+Submit,Enviar,,site/modules/React/src/Form/FormSchemaSerializer.php,a4d3b161ce1309df1c4e25df28694b7b
+Yes,Sí,,site/modules/React/src/Form/FormSchemaSerializer.php,93cba07454f06a4a960172bbd6e2a435
+No,No,,site/modules/React/src/Form/FormSchemaSerializer.php,bafd7322c6e97d25b6299b5d6fe8920b
+Other,Otro,,site/modules/React/src/Form/FormSchemaSerializer.php,6311ae17c1ee52b36e68aaf4ad066387
+Delete,Eliminar,,site/modules/React/src/Form/FormSchemaSerializer.php,f2a6c498fb90ee345d997f888fce3b18
+"Confirm Deletion","Confirmar eliminación",,site/modules/React/src/Form/FormSchemaSerializer.php,44928cfda52bc66163d158d1ff69d415
+record,registro,,site/modules/React/src/Form/FormSchemaSerializer.php,de17f0f24b49f8364187891f8550ffbb
+"Permanently delete this %s on save","Eliminar permanentemente este %s al guardar",,site/modules/React/src/Form/FormSchemaSerializer.php,92dcde4a2ed9b39c700e3da1ed261b70
+"Check this box and click Save to permanently delete this record. This action cannot be undone.","Marque esta casilla y haga clic en Guardar para eliminar permanentemente este registro. Esta acción no se puede deshacer.",,site/modules/React/src/Form/FormSchemaSerializer.php,05e71e018fc5049302c5d3b5264cf908
+Configuration,Configuración,,site/modules/React/src/Form/FormSchemaSerializer.php,254f642527b45bc260048e30704edb39
+"Please select at least %d item(s).","Seleccione al menos %d elemento(s).",,site/modules/React/src/Media/InteractWithReactMediaInputfield.php,cfecdec3aa548f6f05dd7fb4aac1f0fa
+"Authentication required.","Se requiere autenticación.",,site/modules/React/src/Media/MediaGateway.php,27d1d715bcd77c610edb102f776c63c6
+"Missing mediaToken.","Falta mediaToken.",,site/modules/React/src/Media/MediaGateway.php,2800ea5493d7e5e07b3dac69293b5215
+"Invalid or expired mediaToken.","mediaToken no válido o caducado.",,site/modules/React/src/Media/MediaGateway.php,65e1f21ef5fcc9ecca093efc3222b256
+"Method not allowed. POST required.","Método no permitido. Se requiere POST.",,site/modules/React/src/Media/MediaGateway.php,ca1b5305d7c7bec2f322612a92dd8f57
+"This media field is read-only.","Este campo multimedia es de solo lectura.",,site/modules/React/src/Media/MediaGateway.php,0e6811647e410201c01c5d5ffd202f9d
+"CSRF token validation failed.","Falló la validación del token CSRF.",,site/modules/React/src/Media/MediaGateway.php,e1b850614e8638b71a2de10cbfd31e49
+"Uploads are disabled for this media field.","Las subidas están deshabilitadas para este campo multimedia.",,site/modules/React/src/Media/MediaGateway.php,5f10421c4857ccc6c0ae73276e6bba55
+"Unsupported media action.","Acción multimedia no admitida.",,site/modules/React/src/Media/MediaGateway.php,2605d0824424fcc89ceab992b21ef0ba
+"Requested media host adapter is not available.","El adaptador de host multimedia solicitado no está disponible.",,site/modules/React/src/Media/MediaGateway.php,ac2974081c2b1fd3140def6b66c35f47
+"Invalid page media context.","Contexto multimedia de página no válido.",,site/modules/React/src/Media/MediaGateway.php,54758b6836d3f4c855c48bd950ca15cc
+"Target page not found.","Página de destino no encontrada.",,site/modules/React/src/Media/MediaGateway.php,1d6fd845f454b5776b511ba27868dbed
+"Target field is not a ProcessWire file or image field.","El campo de destino no es un campo de archivo o imagen de ProcessWire.",,site/modules/React/src/Media/MediaGateway.php,cf6491fc1d4794fa7bd62eb9ba3aaaaa
+"You do not have permission to modify this media field.","No tienes permiso para modificar este campo multimedia.",,site/modules/React/src/Media/MediaGateway.php,d2f581f3d229fd1815c90fe601858913
+"No uploaded files received.","No se recibieron archivos subidos.",,site/modules/React/src/Media/MediaGateway.php,8a6b65fb98fe3c23aa890fec73c3db44
+"Maximum file limit (%d) reached.","Se alcanzó el límite máximo de archivos (%d).",,site/modules/React/src/Media/MediaGateway.php,5cbe9a0599729cfbb631c5af3e367a3a
+"File upload failed validation.","La carga del archivo no superó la validación.",,site/modules/React/src/Media/MediaGateway.php,e515bb37d0b2b257512fc385d4ac5046
+"Target file to replace was not found.","No se encontró el archivo de destino a reemplazar.",,site/modules/React/src/Media/MediaGateway.php,556dbf32ef527824fca9759c6f71fae0
+"No replacement file received.","No se recibió ningún archivo de reemplazo.",,site/modules/React/src/Media/MediaGateway.php,6e4620f8bbe4ff2a337d9b8176ffb34d
+"Replacement file failed validation.","El archivo de reemplazo no superó la validación.",,site/modules/React/src/Media/MediaGateway.php,500617b105ab0b02df42ec12cf7e7b8c
+"Invalid replacement image.","Imagen de reemplazo no válida.",,site/modules/React/src/Media/MediaGateway.php,d4c97868c611d52c611f3472f9b4d1eb
+"Image (%dx%d) does not meet minimum size (%dx%d).","La imagen (%dx%d) no cumple el tamaño mínimo (%dx%d).",,site/modules/React/src/Media/MediaGateway.php,f73c625295716f4b7cfb48454a19b6bb
+"Image (%dx%d) exceeds maximum allowed dimensions (%dx%d).","La imagen (%dx%d) supera las dimensiones máximas permitidas (%dx%d).",,site/modules/React/src/Media/MediaGateway.php,57c2e9119c2e11ee8003862b7e1e7a30
+"Failed to attach replacement file.","No se pudo adjuntar el archivo de reemplazo.",,site/modules/React/src/Media/MediaGateway.php,f50e8c0b28af6e14767bcc2c2401dd1f
+"You do not have image editing permission.","No tienes permiso para editar imágenes.",,site/modules/React/src/Media/MediaGateway.php,8d3ea5fb052a462020aea95122df6af4
+"Target image was not found.","No se encontró la imagen de destino.",,site/modules/React/src/Media/MediaGateway.php,a51924291b57b4b24bdebf1860a6332b
+"Vector SVG images cannot be raster-transformed.","Las imágenes vectoriales SVG no admiten transformaciones de mapa de bits.",,site/modules/React/src/Media/MediaGateway.php,7a31eba930554089c865fa9af687a863
+"Image file does not exist on disk.","El archivo de imagen no existe en el disco.",,site/modules/React/src/Media/MediaGateway.php,b6916bc480286d54932221a8b28a22d8
+"Cropped area (%dx%d) is smaller than minimum required dimensions (%dx%d).","El área recortada (%dx%d) es menor que las dimensiones mínimas requeridas (%dx%d).",,site/modules/React/src/Media/MediaGateway.php,77ae999489a1bb20938097eec8595dc9
+"Failed to crop image.","No se pudo recortar la imagen.",,site/modules/React/src/Media/MediaGateway.php,806957aa377b80432a64ec359d425c24
+"Invalid rotation angle.","Ángulo de rotación no válido.",,site/modules/React/src/Media/MediaGateway.php,398c6ced70396e22f603d43a515f15fd
+"Failed to rotate image.","No se pudo girar la imagen.",,site/modules/React/src/Media/MediaGateway.php,713d3dafc21d8f797c672a3e5d890c4f
+"Failed to flip image horizontally.","No se pudo voltear la imagen horizontalmente.",,site/modules/React/src/Media/MediaGateway.php,09d61192256294cd04e27a927ee7b42e
+"Failed to flip image vertically.","No se pudo voltear la imagen verticalmente.",,site/modules/React/src/Media/MediaGateway.php,142bba9d103360812ac7628da65abe8b
+"Unsupported transform operation.","Operación de transformación no admitida.",,site/modules/React/src/Media/MediaGateway.php,71ec2e768c401bbd2a3d82cf72f6a41e
+"Media cloning is not supported for this host.","La clonación de medios no es compatible con este host.",,site/modules/React/src/Media/MediaGateway.php,77bdac9dcf5f2775df50d107335c2fe0
+"Target file was not found.","No se encontró el archivo de destino.",,site/modules/React/src/Media/MediaGateway.php,b396e9122197921fbfffdaa91d322d22
+"File ""%s"" failed content security validation.","El archivo ""%s"" no superó la validación de seguridad de contenido.",,site/modules/React/src/Media/MediaGateway.php,cd774e936bb0933082266765669fbef4
+"Invalid image dimensions.","Dimensiones de imagen no válidas.",,site/modules/React/src/Media/MediaGateway.php,ad236873b8e6a03a14c4c217560895a8
+"Image resolution exceeds maximum safe pixel limit.","La resolución de la imagen supera el límite máximo seguro de píxeles.",,site/modules/React/src/Media/MediaGateway.php,ad53542ddcbff32755883947caf0766e
+"Image (%dx%d) does not meet minimum size requirements (%dx%d).","La imagen (%dx%d) no cumple los requisitos de tamaño mínimo (%dx%d).",,site/modules/React/src/Media/MediaGateway.php,9c454c8f8befc57c47bba7331ea7b563
+"Invalid page link media identifier.","Identificador multimedia de enlace de página no válido.",,site/modules/React/src/Media/PageLinkMediaHostAdapter.php,d0662f56d95c67cb6e6663e58057cfe7
+"Target page link field not found.","No se encontró el campo de enlace de la página de destino.",,site/modules/React/src/Media/PageLinkMediaHostAdapter.php,32520c9554c10ccfbcb049ada646b456
+"You do not have permission to modify this link media field.","No tiene permiso para modificar este campo multimedia de enlace.",,site/modules/React/src/Media/PageLinkMediaHostAdapter.php,cd9d5ea980837bc70e94cdcbe7be9098
+"Requested media profile is not enabled on this link field.","El perfil multimedia solicitado no está habilitado en este campo de enlace.",,site/modules/React/src/Media/PageLinkMediaHostAdapter.php,ce65978501e94a100eefa52250efea9b
+Records,Registros,,site/modules/React/src/Provider/ArrayDataProvider.php,db231ec39f2ce4d5ad1de0abfc8970d9
+Title,Título,,site/modules/React/src/Provider/ArrayDataProvider.php,b78a3223503896721cca1303f776159b
+Published,Publicado,,site/modules/React/src/Provider/ArrayDataProvider.php,9b9d8a976b42e0bd66381797644943d5
+Draft,Borrador,,site/modules/React/src/Provider/ArrayDataProvider.php,f03ab16cd58372c77ba45a3d9a5a1cb9
+Trash,Papelera,,site/modules/React/src/Provider/ArrayDataProvider.php,a7e253cd8dd95da3e20daf45519a8dc2
+"To Do","Por hacer",,site/modules/React/src/Provider/ArrayDataProvider.php,0a386db7267f3ca1e5eb587bcc9ccc7e
+"In Progress","En curso",,site/modules/React/src/Provider/ArrayDataProvider.php,c9413dd7682a45da9ecc9efa8cea47d7
+Done,Listo,,site/modules/React/src/Provider/ArrayDataProvider.php,f92965e2c8a7afb3c1b9a5c09a263636
+Sum,Suma,,site/modules/React/src/Provider/ArrayDataProvider.php,a0ec87054b5e5b7847d0d8780a01a3d5
+Avg,Prom.,,site/modules/React/src/Provider/ArrayDataProvider.php,5c0c148daa2c67922abe6018b87a759f
+Min,Mín,,site/modules/React/src/Provider/ArrayDataProvider.php,78d811e98514cd165dda532286610fd2
+Max,Máx,,site/modules/React/src/Provider/ArrayDataProvider.php,6a061313d22e51e0f25b7cd4dc065233
+Count,Cantidad,,site/modules/React/src/Provider/ArrayDataProvider.php,e93f994f01c537c4e2f7d8528c3eb5e9
+"Provider is locked.","El proveedor está bloqueado.",,site/modules/React/src/Provider/ArrayDataProvider.php,658752e259aa3cb793ee404b4d347bde
+"Title is required.","El título es obligatorio.",,site/modules/React/src/Provider/ArrayDataProvider.php,c1e190918f029b350e2c7cc16298abcd
+"Created record.","Registro creado.",,site/modules/React/src/Provider/ArrayDataProvider.php,0e8fe2f605fec7f47aaabb8e3812d72c
+"Saved record.","Registro guardado.",,site/modules/React/src/Provider/ArrayDataProvider.php,a088a84d9a3162ca3e209d202abd694c
+"Record not found.","Registro no encontrado.",,site/modules/React/src/Provider/ArrayDataProvider.php,a22645bb48b7bc050a1de2dccbb49bc8
+Pages,Páginas,,site/modules/React/src/Provider/PagesDataProvider.php,453aceb005ceaf54a47da15fee8b2a26
+Title,Título,,site/modules/React/src/Provider/PagesDataProvider.php,b78a3223503896721cca1303f776159b
+Name,Nombre,,site/modules/React/src/Provider/PagesDataProvider.php,49ee3087348e8d44e1feda1917443987
+Modified,Modificado,,site/modules/React/src/Provider/PagesDataProvider.php,35e0c8c0b180c95d4e122e55ed62cc64
+Status,Estado,,site/modules/React/src/Provider/PagesDataProvider.php,ec53a8c4f07baed5d8825072c89799be
+Published,Publicado,,site/modules/React/src/Provider/PagesDataProvider.php,9b9d8a976b42e0bd66381797644943d5
+Draft,Borrador,,site/modules/React/src/Provider/PagesDataProvider.php,f03ab16cd58372c77ba45a3d9a5a1cb9
+Hidden,Oculto,,site/modules/React/src/Provider/PagesDataProvider.php,7acdf85c69cc3c5305456a293524386e
+Trash,Papelera,,site/modules/React/src/Provider/PagesDataProvider.php,a7e253cd8dd95da3e20daf45519a8dc2
+Edit,Editar,,site/modules/React/src/Provider/PagesDataProvider.php,7dce122004969d56ae2e0245cb754d35
+"View Page","Ver página",,site/modules/React/src/Provider/PagesDataProvider.php,e4b846392f10f46b032cf155c39a0eaf
+Unpublish,Despublicar,,site/modules/React/src/Provider/PagesDataProvider.php,181e9a13059454fb2212f1bf10f394ac
+"Move to Trash","Mover a la papelera",,site/modules/React/src/Provider/PagesDataProvider.php,7a289ea949902e8fa53efb4b3b4ccea0
+"Move this page to the trash?","¿Mover esta página a la papelera?",,site/modules/React/src/Provider/PagesDataProvider.php,33615f2cfa0bfa77144f488a75e5d178
+Restore,Restaurar,,site/modules/React/src/Provider/PagesDataProvider.php,2bd339d85ee3b33e513359ce781b60cc
+"Delete Permanently","Eliminar permanentemente",,site/modules/React/src/Provider/PagesDataProvider.php,aa47bb0913144619a0a9abc59d59d6ed
+"Permanently delete this page? This cannot be undone.","¿Eliminar esta página permanentemente? Esta acción no se puede deshacer.",,site/modules/React/src/Provider/PagesDataProvider.php,fa6cc4b6c461758d2b18070576eedfd7
+"Provider descriptor cannot be empty.","El descriptor del proveedor no puede estar vacío.",,site/modules/React/src/Provider/ProviderRegistry.php,6151eeb136331a45d4eaae6cbafa3c69
+"Provider descriptor '%s' is missing a scheme prefix (expected '<scheme>:<target>') or is not registered.","Al descriptor de proveedor '%s' le falta un prefijo de esquema (se esperaba '<scheme>:<target>') o no está registrado.",,site/modules/React/src/Provider/ProviderRegistry.php,debf09b06f6ea3548d56814c10f5f1fd
+"Provider descriptor '%s' has an empty scheme prefix.","El descriptor de proveedor '%s' tiene un prefijo de esquema vacío.",,site/modules/React/src/Provider/ProviderRegistry.php,565cc9a004b582c559b3170645b557e8
+"Unregistered provider scheme '%s' for descriptor '%s'.","Esquema de proveedor no registrado '%s' para el descriptor '%s'.",,site/modules/React/src/Provider/ProviderRegistry.php,fb94ec5f28f64a8ea72160dd07c8dae3
+"Target Resource","Recurso de destino",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,34d9ca00e5e9cae408d6486052f88ab3
+"Select the ProcessWire or registered resource this field references.","Selecciona el recurso de ProcessWire o registrado al que hace referencia este campo.",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,00dc6b49aa9486cb7b9716d2682d189c
+"Stored Value Attribute","Atributo de valor almacenado",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,14d25cfd2c49aea4caf32076f2905127
+"Resource Default (ID for Page/User, Name for Template/Field/Role)","Predeterminado del recurso (ID para Página/Usuario, Nombre para Plantilla/Campo/Rol)",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,b15bc73ef5c8fa647c0e4a7727879572
+"Numeric / UUID ID (id)","ID numérico / UUID (id)",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,00ff05e70c2081e934b4c185861dd564
+"Slug / Machine Name (name)","Slug / Nombre interno (name)",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,35f713c5db99db1a0a23b98ab3e334d2
+"Page Path (path)","Ruta de página (path)",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,c005df55ff8b1add6754b806fa2dec0d
+"Filter Selector","Selector de filtro",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,bc180d51b5e2db422a7fdcb24b9d9646
+"Optional server-signed ProcessWire selector constraint (e.g. template=blog-post, sort=-created).","Restricción opcional de selector de ProcessWire firmada en el servidor (p. ej. template=blog-post, sort=-created).",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,bb06b98579f05399820e7dd4dead00b0
+"Root Parent Page ID","ID de página superior raíz",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,375add29e6bbf9402423876b1c5aed97
+"Depends On Field","Depende del campo",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,49e1384fe1f5d49c432f3b0c825b0067
+"Optional sibling field name for cascading filtering.","Nombre opcional de un campo hermano para filtrado en cascada.",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,5c80a18822486fbd081d7044e84ecf34
+"Allow Inline Quick Create","Permitir creación rápida en línea",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,4f2f55e4fc2b10f739f67704cdfe67ba
+"Allow Custom Free-Text Value","Permitir valor de texto libre personalizado",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,fb45974d23738865bb9f9aa8ba0c28db
+"Show Quick Edit Link","Mostrar enlace de edición rápida",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,00a50f5a25c047c56272ce0815116644
+Field,Campo,,site/modules/React/src/Relation/Resource/FieldResourceAdapter.php,6f16a5f8ff5d75ab84c018adacdfcbb7
+Language,Idioma,,site/modules/React/src/Relation/Resource/LanguageResourceAdapter.php,4994a8ffeba4ac3140beb89e8d41f174
+"Default language","Idioma predeterminado",,site/modules/React/src/Relation/Resource/LanguageResourceAdapter.php,c96a77fb323a41898c3b6941a58dc741
+Module,Módulo,,site/modules/React/src/Relation/Resource/ModuleResourceAdapter.php,e55f75a29310d7b60f7ac1d390c8ae42
+Page,Página,,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,193cfc9be3b995831c6af2fea6650e60
+"Quick creation is not enabled for this field.","La creación rápida no está habilitada para este campo.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,a46075624a41bed5ef3b48e8887b83bd
+"Title is required to create a page.","Se requiere un título para crear una página.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,ff18d6ee9bebcb23f4f1aa98ae4f82f2
+"Target parent page does not exist.","La página superior de destino no existe.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,59218d74256d9c13c5b562e26e5695bc
+"Cannot create pages under system or trash roots.","No se pueden crear páginas bajo raíces del sistema o de la papelera.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,36917d7a51db803a7dafddb825f63395
+"Selected parent page is outside the allowed hierarchy for this field.","La página superior seleccionada está fuera de la jerarquía permitida para este campo.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,8f8214cd7f6cc560653dbc6dccb07ca8
+"You do not have permission to add pages under the selected parent.","No tienes permiso para añadir páginas bajo la página superior seleccionada.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,00342e3291b08e6f6cb5b0fae9a9c098
+"A target template must be configured to quick-create pages.","Se debe configurar una plantilla de destino para crear páginas rápidamente.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,48eca31391fe73ee493dc6afe61e46bf
+"Selected template is not allowed for this relation field.","La plantilla seleccionada no está permitida para este campo de relación.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,ed7e42bcc4ec0365a82fa35247114df1
+"Invalid or system template specified for quick create.","Se especificó una plantilla no válida o del sistema para la creación rápida.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,e947024044075ed447c710c122ad8f95
+Permission,Permiso,,site/modules/React/src/Relation/Resource/PermissionResourceAdapter.php,ed5dea09095f671b801bee34ea28a319
+Role,Rol,,site/modules/React/src/Relation/Resource/RoleResourceAdapter.php,bbbabdbe1b262f75d99d62880b953be1
+"%d permissions","%d permisos",,site/modules/React/src/Relation/Resource/RoleResourceAdapter.php,f2387342894ffddabc85cd8f0551c18a
+Template,Plantilla,,site/modules/React/src/Relation/Resource/TemplateResourceAdapter.php,278c491bdd8a53618c149c4ac790da34
+"%s · %d fields","%s · %d campos",,site/modules/React/src/Relation/Resource/TemplateResourceAdapter.php,0bada80a587bb611c1eb7ce9cd6a08ac
+User,Usuario,,site/modules/React/src/Relation/Resource/UserResourceAdapter.php,8f9bfe9d1345237cb3b2b205864da075
+"Tiptap Rich Text Editor","Editor de texto enriquecido Tiptap",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,9804aa3a4781cad65c3c0c50e5872d56
+"Inherit Settings From Field","Heredar configuración del campo",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,aa367ba283ce7ad5128d2f1fa29f195e
+"Optionally inherit Tiptap toolbar, headline, and feature settings from another Tiptap field.","Hereda opcionalmente la barra de herramientas, encabezados y funciones desde otro campo Tiptap.",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,0f0d701a604a5d57649f94c631462c85
+"None (configure on this field)","Ninguno (configurar en este campo)",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,7891e668970584fbbe2c101332a73c05
+"Custom Settings JSON","JSON de configuración personalizada",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,ef4d1876385443348a7cd20ca9ebeb5f
+"Optional JSON overrides for this field. Supports `replace_*` and `add_*` / `append_*` prefixes (e.g. `{""add_toolbar"": ""subscript superscript""}`).","Sobrescrituras JSON opcionales para este campo. Admite los prefijos `replace_*` y `add_*` / `append_*` (p. ej., `{""add_toolbar"": ""subscript superscript""}`).",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,172b11600d2259f8c17bf9c557969fc5
+"Default Tiptap Editor Settings","Configuración predeterminada del editor Tiptap",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,cef1559de1ff1d128fac90c89eec7f33
+"These defaults apply to all Tiptap fields unless overridden on an individual field.","Estos valores predeterminados se aplican a todos los campos Tiptap salvo que se sobrescriban en un campo individual.",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,92eb1ab7994ce94f147cd6ded034b914
+"Module Defaults JSON","JSON predeterminado del módulo",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,2c7c290928d3fb9f033061fb146510db
+"Optional global JSON overrides merged into all Tiptap instances before per-field settings.","Sobrescrituras JSON globales opcionales combinadas en todas las instancias de Tiptap antes de los ajustes por campo.",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,ef02cba281bb88b5a43d57e3a7b825b9
+"Extra Editor Content CSS","CSS adicional del contenido del editor",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,665e001a4dcf8a61658859a7c34b4a4f
+"Optional CSS rules applied to `.rw-tiptap-prose` inside the editor.","Reglas CSS opcionales aplicadas a `.rw-tiptap-prose` dentro del editor.",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,44dfe8c32b2c294a5f8e8e01ad9afba7
+"Editor Profile & Asset Bundle","Perfil del editor y paquete de recursos",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,db2c4d24e72e4797006f1a082cf8fc44
+"Choose an editor profile to tailor UI complexity and load only the JavaScript capability packs needed by this field. Customizing tools or blocks below remains supported.","Elige un perfil del editor para ajustar la complejidad de la interfaz y cargar solo los paquetes de capacidades JavaScript que necesita este campo. Seguirás pudiendo personalizar herramientas o bloques abajo.",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,7ca0bb5eeff68594a22388145bd34868
+"Core — Minimal formatted text, lists, and links (loads Core runtime only)","Core — Texto con formato mínimo, listas y enlaces (solo carga el núcleo)",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,ee58b81f823e1e99b6ce6bfd28dfc431
+"Editor — Classic CMS toolbar, tables, image studio, alignment, and source view","Editor — Barra de herramientas CMS clásica, tablas, estudio de imágenes, alineación y vista de código",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,be5d785052fa2418058d7383c03fe2c0
+"Canvas — Chromeless document surface with ""/"" slash menu, bubble bar, and block handles","Canvas — Superficie de documento sin marcos con menú «/», barra flotante y controles de bloque",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,f80c49f784eea05486f1cbd87f2d8b3d
+"Blocks — Full editorial suite with inline content blocks and custom block templates","Blocks — Suite editorial completa con bloques de contenido integrados y plantillas personalizadas",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,d0bbcbbe536e080b6b5c32ed54d6ec4f
+"Toolbar Buttons","Botones de la barra de herramientas",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,53706e5d90693de38a3486ddaaaba926
+"Space-separated toolbar tools; use `|` to separate button groups.","Herramientas separadas por espacios; usa `|` para separar grupos de botones.",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,e547313b1d354a15fa057b6269c830c7
+"Available tools:","Herramientas disponibles:",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,4ff29cf1e63bababb974efd99f1d63c8
+"Bubble Selection Toolbar","Barra flotante de selección",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,41dadad0df7837abcc00b129f1f51d35
+"Floating inline toolbar shown when text is selected. Leave blank to disable.","Barra de herramientas flotante mostrada al seleccionar texto. Déjalo vacío para desactivar.",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,f69a94a197607bbbbe43bdb65508339a
+"Allowed Heading Levels","Niveles de encabezado permitidos",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,ef4df191153c5ad95ecdf53ffd28007d
+"Editor Display Mode","Modo de visualización del editor",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,696c0b988d683f35dd8f716cc5a1840c
+"Framed editor with top bar","Editor con marco y barra superior",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,3476ef39f6e9508e4e7b2880d1369f82
+"Inline chromeless editor (bubble toolbar focus)","Editor en línea sin marco (barra flotante)",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,1ca15b49d8ea7350d1aa4bdf86797505
+"Editor Features","Funciones del editor",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,3b29fbecf014c20adce7256da387d40b
+"Show top formatting toolbar","Mostrar barra de formato superior",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,1fde0a8a2a48aa4b9dbad8e9ee8e2a65
+"Sticky top toolbar when scrolling","Barra superior fija al desplazar",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,7e6ba98556752ed87e8662cf9668ddcd
+"Floating selection bubble toolbar","Barra flotante al seleccionar texto",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,14f4ec443c741325e4f71a289bd07be1
+"Bottom word & character count bar","Barra inferior de recuento de palabras y caracteres",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,849f9fec801c27eaa7e11bef1085be96
+"Enable browser spellcheck","Activar corrector ortográfico del navegador",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,6299fd97f1b346599b98fba9dc1ef19d
+"Server-side HTML Purifier on save","HTML Purifier del lado del servidor al guardar",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,1ad92cfd70a1f4e0338d0587e06706e4
+"Clean pasted markup via editor schema","Limpiar marcado pegado mediante el esquema del editor",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,30cce169fea8e66fa3a2ea51c33fdf2f
+"Allow HTML source code toggle","Permitir alternar vista de código fuente HTML",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,3149842e44796af209767dde957b9558
+"Drag-and-drop & paste image upload","Subida de imágenes al arrastrar, soltar y pegar",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,891dc6a3bfd50ae7b263ff204cff2828
+"Interactive inline image resizing","Cambio de tamaño interactivo de imágenes en línea",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,d7d9a9bfeb334375c0ff7c8d735b6442
+"Enable ""/"" slash command menu","Activar el menú de comandos «/»",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,4847be0dc530d0c22bb1e57e722ea0cf
+"Show canvas block handles (+ / drag & block actions)","Mostrar controles de bloque en el lienzo (+ / arrastrar y acciones de bloque)",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,4e3e82f276816e04ed9b1d8805cab401
+"Image Upload Target Fields","Campos de destino para subida de imágenes",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,b5a2a8ad5a3eec49cda3dfc6a024b373
+"Optionally restrict which image fields accept drag-and-drop or modal uploads. Leave empty to auto-detect multi-image fields on the edited page.","Restrinja opcionalmente qué campos de imagen aceptan subidas al arrastrar o desde el diálogo. Déjelo vacío para detectar automáticamente campos de múltiples imágenes en la página editada.",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,c8ae546e4bbb6ea1015da8ae740dad53
+"Disable direct image uploads","Desactivar subidas directas de imágenes",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,a0410773d583dca151cd189b48eb95ab
+"Inline Content Blocks (Optional)","Bloques de contenido en línea (Opcional)",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,983343c52ebf7d4db6892742093db916
+"Select inline content blocks editors can insert via the ""/"" slash menu or toolbar.","Selecciona los bloques de contenido en línea que los editores pueden insertar con ""/"" o desde la barra de herramientas.",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,74007762cb1c63727f7e8ead87276e7f
+"Add custom inline content blocks in ./site/tiptap/*.yaml or register them in PHP.","Agrega bloques de contenido personalizados en ./site/tiptap/*.yaml o regístralos en PHP.",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,5172aa9bba035102b704ae29a9c37b9d
+"Markup Cleanup Toggles","Opciones de limpieza de marcado",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,792b3304ffd9f31c8d7a5f3448acb602
+"Remove <div> wrapper tags","Eliminar etiquetas contenedoras <div>",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,1932e5f3cea3046538e8d7aa59748ce4
+"Remove empty <p> paragraphs","Eliminar párrafos <p> vacíos",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,6733229b5903c8224f715303046d9f4b
+"Convert &nbsp; entities to regular spaces","Convertir entidades &nbsp; en espacios normales",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,410742c18cfed9a90bf6985c908577e7
+"Remove inline style attributes (preserves text-align)","Eliminar atributos style en línea (conserva text-align)",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,e1296429452dcfb078f99efd2a792751
+"Minimum Height (px)","Altura mínima (px)",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,43e52818b2b64bf871b45d0476017910
+"Set `0` to size automatically from field `rows`.","Establece `0` para dimensionar automáticamente según `rows`.",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,3d1a5fc9b204ce7932feb80c4635ea1c
+"Maximum Height (px)","Altura máxima (px)",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,23569868e84a8ee1df3d6dd88fe7d58a
+"Set `0` for unlimited auto-growing height.","Establece `0` para una altura autoexpansible ilimitada.",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,87f9ac43213ac60c0fe400615a229c15
+"Authentication required.","Se requiere autenticación.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,27d1d715bcd77c610edb102f776c63c6
+"Missing editor context token.","Falta el token de contexto del editor.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,3faedbc4f2c02bf85f21d04e65d29749
+"Invalid or expired editor context token.","Token de contexto del editor no válido o caducado.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,b8fbe87e6ed6910fdb21b88487e79201
+"Method not allowed. POST required.","Método no permitido. Se requiere POST.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,ca1b5305d7c7bec2f322612a92dd8f57
+"This rich text field is read-only.","Este campo de texto enriquecido es de solo lectura.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,5548d948da3deef8a297168317cd50ec
+"CSRF token validation failed.","Falló la validación del token CSRF.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,e1b850614e8638b71a2de10cbfd31e49
+"Unsupported Tiptap action.","Acción de Tiptap no admitida.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,6da4f9440a35d70d865d9daf98d3c04f
+"You do not have permission to view files on this page.","No tiene permiso para ver los archivos de esta página.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,e4572028bf98ff039bf24f02c8127af8
+"You do not have permission to view images on this page.","No tiene permiso para ver las imágenes de esta página.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,99b67101323158dc795c9502a91d431c
+"Missing image URL.","Falta la URL de la imagen.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,ab5790a09d961a5a461e191a2651bdbb
+"Missing source image filename.","Falta el nombre de archivo de la imagen de origen.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,0722ddc57a247778a31203174bd4a28f
+"Target image page could not be determined.","No se pudo determinar la página de destino de la imagen.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,eba148c1975162347a55185b6b6f7c2c
+"You do not have permission to access this image.","No tiene permiso para acceder a esta imagen.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,e8207fecc844fcb3cfb9461ae4efbf54
+"You do not have permission to resize images here.","No tiene permiso para cambiar el tamaño de las imágenes aquí.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,f72aabe8eb750870837b1a4f20a11b5b
+"Source image was not found.","No se encontró la imagen de origen.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,fbf5d0007053b9338d48b4cce31fc3c9
+"No target page available for image upload.","No hay ninguna página de destino disponible para subir la imagen.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,c20306bb59ba8611f6ceea3494b79e0a
+"Target page not found.","Página de destino no encontrada.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,1d6fd845f454b5776b511ba27868dbed
+"No editable image field is available on this page.","No hay ningún campo de imagen editable disponible en esta página.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,791377fb2873431f4d1dc66ed403fd08
+"No image file was received.","No se recibió ningún archivo de imagen.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,395d0eedbef7b95fa77bbc02930168bd
+"No valid image file was received.","No se recibió ningún archivo de imagen válido.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,14f8277e1a08ec9a65c9074d51277a4a
+"Target field does not hold an image collection.","El campo de destino no contiene una colección de imágenes.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,f5356f992b38eb5fd4d55abf3873484f
+"The image field on this page has reached its maximum file limit.","El campo de imagen de esta página ha alcanzado su límite máximo de archivos.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,922ef24ed4c87b3d935fef3ddaf84c01
+"Image upload failed validation.","La subida de la imagen no superó la validación.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,be84925b5a7fb8858728f885395b1faf
+"Temporary upload directory is unavailable.","El directorio temporal de subida no está disponible.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,8323b7d2177c5fdd2580494d826c8c7f
+"Uploaded image was rejected by security validation.","La imagen subida fue rechazada por la validación de seguridad.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,6d04f9af2abbc878f29f57ef50f53229
+"Uploaded file is not a valid raster image.","El archivo subido no es una imagen rasterizada válida.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,0956d593fe9bd69f281f27b834a25c92
+"Uploaded image dimensions exceed the maximum allowed pixel limit.","Las dimensiones de la imagen subida superan el límite máximo de píxeles permitido.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,c09e86b29f3403feaeb90239cfb46364
+"Uploaded image could not be saved to the page field.","La imagen subida no se pudo guardar en el campo de la página.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,037660c79aadf4d49018f946c2ebd59b
+"Emptied trash.","Papelera vaciada.",,site/modules/React/src/Viewport/MarkupReactViewport.php,8758e1979803e88020ed42aca37210f4
+"Updated %d record(s).","Se actualizaron %d registro(s).",,site/modules/React/src/Viewport/MarkupReactViewport.php,2ef993b35328d6a5e000e0908a84a10f
+"Shifted dates on %d record(s).","Se desplazaron las fechas en %d registro(s).",,site/modules/React/src/Viewport/MarkupReactViewport.php,9dc33cb5c391141a7962dde8f17b658c
+Publish,Publicar,,site/modules/React/src/Viewport/MarkupReactViewport.php,110a4b01beabd53b661a47d4b44bd7a8
+"Set Draft","Pasar a borrador",,site/modules/React/src/Viewport/MarkupReactViewport.php,5c657df85958ec041cd9de39ecab133b
+"Move to Trash","Mover a la papelera",,site/modules/React/src/Viewport/MarkupReactViewport.php,7a289ea949902e8fa53efb4b3b4ccea0
+"Move selected records to trash?","¿Mover los registros seleccionados a la papelera?",,site/modules/React/src/Viewport/MarkupReactViewport.php,bb3d3e97d788b9700e12e7f149580b84
+"Create New","Crear nuevo",,site/modules/React/src/Viewport/MarkupReactViewport.php,49e5878c7a1901b0a9baae9e0c774150
+"Saved view ""%s"".","Vista ""%s"" guardada.",,site/modules/React/src/Viewport/MarkupReactViewport.php,65192d3077f22c24ade9e797bdfe9405
+"Toggled record status.","Estado del registro alternado.",,site/modules/React/src/Viewport/MarkupReactViewport.php,64e755510cb927e82b1d25145e0cfdb9
+"Item duplicated.","Elemento duplicado.",,site/modules/React/src/Viewport/MarkupReactViewport.php,b5e22a378685019bc0759c70208333bb
+"Moved to trash.","Movido a la papelera.",,site/modules/React/src/Viewport/MarkupReactViewport.php,ce36abf00ef96bbeeb44cdec5b34d67d
+"Restored from trash.","Restaurado de la papelera.",,site/modules/React/src/Viewport/MarkupReactViewport.php,5a6286b4d02e296d2c9172742b8c2e28
+"Deleted permanently.","Eliminado permanentemente.",,site/modules/React/src/Viewport/MarkupReactViewport.php,12f84adf43d4bcae7c99cb01eb5aaa55
+"Changes saved.","Cambios guardados.",,site/modules/React/src/Viewport/MarkupReactViewport.php,3c158cce6f10b3097a0eb760c2e89fa3
+"No changes made.","No se realizaron cambios.",,site/modules/React/src/Viewport/MarkupReactViewport.php,e81d5b7d71ccab9a02048bdc0ed94d4c
+"Field updated.","Campo actualizado.",,site/modules/React/src/Viewport/MarkupReactViewport.php,2a960a09651d0b77d7f8904a5e3e7e7a
+"Field toggled.","Campo alternado.",,site/modules/React/src/Viewport/MarkupReactViewport.php,e2c3b13a1b261546ace4cfa01ad0d010
+"Updated stage.","Etapa actualizada.",,site/modules/React/src/Viewport/MarkupReactViewport.php,ae24c849b1f625812d31e311225b6229
+"Order updated.","Orden actualizado.",,site/modules/React/src/Viewport/MarkupReactViewport.php,e23a93e36d3e960c48a736f681a5e370
+"Updated item dates.","Fechas del elemento actualizadas.",,site/modules/React/src/Viewport/MarkupReactViewport.php,9492980b6762d6efbc0032b70591f2f5
+"Rescheduled item.","Elemento reprogramado.",,site/modules/React/src/Viewport/MarkupReactViewport.php,980b221107a5f5443a3e11f0920fb40f
+"Record updated.","Registro actualizado.",,site/modules/React/src/Viewport/MarkupReactViewport.php,83d4b207495d6d8e7d0ea9e31391da94
+"Created ""%s"".","Se creó ""%s"".",,site/modules/React/src/Viewport/MarkupReactViewport.php,a1df15e8235050cfb7b8adc51769aeee
+"Exported %s.","%s exportado.",,site/modules/React/src/Viewport/MarkupReactViewport.php,cba243b6c3b232050531edccfb21f961
+Status,Estado,,site/modules/React/src/Viewport/MarkupReactViewport.php,ec53a8c4f07baed5d8825072c89799be
+Title,Título,,site/modules/React/src/Viewport/MarkupReactViewport.php,b78a3223503896721cca1303f776159b
+Workspace,"Espacio de trabajo",,site/modules/React/src/Workspace/WorkspaceLauncherProcess.php,03a21915504df93cf5dba0636080f62e
+"Manage site content, menus, forms, SEO, API access, and system operations from your personalized dashboard.","Gestiona el contenido del sitio, menús, formularios, SEO, acceso a la API y operaciones del sistema desde tu panel personalizado.",,site/modules/React/src/Workspace/WorkspaceLauncherProcess.php,983a78b14f319f495894d70da7b761f0
