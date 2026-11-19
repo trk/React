@@ -1,0 +1,160 @@
+/* ============================================================================
+   ReactMedia Studio & File/Image Inputfields (`ReactMedia.css`)
+   Loaded exclusively when InputfieldReactFile, InputfieldReactImage, or
+   media-capable InputfieldReactLink controls are mounted.
+   ========================================================================== */
+
+dialog[data-rw-inspector-sheet] {
+	font-family: var(--font-sans);
+	--radius-button: var(--radius-md);
+	--background: light-dark(#f4f5f7, #0e1014);
+	--card: light-dark(#ffffff, #15181e);
+	--popover: light-dark(#ffffff, #191d24);
+	--masthead: light-dark(#ffffff, #111419);
+	--sidebar: light-dark(#ffffff, #13161c);
+	--input-surface: light-dark(#f9fafb, #1b1f27);
+	--muted: light-dark(#eef0f4, #1d222b);
+	--secondary: light-dark(#eef0f4, #1d222b);
+	--accent: light-dark(#eef0f4, #1d222b);
+	--muted-foreground: light-dark(#525866, #9ca3af);
+	--masthead-foreground: light-dark(#525866, #9ca3af);
+	--border: light-dark(rgba(15, 23, 42, 0.11), rgba(255, 255, 255, 0.10));
+	--input: light-dark(rgba(15, 23, 42, 0.16), rgba(255, 255, 255, 0.14));
+	--masthead-border: light-dark(rgba(15, 23, 42, 0.09), rgba(255, 255, 255, 0.09));
+	--button-bg: var(--primary);
+	--button-fg: var(--primary-foreground);
+	--button-border: transparent;
+	--button-hover-bg: color-mix(in srgb, var(--primary) 88%, var(--foreground));
+	--button-hover-fg: var(--primary-foreground);
+	--button-hover-border: transparent;
+	margin: 0 0 0 auto;
+	padding: 0;
+	border: 0;
+	inline-size: min(100vw, 44rem);
+	max-inline-size: 100vw;
+	block-size: 100dvh;
+	max-block-size: 100dvh;
+	background: var(--card);
+	color: var(--card-foreground);
+	border-inline-start: 1px solid var(--border);
+	box-shadow: -16px 0 48px rgb(0 0 0 / 0.22);
+	overscroll-behavior: contain;
+}
+
+dialog[data-rw-inspector-sheet]:dir(rtl) {
+	margin: 0 auto 0 0;
+}
+
+dialog[data-rw-inspector-sheet]::backdrop {
+	background: rgb(0 0 0 / 0.36);
+	backdrop-filter: blur(2px);
+	overflow: hidden;
+	overscroll-behavior: contain;
+}
+
+/* Native <progress> Upload Bar (WebKit + Firefox cross-engine reset) */
+@keyframes rw-progress-indeterminate {
+	0% {
+		background-position: 200% 0;
+	}
+	100% {
+		background-position: -200% 0;
+	}
+}
+
+progress[data-rw-progress] {
+	appearance: none;
+	border: 0 solid;
+	overflow: clip;
+	display: block;
+	inline-size: 100%;
+	block-size: 0.375rem;
+	border-radius: 9999px;
+	background-color: color-mix(in srgb, var(--border) 82%, var(--foreground) 18%);
+}
+
+progress[data-rw-progress]::-webkit-progress-bar {
+	background-color: transparent;
+	border-radius: 9999px;
+}
+
+progress[data-rw-progress]::-webkit-progress-value {
+	background-color: var(--primary);
+	border-radius: 9999px;
+	transition: inline-size 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+progress[data-rw-progress]::-moz-progress-bar {
+	background-color: var(--primary);
+	border-radius: 9999px;
+	transition: inline-size 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+progress[data-rw-progress]:indeterminate {
+	background-image: linear-gradient(
+		90deg,
+		transparent 0%,
+		var(--primary) 45%,
+		var(--primary) 55%,
+		transparent 100%
+	);
+	background-size: 200% 100%;
+	animation: rw-progress-indeterminate 1.4s ease-in-out infinite;
+}
+
+progress[data-rw-progress]:indeterminate::-moz-progress-bar {
+	background-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	progress[data-rw-progress]:indeterminate {
+		animation-duration: 3.6s;
+	}
+
+	progress[data-rw-progress]::-webkit-progress-value,
+	progress[data-rw-progress]::-moz-progress-bar {
+		transition: none;
+	}
+}
+
+/* Interactive Media Crop Stage & Drag Handles */
+[data-rw-crop-stage],
+[data-rw-crop-move],
+[data-rw-crop-handle] {
+	touch-action: none;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+[data-rw-crop-move] {
+	cursor: grab;
+}
+
+[data-rw-crop-move][data-dragging="true"] {
+	cursor: grabbing;
+}
+
+@media (pointer: coarse) {
+	[data-rw-crop-handle] {
+		min-inline-size: 2.25rem;
+		min-block-size: 2.25rem;
+	}
+}
+
+/* Gallery & File List Layout Containment for Smooth 60fps Interactions */
+[data-rw-media-card]:not([data-rw-lifted="true"]) {
+	content-visibility: auto;
+	contain-intrinsic-size: auto 260px auto 220px;
+}
+
+[data-rw-media-row]:not([data-rw-lifted="true"]) {
+	content-visibility: auto;
+	contain-intrinsic-size: auto 640px auto 72px;
+}
+
+@supports not (content-visibility: auto) {
+	[data-rw-media-card]:not([data-rw-lifted="true"]),
+	[data-rw-media-row]:not([data-rw-lifted="true"]) {
+		contain: layout style paint;
+	}
+}
