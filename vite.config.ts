@@ -1,11 +1,86 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { basename, dirname, extname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { createSelfContainedEntriesPlugin } from '../../../vite.module.ts';
 import { ICON_ALIASES, POPULAR_ICONS } from './resources/ts/icons/faAliases.ts';
+
+function resolveLocalModuleFile(baseDir: string, relSource: string): string | null {
+	const candidate = resolve(baseDir, relSource);
+	const extensions = ['', '.ts', '.tsx', '.js', '.jsx', '/index.ts', '/index.tsx', '/index.js', '/index.jsx'];
+	for (const ext of extensions) {
+		const full = candidate + ext;
+		if (existsSync(full) && statSync(full).isFile()) {
+			return full;
+		}
+	}
+	return null;
+}
+
+/**
+ * Isolates relative module graphs per entry in `resources/ts/entries/`
+ * so each compiled `dist/<Entry>.js` is self-contained with zero shared chunk imports
+ * or top-level `export` statements.
+ */
+function createSelfContainedEntriesPlugin(skipEntries: string[] = []): Plugin {
+	const skipSet = new Set(skipEntries);
+
+	return {
+		name: 'wire-self-contained-entries',
+		enforce: 'pre',
+		resolveId(source: string, importer?: string) {
+			if (!importer || !source.startsWith('.')) {
+				return null;
+			}
+			const [cleanImporter, query = ''] = importer.split('?');
+			if (!cleanImporter.includes('/resources/ts/')) {
+				return null;
+			}
+
+			let entryTag = '';
+			const match = query.match(/(?:^|&)entry=([^&]+)/);
+			if (match) {
+				entryTag = match[1];
+			} else if (cleanImporter.includes('/resources/ts/entries/')) {
+				const base = basename(cleanImporter, extname(cleanImporter));
+				if (skipSet.has(base)) {
+					return null;
+				}
+				entryTag = base;
+			}
+
+			if (!entryTag) {
+				return null;
+			}
+
+			const resolvedFile = resolveLocalModuleFile(dirname(cleanImporter), source);
+			if (!resolvedFile) {
+				return null;
+			}
+
+			return `${resolvedFile}?entry=${entryTag}&lang=${extname(resolvedFile)}`;
+		},
+		load(id: string) {
+			if (!id.includes('?entry=')) {
+				return null;
+			}
+			const [filePath] = id.split('?');
+			if (!existsSync(filePath)) {
+				return null;
+			}
+			return readFileSync(filePath, 'utf8');
+		},
+		generateBundle(_options, bundle) {
+			for (const chunk of Object.values(bundle)) {
+				if (chunk && chunk.type === 'chunk' && typeof chunk.code === 'string') {
+					const cleaned = chunk.code.replace(/\bexport\s*\{[^}]*\}\s*;?\s*$/s, '').trim();
+					chunk.code = `(function(){${cleaned}\n})();\n`;
+				}
+			}
+		},
+	};
+}
 
 const TIPTAP_ADDON_ENTRIES = new Set([
 	'TiptapEditor',
