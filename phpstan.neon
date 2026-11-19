@@ -1,0 +1,37 @@
+parameters:
+	level: 8
+	phpVersion: 80400
+	bootstrapFiles:
+		- tests/phpstan-bootstrap.php
+	scanFiles:
+		- ../../../wire/modules/Fieldtype/FieldtypeRepeater/RepeaterPage.php
+	paths:
+		- src
+		- React.module.php
+		- ProcessReactWorkspace.module.php
+		- MarkupReactTable.module.php
+		- MarkupReactCards.module.php
+		- MarkupReactTab.module.php
+		- InputfieldReactKeyValue.module.php
+		- InputfieldReactLink.module.php
+		- InputfieldReactIcon.module.php
+		- InputfieldReactM2O.module.php
+		- InputfieldReactM2M.module.php
+		- InputfieldReactO2M.module.php
+		- InputfieldReactM2A.module.php
+		- InputfieldReactFile.module.php
+		- InputfieldReactImage.module.php
+		- InputfieldTiptap.module.php
+		- TextformatterTiptapMiniBlocks.module.php
+	treatPhpDocTypesAsCertain: false
+	ignoreErrors:
+		# ProcessWire core PHPDoc upstream signatures narrower than runtime support
+		- '#Parameter \#1 \$value of method ProcessWire\\Inputfield::val\(\) expects string\|null#'
+		- '#Parameter \#1 \$value of method ProcessWire\\InputfieldSelect::addOption\(\) expects string, int given#'
+		- '#Parameter \#2 \$value of method ProcessWire\\Inputfield::attr\(\) expects bool\|int\|string\|null, ProcessWire\\Pagefiles given#'
+		- '#Parameter \#1 \$top of method ProcessWire\\Pageimage::focus\(\) expects array\|float\|int\|false\|null, non-(?:empty|falsy)-string given#'
+		- '#Parameter \#1 \$key of method ProcessWire\\PageArray::has\(\) expects int\|ProcessWire\\Page, non-falsy-string given#'
+		# ProcessWire PagesType::get() returns NullPage at runtime despite upstream @return User|Role|Permission|Language|Page
+		- '#Instanceof between ProcessWire\\(?:Page|User|Role|Permission|Language) and ProcessWire\\(?:Page|NullPage) will always evaluate to (?:true|false)#'
+		# Optional hooked methods injected dynamically by InterventionImage when installed
+		- '#Call to an undefined method ProcessWire\\Pageimage::(?:dominantColor|palette|lqip)\(\)#'

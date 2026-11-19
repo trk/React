@@ -1,0 +1,14 @@
+.DS_Store?
+.DS_Store
+Thumbs.db
+.idea
+.vscode
+.turbo/
+.phpstan.cache
+.phpunit.cache/
+.phpunit.result.cache
+vendor/
+composer.lock
+node_modules/
+test-results/
+playwright-report/
