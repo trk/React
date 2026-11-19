@@ -1,0 +1,51 @@
+---
+description: "Use when modifying or extending ProcessWire\\React (Totoglu\\React) and optional ProcessWire\\ProcessReactWorkspace — React UI runtime, ProcessReact, InputfieldReact, SchemaForm, MediaGateway, IconManager, InputfieldTiptap, Relations, MarkupReactViewport, and optional Admin Workspace Hub."
+---
+
+# Agent Guidelines for `ProcessWire\React` (`Totoglu\React`)
+
+## Architectural Invariants
+
+1. **Boot, Optional Hub & Autoloading (`WireClassLoader`):**
+   - `React` (`singular => true, autoload => true`) extends `ProcessWire\WireData` (`implements Module, ConfigurableModule`), requires `['PHP>=8.4', 'ProcessWire>=3.0.271', 'Inertia']`, defines **no admin page**, and registers `Totoglu\React` -> `__DIR__ . '/src/'` **once** inside `React::__construct()`.
+   - `ProcessReactWorkspace` (`extends WorkspaceLauncherProcess` -> `ProcessReact`, `autoload => false`) lives in the same directory as an **optional** `Process` module (`requires => [..., 'React']`, not listed in `React`'s `installs`) mounting `Admin > Workspace` (`/processwire/workspace/`) only when installed.
+   - Never add `class_exists` / `trait_exists` / `interface_exists` / `require_once` guards or duplicate `addNamespace()` calls in `.module.php` or `src/` files; `WireClassLoader` resolves all `Totoglu\React\*` classes and companion `.module.php` modules natively.
+   - Zero dependency on downstream consumer modules; verify with `LayeringTest.php`.
+   - `React` installs all 14 companion modules: `MarkupReactTable`, `MarkupReactCards`, `MarkupReactTab`, `InputfieldReactKeyValue`, `InputfieldReactLink`, `InputfieldReactIcon`, `InputfieldReactM2O`, `InputfieldReactM2M`, `InputfieldReactO2M`, `InputfieldReactM2A`, `InputfieldTiptap`, `TextformatterTiptapMiniBlocks`, `InputfieldReactFile`, `InputfieldReactImage`.
+
+2. **Lazy Discovery & Zero Cold-Boot Overhead:**
+   - Downstream modules register workspaces and widgets lazily via `React::deferModuleRegistration($this, $workspaceRegistrar, $widgetRegistrar)`, viewport data providers via `React::deferProviderRegistration($this, $registrar)`, relation resources via `React::deferRelationRegistration($this, $registrar)`, and entity media hosts via `React::deferMediaHostRegistration($this, $registrar)` so registries, `statsCallback`, and `dataCallback` never run on frontend or unrelated requests.
+   - `buildInertiaSharedContext()` passes `$includeStats = false` and `$accessibleWidgets = null` so widget data and workspace stat queries execute only when `/processwire/workspace/` is rendered.
+
+3. **Extendable Base Classes (`Totoglu\React\Inertia` & `Viewport`):**
+   - **`ProcessReact`** (`extends ProcessInertia`, uses `InteractWithReact`): Dual-context base class for downstream admin `Process` controllers (`ProcessWire*` and `ProcessReactWorkspace`). When opened via `Setup > <Module>` (`shellMode === 'admin'`), executes natively through `wire/core/admin.php` -> `ProcessController::execute()` via `EmbeddedAdminPageResponse` inside whichever `AdminTheme` is active (`AdminThemeUikit`, `AdminThemeDefault`, `AdminThemeReno`, or custom `AdminTheme`) with CSS `revert-layer` cascade isolation; when opened via `Admin > Workspace` (`?ws=1`, `shellMode === 'workspace'`), renders the standalone full-screen Workspace shell (`views/admin.php`), preserving `--pw-*` color scheme tokens and `OnceProp` `i18n` catalogs across both contexts.
+   - **`InputfieldReact`** (`extends InputfieldInertia`, uses `InteractWithReactTranslations`): Base class for dual-mode React Inputfields working both as classic ProcessWire form islands (`<input type="hidden">` sync) and as `SchemaForm` / Inertia props (`toInertiaProp()`).
+   - **`MarkupReactViewport`** (`extends MarkupInertia`): Base class for `MarkupReactTable`, `MarkupReactCards`, and downstream viewports.
+
+4. **Security & Signed Gateways (`/_react/*`):**
+   - `SignedTokenCodec` signs `stateToken` (`/_react/viewport`), `relationToken` (`/_react/relation`), `mediaToken` (`/_react/media`), and `tiptapToken` (`/_react/tiptap`) with HMAC-SHA256 derived from `$config->userAuthSalt`, bound to `$user->id` (`uid`), domain-separated against cross-endpoint replay, and expiring after 24h (`iat`).
+   - All mutating actions across `/_react/viewport`, `/_react/workspace-prefs`, `/_react/presence`, `/_react/relation`, `/_react/media`, and `/_react/tiptap` reject guest users (`403`) and validate `$session->CSRF` (`verifyRequestCsrf()`).
+   - `MediaGateway` and `TiptapMediaLinkGateway` enforce field-level/page-level `editable()` RBAC, `maxFiles` and raster pixel bounds, and block active/unsanitized SVG uploads; `InputfieldTiptap` (`TiptapPresetCatalog`, `TiptapAssetResolver`, `TiptapConfigFormBuilder`, `TiptapContentPolicy`) loads modular Tiptap bundles (`TiptapCore.css` + `TiptapCore.js`, optional `TiptapEditor.js` / `TiptapCanvas.js` / `TiptapBlocks.js`, and strictly lazy `TiptapDialogs.js`) with zero shared `ReactInertia-*.js` chunks, and enforces `MarkupHTMLPurifier` + deterministic DOM allowlist fallback and `Languages::editable()`.
+   - `/_react/icons` (`IconManager`) is strictly `GET`/`HEAD` (`405` on `POST`) with bounded query/hydration inputs over static `dist/vector-icons.json` geometry.
+
+5. **Centralized Vector Icon Subsystem (`IconManager` & `InputfieldReactIcon`):**
+   - Build-time `vectorIconCatalogPlugin()` in `vite.config.ts` emits `dist/vector-icons.json` (`5,491` outline + `1,054` filled = `6,545` icons, `41` categories, popular list, tags, and shorthand aliases in `faAliases.ts`), while `coreUiIcons.ts` preloads synchronous core UI icon tuples for `<DynamicIcon />` so `dist/ReactIcons.js` stays `< 15 kB` and `dist/ReactInertia.js` stays `< 420 kB` with zero secondary icon library dependencies.
+   - Never expose external icon library brand names in user-facing labels, placeholders, descriptions, validation errors, or documentation.
+   - Admin Template/Field hooks (`hookAdminIcon*`) inject `lucideIcon` (`Vector Icon`) non-destructively below ProcessWire's native Icon field (`showIf="lucideIcon=''"`) and generate `site/assets/lucide-icons/LucideIcons.css` `mask-image` rules.
+
+6. **Strict Core vs. Companion Submodule Asset Isolation (`resources/build-bundles.mjs`):**
+   - `dist/ReactInertia.js`, `dist/ReactInertia.css`, `dist/ReactViewports.js`, and `dist/SchemaForm.js` (`< 200 kB`) must never bundle companion-submodule UI or CSS (`MarkupReactTable`, `MarkupReactCards`, `MarkupReactTab`, `InputfieldReactKeyValue`, `InputfieldReactIcon`, `InputfieldReactLink`, `InputfieldReactFile`, `InputfieldReactImage`, `InputfieldReactM2O`/`M2M`/`O2M`/`M2A`, `InputfieldTiptap`).
+   - Every companion module's `getModuleScriptAssets()` / `getModuleStyleAssets()` enqueues only its own self-contained bundle(s) (`MarkupReactTable.js`, `MarkupReactCards.js`, `MarkupReactTab.js`, `InputfieldReactKeyValue.js`, `InputfieldReactIcon.js`, `InputfieldReactLink.js`, `ReactMedia.js` + `ReactMedia.css` + `InputfieldReactFile.js`/`InputfieldReactImage.js`, `InputfieldReactRelation.js`, `Tiptap*.js` + `TiptapCore.css`) compiled by `node resources/build-bundles.mjs` (`VITE_BUILD_ENTRY`), with zero `ReactInertia-*.js` shared chunks or `*.style.js` leftovers.
+   - Core runtime helpers (`loadRuntimeScript`, `loadRuntimeStyle`, `preloadRuntimeScript`, `ensureMediaStyleLoaded`) and generic CSS opt-outs (`[data-rw-prose-root]`, `[data-rw-table]`) keep optional hub discovery (`workspace.launcherComponent`), `ReactTiptapRuntime.ensureBundles()`, media styles, and empty `LucideIcons.css` gating decoupled from core requests; `useSchemaFormContext()` must never trigger `ensureFieldsLoaded()`.
+
+7. **Multi-Language (`i18n`) Synchronization:**
+   - Static UI catalogs declared in `___translations()` and PHP `$this->_()` / `__()` strings must stay row-for-row and MD5-identical with `LanguagePorter::exportCsv` across `languages/{en,tr,de,fr,es,ru}.csv` (verified by `ReactTranslationsTest.php`).
+   - Every PHP file under `tests/` MUST start with `<?php // __(file-not-translatable)` on line 1.
+
+8. **Verification Commands (Run Sequentially):**
+   - Cold CLI boot: `php vendor/bin/wire version --json`
+   - PHPStan Level 8: `./vendor/bin/phpstan analyse -c site/modules/React/phpstan.neon --no-progress --memory-limit=1G`
+   - TypeScript & Vite build: `npm --prefix site/modules/React run build`
+   - Vitest unit tests: `npm --prefix site/modules/React run test:unit`
+   - Pest PHP suite: `php vendor/bin/wire test site/modules/React/tests --json`
+   - Playwright E2E & WCAG 2.1 AA suite: `php vendor/bin/wire test:e2e --module=React --json`
