@@ -5,6 +5,14 @@ import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { ICON_ALIASES, POPULAR_ICONS } from './resources/ts/icons/faAliases.ts';
+import { createTailwindCascadeLayersPlugin } from './resources/tailwind-layers.mjs';
+import {
+	CORE_JS_ENTRIES,
+	CORE_STYLE_ENTRIES,
+	ISOLATED_BUILD_ENTRIES,
+	MEDIA_SHIM_ENTRIES as MEDIA_SHIM_ENTRY_LIST,
+	TIPTAP_ADDON_ENTRIES as TIPTAP_ADDON_ENTRY_LIST,
+} from './resources/entries.manifest.mjs';
 
 function resolveLocalModuleFile(baseDir: string, relSource: string): string | null {
 	const candidate = resolve(baseDir, relSource);
@@ -82,35 +90,11 @@ function createSelfContainedEntriesPlugin(skipEntries: string[] = []): Plugin {
 	};
 }
 
-const TIPTAP_ADDON_ENTRIES = new Set([
-	'TiptapEditor',
-	'TiptapCanvas',
-	'TiptapBlocks',
-	'TiptapDialogs',
-]);
+const TIPTAP_ADDON_ENTRIES = new Set(TIPTAP_ADDON_ENTRY_LIST);
 
-const MEDIA_SHIM_ENTRIES = new Set([
-	'InputfieldReactFile',
-	'InputfieldReactImage',
-]);
+const MEDIA_SHIM_ENTRIES = new Set(MEDIA_SHIM_ENTRY_LIST);
 
-const ISOLATED_PASS_ENTRIES = new Set([
-	'MarkupReactTable',
-	'MarkupReactCards',
-	'MarkupReactTab',
-	'InputfieldReactKeyValue',
-	'InputfieldReactIcon',
-	'InputfieldReactLink',
-	'ReactMedia',
-	'InputfieldReactFile',
-	'InputfieldReactImage',
-	'InputfieldReactRelation',
-	'TiptapCore',
-	'TiptapEditor',
-	'TiptapCanvas',
-	'TiptapBlocks',
-	'TiptapDialogs',
-]);
+const ISOLATED_PASS_ENTRIES = new Set(ISOLATED_BUILD_ENTRIES);
 
 async function loadTiptapShimModules(): Promise<Record<string, { runtimeExpr: string; exports: string[] }>> {
 	const specs: Array<{ key: string; file: string; runtimeExpr: string }> = [
@@ -247,6 +231,8 @@ function optimizeReactWorkspaceDepsPlugin(
 	const rwReactDomClientPrefix = '\0virtual:rw-runtime-react-dom-client';
 	const rwJsxPrefix = '\0virtual:rw-runtime-jsx';
 	const rwUiPrefix = '\0virtual:rw-runtime-ui';
+	const rwPortalPrefix = '\0virtual:rw-runtime-portal';
+	const rwHooksPrefix = '\0virtual:rw-runtime-hooks';
 	const rwUtilsPrefix = '\0virtual:rw-runtime-utils';
 	const rwI18nPrefix = '\0virtual:rw-runtime-i18n';
 	const rwInertiaBridgePrefix = '\0virtual:rw-runtime-inertia-bridge';
@@ -275,14 +261,19 @@ function optimizeReactWorkspaceDepsPlugin(
 			if (source === 'laravel-precognition') {
 				return precognitionStubId;
 			}
+			const entrySuffix = importer && importer.includes('?entry=')
+				? importer.slice(importer.indexOf('?entry='))
+				: isIsolatedPass
+					? `?entry=${isolatedEntry}`
+					: '';
 			if (source === 'use-sync-external-store/shim' || source === 'use-sync-external-store/shim/index.js') {
-				return useSyncExternalStoreId;
+				return `${useSyncExternalStoreId}${entrySuffix}`;
 			}
 			if (
 				source === 'use-sync-external-store/shim/with-selector' ||
 				source === 'use-sync-external-store/shim/with-selector.js'
 			) {
-				return useSyncExternalStoreWithSelectorId;
+				return `${useSyncExternalStoreWithSelectorId}${entrySuffix}`;
 			}
 
 			if (isIsolatedPass) {
@@ -318,6 +309,24 @@ function optimizeReactWorkspaceDepsPlugin(
 				}
 				if (source === '../ui' || source === '../../ui' || source.endsWith('/ui') || source.endsWith('/ui/index')) {
 					return `${rwUiPrefix}?entry=${isolatedEntry}`;
+				}
+				if (
+					source === '../portal/PortalRoot' ||
+					source === '../../portal/PortalRoot' ||
+					source.endsWith('/portal/PortalRoot')
+				) {
+					return `${rwPortalPrefix}?entry=${isolatedEntry}`;
+				}
+				if (
+					source === '../hooks' ||
+					source === '../../hooks' ||
+					source === '../hooks/useEditPresence' ||
+					source === '../../hooks/useEditPresence' ||
+					source.endsWith('/hooks') ||
+					source.endsWith('/hooks/index') ||
+					source.endsWith('/hooks/useEditPresence')
+				) {
+					return `${rwHooksPrefix}?entry=${isolatedEntry}`;
 				}
 				if (source === '../lib/utils' || source === '../../lib/utils' || source.endsWith('/lib/utils')) {
 					return `${rwUtilsPrefix}?entry=${isolatedEntry}`;
@@ -374,6 +383,24 @@ function optimizeReactWorkspaceDepsPlugin(
 				if (source === '../ui' || source === '../../ui' || source.endsWith('/ui') || source.endsWith('/ui/index')) {
 					return `${rwUiPrefix}${entrySuffix}`;
 				}
+				if (
+					source === '../portal/PortalRoot' ||
+					source === '../../portal/PortalRoot' ||
+					source.endsWith('/portal/PortalRoot')
+				) {
+					return `${rwPortalPrefix}${entrySuffix}`;
+				}
+				if (
+					source === '../hooks' ||
+					source === '../../hooks' ||
+					source === '../hooks/useEditPresence' ||
+					source === '../../hooks/useEditPresence' ||
+					source.endsWith('/hooks') ||
+					source.endsWith('/hooks/index') ||
+					source.endsWith('/hooks/useEditPresence')
+				) {
+					return `${rwHooksPrefix}${entrySuffix}`;
+				}
 				if (source === '../lib/utils' || source === '../../lib/utils' || source.endsWith('/lib/utils')) {
 					return `${rwUtilsPrefix}${entrySuffix}`;
 				}
@@ -405,12 +432,19 @@ function optimizeReactWorkspaceDepsPlugin(
 					'export function toValidationErrors(e) { return e || {}; }',
 				].join('\n');
 			}
-			if (id === useSyncExternalStoreId) {
-				return 'export const useSyncExternalStore = window.ReactWorkspaceRuntime.React.useSyncExternalStore;';
-			}
-			if (id === useSyncExternalStoreWithSelectorId) {
+			if (id === useSyncExternalStoreId || id.startsWith(`${useSyncExternalStoreId}?`)) {
 				return [
-					'const { useSyncExternalStore, useRef, useEffect, useMemo, useDebugValue } = window.ReactWorkspaceRuntime.React;',
+					"import { useSyncExternalStore } from 'react';",
+					'export { useSyncExternalStore };',
+					'export default useSyncExternalStore;',
+				].join('\n');
+			}
+			if (
+				id === useSyncExternalStoreWithSelectorId ||
+				id.startsWith(`${useSyncExternalStoreWithSelectorId}?`)
+			) {
+				return [
+					"import { useSyncExternalStore, useRef, useEffect, useMemo, useDebugValue } from 'react';",
 					'export function useSyncExternalStoreWithSelector(subscribe, getSnapshot, getServerSnapshot, selector, isEqual) {',
 					'  const instRef = useRef(null);',
 					'  let inst = instRef.current;',
@@ -473,7 +507,7 @@ function optimizeReactWorkspaceDepsPlugin(
 				return [
 					'const RD = window.ReactWorkspaceRuntime.ReactDOM;',
 					'export default RD;',
-					'export const { createPortal, flushSync } = RD;',
+					'export const { createPortal, flushSync, unstable_batchedUpdates } = RD;',
 				].join('\n');
 			}
 			if (id.startsWith(rwReactPrefix)) {
@@ -496,22 +530,52 @@ function optimizeReactWorkspaceDepsPlugin(
 					'export const {',
 					'  Button, buttonVariants, Badge, badgeVariants,',
 					'  Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter,',
-					'  Label, Input, Textarea, Select, Switch,',
+					'  Label, Input, Textarea, Select, Switch, Checkbox, RadioGroup, RadioGroupItem,',
 					'  Tabs, TabsList, TabsTrigger, TabsContent,',
 					'  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,',
 					'  Alert, AlertTitle, AlertDescription, Progress, Separator, Skeleton,',
-					'  Dialog, Sheet, useModalDialogController, StatCard, CliBox, CodePreview, EmptyState, ConfirmDialog,',
-					'  DropdownMenu, buildViewportActionItems,',
+					'  Dialog, Sheet, Drawer, useModalDialogController,',
+					'  TooltipProvider, Tooltip, TooltipTrigger, TooltipContent,',
+					'  Popover, PopoverTrigger, PopoverContent, PopoverTitle, PopoverDescription, PopoverClose,',
+					'  Menu, MenuTrigger, MenuContent, MenuItem, MenuSeparator, MenuGroup, MenuGroupLabel, DropdownMenu,',
+					'  Combobox,',
+					'  Accordion, AccordionItem, AccordionTrigger, AccordionContent,',
+					'  ScrollArea,',
+					'  toastManager, useToast, ToastProvider, ToastViewport,',
+					'  CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem,',
+					'  Stepper, Timeline,',
+					'  StatCard, CliBox, CodePreview, EmptyState, ConfirmDialog,',
+					'  buildViewportActionItems,',
 					'  BadgeGroup, CopyValueButton, RecordLeadingVisual, useRwDarkTheme, applyTextTruncate, isFramedIconPayload, isViewportCellObject, normalizeViewportBadges, normalizeViewportThumb, resolveRecordVisuals,',
+					'  PortalRoot, getPortalContainer, PORTAL_ROOT_ID,',
 					'  SortableHandle, SortableStatusRegion, useSortableList, moveArrayItem, projectTreeReorder,',
 					'  ColumnSpanSlider, clampColSpan, colSpanToPercent, percentToColSpan, formatColSpanHint,',
 					'} = U;',
 				].join('\n');
 			}
+			if (id.startsWith(rwPortalPrefix)) {
+				return [
+					'const P = window.ReactWorkspaceRuntime.Portal;',
+					'export const { PortalRoot, getPortalContainer, PORTAL_ROOT_ID } = P;',
+				].join('\n');
+			}
+			if (id.startsWith(rwHooksPrefix)) {
+				return [
+					'const H = window.ReactWorkspaceRuntime.Hooks;',
+					'export const {',
+					'  fetchGatewayJson,',
+					'  applyThemeCss, applyThemeMode, THEME_PRESETS, useTheme,',
+					'  dispatchDirtyFormState, markHostFormDirty, useDirtyFormBridge,',
+					'  useUnsavedChangesGuard,',
+					'  useEditPresence,',
+					'  KeyboardShortcutsProvider, useKeyboardShortcuts, useRegisteredKeyboardShortcuts, formatShortcutKeys,',
+					'} = H;',
+				].join('\n');
+			}
 			if (id.startsWith(rwUtilsPrefix)) {
 				return [
 					'const U = window.ReactWorkspaceRuntime.Utils;',
-					'export const { cn, CORE_UI_ICON_NODES, DynamicIcon, getCsrfToken, normalizeIconName, notifyIconCatalogLoaded, resolveCanonicalIconName, sanitizeAssetUrl, sanitizeHref, sanitizeSameOriginUrl, isWorkspaceShellActive, withWorkspaceShellUrl, subscribeIconCatalog, t, translate, useTranslations, registerTranslations, hasTranslation, getLocale } = U;',
+					'export const { cn, CORE_UI_ICON_NODES, DynamicIcon, getCsrfToken, normalizeIconName, notifyIconCatalogLoaded, resolveCanonicalIconName, sanitizeAssetUrl, sanitizeHref, sanitizeImageSrc, sanitizeSameOriginUrl, isWorkspaceShellActive, withWorkspaceShellUrl, subscribeIconCatalog, t, translate, useTranslations, registerTranslations, hasTranslation, getLocale } = U;',
 				].join('\n');
 			}
 			if (id.startsWith(rwI18nPrefix)) {
@@ -523,7 +587,7 @@ function optimizeReactWorkspaceDepsPlugin(
 			if (id.startsWith(rwInertiaBridgePrefix)) {
 				return [
 					'const I = window.ReactWorkspaceRuntime.Inertia;',
-					'export const { isInertiaAppActive, isWorkspaceShellActive, visitSameModuleHref, withWorkspaceShellUrl, SafeHead, SafeLink, safeRouter, safeUsePage } = I;',
+					'export const { isInertiaAppActive, isWorkspaceShellActive, submitNativeFormPost, visitSameModuleHref, withWorkspaceShellUrl, SafeHead, SafeLink, safeRouter, safeUsePage } = I;',
 				].join('\n');
 			}
 			if (id.startsWith(rwMediaPrefix)) {
@@ -536,6 +600,7 @@ function optimizeReactWorkspaceDepsPlugin(
 					'  clampMovedCropRect,',
 					'  computeDraggedCropRect,',
 					'  computePresetCropRect,',
+					'  CropStage,',
 					'  extractClipboardFiles,',
 					'  formatFocusPoint,',
 					'  getLanguageCountSummary,',
@@ -543,6 +608,7 @@ function optimizeReactWorkspaceDepsPlugin(
 					'  hydrateStudioMediaItems,',
 					'  MediaCustomFieldRendererContext,',
 					'  MediaHiddenFormInputs,',
+					'  MediaStatusBar,',
 					'  MultiLangDescriptionEditor,',
 					'  normalizeMediaControlProps,',
 					'  notifyHostFormChanged,',
@@ -556,6 +622,7 @@ function optimizeReactWorkspaceDepsPlugin(
 					'  stripAdminCacheBuster,',
 					'  TagsChipEditor,',
 					'  uploadMediaFileViaXhr,',
+					'  useMediaCollectionController,',
 					'  validateStudioIncomingFiles,',
 					'} = RM;',
 				].join('\n');
@@ -579,17 +646,16 @@ export default defineConfig(async () => {
 		? {
 				[rawEntry]: resolve(import.meta.dirname, `resources/ts/entries/${rawEntry}.tsx`),
 			}
-		: {
-				ReactInertia: resolve(import.meta.dirname, 'resources/ts/entries/ReactInertia.tsx'),
-				ReactLayout: resolve(import.meta.dirname, 'resources/ts/entries/ReactLayout.tsx'),
-				ReactViewports: resolve(import.meta.dirname, 'resources/ts/entries/ReactViewports.tsx'),
-				SchemaForm: resolve(import.meta.dirname, 'resources/ts/entries/SchemaForm.tsx'),
-				ProcessReactWorkspace: resolve(import.meta.dirname, 'resources/ts/entries/ProcessReactWorkspace.tsx'),
-				ReactIcons: resolve(import.meta.dirname, 'resources/ts/entries/ReactIcons.tsx'),
-				'ReactInertia.style': resolve(import.meta.dirname, 'resources/css/entries/ReactInertia.css'),
-				'ReactMedia.style': resolve(import.meta.dirname, 'resources/css/entries/ReactMedia.css'),
-				'TiptapCore.style': resolve(import.meta.dirname, 'resources/css/entries/TiptapCore.css'),
-			};
+		: Object.fromEntries([
+				...CORE_JS_ENTRIES.map((entry) => [
+					entry,
+					resolve(import.meta.dirname, `resources/ts/entries/${entry}.tsx`),
+				]),
+				...CORE_STYLE_ENTRIES.map((entry) => [
+					`${entry}.style`,
+					resolve(import.meta.dirname, `resources/css/entries/${entry}.css`),
+				]),
+			]);
 
 	const plugins = isIsolatedPass
 		? [
@@ -603,6 +669,7 @@ export default defineConfig(async () => {
 				createSelfContainedEntriesPlugin(['ReactInertia']),
 				react(),
 				tailwindcss(),
+				createTailwindCascadeLayersPlugin(),
 			];
 
 	return {
@@ -618,7 +685,7 @@ export default defineConfig(async () => {
 			cssCodeSplit: true,
 			minify: true,
 			cssMinify: true,
-			chunkSizeWarningLimit: 600,
+			chunkSizeWarningLimit: 720,
 			rollupOptions: {
 				input: inputMap,
 				output: {

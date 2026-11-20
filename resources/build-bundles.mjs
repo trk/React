@@ -2,27 +2,11 @@ import { readdirSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { build } from 'vite';
 
+import { ISOLATED_BUILD_ENTRIES } from './entries.manifest.mjs';
+
 const MODULE_DIR = resolve(import.meta.dirname, '..');
 const CONFIG_FILE = resolve(MODULE_DIR, 'vite.config.ts');
 const DIST_DIR = resolve(MODULE_DIR, 'dist');
-
-const ISOLATED_BUILD_ENTRIES = [
-	'MarkupReactTable',
-	'MarkupReactCards',
-	'MarkupReactTab',
-	'InputfieldReactKeyValue',
-	'InputfieldReactIcon',
-	'InputfieldReactLink',
-	'ReactMedia',
-	'InputfieldReactFile',
-	'InputfieldReactImage',
-	'InputfieldReactRelation',
-	'TiptapCore',
-	'TiptapEditor',
-	'TiptapCanvas',
-	'TiptapBlocks',
-	'TiptapDialogs',
-];
 
 async function runBuildPass(entryName) {
 	if (entryName === '') {
