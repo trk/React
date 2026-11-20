@@ -56,7 +56,7 @@ use Totoglu\React\Workspace\WorkspaceWidgetRegistry;
  */
 class React extends WireData implements Module, ConfigurableModule
 {
-	public const int VERSION = 10;
+	public const int VERSION = 20;
 
 	/** @var array<string, WorkspaceDefinition> */
 	private static array $sharedWorkspaces = [];
@@ -104,7 +104,7 @@ class React extends WireData implements Module, ConfigurableModule
 	{
 		return [
 			'title' => 'React',
-			'version' => 10,
+			'version' => 20,
 			'summary' => 'Shared React 19 + Inertia v3 + Tailwind CSS v4 runtime, admin shell, form controls, rich text editor, vector icons, and interactive data viewports for ProcessWire.',
 			'href' => 'https://github.com/trk/React',
 			'author' => 'Iskender TOTOGLU @trk @ukyo',

@@ -11,7 +11,7 @@ Developer and AI agent reference for `ProcessWire\React`, the optional `ProcessW
 `ProcessReactWorkspace` (`extends Totoglu\React\Workspace\WorkspaceLauncherProcess` -> `ProcessReact`, `autoload => false`) is shipped in the same directory as an **optional** `Process` module (`Admin > Workspace`, `/processwire/workspace/`). Downstream `ProcessReact` modules require only `'React'` and operate standalone when `ProcessReactWorkspace` is not installed, or join the unified workspace hub and widget dashboard automatically when `ProcessReactWorkspace` is installed.
 
 ### Static Constants & Lifecycle Methods
-- `React::VERSION` (`int`, `10` = `v0.1.0`) — Canonical module version shared across `React`, `ProcessReactWorkspace`, and its 14 companion modules.
+- `React::VERSION` (`int`, `20` = `v0.2.0`) — Canonical module version shared across `React`, `ProcessReactWorkspace`, and its 14 companion modules.
 - `React::instance(?Wire $context = null): self` — Resolves the wired singleton from `$wire->react` or `$modules->getModule('React', ['noPermissionCheck' => true])`.
 - `React::checkAccess(array $data = []): bool` — Grants access to `/_react/presence` and `/processwire/workspace/` for superusers or authenticated users who can access at least one registered workspace.
 - `$react->isWorkspaceHubInstalled(): bool` — Returns `true` when the optional `ProcessReactWorkspace` hub module is installed.

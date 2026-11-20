@@ -53,7 +53,7 @@ class InputfieldReactKeyValue extends InputfieldReact implements InputfieldHasAr
 	{
 		return [
 			'title' => __('React Key-Value Pairs', __FILE__),
-			'version' => 10,
+			'version' => 20,
 			'summary' => __('Manage ordered key-value pairs for custom attributes, metadata, or specifications.', __FILE__),
 			'author' => 'Iskender TOTOGLU @trk @ukyo',
 			'icon' => 'list-ul',

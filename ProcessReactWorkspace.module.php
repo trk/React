@@ -26,7 +26,7 @@ class ProcessReactWorkspace extends WorkspaceLauncherProcess implements Module
 	{
 		return [
 			'title' => 'Workspace',
-			'version' => 10,
+			'version' => 20,
 			'summary' => 'Optional unified Admin Workspace Dashboard, cross-module launcher, and customizable widget board powered by React.',
 			'href' => 'https://github.com/trk/React',
 			'author' => 'Iskender TOTOGLU @trk @ukyo',

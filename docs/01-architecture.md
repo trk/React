@@ -117,7 +117,7 @@ Exact file counts verified across `site/modules/React/` (excluding `node_modules
 | **Git Remote** | `https://github.com/trk/React.git` | `git -C site/modules/React remote -v` |
 | **Branch** | `main` | `git -C site/modules/React branch --show-current` |
 | **HEAD Commit** | `fdfa15f` | `git -C site/modules/React log -1 --oneline` |
-| **Module Version** | `10` (`v0.1.0`) | [React.module.php](../React.module.php#L59), [API.md](../API.md#L14) |
+| **Module Version** | `20` (`v0.2.0`) | [React.module.php](../React.module.php#L59), [API.md](../API.md#L14) |
 | **License** | `MIT` | [composer.json](../composer.json#L5) |
 
 ### Documentation & Agent Guidance Map

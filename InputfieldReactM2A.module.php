@@ -30,7 +30,7 @@ class InputfieldReactM2A extends AbstractInputfieldReactRelation implements
 	{
 		return [
 			'title' => __('React Relation (M2A — Multi-Type)', __FILE__),
-			'version' => 10,
+			'version' => 20,
 			'summary' => __('Select and organize related items across multiple resource types (such as pages, entries, or users) in one field.', __FILE__),
 			'author' => 'Iskender TOTOGLU @trk @ukyo',
 			'icon' => 'random',

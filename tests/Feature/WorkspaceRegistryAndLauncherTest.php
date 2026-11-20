@@ -378,8 +378,8 @@ test('WorkspaceLauncherProcess serializes accessible workspaces, live stats, and
 test('ProcessReactWorkspace composer.json and uninstall lifecycle clean up session preferences, registries, and fuel', function (): void {
 	$composer = json_decode((string) file_get_contents(dirname(__DIR__, 2) . '/composer.json'), true);
 	expect($composer)->not->toHaveKey('version')
-		->and(React::VERSION)->toBe(10)
-		->and(React::getModuleInfo()['version'] ?? null)->toBe(10)
+		->and(React::VERSION)->toBe(20)
+		->and(React::getModuleInfo()['version'] ?? null)->toBe(20)
 		->and($composer['require']['trk/processwire-inertia'] ?? null)->toBe('^1.0');
 
 	foreach (React::getModuleInfo()['installs'] ?? [] as $companionModule) {
