@@ -2,31 +2,6 @@
    Accessible Rich Text Toolbar & Tiptap Prose Surface (`InputfieldTiptap`)
    ========================================================================== */
 
-dialog[data-rw-tiptap-dialog] {
-	font-family: var(--font-sans);
-	--radius-button: var(--radius-md);
-	--background: light-dark(#f4f5f7, #0e1014);
-	--card: light-dark(#ffffff, #15181e);
-	--popover: light-dark(#ffffff, #191d24);
-	--masthead: light-dark(#ffffff, #111419);
-	--sidebar: light-dark(#ffffff, #13161c);
-	--input-surface: light-dark(#f9fafb, #1b1f27);
-	--muted: light-dark(#eef0f4, #1d222b);
-	--secondary: light-dark(#eef0f4, #1d222b);
-	--accent: light-dark(#eef0f4, #1d222b);
-	--muted-foreground: light-dark(#525866, #9ca3af);
-	--masthead-foreground: light-dark(#525866, #9ca3af);
-	--border: light-dark(rgba(15, 23, 42, 0.11), rgba(255, 255, 255, 0.10));
-	--input: light-dark(rgba(15, 23, 42, 0.16), rgba(255, 255, 255, 0.14));
-	--masthead-border: light-dark(rgba(15, 23, 42, 0.09), rgba(255, 255, 255, 0.09));
-	--button-bg: var(--primary);
-	--button-fg: var(--primary-foreground);
-	--button-border: transparent;
-	--button-hover-bg: color-mix(in srgb, var(--primary) 88%, var(--foreground));
-	--button-hover-fg: var(--primary-foreground);
-	--button-hover-border: transparent;
-}
-
 [data-rw-tiptap-toolbar] {
 	display: flex;
 	flex-wrap: wrap;

@@ -1,0 +1,7 @@
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" reference;
+@import "./theme-inline.css";
+
+@layer utilities {
+	@tailwind utilities source(none);
+}
