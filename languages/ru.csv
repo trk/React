@@ -20,8 +20,8 @@ en,ru,description,file,hash
 "Searchable vector icon picker with optional style, size, color, stroke width, and badge customization.","Поиск и выбор векторных иконок с дополнительной настройкой стиля, размера, цвета, толщины обводки и фона бейджа.",,site/modules/React/InputfieldReactIcon.module.php,794a827fc41f230dc533bca17292905a
 "React Image","Изображение React",,site/modules/React/InputfieldReactImage.module.php,74aa81a1e31ec0a49648bb7cda282a95
 "Image studio field with instant upload, focal point, zoom, crop/rotate/flip, color palette extraction, multi-language alt text, tags, and custom details.","Студия изображений с мгновенной загрузкой, точкой фокуса, масштабированием, обрезкой/поворотом/отражением, извлечением палитры цветов, многоязычным alt-текстом, тегами и пользовательскими сведениями.",,site/modules/React/InputfieldReactImage.module.php,86c6b14fdcd62228fd750e0aa98bc5f9
-Key,Ключ,,site/modules/React/InputfieldReactKeyValue.module.php,897356954c2cd3d41b221e3f24f99bba
-Value,Значение,,site/modules/React/InputfieldReactKeyValue.module.php,689202409e48743b914713f96d93947c
+"Key","Ключ",,site/modules/React/InputfieldReactKeyValue.module.php,897356954c2cd3d41b221e3f24f99bba
+"Value","Значение",,site/modules/React/InputfieldReactKeyValue.module.php,689202409e48743b914713f96d93947c
 "Add Row","Добавить строку",,site/modules/React/InputfieldReactKeyValue.module.php,03e0c5bbd5488f1e5ec282529dac9635
 "Remove row","Удалить строку",,site/modules/React/InputfieldReactKeyValue.module.php,f22cc12954f8a6326b87efac5ab3bbd4
 "Reserved key name(s) are not allowed: %s","Зарезервированные имена ключей недопустимы: %s",,site/modules/React/InputfieldReactKeyValue.module.php,8888ff3f88044cb4b14e14b52c9d24fa
@@ -50,11 +50,11 @@ Value,Значение,,site/modules/React/InputfieldReactKeyValue.module.php,68
 "Please enter a valid email address.","Пожалуйста, введите корректный адрес электронной почты.",,site/modules/React/InputfieldReactLink.module.php,b5bccda6d3a04e1d8f79846355290435
 "A destination link is required.","Необходимо указать целевую ссылку.",,site/modules/React/InputfieldReactLink.module.php,cb311eaceec84e4ff0ca8c0157d55096
 "Allowed Target Types","Разрешённые типы целей",,site/modules/React/InputfieldReactLink.module.php,f1cd66d64a739d24fa96dc925b54f80b
-Page,Страница,,site/modules/React/InputfieldReactLink.module.php,193cfc9be3b995831c6af2fea6650e60
-Entry,Запись,,site/modules/React/InputfieldReactLink.module.php,b948e8a02a7f8dc9f098c89e8df9892c
+"Page","Страница",,site/modules/React/InputfieldReactLink.module.php,193cfc9be3b995831c6af2fea6650e60
+"Entry","Запись",,site/modules/React/InputfieldReactLink.module.php,b948e8a02a7f8dc9f098c89e8df9892c
 "URL & Anchor (#)","URL и якорь (#)",,site/modules/React/InputfieldReactLink.module.php,c1ef16ed062f7fb8a0da64983519475b
 "Phone (+ & digits)","Телефон (+ и цифры)",,site/modules/React/InputfieldReactLink.module.php,23231889af1f705df7ac3422bf86ee74
-Email,"Эл. почта",,site/modules/React/InputfieldReactLink.module.php,ce8ae9da5b7cd6c3df2929543a9af92d
+"Email","Эл. почта",,site/modules/React/InputfieldReactLink.module.php,ce8ae9da5b7cd6c3df2929543a9af92d
 "Media: File","Медиа: Файл",,site/modules/React/InputfieldReactLink.module.php,5f7b9d5782b299fcba0a3abda050471f
 "Media: Image","Медиа: Изображение",,site/modules/React/InputfieldReactLink.module.php,d500e7c95997c1cc0ad5d5b21e073e83
 "Media: Video","Медиа: Видео",,site/modules/React/InputfieldReactLink.module.php,779a32ba9edc89809d0b27e6764342b2
@@ -62,9 +62,11 @@ Email,"Эл. почта",,site/modules/React/InputfieldReactLink.module.php,ce8a
 "Media Upload Profiles","Профили загрузки медиа",,site/modules/React/InputfieldReactLink.module.php,77ced2b23f1d0b3738f2ddb41b411826
 "Optional per-profile allowed file extensions (one per line as `profile: ext1 ext2` or JSON object, e.g. `image: jpg png webp`, `video: mp4 webm`, `file: pdf zip`).","Необязательные допустимые расширения файлов по профилям (по одному на строку в формате `profile: ext1 ext2` или JSON-объект, например `image: jpg png webp`, `video: mp4 webm`, `file: pdf zip`).",,site/modules/React/InputfieldReactLink.module.php,91ce497b8843b1d124ca5671c8f439d6
 "Enable Link Label","Включить текст ссылки",,site/modules/React/InputfieldReactLink.module.php,e289053e411e24f58511cc53392258c8
+"Enable ARIA Label","Включить метку ARIA",,site/modules/React/InputfieldReactLink.module.php,bda40024bfe4b27f5933ee3ac6ee1199
+"Enable Open Target","Включить цель открытия",,site/modules/React/InputfieldReactLink.module.php,16799607fada339039ecd6960eb02d2b
+"Enable Rel Attribute","Включить атрибут Rel",,site/modules/React/InputfieldReactLink.module.php,1ada8b0bffb7087f906ac46dde04c480
 "Enable Anchor (#)","Включить якорь (#)",,site/modules/React/InputfieldReactLink.module.php,d8cc17bf84833cf1d80cd2ae3f3c743e
 "Enable Query (?)","Включить параметры запроса (?)",,site/modules/React/InputfieldReactLink.module.php,865d39779b680a728606720516de9506
-"Enable Target & Rel","Включить атрибуты Target и Rel",,site/modules/React/InputfieldReactLink.module.php,3183d9403563356ae9eab5c0181241d9
 "Page Target Selector","Селектор целевых страниц",,site/modules/React/InputfieldReactLink.module.php,bf0d0be8666b215319901f7a2a15cbed
 "Entry Target Blueprint","Шаблон целевых записей (Blueprint)",,site/modules/React/InputfieldReactLink.module.php,2772d73ea6021f1395c49f5055fde9de
 "React Link & Media Target","Ссылка и медиа-цель React",,site/modules/React/InputfieldReactLink.module.php,a531caf428140f5a29cf7d19fb3d2940
@@ -128,30 +130,30 @@ Email,"Эл. почта",,site/modules/React/InputfieldReactLink.module.php,ce8a
 "Text alignment","Выравнивание текста",,site/modules/React/InputfieldTiptap.module.php,bf6bee6d96403148e9cd065820514efb
 "Lists and blocks","Списки и блоки",,site/modules/React/InputfieldTiptap.module.php,d4cc4ee7ed191ab03e5323bb2aeaa1e8
 "Insert elements","Вставка элементов",,site/modules/React/InputfieldTiptap.module.php,9d25389aec7c1c1c49020e85bc25af58
-History,История,,site/modules/React/InputfieldTiptap.module.php,16d2b386b2034b9488996466aaae0b57
+"History","История",,site/modules/React/InputfieldTiptap.module.php,16d2b386b2034b9488996466aaae0b57
 "Editor utilities","Инструменты редактора",,site/modules/React/InputfieldTiptap.module.php,fe04df2097e684b41b8d13309117f9de
 "Formatting group {index}","Группа форматирования {index}",,site/modules/React/InputfieldTiptap.module.php,47217d1a538a5e469656f6e26aaaf903
 "Paragraph style","Стиль абзаца",,site/modules/React/InputfieldTiptap.module.php,9c1a2af13f3c652d42d2f48ce173c554
-Paragraph,Абзац,,site/modules/React/InputfieldTiptap.module.php,feaf0a320c3d678ad30dd179b7d21584
+"Paragraph","Абзац",,site/modules/React/InputfieldTiptap.module.php,feaf0a320c3d678ad30dd179b7d21584
 "Heading {level}","Заголовок {level}",,site/modules/React/InputfieldTiptap.module.php,6637c23d78403523cba7438db80aad38
-Bold,Полужирный,,site/modules/React/InputfieldTiptap.module.php,114c3050111d8b8ddd830b99ccebd246
-Italic,Курсив,,site/modules/React/InputfieldTiptap.module.php,1d874710ccdcd46b95397049d2e7500c
-Underline,Подчёркнутый,,site/modules/React/InputfieldTiptap.module.php,852721aa5fc738dfedff2945d71da439
-Strikethrough,Зачёркнутый,,site/modules/React/InputfieldTiptap.module.php,926a51baad949d12035107e5d06e2fdb
+"Bold","Полужирный",,site/modules/React/InputfieldTiptap.module.php,114c3050111d8b8ddd830b99ccebd246
+"Italic","Курсив",,site/modules/React/InputfieldTiptap.module.php,1d874710ccdcd46b95397049d2e7500c
+"Underline","Подчёркнутый",,site/modules/React/InputfieldTiptap.module.php,852721aa5fc738dfedff2945d71da439
+"Strikethrough","Зачёркнутый",,site/modules/React/InputfieldTiptap.module.php,926a51baad949d12035107e5d06e2fdb
 "Inline code","Строчный код",,site/modules/React/InputfieldTiptap.module.php,9908b5feeb1dee676a41a9700873d646
-Highlight,"Выделение цветом",,site/modules/React/InputfieldTiptap.module.php,0b90582f4589d84be89f5b847d4d1ed1
-Subscript,"Подстрочный индекс",,site/modules/React/InputfieldTiptap.module.php,928558e2f9712e38d447d674f2672200
-Superscript,"Надстрочный индекс",,site/modules/React/InputfieldTiptap.module.php,6316f99acec341fbdd5cc006dc5a7ba7
+"Highlight","Выделение цветом",,site/modules/React/InputfieldTiptap.module.php,0b90582f4589d84be89f5b847d4d1ed1
+"Subscript","Подстрочный индекс",,site/modules/React/InputfieldTiptap.module.php,928558e2f9712e38d447d674f2672200
+"Superscript","Надстрочный индекс",,site/modules/React/InputfieldTiptap.module.php,6316f99acec341fbdd5cc006dc5a7ba7
 "Align left","По левому краю",,site/modules/React/InputfieldTiptap.module.php,ded0ea9d2cbb6e177900015adeb15cdf
 "Align center","По центру",,site/modules/React/InputfieldTiptap.module.php,d5f99d7d9fdc1af3e236ae1833287bc6
 "Align right","По правому краю",,site/modules/React/InputfieldTiptap.module.php,acdc5a7bb60bf1fbc33eee11117fee61
-Justify,"По ширине",,site/modules/React/InputfieldTiptap.module.php,4b425d212a2e7b36c38703bfdcd57823
+"Justify","По ширине",,site/modules/React/InputfieldTiptap.module.php,4b425d212a2e7b36c38703bfdcd57823
 "Bullet list","Маркированный список",,site/modules/React/InputfieldTiptap.module.php,54cc4792af10120e92b61096abc4dc19
 "Numbered list","Нумерованный список",,site/modules/React/InputfieldTiptap.module.php,4b985b57aabbd3110aac1d53b1a921c1
 "Task list","Список задач",,site/modules/React/InputfieldTiptap.module.php,65709fd2505ff82f0d43a3c97eb505f3
-Blockquote,Цитата,,site/modules/React/InputfieldTiptap.module.php,146aaf1333c7e82829fe9c5c52340b56
+"Blockquote","Цитата",,site/modules/React/InputfieldTiptap.module.php,146aaf1333c7e82829fe9c5c52340b56
 "Code block","Блок кода",,site/modules/React/InputfieldTiptap.module.php,10a7314bd561c0d130bd189a6f836e5e
-Link,Ссылка,,site/modules/React/InputfieldTiptap.module.php,97e7c9a7d06eac006a28bf05467fcc8b
+"Link","Ссылка",,site/modules/React/InputfieldTiptap.module.php,97e7c9a7d06eac006a28bf05467fcc8b
 "Remove link","Удалить ссылку",,site/modules/React/InputfieldTiptap.module.php,79820c0aefba8326e5aebd0ecf1a8aaa
 "Insert anchor","Вставить якорь",,site/modules/React/InputfieldTiptap.module.php,e8550807200f55308bed9d36c0522e0c
 "Insert image","Вставить изображение",,site/modules/React/InputfieldTiptap.module.php,21051abf79012a1b2ee50d13b9731a16
@@ -160,18 +162,18 @@ Link,Ссылка,,site/modules/React/InputfieldTiptap.module.php,97e7c9a7d06eac
 "Insert 3x3 table","Вставить таблицу 3x3",,site/modules/React/InputfieldTiptap.module.php,d70e084bf0d08441f9b5d7e82aa7d052
 "Insert horizontal rule","Вставить горизонтальную линию",,site/modules/React/InputfieldTiptap.module.php,4f74d1e915dbe90847aaf6692911fc82
 "Insert block","Вставить блок",,site/modules/React/InputfieldTiptap.module.php,a1020668e25156f8e890f258f99e2f51
-Block,Блок,,site/modules/React/InputfieldTiptap.module.php,e1e4c8c9ccd9fc39c391da4bcd093fb2
+"Block","Блок",,site/modules/React/InputfieldTiptap.module.php,e1e4c8c9ccd9fc39c391da4bcd093fb2
 "Clear formatting","Очистить форматирование",,site/modules/React/InputfieldTiptap.module.php,4494691b92e1f195feb25bd63ee5468b
 "HTML source code","Исходный код HTML",,site/modules/React/InputfieldTiptap.module.php,239eccf4e5abd114e97207aae0d92197
 "Fullscreen editor","Полноэкранный редактор",,site/modules/React/InputfieldTiptap.module.php,95541eb590778e943f559eb56cd7e97c
 "Exit fullscreen","Выйти из полноэкранного режима",,site/modules/React/InputfieldTiptap.module.php,b5607fef9c8acba81dc21eda39252e9e
 "Exit Fullscreen","Выйти из полного экрана",,site/modules/React/InputfieldTiptap.module.php,53d67f1a3519e1d85c6ce095d78eaea8
-Undo,Отменить,,site/modules/React/InputfieldTiptap.module.php,1cdc076b28f70afac5fcedadf99fa119
-Redo,Повторить,,site/modules/React/InputfieldTiptap.module.php,5afeaba074ef570dc720caaa855d49f6
+"Undo","Отменить",,site/modules/React/InputfieldTiptap.module.php,1cdc076b28f70afac5fcedadf99fa119
+"Redo","Повторить",,site/modules/React/InputfieldTiptap.module.php,5afeaba074ef570dc720caaa855d49f6
 "https://example.com or /page/","https://example.com или /page/",,site/modules/React/InputfieldTiptap.module.php,3ff4d5e5cf852f9e7fc443388d54205f
 "New tab","В новой вкладке",,site/modules/React/InputfieldTiptap.module.php,c8a19ea6c79e23a1ee5372c8dbf3c6cf
-Unlink,Отвязать,,site/modules/React/InputfieldTiptap.module.php,c1a39b6a60f8b2f87e23d60ab649d994
-Cancel,Отмена,,site/modules/React/InputfieldTiptap.module.php,ea4788705e6873b424c65e91c2846b19
+"Unlink","Отвязать",,site/modules/React/InputfieldTiptap.module.php,c1a39b6a60f8b2f87e23d60ab649d994
+"Cancel","Отмена",,site/modules/React/InputfieldTiptap.module.php,ea4788705e6873b424c65e91c2846b19
 "Enter a valid https://, http://, mailto:, tel:, or relative URL.","Введите корректный адрес https://, http://, mailto:, tel: или относительный URL.",,site/modules/React/InputfieldTiptap.module.php,51df59363ba07f44658778e63a870e90
 "Insert Link","Вставить ссылку",,site/modules/React/InputfieldTiptap.module.php,259738ca35a086ce9d269623e5ab5d37
 "Edit Link","Редактировать ссылку",,site/modules/React/InputfieldTiptap.module.php,ff15d4e97d08c2ab0351169af757b0f2
@@ -184,8 +186,8 @@ Cancel,Отмена,,site/modules/React/InputfieldTiptap.module.php,ea4788705e68
 "Matching pages","Подходящие страницы",,site/modules/React/InputfieldTiptap.module.php,4835e287e634d400f60312eec75c68fa
 "Select Child Page","Выбрать дочернюю страницу",,site/modules/React/InputfieldTiptap.module.php,d98192e3cb911892e861fde0f812f062
 "This page has no child pages yet.","У этой страницы пока нет дочерних страниц.",,site/modules/React/InputfieldTiptap.module.php,6e4cbfcf3d586a694b96e7728e402a36
-Unpublished,"Не опубликована",,site/modules/React/InputfieldTiptap.module.php,0774e163cd7df482edd2abd498189f8b
-Hidden,Скрыто,,site/modules/React/InputfieldTiptap.module.php,7acdf85c69cc3c5305456a293524386e
+"Unpublished","Не опубликована",,site/modules/React/InputfieldTiptap.module.php,0774e163cd7df482edd2abd498189f8b
+"Hidden","Скрыто",,site/modules/React/InputfieldTiptap.module.php,7acdf85c69cc3c5305456a293524386e
 "File source","Источник файлов",,site/modules/React/InputfieldTiptap.module.php,de7978a84c25bf4e86c1f2451249623d
 "Select Page","Выбрать страницу",,site/modules/React/InputfieldTiptap.module.php,99e7707748ae048e17c5810fad119e0b
 "Select File","Выбрать файл",,site/modules/React/InputfieldTiptap.module.php,1aa14e9f377b528b5537d70fbd35c6a2
@@ -200,12 +202,12 @@ Hidden,Скрыто,,site/modules/React/InputfieldTiptap.module.php,7acdf85c69cc
 "Loading files...","Загрузка файлов...",,site/modules/React/InputfieldTiptap.module.php,1118898b357188ce4702f44b78aec012
 "No files are attached to this item.","К этому элементу не прикреплены файлы.",,site/modules/React/InputfieldTiptap.module.php,eee9dbb57af9080d69fd9b9f9c528e77
 "Anchor ID","ID якоря",,site/modules/React/InputfieldTiptap.module.php,8cd18cba08c431ac7c4a497539c42a75
-section-heading,zagolovok-razdela,,site/modules/React/InputfieldTiptap.module.php,2bc5305834a2e9ed89b00de8a37e2142
+"section-heading","zagolovok-razdela",,site/modules/React/InputfieldTiptap.module.php,2bc5305834a2e9ed89b00de8a37e2142
 "Anchor ID must start with a letter and contain only letters, numbers, hyphens, or underscores.","ID якоря должен начинаться с буквы и содержать только буквы, цифры, дефисы или подчеркивания.",,site/modules/React/InputfieldTiptap.module.php,44e7c55ee7b930c51a50974d3ed141ee
 "Insert Named Anchor","Вставить именованный якорь",,site/modules/React/InputfieldTiptap.module.php,21acd11ce44fb4af7d5f4ca3f3aae3fe
 "Insert Anchor","Вставить якорь",,site/modules/React/InputfieldTiptap.module.php,741f45009593e3e2a206e1350f6ef884
 "Remove Anchor","Удалить якорь",,site/modules/React/InputfieldTiptap.module.php,4bd19ea92cece62cb89d5caa5903ef6b
-Attributes,Атрибуты,,site/modules/React/InputfieldTiptap.module.php,287234a1ff35a314b5b6bc4e5828e745
+"Attributes","Атрибуты",,site/modules/React/InputfieldTiptap.module.php,287234a1ff35a314b5b6bc4e5828e745
 "Title attribute","Атрибут title",,site/modules/React/InputfieldTiptap.module.php,70e5a90fda0fca373f65e61df0840f77
 "Additional text to describe the link.","Дополнительный текст, описывающий ссылку.",,site/modules/React/InputfieldTiptap.module.php,e16e9828d7fde614ac138cfe20c8bfd3
 "Target window","Целевое окно",,site/modules/React/InputfieldTiptap.module.php,1638aff8fb7ff24f562e168fed37c329
@@ -213,13 +215,13 @@ Attributes,Атрибуты,,site/modules/React/InputfieldTiptap.module.php,2872
 "Same window (default)","В том же окне (по умолчанию)",,site/modules/React/InputfieldTiptap.module.php,b2b418960fca1c4a969fbedf71dc190e
 "Rel attributes","Атрибуты rel",,site/modules/React/InputfieldTiptap.module.php,9e97be0c2d3eb893b553132c46b2ea73
 "Relationship of the link to this document.","Связь ссылки с этим документом.",,site/modules/React/InputfieldTiptap.module.php,0426d5f31f5255a5d1ff1cd28673e7ca
-"CSS classes",CSS-классы,,site/modules/React/InputfieldTiptap.module.php,bd4f409b3e6cabcbc96272193a3995bc
+"CSS classes","CSS-классы",,site/modules/React/InputfieldTiptap.module.php,bd4f409b3e6cabcbc96272193a3995bc
 "Update Link","Обновить ссылку",,site/modules/React/InputfieldTiptap.module.php,979a1af731a79241ec0937f557676d1a
 "Image URL","URL изображения",,site/modules/React/InputfieldTiptap.module.php,427b6d816d7fdd86cabe48d8180a3cc9
 "/site/assets/files/... or https://...","/site/assets/files/... или https://...",,site/modules/React/InputfieldTiptap.module.php,d5f733e8b5dd72b4fb76c5d2dc411628
 "Image alt text","Альтернативный текст изображения",,site/modules/React/InputfieldTiptap.module.php,390c85457d882307445484d4813faf0e
 "Alt description","Описание (alt)",,site/modules/React/InputfieldTiptap.module.php,a60b0112edf57d22b3631e6ed6d30543
-Insert,Вставить,,site/modules/React/InputfieldTiptap.module.php,a458be0f08b7e4ff3c0f633c100176c0
+"Insert","Вставить",,site/modules/React/InputfieldTiptap.module.php,a458be0f08b7e4ff3c0f633c100176c0
 "Enter a valid https://, http://, or site-relative image URL.","Введите корректный URL изображения (https://, http:// или относительный путь).",,site/modules/React/InputfieldTiptap.module.php,61bcb67b1abe9c4ec58213e7bd9bb9dc
 "Select Image","Выбрать изображение",,site/modules/React/InputfieldTiptap.module.php,446a6000511ab6fb0711400379a62a04
 "Edit Image","Редактировать изображение",,site/modules/React/InputfieldTiptap.module.php,03274f27f51f0c39e06e0e6cd07e01a9
@@ -243,13 +245,13 @@ Insert,Вставить,,site/modules/React/InputfieldTiptap.module.php,a458be0f
 "Keep aspect ratio","Сохранять пропорции",,site/modules/React/InputfieldTiptap.module.php,a899dc2af338fa9316506646c65ae2ca
 "Original size ({width}x{height})","Исходный размер ({width}x{height})",,site/modules/React/InputfieldTiptap.module.php,f24f439664ac6ae773d42e1e7ff9080b
 "HiDPI / Retina","HiDPI / Retina",,site/modules/React/InputfieldTiptap.module.php,a383ac9cf4adcdadde6c646e2afb66fa
-Alignment,Выравнивание,,site/modules/React/InputfieldTiptap.module.php,a63706eecfa33f67b315f978392ad7ae
+"Alignment","Выравнивание",,site/modules/React/InputfieldTiptap.module.php,a63706eecfa33f67b315f978392ad7ae
 "No alignment","Без выравнивания",,site/modules/React/InputfieldTiptap.module.php,f5d0e7591f0d5da3cf09c599fd314c47
 "Show caption (<figure>)","Показать подпись (<figure>)",,site/modules/React/InputfieldTiptap.module.php,f82fea85cbd2eced26ed189329866d89
 "Caption text","Текст подписи",,site/modules/React/InputfieldTiptap.module.php,0859dc2279a778d36d21ed0f012a36fc
 "Enter image caption...","Введите подпись к изображению...",,site/modules/React/InputfieldTiptap.module.php,8788001f25ff9c0bad935d36e8645d29
 "Link to full-size original image","Ссылка на полноразмерный оригинал",,site/modules/React/InputfieldTiptap.module.php,1a00c4ab80e34d7d64e4073a31708225
-Crop,Обрезать,,site/modules/React/InputfieldTiptap.module.php,d388632d05e8826abe4b95de0b110529
+"Crop","Обрезать",,site/modules/React/InputfieldTiptap.module.php,d388632d05e8826abe4b95de0b110529
 "Cancel Crop","Отменить обрезку",,site/modules/React/InputfieldTiptap.module.php,426afb7d36a4bd61a451860d0eb8a5e9
 "Rotate 90° counter-clockwise","Повернуть на 90° против часовой стрелки",,site/modules/React/InputfieldTiptap.module.php,711b2d3ad39641efad41242959cc26bb
 "Rotate 90° clockwise","Повернуть на 90° по часовой стрелке",,site/modules/React/InputfieldTiptap.module.php,c582c6fbe549d884cfdede85f5d4ed0e
@@ -262,7 +264,7 @@ Crop,Обрезать,,site/modules/React/InputfieldTiptap.module.php,d388632d05
 "Remove image","Удалить изображение",,site/modules/React/InputfieldTiptap.module.php,f4701af4852c350444ecdca3fe3ecfc5
 "Drag to resize image","Перетащите для изменения размера изображения",,site/modules/React/InputfieldTiptap.module.php,e5e05476cc73f52a1a98cfedad41dc46
 "Table controls","Управление таблицей",,site/modules/React/InputfieldTiptap.module.php,4799f2bcbb614f86b00e53b60a45a78f
-Table:,Таблица:,,site/modules/React/InputfieldTiptap.module.php,4e77d096b16a8f7fd1658f9768e5d7c8
+"Table:","Таблица:",,site/modules/React/InputfieldTiptap.module.php,4e77d096b16a8f7fd1658f9768e5d7c8
 "+ Row","+ Строка",,site/modules/React/InputfieldTiptap.module.php,9b84429085994afa0f063543620a381a
 "- Row","- Строка",,site/modules/React/InputfieldTiptap.module.php,bc72b2650697d1a93c5d35932de55cd2
 "+ Column","+ Столбец",,site/modules/React/InputfieldTiptap.module.php,7d1aca503b0b931ba353ac419e0b9bbf
@@ -273,7 +275,7 @@ Table:,Таблица:,,site/modules/React/InputfieldTiptap.module.php,4e77d096b
 "{count} char","{count} символ",,site/modules/React/InputfieldTiptap.module.php,aa1e2648b21bf2126e2b557f319f7841
 "{count} chars","{count} симв.",,site/modules/React/InputfieldTiptap.module.php,68d471b5229df8a529b26610ecfe2beb
 "{count} / {max} chars","{count} / {max} симв.",,site/modules/React/InputfieldTiptap.module.php,c235b1f1656f9ee551faa82084e4d92c
-Read-only,"Только чтение",,site/modules/React/InputfieldTiptap.module.php,d8bd6e60adcc01ce20f509ea6800de8f
+"Read-only","Только чтение",,site/modules/React/InputfieldTiptap.module.php,d8bd6e60adcc01ce20f509ea6800de8f
 "Switched to rich text view","Переключено в визуальный режим",,site/modules/React/InputfieldTiptap.module.php,689ac6fa65a3005184c57d4a1d6c22c8
 "Switched to HTML source view","Переключено в режим исходного кода HTML",,site/modules/React/InputfieldTiptap.module.php,aeab0d00dad8d2c812a51b97ab4f1919
 "Link applied","Ссылка применена",,site/modules/React/InputfieldTiptap.module.php,23c212ddab1ba757e416c0ca67d585c8
@@ -312,17 +314,17 @@ Read-only,"Только чтение",,site/modules/React/InputfieldTiptap.modul
 "Optional callout title...","Необязательный заголовок выноски...",,site/modules/React/InputfieldTiptap.module.php,4142f7d45f36dd55112ef3b907b343ac
 "Callout title","Заголовок выноски",,site/modules/React/InputfieldTiptap.module.php,20f27503a616f7a1b1e70b1bba97e1d4
 "Callout style","Стиль выноски",,site/modules/React/InputfieldTiptap.module.php,6a8b00b5aa7709eaf56ccbbef00bc747
-Info,Инфо,,site/modules/React/InputfieldTiptap.module.php,4059b0251f66a18cb56f544728796875
-Tip,Совет,,site/modules/React/InputfieldTiptap.module.php,12ae2a12586001e30745cb0457586ae3
-Warning,Внимание,,site/modules/React/InputfieldTiptap.module.php,0eaadb4fcb48a0a0ed7bc9868be9fbaa
-Danger,Опасно,,site/modules/React/InputfieldTiptap.module.php,990816b607ebf99b1415760965e4d564
-Figure,Иллюстрация,,site/modules/React/InputfieldTiptap.module.php,666df2f48cd16f38212c093999248769
+"Info","Инфо",,site/modules/React/InputfieldTiptap.module.php,4059b0251f66a18cb56f544728796875
+"Tip","Совет",,site/modules/React/InputfieldTiptap.module.php,12ae2a12586001e30745cb0457586ae3
+"Warning","Внимание",,site/modules/React/InputfieldTiptap.module.php,0eaadb4fcb48a0a0ed7bc9868be9fbaa
+"Danger","Опасно",,site/modules/React/InputfieldTiptap.module.php,990816b607ebf99b1415760965e4d564
+"Figure","Иллюстрация",,site/modules/React/InputfieldTiptap.module.php,666df2f48cd16f38212c093999248769
 "Figure alignment","Выравнивание иллюстрации",,site/modules/React/InputfieldTiptap.module.php,690140430510d155c088630acee6e2a0
-Inline,"В тексте",,site/modules/React/InputfieldTiptap.module.php,0125cf5f3ca38b312ca5d3b511c45a13
-Wide,Широкий,,site/modules/React/InputfieldTiptap.module.php,e7c770a61dbdf81ca922ae0260e327c1
-Full,"На всю ширину",,site/modules/React/InputfieldTiptap.module.php,bbd47109890259c0127154db1af26c75
-Left,Слева,,site/modules/React/InputfieldTiptap.module.php,945d5e233cf7d6240f6b783b36a374ff
-Right,Справа,,site/modules/React/InputfieldTiptap.module.php,92b09c7c48c520c3c55e497875da437c
+"Inline","В тексте",,site/modules/React/InputfieldTiptap.module.php,0125cf5f3ca38b312ca5d3b511c45a13
+"Wide","Широкий",,site/modules/React/InputfieldTiptap.module.php,e7c770a61dbdf81ca922ae0260e327c1
+"Full","На всю ширину",,site/modules/React/InputfieldTiptap.module.php,bbd47109890259c0127154db1af26c75
+"Left","Слева",,site/modules/React/InputfieldTiptap.module.php,945d5e233cf7d6240f6b783b36a374ff
+"Right","Справа",,site/modules/React/InputfieldTiptap.module.php,92b09c7c48c520c3c55e497875da437c
 "Edit image URL and alt text","Изменить URL и alt-текст изображения",,site/modules/React/InputfieldTiptap.module.php,c89599958bfed8a5b295e8451da6b211
 "Paste an image URL above to preview the figure","Вставьте URL изображения выше для предпросмотра",,site/modules/React/InputfieldTiptap.module.php,f91b19f8889bcbaf03d09acc515a4eec
 "Optional figure caption...","Необязательная подпись к изображению...",,site/modules/React/InputfieldTiptap.module.php,a46ac7388768a4cd452e9ca1ae3efd1b
@@ -330,9 +332,9 @@ Right,Справа,,site/modules/React/InputfieldTiptap.module.php,92b09c7c48c52
 "Toggle accordion preview","Переключить предпросмотр спойлера",,site/modules/React/InputfieldTiptap.module.php,4d6fa081a9fa1ffbaf069b3cb1eccdfb
 "Accordion summary title...","Заголовок раскрывающегося блока...",,site/modules/React/InputfieldTiptap.module.php,0a7a90777fb2566a6bacfba21b650642
 "Accordion summary","Заголовок спойлера",,site/modules/React/InputfieldTiptap.module.php,bb4f9c320eb74a3ef523ed67ef016e6c
-Details,Детали,,site/modules/React/InputfieldTiptap.module.php,3ec365dd533ddb7ef3d1c111186ce872
+"Details","Детали",,site/modules/React/InputfieldTiptap.module.php,3ec365dd533ddb7ef3d1c111186ce872
 "Open by default","Открыто по умолчанию",,site/modules/React/InputfieldTiptap.module.php,edbb805daf80b5f81eb6228807c5639d
-Pullquote,"Выносная цитата",,site/modules/React/InputfieldTiptap.module.php,b68befd5d22055d45ed59015d1799f5f
+"Pullquote","Выносная цитата",,site/modules/React/InputfieldTiptap.module.php,b68befd5d22055d45ed59015d1799f5f
 "Citation or author (optional)...","Источник или автор (необязательно)...",,site/modules/React/InputfieldTiptap.module.php,c9a39f8c2180e2e999174eac6b66d434
 "Quote citation","Источник цитаты",,site/modules/React/InputfieldTiptap.module.php,353e19df544aeaf07ca16a5574e2ca09
 "Editorial mini-block","Редакционный мини-блок",,site/modules/React/InputfieldTiptap.module.php,c2f1f08179fe25f94ee069adb1f7a3d4
@@ -341,7 +343,7 @@ Pullquote,"Выносная цитата",,site/modules/React/InputfieldTiptap.m
 "Turn into","Преобразовать в",,site/modules/React/InputfieldTiptap.module.php,2a514c858adedac8dc9796f958a02fd0
 "Move up","Переместить вверх",,site/modules/React/InputfieldTiptap.module.php,f77af7695f71323808f9b6e2795cde86
 "Move down","Переместить вниз",,site/modules/React/InputfieldTiptap.module.php,dd9f0c7e1bb3b749bd423e3544b4a8e3
-Duplicate,Дублировать,,site/modules/React/InputfieldTiptap.module.php,ed75712b0eb1913c28a3872731ffd48d
+"Duplicate","Дублировать",,site/modules/React/InputfieldTiptap.module.php,ed75712b0eb1913c28a3872731ffd48d
 "Delete block","Удалить блок",,site/modules/React/InputfieldTiptap.module.php,c613629aef5762bb8c3f646a4035b7fd
 "Block moved to position {position}","Блок перемещён на позицию {position}",,site/modules/React/InputfieldTiptap.module.php,c3557396a86d276224633efcfc1653e3
 "Block duplicated","Блок дублирован",,site/modules/React/InputfieldTiptap.module.php,660894298592581bff779586ee243599
@@ -349,12 +351,12 @@ Duplicate,Дублировать,,site/modules/React/InputfieldTiptap.module.php
 "Block reorder cancelled","Перестановка блока отменена",,site/modules/React/InputfieldTiptap.module.php,dceeb603259c6b0c25aa70c69e98790e
 "Loading dialog...","Загрузка диалога...",,site/modules/React/InputfieldTiptap.module.php,1a89f3af761388df23eb23f1c1a4458e
 "Value exceeds maximum recommended length of %1$d characters (length=%2$d).","Значение превышает рекомендуемую максимальную длину в %1$d символов (длина=%2$d).",,site/modules/React/InputfieldTiptap.module.php,8fe5e05f660fa7d2db7f9bd444d77358
-Tiptap,Tiptap,,site/modules/React/InputfieldTiptap.module.php,da560e1075ec0ffe2da39361aafad4c5
+"Tiptap","Tiptap",,site/modules/React/InputfieldTiptap.module.php,da560e1075ec0ffe2da39361aafad4c5
 "Rich text editor with customizable toolbars, content blocks, HTML cleanup, and multi-language support.","Визуальный редактор с настраиваемыми панелями инструментов, блоками контента, очисткой HTML и поддержкой нескольких языков.",,site/modules/React/InputfieldTiptap.module.php,5fad4bbc356d9e98c87459e275779f84
 "React Cards Viewport","Представление карточек React",,site/modules/React/MarkupReactCards.module.php,8492cf2ce465c3229a396650598d237c
 "Interactive responsive card grid with search, filters, bulk actions, and pagination.","Интерактивная адаптивная сетка карточек с поиском, фильтрами, массовыми действиями и постраничной навигацией.",,site/modules/React/MarkupReactCards.module.php,5978e6de4cd6f6cf8294fbeeb7f0729b
-General,Общие,,site/modules/React/MarkupReactTab.module.php,0db377921f4ce762c62526131097968f
-Sections,Разделы,,site/modules/React/MarkupReactTab.module.php,855c3eca6c7aaef477b4f03e4699944d
+"General","Общие",,site/modules/React/MarkupReactTab.module.php,0db377921f4ce762c62526131097968f
+"Sections","Разделы",,site/modules/React/MarkupReactTab.module.php,855c3eca6c7aaef477b4f03e4699944d
 "Tab Bar Style Variant","Вариант стиля вкладок",,site/modules/React/MarkupReactTab.module.php,ba01477907bfa826253790e6c5605d16
 "Line (Standard Tabs)","Линия (Стандартные вкладки)",,site/modules/React/MarkupReactTab.module.php,2f9cc5e6dfd7e41c8cae6b5634a73b3d
 "Segmented (Compact Pill Bar)","Сегментированный (Компактная панель)",,site/modules/React/MarkupReactTab.module.php,2ef3c75cb7726580a9b9109e233756c8
@@ -368,395 +370,28 @@ Sections,Разделы,,site/modules/React/MarkupReactTab.module.php,855c3eca6c
 "%d validation errors","%d ошибок проверки","Plural Version",site/modules/React/MarkupReactTab.module.php,ec828fd611b57248325002f413e64b32
 "React Table Viewport","Табличное представление React",,site/modules/React/MarkupReactTable.module.php,0d06a2a4eb05a7e835a3e9a4572fe325
 "Interactive data table with search, filters, inline editing, bulk actions, and pagination.","Интерактивная таблица данных с поиском, фильтрами, встроенным редактированием, массовыми действиями и пагинацией.",,site/modules/React/MarkupReactTable.module.php,81fbcc4d713141339befa98baa9a66f0
-Panel,Панель,,site/modules/React/React.module.php,b8da6df14bf06283cbf588df6998722e
-"Vector Icon","Векторный значок",,site/modules/React/React.module.php,3b8ba766a67302eea93b73f89375cf76
-"Select a vector icon. When populated, this overrides the standard ProcessWire icon above.","Выберите векторный значок. При заполнении он переопределяет стандартный значок ProcessWire выше.",,site/modules/React/React.module.php,7cd34d6d99b289c33e05ccaf30109f55
-"Relation request failed.","Ошибка запроса связи.",,site/modules/React/React.module.php,417311c0a499db762f631392d723fa39
-Save,Сохранить,,site/modules/React/React.module.php,c9cc8cce247e49bae79f15173ce97354
-Saving...,Сохранение...,,site/modules/React/React.module.php,575f5f86d2c7ea113c6710c1037c4465
-Cancel,Отмена,,site/modules/React/React.module.php,ea4788705e6873b424c65e91c2846b19
-Close,Закрыть,,site/modules/React/React.module.php,d3d2e617335f08df83599665eef8a418
-Done,Готово,,site/modules/React/React.module.php,f92965e2c8a7afb3c1b9a5c09a263636
-Open,Открыть,,site/modules/React/React.module.php,c3bf447eabe632720a3aa1a7ce401274
-Apply,Применить,,site/modules/React/React.module.php,9639e32cab248434a17ab32237cb3b71
-Applying...,Применение...,,site/modules/React/React.module.php,2d36bbeac4e19bf400214726dd626cdb
-Executing...,Выполняется...,,site/modules/React/React.module.php,3d202de4cde88726a42cedcd4d1b28c3
-Reset,Сбросить,,site/modules/React/React.module.php,526d688f37a86d3c3f27d0c5016eb71d
-Refresh,Обновить,,site/modules/React/React.module.php,63a6a88c066880c5ac42394a22803ca6
-Refreshing...,Обновление...,,site/modules/React/React.module.php,01b08e48869f180ff19a7f7aa3c3f18f
-Reload,Перезагрузить,,site/modules/React/React.module.php,4d1c8263ba1036754f8db14a98f9f006
-Search,Поиск,,site/modules/React/React.module.php,13348442cc6a27032d2b4aa28b75a5d3
-Clear,Очистить,,site/modules/React/React.module.php,dc30bc0c7914db5918da4263fce93ad2
-Create,Создать,,site/modules/React/React.module.php,686e697538050e4664636337cc3b834f
-Edit,Изменить,,site/modules/React/React.module.php,7dce122004969d56ae2e0245cb754d35
-Delete,Удалить,,site/modules/React/React.module.php,f2a6c498fb90ee345d997f888fce3b18
-Remove,Убрать,,site/modules/React/React.module.php,1063e38cb53d94d386f21227fcd84717
-Dismiss,Скрыть,,site/modules/React/React.module.php,c8a59e7135a20b362f9c768b09454fdb
-Confirm,Подтвердить,,site/modules/React/React.module.php,70d9be9b139893aa6c69b5e77e614311
-"Confirm & Execute","Подтвердить и выполнить",,site/modules/React/React.module.php,4b8fa648bd96b68b3f5c6477c2a0ae91
-"I understand the impact of this operation and wish to proceed.","Я понимаю последствия этой операции и хочу продолжить.",,site/modules/React/React.module.php,719ddb902afa805552fb15479a75fee1
-Copy,Копировать,,site/modules/React/React.module.php,5fb63579fc981698f97d55bfecb213ea
-Copied,Скопировано,,site/modules/React/React.module.php,a588b1abc58b8b758c4b34b69b9e10bb
-"Copy command","Скопировать команду",,site/modules/React/React.module.php,ec5eefe5a1b8d46ef1126992881fd5d4
-Export,Экспорт,,site/modules/React/React.module.php,0095a9fa74d1713e43e370a7d7846224
-Import,Импорт,,site/modules/React/React.module.php,72d6d7a1885885bb55a565fd1070581a
-Loading...,Загрузка...,,site/modules/React/React.module.php,8524de963f07201e5c086830d370797f
-Actions,Действия,,site/modules/React/React.module.php,06df33001c1d7187fdd81ea1f5b277aa
-Languages,Языки,,site/modules/React/React.module.php,3a08e2e340ab29fd9263af48193cbf8e
-Error,Ошибка,,site/modules/React/React.module.php,902b0d55fddef6f8d651fe1035b7d4bd
-Warning,Внимание,,site/modules/React/React.module.php,0eaadb4fcb48a0a0ed7bc9868be9fbaa
-Notice,Уведомление,,site/modules/React/React.module.php,24efa7ee4511563b16144f39706d594f
-All,Все,,site/modules/React/React.module.php,b1c94ca2fbc3e78fc30069c8d0f01680
-None,Нет,,site/modules/React/React.module.php,6adf97f83acf6453d4a6a4b1070f3754
-Yes,Да,,site/modules/React/React.module.php,93cba07454f06a4a960172bbd6e2a435
-No,Нет,,site/modules/React/React.module.php,bafd7322c6e97d25b6299b5d6fe8920b
-More,Ещё,,site/modules/React/React.module.php,d3da97e2d9aee5c8fbe03156ad051c99
-"No matching options","Нет подходящих вариантов",,site/modules/React/React.module.php,2911d2dd34d4e33b692661c26348cf49
-Unavailable,Недоступно,,site/modules/React/React.module.php,453e6aa38d87b28ccae545967c53004f
-Workspace,"Рабочее пространство",,site/modules/React/React.module.php,03a21915504df93cf5dba0636080f62e
-Workspaces,"Рабочие пространства",,site/modules/React/React.module.php,d5e92609cf510f5f97ac326e907a0540
-"Workspace Dashboard","Панель рабочего пространства",,site/modules/React/React.module.php,9ed7329637f544d772bdba0d61398d04
-"All modules, favorites, and customizable dashboard widgets","Все модули, избранное и настраиваемые виджеты панели",,site/modules/React/React.module.php,e68b79df7f2d4278eb0960fd444fdf1d
-"Current workspace section","Текущий раздел рабочего пространства",,site/modules/React/React.module.php,5e20a96b94291c93caaf1dce0e254cbc
-"Workspace navigation","Навигация рабочего пространства",,site/modules/React/React.module.php,8908efdd3ec402154d562f6487b92f1a
-Navigation,Навигация,,site/modules/React/React.module.php,846495f9ceed11accf8879f555936a7d
-"Open workspace navigation menu","Открыть меню навигации",,site/modules/React/React.module.php,60e439470c45c239b2e25a510fceb428
-"Close navigation menu","Закрыть меню навигации",,site/modules/React/React.module.php,d302e7fbcdb33e2877353e7f703fd4a9
-"Search workspaces...","Поиск рабочих пространств...",,site/modules/React/React.module.php,6350e80efab2bb6dc30cea9dba50dac7
-"Search workspaces","Поиск рабочих пространств",,site/modules/React/React.module.php,28ba707df5d8962217e5a32a08f712f2
-"Find workspace...","Найти рабочее пространство...",,site/modules/React/React.module.php,a59403457c95f98f52aa1e83c7b0a3ca
-"No matching workspaces","Совпадающих рабочих пространств нет",,site/modules/React/React.module.php,c7d00daca755a67628aad03a442fa01b
-"No matching destinations found.","Подходящие разделы не найдены.",,site/modules/React/React.module.php,a8cf450cedad306f1ef0981292eda677
-"Quick Jump","Быстрый переход",,site/modules/React/React.module.php,ae69932309b0c8fbd2565f85e2729961
-"Quick Switcher","Быстрый переключатель",,site/modules/React/React.module.php,33a8d8c8002c17b26e545ee67595825f
-"Quick Switcher (Cmd/Ctrl+K)","Быстрый переключатель (Cmd/Ctrl+K)",,site/modules/React/React.module.php,a6d3e2a4b7e5ea93da96575262eb33aa
-"Jump to workspace or section...","Перейти к пространству или разделу...",,site/modules/React/React.module.php,9c0902ca5c76e62c37dde2c59b158356
-"Return to {target}","Вернуться к {target}",,site/modules/React/React.module.php,f6f53af1527f750b7046b85beee500d3
-"Open in Workspace","Открыть в рабочей области",,site/modules/React/React.module.php,8509b1db3b9493f2aba2a88439edb1b4
-"Switch to full-screen Workspace view","Переключиться на полноэкранный режим рабочей области",,site/modules/React/React.module.php,1c7f26dd5993adca7f5e2d79f997f8cd
-Light,Светлая,,site/modules/React/React.module.php,9914a0ce04a7b7b6a8e39bec55064b82
-Dark,Тёмная,,site/modules/React/React.module.php,a18366b217ebf811ad1886e4f4f865b2
-System,Системная,,site/modules/React/React.module.php,a45da96d0bf6575970f2d27af22be28a
-"Toggle theme","Переключить тему",,site/modules/React/React.module.php,5a9663b09544b4cfe12a13a805d7ac2b
-"Theme mode: {mode} (click to switch)","Режим темы: {mode} (нажмите для смены)",,site/modules/React/React.module.php,ed66a4fc75e940c960bb14f16063194f
-"Keyboard shortcuts","Горячие клавиши",,site/modules/React/React.module.php,de334061ddee0a9008edd133af533c04
-"Dismiss errors","Скрыть ошибки",,site/modules/React/React.module.php,ef12db18801e484d0d785f73cd9604b4
-"Dismiss warnings","Скрыть предупреждения",,site/modules/React/React.module.php,990f649a83a3fbbee1d350a1ebf60a06
-"Dismiss notices","Скрыть уведомления",,site/modules/React/React.module.php,b4c60e29e6ea44ad2d45ba8ed6b7d594
-"Quick overview, live status cards, and all admin workspaces.","Быстрый обзор, карточки состояния и все рабочие пространства администратора.",,site/modules/React/React.module.php,52c2b43875b6d96f10a81b71b16b145a
-Overview,Обзор,,site/modules/React/React.module.php,3b878279a04dc47d60932cb294d96259
-"Operational Overview","Операционный обзор",,site/modules/React/React.module.php,46966912240d4bc4c19fc9389727943b
-"All Workspaces","Все пространства",,site/modules/React/React.module.php,ab0a66d5e7f3e6b0db0f96721d64c245
-"Module Directory","Каталог модулей",,site/modules/React/React.module.php,6a51ac3b146536a407f3429c8f2f2a6f
-Module,Модуль,,site/modules/React/React.module.php,e55f75a29310d7b60f7ac1d390c8ae42
-Favorites,Избранное,,site/modules/React/React.module.php,d78986947356ddd37b43d57df289dee9
-Pinned,Закреплённые,,site/modules/React/React.module.php,3c5e891bff07947cbae2fda89162df9f
-"Pinned Shortcuts","Закреплённые ярлыки",,site/modules/React/React.module.php,8f1f46957a9aa8224c8e93f56d57a598
-"Pin to top bar","Закрепить на верхней панели",,site/modules/React/React.module.php,2fa2c585863a83a9024a0ec877848d73
-"Unpin from top bar","Открепить с верхней панели",,site/modules/React/React.module.php,da80cbcfd56f935cfb9a329f43498112
-"Pin {title}","Закрепить {title}",,site/modules/React/React.module.php,ab6cdb7b7a64b4c924c47bd793c2efb4
-"Unpin {title}","Открепить {title}",,site/modules/React/React.module.php,08775dfb2eeb84f0daf59a8cd3306b4b
-Customize,Настроить,,site/modules/React/React.module.php,63a78ed4647f7c63c2929e35ec1c95e3
-"Customize Layout","Настроить макет",,site/modules/React/React.module.php,c5b7cb3159ecf84ffc87b9725b1225e1
-"Done Customizing","Завершить настройку",,site/modules/React/React.module.php,08ee89aac2ef96b48c9c2e718b11b687
-"Export Layout","Экспортировать макет",,site/modules/React/React.module.php,304278e931b0f6f2ff0148dde89436cc
-"Export JSON","Экспорт JSON",,site/modules/React/React.module.php,b7b35e678fac8e3ac6493d09e6bf8ec4
-"Import Layout","Импортировать макет",,site/modules/React/React.module.php,de5f3994e77a62b31078014c34cdcbed
-"Apply a saved workspace layout preset (.json) to update your pinned shortcuts, widget order, widths, and visibility.","Примените сохранённый макет (.json), чтобы обновить закреплённые ярлыки, порядок, ширину и видимость виджетов.",,site/modules/React/React.module.php,c009bdc2ef160c5b6dc71628b7c3d5b8
-"Workspace layout preset JSON","JSON макета рабочего пространства",,site/modules/React/React.module.php,180714e8ef26f4474a47f2a98602e0c1
-"Import JSON","Импорт JSON",,site/modules/React/React.module.php,786df2cec47f9e9c005483f4c7ec9632
-"Apply Layout","Применить макет",,site/modules/React/React.module.php,40ff1f28a90b7724a0653403e9056bfb
-"Choose JSON File","Выбрать JSON-файл",,site/modules/React/React.module.php,276e42ebd90183f60b19ae95fa54864a
-"Reset Layout","Сбросить макет",,site/modules/React/React.module.php,6dc6e32ad3860bd9cf4e567673bcafbf
-"Reset Default","Сбросить по умолчанию",,site/modules/React/React.module.php,d6ed253ff449bbd9606eff83124f1f2e
-"Reset Default Layout","Сбросить макет по умолчанию",,site/modules/React/React.module.php,1050bc9cb8b00a00620f2aa03bc35d6f
-"Reset your pinned shortcuts, widget order, widths, and hidden widget settings back to defaults?","Сбросить закрепленные ярлыки, порядок, ширину и видимость виджетов к значениям по умолчанию?",,site/modules/React/React.module.php,7ef2e15cc260153efe4516aaf6d53ca3
-"Choose Widgets","Выбрать виджеты",,site/modules/React/React.module.php,b14eac5358d6997de83ef1a66ed53767
-"{count} hidden widget(s)","Скрыто виджетов: {count}",,site/modules/React/React.module.php,f825d68e168242bb62a01fcf2f7c4390
-"Hide widget from dashboard","Скрыть виджет с панели",,site/modules/React/React.module.php,3a271cded492b1af00f478afb36dff88
-"Hide {title}","Скрыть {title}",,site/modules/React/React.module.php,989687042589d0714062081623af4493
-"Show {title}","Показать {title}",,site/modules/React/React.module.php,0995ce286e32d12920a7cbd90265f4c7
-"Looking for a specific capability or administration tool?","Ищете конкретную возможность или инструмент администрирования?",,site/modules/React/React.module.php,0466da2abbb3b4b8c7d2a8d666eb76e5
-"Browse all {count} modules","Просмотреть все модули ({count})",,site/modules/React/React.module.php,fee875c9d7d6f816f968d2f387309b86
-"No live widgets registered","Живые виджеты не зарегистрированы",,site/modules/React/React.module.php,9c56c5f5edf8e03b459db2c5b249edae
-"Installed modules have not registered live summary widgets yet. Open the Module Directory to launch any workspace.","Установленные модули ещё не зарегистрировали виджеты сводки. Откройте каталог модулей для запуска пространства.",,site/modules/React/React.module.php,f9ce53c3bca4a20c7704248094bf868e
-"All dashboard widgets are hidden","Все виджеты панели скрыты",,site/modules/React/React.module.php,6bdac11628cbad1b72ef18fcc0f06357
-"You have hidden all widgets for your profile. Re-enable widgets or reset your layout to view live module status.","Вы скрыли все виджеты для своего профиля. Включите виджеты снова или сбросьте макет, чтобы видеть актуальный статус модулей.",,site/modules/React/React.module.php,e5936720f3724385253842dccc5a0564
-"Open Module Directory","Открыть каталог модулей",,site/modules/React/React.module.php,25dc1ae20edec7b8eabfdc2bc53f80a1
-"Open {title}","Открыть {title}",,site/modules/React/React.module.php,aa7230bade66b8b21ac6744ccc6819dd
-"Search modules by name, capability, or topic...","Поиск модулей по названию, возможности или теме...",,site/modules/React/React.module.php,00240549c08261b54bb8a19821613919
-"No matching workspaces found.","Подходящие рабочие пространства не найдены.",,site/modules/React/React.module.php,da75bcd7ecf5b0a8624c1e01b780ee87
-"No matching modules found","Подходящие модули не найдены",,site/modules/React/React.module.php,6e1fe1d3cc72b89885d1f65b4735ae5d
-"No installed module matched your current search or category filter.","Ни один установленный модуль не соответствует текущему поиску или фильтру категории.",,site/modules/React/React.module.php,bbd1d8458fa333c5437b513d289316f6
-"No workspaces available","Нет доступных рабочих пространств",,site/modules/React/React.module.php,5ec633fc43306fc36c3cf968b9428a80
-"Install or enable a workspace module to access it here.","Установите или включите модуль рабочего пространства для доступа к нему здесь.",,site/modules/React/React.module.php,92829baaf46a7f41b1201d8cb5ec2c4c
-"Reset Filter","Сбросить фильтр",,site/modules/React/React.module.php,831b1cff02a12da1b010f8cb39147c8d
-"just now","только что",,site/modules/React/React.module.php,2654992d78afbd40bad349302a6f2b6a
-"{seconds}s ago","{seconds} сек. назад",,site/modules/React/React.module.php,b0f776690c4ba484158a8d04bc119e1d
-"{minutes}m ago","{minutes} мин. назад",,site/modules/React/React.module.php,6c0cef977fba600c9517c8a0c8dff73d
-"Updated by {user}","Обновлено пользователем {user}",,site/modules/React/React.module.php,3fe86196f9f5f89c8c10394b56aa3f29
-"This record was saved in another session while you had it open. Reload the latest version before saving to avoid overwriting those changes.","Эта запись была сохранена в другой сессии, пока она была открыта у вас. Перезагрузите последнюю версию перед сохранением, чтобы не перезаписать чужие изменения.",,site/modules/React/React.module.php,b2286b53112eac23e803d62d29a3cb04
-"Reload Latest","Загрузить свежую версию",,site/modules/React/React.module.php,24353cfc254f52144a8ee7a604b78e2e
-"Dismiss remote save warning","Скрыть предупреждение об удалённом сохранении",,site/modules/React/React.module.php,04e340552c787fa0de7e9bb886824196
-"is currently editing this record ({age}).","сейчас редактирует эту запись ({age}).",,site/modules/React/React.module.php,d747c52f62546f81bf5ef65a8bd67ffd
-"are currently editing this record.","сейчас редактируют эту запись.",,site/modules/React/React.module.php,db9ab4c9b4f4d56676e285c7014a2604
-"Coordinate changes before saving","Согласуйте изменения перед сохранением",,site/modules/React/React.module.php,0e750f0fe1702dd4a27233eaed9f6c7b
-"Search records...","Поиск записей...",,site/modules/React/React.module.php,46878f3052876993d095fb186ece42ee
-Search...,Поиск...,,site/modules/React/React.module.php,2a37324bb4c331c859044121df3f576b
-Filters,Фильтры,,site/modules/React/React.module.php,f3f43e30c8c7d78c6ac0173515e57a00
-"Filter view","Фильтр представления",,site/modules/React/React.module.php,5f2338679d4a0e08885fd7c0176eb6e6
-"Filter options...","Фильтр вариантов...",,site/modules/React/React.module.php,e6c46618cf501e7229c8bba662560b1c
-"Clear filters","Сбросить фильтры",,site/modules/React/React.module.php,0b275442d6556cff30b75f37f1918899
-Columns,Столбцы,,site/modules/React/React.module.php,168b82d33f8073018c50a4f658a02559
-"Toggle Columns","Переключить столбцы",,site/modules/React/React.module.php,29f4c433c598a0d91bf3c3920d2cd645
-"Reset columns","Сбросить столбцы",,site/modules/React/React.module.php,1eb64ecf3802fac71df227dc50ae1c8c
-"Saved Views","Сохранённые виды",,site/modules/React/React.module.php,368ae15de538213cd25b68560eb50521
-"Save View","Сохранить вид",,site/modules/React/React.module.php,753c2861dde3b99d1714edc57004b907
-"Delete saved view","Удалить сохранённый вид",,site/modules/React/React.module.php,d8388976b5db163929cfdd07f96d4f20
-"Delete the saved view ""{label}""?","Удалить сохраненное представление ""{label}""?",,site/modules/React/React.module.php,3706d830efe9fe00dd509aaadb61d105
-"Preset name...","Название вида...",,site/modules/React/React.module.php,51a75ab261668b0d24a1e031a6828717
-"Bulk actions","Массовые действия",,site/modules/React/React.module.php,9ffa4765d2da990741800bbe1ad4e7f8
-"Select all rows","Выбрать все строки",,site/modules/React/React.module.php,2d73c7eae2d36003755c343ddf607e71
-"{count} selected","Выбрано: {count}",,site/modules/React/React.module.php,ef1b031573031a3eca39e4b16e1eacec
-Order,Порядок,,site/modules/React/React.module.php,a240fa27925a635b08dc28c9e4f9216d
-"Click to edit inline","Нажмите для быстрого редактирования",,site/modules/React/React.module.php,ccbbf00a2560a1789ef802f9254868db
-"No records found","Записи не найдены",,site/modules/React/React.module.php,087fb8756d4add87f2d162304ccd486b
-"Try adjusting your search or filter criteria.","Попробуйте изменить параметры поиска или фильтрации.",,site/modules/React/React.module.php,992535ae7666175356cdab4154658065
-"No items yet","Элементов пока нет",,site/modules/React/React.module.php,529bd24c0f1522f793c736f65df9e8b5
-"Try changing your search or filters.","Попробуйте изменить параметры поиска или фильтры.",,site/modules/React/React.module.php,54e5c834b186eb672b5579a7e468d624
-"Network error while updating this list.","Ошибка сети при обновлении списка.",,site/modules/React/React.module.php,6fce21b16a2046460d7b37c52d73d363
-Previous,Назад,,site/modules/React/React.module.php,dd1f775e443ff3b9a89270713580a51b
-Next,Далее,,site/modules/React/React.module.php,10ac3d04253ef7e1ddc73e6091c0cd55
-"Page {page} of {totalPages}","Страница {page} из {totalPages}",,site/modules/React/React.module.php,c55db04c8c3722f2e1d9b2d618134a6c
-"{count} items","Элементов: {count}",,site/modules/React/React.module.php,ad3da129e14b05ef4090066697b98487
-"New Item","Новый элемент",,site/modules/React/React.module.php,0534f4f9b4506ce58165489e030886fb
-"Quick Edit","Быстрое редактирование",,site/modules/React/React.module.php,73f79dd90cb67b7438919d31aef50a3f
-"Quick Edit: {title}","Быстрое редактирование: {title}",,site/modules/React/React.module.php,ae42467b63eb56e2d015c6fa83963e2b
-"Edit key fields without leaving this list.","Редактируйте основные поля, не покидая список.",,site/modules/React/React.module.php,52e4769238ce64e4e6cd49d5ac3ab64d
-"Save Changes","Сохранить изменения",,site/modules/React/React.module.php,f5d6040ed78ca86ddc73296a49b18510
-Required,Обязательно,,site/modules/React/React.module.php,b651efdb98a5d6bd2b3935d0c3f4a5e2
-"You have unsaved changes.","У вас есть несохранённые изменения.",,site/modules/React/React.module.php,604a9a8f13d447df5c82b824ef2de820
-"Unsaved changes","Несохраненные изменения",,site/modules/React/React.module.php,c227ad77f168e7fd3e21583b324eddf4
-"Leaving or reloading this page will discard the edits you have not saved.","Переход с этой страницы или ее перезагрузка отменит несохраненные изменения.",,site/modules/React/React.module.php,bd426a1b74c862fd727bd7807affbcd8
-"Discard & Leave","Отменить и выйти",,site/modules/React/React.module.php,e4dd258ef1d11b3df71dcc7511814bc3
-"Next Step","Следующий шаг",,site/modules/React/React.module.php,2bb4cbbf4c51025867d47131e79ad05f
-"Please review the highlighted fields.","Проверьте выделенные поля.",,site/modules/React/React.module.php,2d7d932a4de2d9a02bb502fd0bd44940
-"Add item","Добавить элемент",,site/modules/React/React.module.php,ff19c966036b4a0c7350b2fc7e2861c2
-"No items selected.","Элементы не выбраны.",,site/modules/React/React.module.php,e3540df61299a71ee0a3dba1e3a988d5
-"Search items...","Поиск элементов...",,site/modules/React/React.module.php,b41f8031cebdec8ec27ea418116b82b1
-Select...,Выберите...,,site/modules/React/React.module.php,777475dcd2749b94375fe07762d9d76f
-"Quick column presets","Быстрые пресеты ширины столбцов",,site/modules/React/React.module.php,30b31807f23b112303cbe88e4bd3885d
-"Close field settings","Закрыть настройки поля",,site/modules/React/React.module.php,a5efa83fa11035324583a048ee851d8a
-"Click to switch this field · Double-click to switch all fields","Клик — для этого поля · Двойной клик — для всех полей",,site/modules/React/React.module.php,a0c692cb508669a5983a56f72ed26840
-Now,Сейчас,,site/modules/React/React.module.php,1e1cc9bdeb2f29f5480106aec7e9bc48
-Today,Сегодня,,site/modules/React/React.module.php,1dd1c5fb7f25cd41b291d43a89e3aefd
-"Clear date","Очистить дату",,site/modules/React/React.module.php,4239f67c37eed41d01bce841e2409c08
-"Copy secret","Скопировать секретный ключ",,site/modules/React/React.module.php,6185b626d083b9955fe99d0f04027add
-"Generate new secret","Сгенерировать новый ключ",,site/modules/React/React.module.php,64481fb3129df05f8fcb93180631a4ad
-Generate,Создать,,site/modules/React/React.module.php,32b919d18cfaca89383f6000dcc9c031
-"More submit actions","Другие действия сохранения",,site/modules/React/React.module.php,c37a7a14d4f44c0210494b5fa42c9e37
-"Signature pad","Поле для подписи",,site/modules/React/React.module.php,abd47bec49607672c9c93600b8371983
-"Sign above inside the pad","Распишитесь выше внутри поля",,site/modules/React/React.module.php,1c517f38d389db1cbab621070b374f8d
-Key,Ключ,,site/modules/React/React.module.php,897356954c2cd3d41b221e3f24f99bba
-Value,Значение,,site/modules/React/React.module.php,689202409e48743b914713f96d93947c
-"Add Row","Добавить строку",,site/modules/React/React.module.php,03e0c5bbd5488f1e5ec282529dac9635
-"Remove row","Удалить строку",,site/modules/React/React.module.php,f22cc12954f8a6326b87efac5ab3bbd4
-"Remove {key}","Удалить {key}",,site/modules/React/React.module.php,ce3c8cbb3dc37630f83efba07e9b8268
-"Remove row {index}","Удалить строку {index}",,site/modules/React/React.module.php,31fffc08b26f9624d2f3fd27f3ce08f2
-"{label} for row {index}","{label} для строки {index}",,site/modules/React/React.module.php,cb52d5dd3a9ad68a8e5868a4f9a3b741
-"{label} for {key}","{label} для {key}",,site/modules/React/React.module.php,783c12811d863273263544624cba931c
-"Move row {index} up","Переместить строку {index} вверх",,site/modules/React/React.module.php,ffbf572468485f1f1fcd17fde801a432
-"Move row {index} down","Переместить строку {index} вниз",,site/modules/React/React.module.php,66a970ee9ff587601c9642de1254c3de
-"Duplicate key ""{key}"". Each key must be unique.","Дублирующийся ключ «{key}». Каждый ключ должен быть уникальным.",,site/modules/React/React.module.php,a6dc8c8c04e2a649a533e79f857d521b
-"""{key}"" is a reserved key name.","«{key}» — зарезервированное имя ключа.",,site/modules/React/React.module.php,1dfe2368b96d2aac54553c2dca729981
-"""{key}"" does not match the required key format.","«{key}» не соответствует требуемому формату ключа.",,site/modules/React/React.module.php,a7e31f9bb0061070a747b3904a1926a8
-"{count} pair(s)","{count} пар(ы)",,site/modules/React/React.module.php,d6a91fddfdad84b2fb4cbf660c4926ab
-"{count} / {max}","{count} / {max}",,site/modules/React/React.module.php,9805fee7dc9e56ac789467789cc569d2
-"No key-value pairs","Нет пар ключ-значение",,site/modules/React/React.module.php,f078e5e545e92e15558c86cdc39aa7af
-"Select item...","Выберите элемент...",,site/modules/React/React.module.php,5c6b43c904ee7affd80f5570dd399c63
-"Select items...","Выберите элементы...",,site/modules/React/React.module.php,f558c7000390c00127ceb4582e767ae3
-"No matching items found.","Подходящие элементы не найдены.",,site/modules/React/React.module.php,e726430042d35ba7a01645e426fb53b9
-"No matching pages found.","Совпадающие страницы не найдены.",,site/modules/React/React.module.php,9aa45d2b5d98b8874f798e5e3ddffca6
-"No selectable pages found.","Доступные для выбора страницы не найдены.",,site/modules/React/React.module.php,ca8915abba799128a5651c5827936136
-"Loading options...","Загрузка вариантов...",,site/modules/React/React.module.php,0d3fbc55dae8e0a41ace8f0dd46140b4
-"Filter available items","Фильтровать доступные элементы",,site/modules/React/React.module.php,d2314e129617756e066162f5ef5acfd0
-"Filter available...","Фильтр доступных...",,site/modules/React/React.module.php,3d70a168f9c147ba1e22a84465ac5370
-"Filter selected items","Фильтровать выбранные элементы",,site/modules/React/React.module.php,a13d1c8ec35ba47884ec9576353517fe
-"Filter selected...","Фильтр выбранных...",,site/modules/React/React.module.php,5b2f45b143e3078a3ae8ebcfa5330ae9
-"Search pages or browse hierarchy below...","Поиск страниц или просмотр иерархии ниже...",,site/modules/React/React.module.php,b31d925a8164bd9e3658d6f2d2d1f9e2
-"Search by title, slug, ID, or path...","Поиск по заголовку, слагу, ID или пути...",,site/modules/React/React.module.php,6a69a62e382f6174c726cba9c4d28ef1
-"Move up","Переместить вверх",,site/modules/React/React.module.php,f77af7695f71323808f9b6e2795cde86
-"Move down","Переместить вниз",,site/modules/React/React.module.php,dd9f0c7e1bb3b749bd423e3544b4a8e3
-"Quick create","Быстрое создание",,site/modules/React/React.module.php,956eaa6186169471a13345860cad0757
-Creating...,Создание...,,site/modules/React/React.module.php,d930f4451cc35bdcd216273a273cb891
-"Create & Select","Создать и выбрать",,site/modules/React/React.module.php,5fbf6630ad0e74e257c6221f551d6e13
-Title,Заголовок,,site/modules/React/React.module.php,b78a3223503896721cca1303f776159b
-"Name / Slug (optional)","Имя / Слаг (необязательно)",,site/modules/React/React.module.php,b3cdb9702e78f45ebd3faeea0f0ed5b3
-Reference,Ссылка,,site/modules/React/React.module.php,63d5049791d9d79d86e9a108b0a999ca
-"Type / Status","Тип / Статус",,site/modules/React/React.module.php,88cf1d6af905d5a419bbb35f779cd96e
-"Link existing","Привязать существующий",,site/modules/React/React.module.php,18add7649141635f4ba1dff73c13b5c9
-Unlink,Отвязать,,site/modules/React/React.module.php,c1a39b6a60f8b2f87e23d60ab649d994
-"Unlink {label}","Отвязать {label}",,site/modules/React/React.module.php,400c37fc5635f0ed1793e997cdb2ba1c
-"Click to choose images, paste, or drag and drop","Нажмите для выбора изображений, вставьте или перетащите сюда",,site/modules/React/React.module.php,03e3ef1655ba17ad045259b94555a2d9
-"Click to choose files, paste, or drag and drop","Нажмите для выбора файлов, вставьте или перетащите сюда",,site/modules/React/React.module.php,79427c5a78e6e0275a50f59ea1619728
-"Choose image","Выбрать изображение",,site/modules/React/React.module.php,5a31ca938eff79f9dd79786b57b19173
-"Choose file","Выбрать файл",,site/modules/React/React.module.php,cbe55e77ffa67d13322eb1ce7d22f1ba
-"Choose images","Выбрать изображения",,site/modules/React/React.module.php,1fecb03bc5392b317485c838c1e84ef3
-"Choose files","Выбрать файлы",,site/modules/React/React.module.php,cdfe673a8db758eb8fa1809f899aa03b
-"Drop or paste","Перетащите или вставьте",,site/modules/React/React.module.php,f0a4d55c89d2229f32c9d91a586a5e9e
-"Drop to upload","Отпустите для загрузки",,site/modules/React/React.module.php,3f2bd2ae95d2e7c605f5629fb10b0e41
-"Drop file to replace","Перетащите файл для замены",,site/modules/React/React.module.php,ca0f915653f081b70adc5fd7ca4c7333
-"Add images","Добавить изображения",,site/modules/React/React.module.php,959485bd1014cd6d96ed0482b52dd43e
-"Add files","Добавить файлы",,site/modules/React/React.module.php,d39ec66f08507e26fe86aa5325d070df
-Replace,Заменить,,site/modules/React/React.module.php,0ebe6df8a3ac338e0512acc741823fdb
-Replacing...,Замена...,,site/modules/React/React.module.php,35d0feeb4bf8f406835933903f60d09f
-"Uploading {count} item(s)...","Загрузка элементов: {count}...",,site/modules/React/React.module.php,97f805ed63fefb1c2aea4bd780e6b419
-"Uploading {name} ({percent}%)","Загрузка {name} ({percent}%)",,site/modules/React/React.module.php,66ef5476db18dd11bb2dd4017241a2d3
-"Upload failed.","Не удалось загрузить файл.",,site/modules/React/React.module.php,cde28f5998d2dd5da84a4ab21143bc67
-"Max {size}","Макс. {size}",,site/modules/React/React.module.php,f808ad8dcf7d15d9fa3a3491d0d0fb5e
-"Up to {count} items","До {count} элементов",,site/modules/React/React.module.php,6f8df2165780ddddf60d042fe5f30480
-"Maximum file limit ({max}) reached.","Достигнут максимальный лимит файлов ({max}).",,site/modules/React/React.module.php,24e421b6a02813b4914e7278f2db14fe
-"Only one file can be dropped when replacing an item.","При замене элемента можно перетащить только один файл.",,site/modules/React/React.module.php,707e57f6a32903d027bb68340d314e79
-"Single item","Один элемент",,site/modules/React/React.module.php,317af23d2bfd619621001d50e7b4d49f
-"{count} item(s)","Элементов: {count}",,site/modules/React/React.module.php,e6396734a11282f165c6f4302f3e49cd
-"Grid view","Вид сеткой",,site/modules/React/React.module.php,b3d7c37eb8d31a2ca32fdc5850306f60
-"Table view","Вид таблицей",,site/modules/React/React.module.php,a02440b6c5ae80c41c0cceb53e494807
-"Drag or use arrow keys to reorder {name}","Перетащите или используйте клавиши со стрелками для сортировки {name}",,site/modules/React/React.module.php,56b5ebf8bba7b715d82f00f1558c5881
-"Edit Media Details","Редактировать параметры медиафайла",,site/modules/React/React.module.php,298110a1a84578b0358e84d902baf39f
-"Configure alt text, multi-language descriptions, tags, focal point, crop, and metadata.","Настройте alt-текст, многоязычные описания, теги, точку фокуса, обрезку и метаданные.",,site/modules/React/React.module.php,e291cdf0521fffd9324b9e2fd8008a06
-Details,Детали,,site/modules/React/React.module.php,3ec365dd533ddb7ef3d1c111186ce872
-"Focal Point","Точка фокуса",,site/modules/React/React.module.php,39c3c90e90e174f42f16493a20320cd0
-"Crop & Transform","Обрезка и трансформация",,site/modules/React/React.module.php,2fcb83faab71283be03272ed826af689
-"Custom Fields","Пользовательские поля",,site/modules/React/React.module.php,833956a760d996ae61ea8b385e9fb6f0
-"Alt text / description","Alt-текст / описание",,site/modules/React/React.module.php,2927039bc4525f9f53ce7b30946a6fa4
-Description,Описание,,site/modules/React/React.module.php,b5a7adde1af5c87d7fd797b6245c2a39
-"Describe this image for screen readers and SEO...","Опишите изображение для программ чтения с экрана и SEO...",,site/modules/React/React.module.php,55e6985522f9685200948139eb189f94
-"Add file description...","Добавьте описание файла...",,site/modules/React/React.module.php,c7d134733e9ce852ba0788c86517afbe
-"Missing alt","Нет alt",,site/modules/React/React.module.php,2bbf23509000f5e3f083cb540047c9ba
-"{filled}/{total} langs","{filled}/{total} яз.",,site/modules/React/React.module.php,d0dfb6667480f648febe27aa1cba2496
-"All languages","Все языки",,site/modules/React/React.module.php,abdffc07f137a3b4b3e4df13d2cafee4
-"Single tab","Одна вкладка",,site/modules/React/React.module.php,c52ea324b7f45ea118dea2e1ebf9abff
-Tags,Теги,,site/modules/React/React.module.php,189f63f277cd73395561651753563065
-"Type a tag and press Enter...","Введите тег и нажмите Enter...",,site/modules/React/React.module.php,d41b1f563e8bc4e2a60951e438a5687d
-"Suggested tags","Рекомендуемые теги",,site/modules/React/React.module.php,02bdc086e3ca9bc63dbc2e91f1e7f18a
-"Select a tag below...","Выберите тег ниже...",,site/modules/React/React.module.php,3ad8313ea124bec9192af51722379a25
-"Inspector sections","Разделы инспектора",,site/modules/React/React.module.php,962d0f3184a7b6b18cb84f4e0dc2060c
-"Select crop area","Выбрать область обрезки",,site/modules/React/React.module.php,152004221c80f3b7576dbf4f5c476f3b
-"Focal point","Точка фокуса",,site/modules/React/React.module.php,88cf7d8a95820c1ae46677696f705093
-"Click anywhere on the image to set the focal point used by smart crops.","Нажмите в любом месте изображения, чтобы задать точку фокуса для умной обрезки.",,site/modules/React/React.module.php,e42a8c430f3c251acdb1703133f94d3c
-"Top {top}% · Left {left}%","Сверху {top}% · Слева {left}%",,site/modules/React/React.module.php,596c3125a0760d54518166d28f005e74
-Zoom,Масштаб,,site/modules/React/React.module.php,4252b72e6ebcd4d4b4c2e46a786f03d2
-"Center focus","По центру",,site/modules/React/React.module.php,8cc442b86232a6c6281af310110789f7
-"Smart crop previews","Предпросмотр умной обрезки",,site/modules/React/React.module.php,2860e75905a5686de6c0ece062bb69d9
-Free,Свободно,,site/modules/React/React.module.php,b24ce0cd392a5b0b8dedc66c25213594
-Original,Оригинал,,site/modules/React/React.module.php,0a52da7a03a6de3beefe54f8c03ad80d
-"Apply crop","Применить обрезку",,site/modules/React/React.module.php,2575788607dc3187209eb5de1f25d04c
-"Clear selection","Сбросить выделение",,site/modules/React/React.module.php,80ffff123555bd5173345bc8f144edeb
-"Rotate -90°","Повернуть на -90°",,site/modules/React/React.module.php,702c5f0c445ec4b1b58c15fed5ebb5da
-"Rotate +90°","Повернуть на +90°",,site/modules/React/React.module.php,7fac3b0f85aa2d977fd48909539cd6d1
-"Rotate 180°","Повернуть на 180°",,site/modules/React/React.module.php,c3f606a2e1fae204da410754e5823017
-"Flip horizontal","Отразить по горизонтали",,site/modules/React/React.module.php,2f96dd2b9788ed9ecbc6f41c312bf455
-"Flip vertical","Отразить по вертикали",,site/modules/React/React.module.php,8373d2f18e29920f78459f34d71040ad
-"Applying image transform...","Применение трансформации изображения...",,site/modules/React/React.module.php,6fd250eded829d856bd37598518b1963
-"Drag on the image to select a crop area, or use quick rotate and flip actions.","Выделите область обрезки перетаскиванием по изображению или используйте быстрый поворот и отражение.",,site/modules/React/React.module.php,b65b7eaa6acece3048f0248fd245273f
-Dimensions,Размеры,,site/modules/React/React.module.php,f4843c1c797abf1a256c8802b6cd9f51
-"File size","Размер файла",,site/modules/React/React.module.php,1908624a0bca678cd26b99bfd405324e
-Format,Формат,,site/modules/React/React.module.php,520d0db389f362bf79ef56ca0af3dcab
-"Extracted palette","Извлечённая палитра",,site/modules/React/React.module.php,b6b8492978a983cd73b24953f65bf6e4
-"Extract colors","Извлечь цвета",,site/modules/React/React.module.php,941cf87e001156906fd9cbe73c40f9c4
-"Copied {hex}","Скопировано: {hex}",,site/modules/React/React.module.php,8f3c87ddda603f0268ced2da81cb4d43
-"Copy URL","Копировать URL",,site/modules/React/React.module.php,9de711d6eb379d46caa26e86cdafa0e9
-"URL copied","URL скопирован",,site/modules/React/React.module.php,5dc60c29c1e588a9c66eed361410fccb
-"Open original","Открыть оригинал",,site/modules/React/React.module.php,9d8d8f8322da0dee6443d8d9b4f1d431
-Download,Скачать,,site/modules/React/React.module.php,801ab24683a4a8c433c6eb40c48bcd9d
-"More actions","Другие действия",,site/modules/React/React.module.php,284716247b12b363fd6b6a71bff0918e
-"Cancel upload","Отменить загрузку",,site/modules/React/React.module.php,59af3165c0a8fb51f60f666aa36827e1
-"Crop selection. Drag to move, or use arrow keys to nudge.","Область обрезки. Перетащите для перемещения или используйте клавиши со стрелками.",,site/modules/React/React.module.php,66022acfa27249d3e437077717d7e15d
-"Crop selection updated","Область обрезки обновлена",,site/modules/React/React.module.php,9557e20351cb7308d552387707580bcd
-"Pending save","Ожидает сохранения",,site/modules/React/React.module.php,118fecf21b98faf1e34d87b25027794e
-"Marked for deletion","Помечено на удаление",,site/modules/React/React.module.php,064315db8457fb92899575dde95d9aa3
-Undo,Отменить,,site/modules/React/React.module.php,1cdc076b28f70afac5fcedadf99fa119
-"Remove {name}","Удалить {name}",,site/modules/React/React.module.php,37eb9bbace3a75b7364dd9efdb1169b6
-"Inspect & edit {name}","Просмотреть и изменить {name}",,site/modules/React/React.module.php,06abf2bba16bc1841811668bf3855006
-"Previous item","Предыдущий элемент",,site/modules/React/React.module.php,e472ee92cadec6aa540597fd71def57b
-"Next item","Следующий элемент",,site/modules/React/React.module.php,f032241504d7b559c7dd5f986e6947c4
-File,Файл,,site/modules/React/React.module.php,0b27918290ff5323bea1e3b78a9cf04e
-"Alt / Description","Alt / Описание",,site/modules/React/React.module.php,b7e92f96751d3993796fb15fa1d812a4
-Info,Инфо,,site/modules/React/React.module.php,4059b0251f66a18cb56f544728796875
-"Link type","Тип ссылки",,site/modules/React/React.module.php,e40e5cf7707c8efd70e8c220cb692b5e
-"Choose video","Выбрать видео",,site/modules/React/React.module.php,cbe18bc3cdf4dba823a85578f261ae14
-Drop,Перетащить,,site/modules/React/React.module.php,3e679cff5b3a6f6f8f32aead541a0a12
-"Upload progress","Прогресс загрузки",,site/modules/React/React.module.php,22af9d321feab79bcba1a07feb3fd31d
-"Open {name}","Открыть {name}",,site/modules/React/React.module.php,a64c86443dd775087f080bc37105a756
-"Replace {name}","Заменить {name}",,site/modules/React/React.module.php,1b44146a304770f514430e0e91b55319
-"Replace file","Заменить файл",,site/modules/React/React.module.php,82c8ebc9209c20ea618ffe60b58096a5
-"Remove file","Удалить файл",,site/modules/React/React.module.php,b21f085d08623fc7a5a9da204cc66c8c
-"Clear selected target","Очистить выбранную цель",,site/modules/React/React.module.php,3444f11aee6d3919024746cfa34331e8
-"Search entries","Поиск записей",,site/modules/React/React.module.php,39cfbd4c7c25bd8e49c6e3fd859a66cd
-"Search pages","Поиск страниц",,site/modules/React/React.module.php,9003fc7489e6aec510d20674d0495601
-"Cancel search","Отменить поиск",,site/modules/React/React.module.php,036934cf9842451c835a9981a067d0c3
-"Email address","Адрес эл. почты",,site/modules/React/React.module.php,b357b524e740bc85b9790a0712d84a30
-"Phone number","Номер телефона",,site/modules/React/React.module.php,1f8261d17452a959e013666c5df45e07
-"Link URL or #anchor","URL ссылки или #якорь",,site/modules/React/React.module.php,833c9f57f8dda097dfce3bab0900592a
-"Clear link target","Очистить цель ссылки",,site/modules/React/React.module.php,a17a700e7f4c79b8ee3fabb53366be82
-"Link label","Текст ссылки",,site/modules/React/React.module.php,b9f110a8326f63c00c794d9e91a476f4
-"Link label (optional)","Текст ссылки (необязательно)",,site/modules/React/React.module.php,c5781485b71aedb383635ee88657118a
-"Link options","Параметры ссылки",,site/modules/React/React.module.php,192d035ffb07b34f98ade39b20944c49
-Searching...,Поиск...,,site/modules/React/React.module.php,1243daf593fa297e07ab03bf06d925af
-"Link Options","Параметры ссылки",,site/modules/React/React.module.php,0fb7010ec16c91ec543a440daab8917b
-"Close link options","Закрыть параметры ссылки",,site/modules/React/React.module.php,dd061f3a1eb06d25ee1af9e5b50a9ced
-"Open Target","Цель открытия",,site/modules/React/React.module.php,ee8fc50fbc2bce466f44e66d3aecd60c
-"Same tab (_self)","В этой же вкладке (_self)",,site/modules/React/React.module.php,e60b30326ec2eb67e109e0b586640381
-"New tab (_blank)","В новой вкладке (_blank)",,site/modules/React/React.module.php,c706fdfc0d0b28c44c28d7f3ce648a2b
-"Anchor Fragment (#)","Якорный фрагмент (#)",,site/modules/React/React.module.php,7d4a1ce8e6774a43290e424eaa30b818
-"Query Parameters (?)","Параметры запроса (?)",,site/modules/React/React.module.php,092d68d0dc6bb122560ce4ceff8d2764
-"Title Attribute","Атрибут Title",,site/modules/React/React.module.php,d79162782feef239dca92bdaf1d87485
-"Accessible link title (optional)","Доступный заголовок ссылки (необязательно)",,site/modules/React/React.module.php,3b65caffe66f7665a832bdfd517fa0f5
-"Rel Attribute","Атрибут Rel",,site/modules/React/React.module.php,a72ed7c691daedb26de8a6a9ecdaa0c0
-"Phone number may only contain digits (0-9) and an optional leading + sign.","Номер телефона может содержать только цифры (0-9) и необязательный начальный знак +.",,site/modules/React/React.module.php,565a52271fd5b9146aad6020c91cb361
-"Enter a valid email address.","Введите корректный адрес электронной почты.",,site/modules/React/React.module.php,d68c7cd2cdc561bc55a5b8e6d8c4dd6c
-"Unsafe URL protocol is not allowed.","Небезопасный протокол URL не допускается.",,site/modules/React/React.module.php,540e3c510aeea10f4e39ed95557c5c64
-"Media upload context is not available for this field.","Контекст загрузки медиа недоступен для этого поля.",,site/modules/React/React.module.php,6a2a95bddcd94963944c67435da617cb
-"Selected file is not supported.","Выбранный файл не поддерживается.",,site/modules/React/React.module.php,a37cf8f4caea217468dca76878c83251
-"Failed to upload file.","Не удалось загрузить файл.",,site/modules/React/React.module.php,74318b4d780ce06c8dbf781c22c73a3a
-"Edit media details & alt text for {name}","Изменить сведения о медиафайле и alt-текст для {name}",,site/modules/React/React.module.php,c2e087a3a42a5ca4e023631c84894ca5
-"Edit media details, alt text & focal point","Изменить сведения о медиафайле, alt-текст и точку фокуса",,site/modules/React/React.module.php,15455322cb5ed157ae075a5e6c553741
-"New tab","В новой вкладке",,site/modules/React/React.module.php,c8a19ea6c79e23a1ee5372c8dbf3c6cf
-title,заголовок,,site/modules/React/React.module.php,d5d3db1765287eef77d7927cc956f50a
-"Selected icon","Выбранная иконка",,site/modules/React/React.module.php,c3f172d89f52a265985eab184b7c2f20
-"Select an icon...","Выберите значок...",,site/modules/React/React.module.php,cd625882db0b286414cedd94738e8b32
-"Clear icon","Очистить иконку",,site/modules/React/React.module.php,18276346bd3773253fdc4c1c5e496eb2
-"Reset Style","Сбросить стиль",,site/modules/React/React.module.php,e86a54e13ae40856b7c38b514dc6974b
-"Size (px)","Размер (px)",,site/modules/React/React.module.php,4c36ec3ac2cb9bda46e6dacc2974d282
-"Stroke Width","Толщина линии",,site/modules/React/React.module.php,6d999904323d1dbe38ec7ce97aaff0ef
-"Icon Color","Цвет иконки",,site/modules/React/React.module.php,4315faf12d817f66b65bc0323c514c88
-"Auto (currentColor)","Авто (currentColor)",,site/modules/React/React.module.php,9f00f77ff0d3dc50a92474949b1b2908
-"Custom icon hex color","Пользовательский HEX-цвет иконки",,site/modules/React/React.module.php,88115bf701716c2e29c26f9184efbf40
-"Badge Background & Shape","Фон и форма значка",,site/modules/React/React.module.php,d2ac054ec2a32159792b9e4de3c2a27a
-"No background","Без фона",,site/modules/React/React.module.php,7291417479be88cf7dc61910d3bfae0e
-"Custom badge hex color","Пользовательский HEX-цвет фона",,site/modules/React/React.module.php,277229ed1d0014f6eea9a11c1da88490
-Icons,Значки,,site/modules/React/React.module.php,8f67973007158337346584551b093be8
-Appearance,"Внешний вид",,site/modules/React/React.module.php,a1c58e94227389415de133efdf78ea6e
-"Search icons...","Поиск значков...",,site/modules/React/React.module.php,96e7dafae5db47a9df8b1c07af9e0421
-"Search {count} icons","Поиск среди {count} значков",,site/modules/React/React.module.php,85bdf2af0dcf18702347117874747126
-Category,Категория,,site/modules/React/React.module.php,3adbdb3ac060038aa0e6e6c138ef9873
-"All categories","Все категории",,site/modules/React/React.module.php,62f5d708d6ad1fa1ddd9429a65cccbea
-Style,Стиль,,site/modules/React/React.module.php,ae284f900f9d6e21ba69144cfc91e41b
-"All styles","Все стили",,site/modules/React/React.module.php,964f10b2515883ce73cd5db07fff012e
-Outline,Контур,,site/modules/React/React.module.php,606b51cc1c9d0b4af394419a22f2ff1f
-Filled,Заливка,,site/modules/React/React.module.php,d9d586f8c792f8f661052af42536323c
-Popular,Популярные,,site/modules/React/React.module.php,2cc1943d4c0b46bfcf503a75c44f988b
-"All icons","Все значки",,site/modules/React/React.module.php,b50d4ff0ac4f73bcb419a4396a3989f5
-"No matching icons found.","Подходящие иконки не найдены.",,site/modules/React/React.module.php,6fe730153d19457d273abdb1d0b92039
-icon,иконка,,site/modules/React/React.module.php,baec6461b0d69dde1b861aefbe375d8a
-icons,иконок,,site/modules/React/React.module.php,bd21190449b7e88db48fa0f580a8f666
+"Panel","Панель",,site/modules/React/React.module.php,b8da6df14bf06283cbf588df6998722e
 "Default Theme Mode","Режим темы по умолчанию",,site/modules/React/React.module.php,74435ddc2833dc22de4b519833b95a8d
 "Select the default color theme for React admin pages and data views.","Выберите цветовую тему по умолчанию для страниц администратора и списков React.",,site/modules/React/React.module.php,dd43061a8373ea4ab8e131b563764c0c
 "System Preference (Auto)","Системная настройка (Авто)",,site/modules/React/React.module.php,6e8284e1277a7f10aee3ee1ab96c56a7
 "Light Mode","Светлый режим",,site/modules/React/React.module.php,370104a87f84d72ef9a9a525fc3296fb
 "Dark Mode","Тёмный режим",,site/modules/React/React.module.php,51b5e76089f5da04cf725ec11b16716d
+"Default Theme Preset","Шаблон темы по умолчанию",,site/modules/React/React.module.php,90c70e2440c0d085f1f819c853a4d41d
+"Default color theme applied across React workspaces, embedded module panels, overlays, and form controls when a user has not selected a personal theme scheme in their Workspace account menu.","Цветовая тема по умолчанию для рабочих пространств React, встроенных панелей модулей, всплывающих окон и элементов форм, если пользователь не выбрал личную цветовую схему в меню учётной записи.",,site/modules/React/React.module.php,3963e48b2cae4a1f4d85c55713b9c4f8
+"ProcessWire Native (Admin Color Scheme)","ProcessWire (цветовая схема админки)",,site/modules/React/React.module.php,d05d6e588d46c0414d1e2faac8bee780
+"Neutral","Нейтральная",,site/modules/React/React.module.php,e9bb5320b3890b6747c91b5a71ae5a01
+"Slate","Сланец",,site/modules/React/React.module.php,b301eeecae37166dd0b7987360d341b7
+"Ocean","Океан",,site/modules/React/React.module.php,f41054884f4a8c8cb596222e2a31f098
+"Emerald","Изумруд",,site/modules/React/React.module.php,0b6e98d660e2901c33333347da37ad36
+"Violet","Фиолетовая",,site/modules/React/React.module.php,80f1187112e2e5e0403499147f7014b8
+"Rose","Розовая",,site/modules/React/React.module.php,0df4dccc4aac3f6f36e00ef2a6a4bfac
+"Amber","Янтарь",,site/modules/React/React.module.php,88068e33c78eb72f1b371c7110846085
+"Custom Theme Tokens","Пользовательские переменные темы",,site/modules/React/React.module.php,835e1684f9e7b41e3f32514392e01de6
+"Custom Theme Tokens (CSS)","Пользовательские переменные темы (CSS)",,site/modules/React/React.module.php,72c18f2bfda2c0faf7618ec2c6eff66b
+"Paste Tailwind CSS v4 theme variables (`:root { ... }` for light mode and `.dark { ... }` for dark mode). Only recognized color, radius, font, and shadow tokens with safe values are applied; everything else is ignored.","Вставьте переменные темы Tailwind CSS v4 (`:root { ... }` для светлого режима и `.dark { ... }` для тёмного). Применяются только распознанные переменные цвета, скругления, шрифта и тени с безопасными значениями; всё остальное игнорируется.",,site/modules/React/React.module.php,96eaf33ba9bf3f58cdcad2cffe6a0dd6
+"Custom theme tokens must define at least --background, --foreground, --primary, and --primary-foreground. The native admin theme is used until they are valid.","Пользовательские переменные темы должны определять как минимум --background, --foreground, --primary и --primary-foreground. Пока они недействительны, используется стандартная тема админки.",,site/modules/React/React.module.php,5be5495e394bc3269980fd6e45366ab3
 "Enable Keyboard Shortcuts","Включить горячие клавиши",,site/modules/React/React.module.php,b6a366ab30c40f2933bcb2376a180f6b
-"Enable Cmd/Ctrl+K command palette and keyboard navigation inside React workspaces.","Включает палитру команд Cmd/Ctrl+K и навигацию с клавиатуры в рабочих пространствах React.",,site/modules/React/React.module.php,864eab57e155b062751d228ca86c1853
+"Enable Cmd/Ctrl+K command palette, shortcut help dialog (?), form save shortcuts, viewport shortcuts, and keyboard navigation inside React workspaces.","Включает палитру команд Cmd/Ctrl+K, окно справки по сочетаниям клавиш (?), горячие клавиши сохранения форм, списков и навигацию с клавиатуры в пространствах React.",,site/modules/React/React.module.php,52f1d5c6958ab6d91889b4216e55ec24
 "Admin Return Button Label","Текст кнопки возврата в админ-панель",,site/modules/React/React.module.php,0e6a93844e1ec5ebdf37abee7dbb4687
 "Label displayed on the top-left button that returns from a Workspace to the main Admin panel (default: Panel). Supports multi-language values.","Текст кнопки в левом верхнем углу для возврата из рабочего пространства в главную панель администратора (по умолчанию: Panel). Поддерживает мультиязычные значения.",,site/modules/React/React.module.php,262fa3a43401ba36d210a9932a1e0039
 "Use React Image & File Editors on Pages","Использовать редакторы изображений и файлов React на страницах",,site/modules/React/React.module.php,8130edf14262ef525727ccbe0606d589
@@ -768,17 +403,461 @@ icons,иконок,,site/modules/React/React.module.php,bd21190449b7e88db48fa0f5
 "Preview icon size on Edit Template and Edit Field screens (16–64).","Размер иконки предпросмотра на экранах редактирования шаблона и поля (16–64).",,site/modules/React/React.module.php,6230677443f310b60dfb59d7c228f10f
 "Tiptap Mini-Blocks Renderer","Рендерер мини-блоков Tiptap",,site/modules/React/TextformatterTiptapMiniBlocks.module.php,7c3faead0795ac6b3010fb3c157f2feb
 "Renders inline content blocks from the Tiptap rich text editor using templates in ./site/templates/tiptap/.","Отображает встроенные блоки контента из редактора Tiptap с помощью шаблонов в ./site/templates/tiptap/.",,site/modules/React/TextformatterTiptapMiniBlocks.module.php,41713bc7294132fb564cbd8708c8b016
-Yes,Да,,site/modules/React/src/Data/ReactRecord.php,93cba07454f06a4a960172bbd6e2a435
-Submit,Отправить,,site/modules/React/src/Form/FormSchemaSerializer.php,a4d3b161ce1309df1c4e25df28694b7b
-Yes,Да,,site/modules/React/src/Form/FormSchemaSerializer.php,93cba07454f06a4a960172bbd6e2a435
-No,Нет,,site/modules/React/src/Form/FormSchemaSerializer.php,bafd7322c6e97d25b6299b5d6fe8920b
-Other,Другое,,site/modules/React/src/Form/FormSchemaSerializer.php,6311ae17c1ee52b36e68aaf4ad066387
-Delete,Удалить,,site/modules/React/src/Form/FormSchemaSerializer.php,f2a6c498fb90ee345d997f888fce3b18
+"Yes","Да",,site/modules/React/src/Data/ReactRecord.php,93cba07454f06a4a960172bbd6e2a435
+"Submit","Отправить",,site/modules/React/src/Form/FormSchemaSerializer.php,a4d3b161ce1309df1c4e25df28694b7b
+"Yes","Да",,site/modules/React/src/Form/FormSchemaSerializer.php,93cba07454f06a4a960172bbd6e2a435
+"No","Нет",,site/modules/React/src/Form/FormSchemaSerializer.php,bafd7322c6e97d25b6299b5d6fe8920b
+"Other","Другое",,site/modules/React/src/Form/FormSchemaSerializer.php,6311ae17c1ee52b36e68aaf4ad066387
+"Delete","Удалить",,site/modules/React/src/Form/FormSchemaSerializer.php,f2a6c498fb90ee345d997f888fce3b18
 "Confirm Deletion","Подтвердите удаление",,site/modules/React/src/Form/FormSchemaSerializer.php,44928cfda52bc66163d158d1ff69d415
-record,запись,,site/modules/React/src/Form/FormSchemaSerializer.php,de17f0f24b49f8364187891f8550ffbb
+"record","запись",,site/modules/React/src/Form/FormSchemaSerializer.php,de17f0f24b49f8364187891f8550ffbb
 "Permanently delete this %s on save","Навсегда удалить %s при сохранении",,site/modules/React/src/Form/FormSchemaSerializer.php,92dcde4a2ed9b39c700e3da1ed261b70
 "Check this box and click Save to permanently delete this record. This action cannot be undone.","Отметьте этот флажок и нажмите «Сохранить», чтобы навсегда удалить эту запись. Это действие нельзя отменить.",,site/modules/React/src/Form/FormSchemaSerializer.php,05e71e018fc5049302c5d3b5264cf908
-Configuration,Конфигурация,,site/modules/React/src/Form/FormSchemaSerializer.php,254f642527b45bc260048e30704edb39
+"Configuration","Конфигурация",,site/modules/React/src/Form/FormSchemaSerializer.php,254f642527b45bc260048e30704edb39
+"Vector Icon","Векторный значок",,site/modules/React/src/Hook/FieldIntegrationHooks.php,3b8ba766a67302eea93b73f89375cf76
+"Select a vector icon. When populated, this overrides the standard ProcessWire icon above.","Выберите векторный значок. При заполнении он переопределяет стандартный значок ProcessWire выше.",,site/modules/React/src/Hook/FieldIntegrationHooks.php,7cd34d6d99b289c33e05ccaf30109f55
+"Relation request failed.","Ошибка запроса связи.",,site/modules/React/src/Http/ReactGatewayRouter.php,417311c0a499db762f631392d723fa39
+"Save","Сохранить",,site/modules/React/src/I18n/TranslationCatalogService.php,c9cc8cce247e49bae79f15173ce97354
+"Saving...","Сохранение...",,site/modules/React/src/I18n/TranslationCatalogService.php,575f5f86d2c7ea113c6710c1037c4465
+"Cancel","Отмена",,site/modules/React/src/I18n/TranslationCatalogService.php,ea4788705e6873b424c65e91c2846b19
+"Close","Закрыть",,site/modules/React/src/I18n/TranslationCatalogService.php,d3d2e617335f08df83599665eef8a418
+"Done","Готово",,site/modules/React/src/I18n/TranslationCatalogService.php,f92965e2c8a7afb3c1b9a5c09a263636
+"Open","Открыть",,site/modules/React/src/I18n/TranslationCatalogService.php,c3bf447eabe632720a3aa1a7ce401274
+"Apply","Применить",,site/modules/React/src/I18n/TranslationCatalogService.php,9639e32cab248434a17ab32237cb3b71
+"Applying...","Применение...",,site/modules/React/src/I18n/TranslationCatalogService.php,2d36bbeac4e19bf400214726dd626cdb
+"Executing...","Выполняется...",,site/modules/React/src/I18n/TranslationCatalogService.php,3d202de4cde88726a42cedcd4d1b28c3
+"Reset","Сбросить",,site/modules/React/src/I18n/TranslationCatalogService.php,526d688f37a86d3c3f27d0c5016eb71d
+"Refresh","Обновить",,site/modules/React/src/I18n/TranslationCatalogService.php,63a6a88c066880c5ac42394a22803ca6
+"Refreshing...","Обновление...",,site/modules/React/src/I18n/TranslationCatalogService.php,01b08e48869f180ff19a7f7aa3c3f18f
+"Reload","Перезагрузить",,site/modules/React/src/I18n/TranslationCatalogService.php,4d1c8263ba1036754f8db14a98f9f006
+"Search","Поиск",,site/modules/React/src/I18n/TranslationCatalogService.php,13348442cc6a27032d2b4aa28b75a5d3
+"Clear","Очистить",,site/modules/React/src/I18n/TranslationCatalogService.php,dc30bc0c7914db5918da4263fce93ad2
+"Create","Создать",,site/modules/React/src/I18n/TranslationCatalogService.php,686e697538050e4664636337cc3b834f
+"Edit","Изменить",,site/modules/React/src/I18n/TranslationCatalogService.php,7dce122004969d56ae2e0245cb754d35
+"Delete","Удалить",,site/modules/React/src/I18n/TranslationCatalogService.php,f2a6c498fb90ee345d997f888fce3b18
+"Remove","Убрать",,site/modules/React/src/I18n/TranslationCatalogService.php,1063e38cb53d94d386f21227fcd84717
+"Dismiss","Скрыть",,site/modules/React/src/I18n/TranslationCatalogService.php,c8a59e7135a20b362f9c768b09454fdb
+"Confirm","Подтвердить",,site/modules/React/src/I18n/TranslationCatalogService.php,70d9be9b139893aa6c69b5e77e614311
+"Confirm & Execute","Подтвердить и выполнить",,site/modules/React/src/I18n/TranslationCatalogService.php,4b8fa648bd96b68b3f5c6477c2a0ae91
+"I understand the impact of this operation and wish to proceed.","Я понимаю последствия этой операции и хочу продолжить.",,site/modules/React/src/I18n/TranslationCatalogService.php,719ddb902afa805552fb15479a75fee1
+"Copy","Копировать",,site/modules/React/src/I18n/TranslationCatalogService.php,5fb63579fc981698f97d55bfecb213ea
+"Copied","Скопировано",,site/modules/React/src/I18n/TranslationCatalogService.php,a588b1abc58b8b758c4b34b69b9e10bb
+"Copy command","Скопировать команду",,site/modules/React/src/I18n/TranslationCatalogService.php,ec5eefe5a1b8d46ef1126992881fd5d4
+"Export","Экспорт",,site/modules/React/src/I18n/TranslationCatalogService.php,0095a9fa74d1713e43e370a7d7846224
+"Import","Импорт",,site/modules/React/src/I18n/TranslationCatalogService.php,72d6d7a1885885bb55a565fd1070581a
+"Loading...","Загрузка...",,site/modules/React/src/I18n/TranslationCatalogService.php,8524de963f07201e5c086830d370797f
+"Actions","Действия",,site/modules/React/src/I18n/TranslationCatalogService.php,06df33001c1d7187fdd81ea1f5b277aa
+"Languages","Языки",,site/modules/React/src/I18n/TranslationCatalogService.php,3a08e2e340ab29fd9263af48193cbf8e
+"Error","Ошибка",,site/modules/React/src/I18n/TranslationCatalogService.php,902b0d55fddef6f8d651fe1035b7d4bd
+"Warning","Внимание",,site/modules/React/src/I18n/TranslationCatalogService.php,0eaadb4fcb48a0a0ed7bc9868be9fbaa
+"Notice","Уведомление",,site/modules/React/src/I18n/TranslationCatalogService.php,24efa7ee4511563b16144f39706d594f
+"All","Все",,site/modules/React/src/I18n/TranslationCatalogService.php,b1c94ca2fbc3e78fc30069c8d0f01680
+"None","Нет",,site/modules/React/src/I18n/TranslationCatalogService.php,6adf97f83acf6453d4a6a4b1070f3754
+"Yes","Да",,site/modules/React/src/I18n/TranslationCatalogService.php,93cba07454f06a4a960172bbd6e2a435
+"No","Нет",,site/modules/React/src/I18n/TranslationCatalogService.php,bafd7322c6e97d25b6299b5d6fe8920b
+"More","Ещё",,site/modules/React/src/I18n/TranslationCatalogService.php,d3da97e2d9aee5c8fbe03156ad051c99
+"No matching options","Нет подходящих вариантов",,site/modules/React/src/I18n/TranslationCatalogService.php,2911d2dd34d4e33b692661c26348cf49
+"Select an option...","Выберите вариант...",,site/modules/React/src/I18n/TranslationCatalogService.php,4a86bc1626d448c4e375614c7b1783a6
+"Toggle options","Переключить варианты",,site/modules/React/src/I18n/TranslationCatalogService.php,56f1ad01cf5988f3459018ff9c43ca95
+"No results found.","Результаты не найдены.",,site/modules/React/src/I18n/TranslationCatalogService.php,3f24537d9d26ddf4fd334a881e46a0ec
+"Notifications","Уведомления",,site/modules/React/src/I18n/TranslationCatalogService.php,a274f4d4670213a9045ce258c6c56b80
+"Back","Назад",,site/modules/React/src/I18n/TranslationCatalogService.php,0557fa923dcee4d0f86b1409f5c2167f
+"Unavailable","Недоступно",,site/modules/React/src/I18n/TranslationCatalogService.php,453e6aa38d87b28ccae545967c53004f
+"Workspace","Рабочее пространство",,site/modules/React/src/I18n/TranslationCatalogService.php,03a21915504df93cf5dba0636080f62e
+"Workspaces","Рабочие пространства",,site/modules/React/src/I18n/TranslationCatalogService.php,d5e92609cf510f5f97ac326e907a0540
+"Workspace Dashboard","Панель рабочего пространства",,site/modules/React/src/I18n/TranslationCatalogService.php,9ed7329637f544d772bdba0d61398d04
+"All modules, favorites, and customizable dashboard widgets","Все модули, избранное и настраиваемые виджеты панели",,site/modules/React/src/I18n/TranslationCatalogService.php,e68b79df7f2d4278eb0960fd444fdf1d
+"Current workspace section","Текущий раздел рабочего пространства",,site/modules/React/src/I18n/TranslationCatalogService.php,5e20a96b94291c93caaf1dce0e254cbc
+"Workspace navigation","Навигация рабочего пространства",,site/modules/React/src/I18n/TranslationCatalogService.php,8908efdd3ec402154d562f6487b92f1a
+"Navigation","Навигация",,site/modules/React/src/I18n/TranslationCatalogService.php,846495f9ceed11accf8879f555936a7d
+"Open workspace navigation menu","Открыть меню навигации",,site/modules/React/src/I18n/TranslationCatalogService.php,60e439470c45c239b2e25a510fceb428
+"Close navigation menu","Закрыть меню навигации",,site/modules/React/src/I18n/TranslationCatalogService.php,d302e7fbcdb33e2877353e7f703fd4a9
+"Search workspaces...","Поиск рабочих пространств...",,site/modules/React/src/I18n/TranslationCatalogService.php,6350e80efab2bb6dc30cea9dba50dac7
+"Search workspaces","Поиск рабочих пространств",,site/modules/React/src/I18n/TranslationCatalogService.php,28ba707df5d8962217e5a32a08f712f2
+"Find workspace...","Найти рабочее пространство...",,site/modules/React/src/I18n/TranslationCatalogService.php,a59403457c95f98f52aa1e83c7b0a3ca
+"No matching workspaces","Совпадающих рабочих пространств нет",,site/modules/React/src/I18n/TranslationCatalogService.php,c7d00daca755a67628aad03a442fa01b
+"No matching destinations found.","Подходящие разделы не найдены.",,site/modules/React/src/I18n/TranslationCatalogService.php,a8cf450cedad306f1ef0981292eda677
+"Quick Jump","Быстрый переход",,site/modules/React/src/I18n/TranslationCatalogService.php,ae69932309b0c8fbd2565f85e2729961
+"Quick Switcher","Быстрый переключатель",,site/modules/React/src/I18n/TranslationCatalogService.php,33a8d8c8002c17b26e545ee67595825f
+"Quick Switcher (Cmd/Ctrl+K)","Быстрый переключатель (Cmd/Ctrl+K)",,site/modules/React/src/I18n/TranslationCatalogService.php,a6d3e2a4b7e5ea93da96575262eb33aa
+"Jump to workspace or section...","Перейти к пространству или разделу...",,site/modules/React/src/I18n/TranslationCatalogService.php,9c0902ca5c76e62c37dde2c59b158356
+"Panel","Панель",,site/modules/React/src/I18n/TranslationCatalogService.php,b8da6df14bf06283cbf588df6998722e
+"Return to {target}","Вернуться к {target}",,site/modules/React/src/I18n/TranslationCatalogService.php,f6f53af1527f750b7046b85beee500d3
+"Open in Workspace","Открыть в рабочей области",,site/modules/React/src/I18n/TranslationCatalogService.php,8509b1db3b9493f2aba2a88439edb1b4
+"Switch to full-screen Workspace view","Переключиться на полноэкранный режим рабочей области",,site/modules/React/src/I18n/TranslationCatalogService.php,1c7f26dd5993adca7f5e2d79f997f8cd
+"Theme","Тема",,site/modules/React/src/I18n/TranslationCatalogService.php,d721757161f7f70c5b0949fdb6ec2c30
+"Appearance","Внешний вид",,site/modules/React/src/I18n/TranslationCatalogService.php,a1c58e94227389415de133efdf78ea6e
+"Color Scheme","Цветовая схема",,site/modules/React/src/I18n/TranslationCatalogService.php,6761e135fa31a256983cc0de4ff8d7d9
+"Use site default","Использовать настройки сайта",,site/modules/React/src/I18n/TranslationCatalogService.php,1a786a38cef47eb8d217ebc0401b34cd
+"Site default","По умолчанию для сайта",,site/modules/React/src/I18n/TranslationCatalogService.php,1da71dc1ead54d8aaf7c8692a1f32f84
+"Light","Светлая",,site/modules/React/src/I18n/TranslationCatalogService.php,9914a0ce04a7b7b6a8e39bec55064b82
+"Dark","Тёмная",,site/modules/React/src/I18n/TranslationCatalogService.php,a18366b217ebf811ad1886e4f4f865b2
+"System","Системная",,site/modules/React/src/I18n/TranslationCatalogService.php,a45da96d0bf6575970f2d27af22be28a
+"Toggle theme","Переключить тему",,site/modules/React/src/I18n/TranslationCatalogService.php,5a9663b09544b4cfe12a13a805d7ac2b
+"Theme mode: {mode} (click to switch)","Режим темы: {mode} (нажмите для смены)",,site/modules/React/src/I18n/TranslationCatalogService.php,ed66a4fc75e940c960bb14f16063194f
+"Color theme: {preset}","Цветовая тема: {preset}",,site/modules/React/src/I18n/TranslationCatalogService.php,05cc73499300c55612b4b868bb1eabac
+"Color theme presets","Предустановки цветовой темы",,site/modules/React/src/I18n/TranslationCatalogService.php,2ad9de28e2f2f2a7de61d7f2c49f7680
+"Applies across all modules and workspaces","Применяется ко всем модулям и рабочим областям",,site/modules/React/src/I18n/TranslationCatalogService.php,bf489f082ed3a18475f726300ac50ff5
+"Native Admin","Стандартная админка",,site/modules/React/src/I18n/TranslationCatalogService.php,0d434f610f3d223ab5133dabeadbeeff
+"Neutral","Нейтральная",,site/modules/React/src/I18n/TranslationCatalogService.php,e9bb5320b3890b6747c91b5a71ae5a01
+"Slate","Сланец",,site/modules/React/src/I18n/TranslationCatalogService.php,b301eeecae37166dd0b7987360d341b7
+"Ocean","Океан",,site/modules/React/src/I18n/TranslationCatalogService.php,f41054884f4a8c8cb596222e2a31f098
+"Emerald","Изумруд",,site/modules/React/src/I18n/TranslationCatalogService.php,0b6e98d660e2901c33333347da37ad36
+"Violet","Фиолетовая",,site/modules/React/src/I18n/TranslationCatalogService.php,80f1187112e2e5e0403499147f7014b8
+"Rose","Розовая",,site/modules/React/src/I18n/TranslationCatalogService.php,0df4dccc4aac3f6f36e00ef2a6a4bfac
+"Amber","Янтарь",,site/modules/React/src/I18n/TranslationCatalogService.php,88068e33c78eb72f1b371c7110846085
+"Custom Tokens","Свои переменные",,site/modules/React/src/I18n/TranslationCatalogService.php,bd5ee67e7225f0ea522e7ab9af418651
+"User account menu","Меню учётной записи",,site/modules/React/src/I18n/TranslationCatalogService.php,a325cd66d5ff510f06a7a89293c98177
+"View site","Перейти на сайт",,site/modules/React/src/I18n/TranslationCatalogService.php,90dd5a9776ef2638eebdd94ae76a1902
+"Profile","Профиль",,site/modules/React/src/I18n/TranslationCatalogService.php,cce99c598cfdb9773ab041d54c3d973a
+"Logout","Выйти",,site/modules/React/src/I18n/TranslationCatalogService.php,0323de4f66a1700e2173e9bcdce02715
+"Keyboard shortcuts","Горячие клавиши",,site/modules/React/src/I18n/TranslationCatalogService.php,de334061ddee0a9008edd133af533c04
+"Dismiss errors","Скрыть ошибки",,site/modules/React/src/I18n/TranslationCatalogService.php,ef12db18801e484d0d785f73cd9604b4
+"Dismiss warnings","Скрыть предупреждения",,site/modules/React/src/I18n/TranslationCatalogService.php,990f649a83a3fbbee1d350a1ebf60a06
+"Dismiss notices","Скрыть уведомления",,site/modules/React/src/I18n/TranslationCatalogService.php,b4c60e29e6ea44ad2d45ba8ed6b7d594
+"Quick overview, live status cards, and all admin workspaces.","Быстрый обзор, карточки состояния и все рабочие пространства администратора.",,site/modules/React/src/I18n/TranslationCatalogService.php,52c2b43875b6d96f10a81b71b16b145a
+"Overview","Обзор",,site/modules/React/src/I18n/TranslationCatalogService.php,3b878279a04dc47d60932cb294d96259
+"Operational Overview","Операционный обзор",,site/modules/React/src/I18n/TranslationCatalogService.php,46966912240d4bc4c19fc9389727943b
+"All Workspaces","Все пространства",,site/modules/React/src/I18n/TranslationCatalogService.php,ab0a66d5e7f3e6b0db0f96721d64c245
+"Module Directory","Каталог модулей",,site/modules/React/src/I18n/TranslationCatalogService.php,6a51ac3b146536a407f3429c8f2f2a6f
+"Module","Модуль",,site/modules/React/src/I18n/TranslationCatalogService.php,e55f75a29310d7b60f7ac1d390c8ae42
+"Favorites","Избранное",,site/modules/React/src/I18n/TranslationCatalogService.php,d78986947356ddd37b43d57df289dee9
+"Pinned","Закреплённые",,site/modules/React/src/I18n/TranslationCatalogService.php,3c5e891bff07947cbae2fda89162df9f
+"Pinned Shortcuts","Закреплённые ярлыки",,site/modules/React/src/I18n/TranslationCatalogService.php,8f1f46957a9aa8224c8e93f56d57a598
+"Pin to top bar","Закрепить на верхней панели",,site/modules/React/src/I18n/TranslationCatalogService.php,2fa2c585863a83a9024a0ec877848d73
+"Unpin from top bar","Открепить с верхней панели",,site/modules/React/src/I18n/TranslationCatalogService.php,da80cbcfd56f935cfb9a329f43498112
+"Pin {title}","Закрепить {title}",,site/modules/React/src/I18n/TranslationCatalogService.php,ab6cdb7b7a64b4c924c47bd793c2efb4
+"Unpin {title}","Открепить {title}",,site/modules/React/src/I18n/TranslationCatalogService.php,08775dfb2eeb84f0daf59a8cd3306b4b
+"Customize","Настроить",,site/modules/React/src/I18n/TranslationCatalogService.php,63a78ed4647f7c63c2929e35ec1c95e3
+"Customize Layout","Настроить макет",,site/modules/React/src/I18n/TranslationCatalogService.php,c5b7cb3159ecf84ffc87b9725b1225e1
+"Done Customizing","Завершить настройку",,site/modules/React/src/I18n/TranslationCatalogService.php,08ee89aac2ef96b48c9c2e718b11b687
+"Export Layout","Экспортировать макет",,site/modules/React/src/I18n/TranslationCatalogService.php,304278e931b0f6f2ff0148dde89436cc
+"Export JSON","Экспорт JSON",,site/modules/React/src/I18n/TranslationCatalogService.php,b7b35e678fac8e3ac6493d09e6bf8ec4
+"Import Layout","Импортировать макет",,site/modules/React/src/I18n/TranslationCatalogService.php,de5f3994e77a62b31078014c34cdcbed
+"Apply a saved workspace layout preset (.json) to update your pinned shortcuts, widget order, widths, and visibility.","Примените сохранённый макет (.json), чтобы обновить закреплённые ярлыки, порядок, ширину и видимость виджетов.",,site/modules/React/src/I18n/TranslationCatalogService.php,c009bdc2ef160c5b6dc71628b7c3d5b8
+"Workspace layout preset JSON","JSON макета рабочего пространства",,site/modules/React/src/I18n/TranslationCatalogService.php,180714e8ef26f4474a47f2a98602e0c1
+"Import JSON","Импорт JSON",,site/modules/React/src/I18n/TranslationCatalogService.php,786df2cec47f9e9c005483f4c7ec9632
+"Apply Layout","Применить макет",,site/modules/React/src/I18n/TranslationCatalogService.php,40ff1f28a90b7724a0653403e9056bfb
+"Choose JSON File","Выбрать JSON-файл",,site/modules/React/src/I18n/TranslationCatalogService.php,276e42ebd90183f60b19ae95fa54864a
+"Reset Layout","Сбросить макет",,site/modules/React/src/I18n/TranslationCatalogService.php,6dc6e32ad3860bd9cf4e567673bcafbf
+"Reset Default","Сбросить по умолчанию",,site/modules/React/src/I18n/TranslationCatalogService.php,d6ed253ff449bbd9606eff83124f1f2e
+"Reset Default Layout","Сбросить макет по умолчанию",,site/modules/React/src/I18n/TranslationCatalogService.php,1050bc9cb8b00a00620f2aa03bc35d6f
+"Reset your pinned shortcuts, widget order, widths, and hidden widget settings back to defaults?","Сбросить закрепленные ярлыки, порядок, ширину и видимость виджетов к значениям по умолчанию?",,site/modules/React/src/I18n/TranslationCatalogService.php,7ef2e15cc260153efe4516aaf6d53ca3
+"Choose Widgets","Выбрать виджеты",,site/modules/React/src/I18n/TranslationCatalogService.php,b14eac5358d6997de83ef1a66ed53767
+"{count} hidden widget(s)","Скрыто виджетов: {count}",,site/modules/React/src/I18n/TranslationCatalogService.php,f825d68e168242bb62a01fcf2f7c4390
+"Hide widget from dashboard","Скрыть виджет с панели",,site/modules/React/src/I18n/TranslationCatalogService.php,3a271cded492b1af00f478afb36dff88
+"Hide {title}","Скрыть {title}",,site/modules/React/src/I18n/TranslationCatalogService.php,989687042589d0714062081623af4493
+"Show {title}","Показать {title}",,site/modules/React/src/I18n/TranslationCatalogService.php,0995ce286e32d12920a7cbd90265f4c7
+"Looking for a specific capability or administration tool?","Ищете конкретную возможность или инструмент администрирования?",,site/modules/React/src/I18n/TranslationCatalogService.php,0466da2abbb3b4b8c7d2a8d666eb76e5
+"Browse all {count} modules","Просмотреть все модули ({count})",,site/modules/React/src/I18n/TranslationCatalogService.php,fee875c9d7d6f816f968d2f387309b86
+"No live widgets registered","Живые виджеты не зарегистрированы",,site/modules/React/src/I18n/TranslationCatalogService.php,9c56c5f5edf8e03b459db2c5b249edae
+"Installed modules have not registered live summary widgets yet. Open the Module Directory to launch any workspace.","Установленные модули ещё не зарегистрировали виджеты сводки. Откройте каталог модулей для запуска пространства.",,site/modules/React/src/I18n/TranslationCatalogService.php,f9ce53c3bca4a20c7704248094bf868e
+"All dashboard widgets are hidden","Все виджеты панели скрыты",,site/modules/React/src/I18n/TranslationCatalogService.php,6bdac11628cbad1b72ef18fcc0f06357
+"You have hidden all widgets for your profile. Re-enable widgets or reset your layout to view live module status.","Вы скрыли все виджеты для своего профиля. Включите виджеты снова или сбросьте макет, чтобы видеть актуальный статус модулей.",,site/modules/React/src/I18n/TranslationCatalogService.php,e5936720f3724385253842dccc5a0564
+"Open Module Directory","Открыть каталог модулей",,site/modules/React/src/I18n/TranslationCatalogService.php,25dc1ae20edec7b8eabfdc2bc53f80a1
+"Open {title}","Открыть {title}",,site/modules/React/src/I18n/TranslationCatalogService.php,aa7230bade66b8b21ac6744ccc6819dd
+"Search modules by name, capability, or topic...","Поиск модулей по названию, возможности или теме...",,site/modules/React/src/I18n/TranslationCatalogService.php,00240549c08261b54bb8a19821613919
+"No matching workspaces found.","Подходящие рабочие пространства не найдены.",,site/modules/React/src/I18n/TranslationCatalogService.php,da75bcd7ecf5b0a8624c1e01b780ee87
+"No matching modules found","Подходящие модули не найдены",,site/modules/React/src/I18n/TranslationCatalogService.php,6e1fe1d3cc72b89885d1f65b4735ae5d
+"No installed module matched your current search or category filter.","Ни один установленный модуль не соответствует текущему поиску или фильтру категории.",,site/modules/React/src/I18n/TranslationCatalogService.php,bbd1d8458fa333c5437b513d289316f6
+"No workspaces available","Нет доступных рабочих пространств",,site/modules/React/src/I18n/TranslationCatalogService.php,5ec633fc43306fc36c3cf968b9428a80
+"Install or enable a workspace module to access it here.","Установите или включите модуль рабочего пространства для доступа к нему здесь.",,site/modules/React/src/I18n/TranslationCatalogService.php,92829baaf46a7f41b1201d8cb5ec2c4c
+"Reset Filter","Сбросить фильтр",,site/modules/React/src/I18n/TranslationCatalogService.php,831b1cff02a12da1b010f8cb39147c8d
+"just now","только что",,site/modules/React/src/I18n/TranslationCatalogService.php,2654992d78afbd40bad349302a6f2b6a
+"{seconds}s ago","{seconds} сек. назад",,site/modules/React/src/I18n/TranslationCatalogService.php,b0f776690c4ba484158a8d04bc119e1d
+"{minutes}m ago","{minutes} мин. назад",,site/modules/React/src/I18n/TranslationCatalogService.php,6c0cef977fba600c9517c8a0c8dff73d
+"Updated by {user}","Обновлено пользователем {user}",,site/modules/React/src/I18n/TranslationCatalogService.php,3fe86196f9f5f89c8c10394b56aa3f29
+"This record was saved in another session while you had it open. Reload the latest version before saving to avoid overwriting those changes.","Эта запись была сохранена в другой сессии, пока она была открыта у вас. Перезагрузите последнюю версию перед сохранением, чтобы не перезаписать чужие изменения.",,site/modules/React/src/I18n/TranslationCatalogService.php,b2286b53112eac23e803d62d29a3cb04
+"Reload Latest","Загрузить свежую версию",,site/modules/React/src/I18n/TranslationCatalogService.php,24353cfc254f52144a8ee7a604b78e2e
+"Dismiss remote save warning","Скрыть предупреждение об удалённом сохранении",,site/modules/React/src/I18n/TranslationCatalogService.php,04e340552c787fa0de7e9bb886824196
+"is currently editing this record ({age}).","сейчас редактирует эту запись ({age}).",,site/modules/React/src/I18n/TranslationCatalogService.php,d747c52f62546f81bf5ef65a8bd67ffd
+"are currently editing this record.","сейчас редактируют эту запись.",,site/modules/React/src/I18n/TranslationCatalogService.php,db9ab4c9b4f4d56676e285c7014a2604
+"Coordinate changes before saving","Согласуйте изменения перед сохранением",,site/modules/React/src/I18n/TranslationCatalogService.php,0e750f0fe1702dd4a27233eaed9f6c7b
+"Search records...","Поиск записей...",,site/modules/React/src/I18n/TranslationCatalogService.php,46878f3052876993d095fb186ece42ee
+"Search...","Поиск...",,site/modules/React/src/I18n/TranslationCatalogService.php,2a37324bb4c331c859044121df3f576b
+"Filters","Фильтры",,site/modules/React/src/I18n/TranslationCatalogService.php,f3f43e30c8c7d78c6ac0173515e57a00
+"Filter view","Фильтр представления",,site/modules/React/src/I18n/TranslationCatalogService.php,5f2338679d4a0e08885fd7c0176eb6e6
+"Filter options...","Фильтр вариантов...",,site/modules/React/src/I18n/TranslationCatalogService.php,e6c46618cf501e7229c8bba662560b1c
+"Clear filters","Сбросить фильтры",,site/modules/React/src/I18n/TranslationCatalogService.php,0b275442d6556cff30b75f37f1918899
+"Columns","Столбцы",,site/modules/React/src/I18n/TranslationCatalogService.php,168b82d33f8073018c50a4f658a02559
+"Toggle Columns","Переключить столбцы",,site/modules/React/src/I18n/TranslationCatalogService.php,29f4c433c598a0d91bf3c3920d2cd645
+"Reset columns","Сбросить столбцы",,site/modules/React/src/I18n/TranslationCatalogService.php,1eb64ecf3802fac71df227dc50ae1c8c
+"Saved Views","Сохранённые виды",,site/modules/React/src/I18n/TranslationCatalogService.php,368ae15de538213cd25b68560eb50521
+"Save View","Сохранить вид",,site/modules/React/src/I18n/TranslationCatalogService.php,753c2861dde3b99d1714edc57004b907
+"Delete saved view","Удалить сохранённый вид",,site/modules/React/src/I18n/TranslationCatalogService.php,d8388976b5db163929cfdd07f96d4f20
+"Delete the saved view ""{label}""?","Удалить сохраненное представление ""{label}""?",,site/modules/React/src/I18n/TranslationCatalogService.php,3706d830efe9fe00dd509aaadb61d105
+"Preset name...","Название вида...",,site/modules/React/src/I18n/TranslationCatalogService.php,51a75ab261668b0d24a1e031a6828717
+"Bulk actions","Массовые действия",,site/modules/React/src/I18n/TranslationCatalogService.php,9ffa4765d2da990741800bbe1ad4e7f8
+"Select all rows","Выбрать все строки",,site/modules/React/src/I18n/TranslationCatalogService.php,2d73c7eae2d36003755c343ddf607e71
+"{count} selected","Выбрано: {count}",,site/modules/React/src/I18n/TranslationCatalogService.php,ef1b031573031a3eca39e4b16e1eacec
+"Order","Порядок",,site/modules/React/src/I18n/TranslationCatalogService.php,a240fa27925a635b08dc28c9e4f9216d
+"Click to edit inline","Нажмите для быстрого редактирования",,site/modules/React/src/I18n/TranslationCatalogService.php,ccbbf00a2560a1789ef802f9254868db
+"No records found","Записи не найдены",,site/modules/React/src/I18n/TranslationCatalogService.php,087fb8756d4add87f2d162304ccd486b
+"Try adjusting your search or filter criteria.","Попробуйте изменить параметры поиска или фильтрации.",,site/modules/React/src/I18n/TranslationCatalogService.php,992535ae7666175356cdab4154658065
+"No items yet","Элементов пока нет",,site/modules/React/src/I18n/TranslationCatalogService.php,529bd24c0f1522f793c736f65df9e8b5
+"Try changing your search or filters.","Попробуйте изменить параметры поиска или фильтры.",,site/modules/React/src/I18n/TranslationCatalogService.php,54e5c834b186eb672b5579a7e468d624
+"Network error while updating this list.","Ошибка сети при обновлении списка.",,site/modules/React/src/I18n/TranslationCatalogService.php,6fce21b16a2046460d7b37c52d73d363
+"Previous","Назад",,site/modules/React/src/I18n/TranslationCatalogService.php,dd1f775e443ff3b9a89270713580a51b
+"Next","Далее",,site/modules/React/src/I18n/TranslationCatalogService.php,10ac3d04253ef7e1ddc73e6091c0cd55
+"Page {page} of {totalPages}","Страница {page} из {totalPages}",,site/modules/React/src/I18n/TranslationCatalogService.php,c55db04c8c3722f2e1d9b2d618134a6c
+"{count} items","Элементов: {count}",,site/modules/React/src/I18n/TranslationCatalogService.php,ad3da129e14b05ef4090066697b98487
+"New Item","Новый элемент",,site/modules/React/src/I18n/TranslationCatalogService.php,0534f4f9b4506ce58165489e030886fb
+"Quick Edit","Быстрое редактирование",,site/modules/React/src/I18n/TranslationCatalogService.php,73f79dd90cb67b7438919d31aef50a3f
+"Quick Edit: {title}","Быстрое редактирование: {title}",,site/modules/React/src/I18n/TranslationCatalogService.php,ae42467b63eb56e2d015c6fa83963e2b
+"Edit key fields without leaving this list.","Редактируйте основные поля, не покидая список.",,site/modules/React/src/I18n/TranslationCatalogService.php,52e4769238ce64e4e6cd49d5ac3ab64d
+"Save Changes","Сохранить изменения",,site/modules/React/src/I18n/TranslationCatalogService.php,f5d6040ed78ca86ddc73296a49b18510
+"Required","Обязательно",,site/modules/React/src/I18n/TranslationCatalogService.php,b651efdb98a5d6bd2b3935d0c3f4a5e2
+"You have unsaved changes.","У вас есть несохранённые изменения.",,site/modules/React/src/I18n/TranslationCatalogService.php,604a9a8f13d447df5c82b824ef2de820
+"Unsaved changes","Несохраненные изменения",,site/modules/React/src/I18n/TranslationCatalogService.php,c227ad77f168e7fd3e21583b324eddf4
+"Leaving or reloading this page will discard the edits you have not saved.","Переход с этой страницы или ее перезагрузка отменит несохраненные изменения.",,site/modules/React/src/I18n/TranslationCatalogService.php,bd426a1b74c862fd727bd7807affbcd8
+"Discard & Leave","Отменить и выйти",,site/modules/React/src/I18n/TranslationCatalogService.php,e4dd258ef1d11b3df71dcc7511814bc3
+"Next Step","Следующий шаг",,site/modules/React/src/I18n/TranslationCatalogService.php,2bb4cbbf4c51025867d47131e79ad05f
+"Please review the highlighted fields.","Проверьте выделенные поля.",,site/modules/React/src/I18n/TranslationCatalogService.php,2d7d932a4de2d9a02bb502fd0bd44940
+"Add item","Добавить элемент",,site/modules/React/src/I18n/TranslationCatalogService.php,ff19c966036b4a0c7350b2fc7e2861c2
+"No items selected.","Элементы не выбраны.",,site/modules/React/src/I18n/TranslationCatalogService.php,e3540df61299a71ee0a3dba1e3a988d5
+"Search items...","Поиск элементов...",,site/modules/React/src/I18n/TranslationCatalogService.php,b41f8031cebdec8ec27ea418116b82b1
+"Select...","Выберите...",,site/modules/React/src/I18n/TranslationCatalogService.php,777475dcd2749b94375fe07762d9d76f
+"Quick column presets","Быстрые пресеты ширины столбцов",,site/modules/React/src/I18n/TranslationCatalogService.php,30b31807f23b112303cbe88e4bd3885d
+"Close field settings","Закрыть настройки поля",,site/modules/React/src/I18n/TranslationCatalogService.php,a5efa83fa11035324583a048ee851d8a
+"{field} settings","Настройки «{field}»",,site/modules/React/src/I18n/TranslationCatalogService.php,56f3586f373702c6e88d0a9950adcc30
+"{field} Settings","Настройки «{field}»",,site/modules/React/src/I18n/TranslationCatalogService.php,2f41fff05e90ad04964206347c566ad4
+"{count} customized","Изменено: {count}",,site/modules/React/src/I18n/TranslationCatalogService.php,60ec0bb0501bbb3c476182751ec0ed50
+"Controls unlock once ""{field}"" has a value.","Параметры разблокируются, когда поле «{field}» будет заполнено.",,site/modules/React/src/I18n/TranslationCatalogService.php,a3e7585435a3e281ab416ee057880a31
+"Click to switch this field · Double-click to switch all fields","Клик — для этого поля · Двойной клик — для всех полей",,site/modules/React/src/I18n/TranslationCatalogService.php,a0c692cb508669a5983a56f72ed26840
+"Now","Сейчас",,site/modules/React/src/I18n/TranslationCatalogService.php,1e1cc9bdeb2f29f5480106aec7e9bc48
+"Today","Сегодня",,site/modules/React/src/I18n/TranslationCatalogService.php,1dd1c5fb7f25cd41b291d43a89e3aefd
+"Clear date","Очистить дату",,site/modules/React/src/I18n/TranslationCatalogService.php,4239f67c37eed41d01bce841e2409c08
+"Copy secret","Скопировать секретный ключ",,site/modules/React/src/I18n/TranslationCatalogService.php,6185b626d083b9955fe99d0f04027add
+"Generate new secret","Сгенерировать новый ключ",,site/modules/React/src/I18n/TranslationCatalogService.php,64481fb3129df05f8fcb93180631a4ad
+"Generate","Создать",,site/modules/React/src/I18n/TranslationCatalogService.php,32b919d18cfaca89383f6000dcc9c031
+"More submit actions","Другие действия сохранения",,site/modules/React/src/I18n/TranslationCatalogService.php,c37a7a14d4f44c0210494b5fa42c9e37
+"Signature pad","Поле для подписи",,site/modules/React/src/I18n/TranslationCatalogService.php,abd47bec49607672c9c93600b8371983
+"Sign above inside the pad","Распишитесь выше внутри поля",,site/modules/React/src/I18n/TranslationCatalogService.php,1c517f38d389db1cbab621070b374f8d
+"Key","Ключ",,site/modules/React/src/I18n/TranslationCatalogService.php,897356954c2cd3d41b221e3f24f99bba
+"Value","Значение",,site/modules/React/src/I18n/TranslationCatalogService.php,689202409e48743b914713f96d93947c
+"Add Row","Добавить строку",,site/modules/React/src/I18n/TranslationCatalogService.php,03e0c5bbd5488f1e5ec282529dac9635
+"Remove row","Удалить строку",,site/modules/React/src/I18n/TranslationCatalogService.php,f22cc12954f8a6326b87efac5ab3bbd4
+"Remove {key}","Удалить {key}",,site/modules/React/src/I18n/TranslationCatalogService.php,ce3c8cbb3dc37630f83efba07e9b8268
+"Remove row {index}","Удалить строку {index}",,site/modules/React/src/I18n/TranslationCatalogService.php,31fffc08b26f9624d2f3fd27f3ce08f2
+"{label} for row {index}","{label} для строки {index}",,site/modules/React/src/I18n/TranslationCatalogService.php,cb52d5dd3a9ad68a8e5868a4f9a3b741
+"{label} for {key}","{label} для {key}",,site/modules/React/src/I18n/TranslationCatalogService.php,783c12811d863273263544624cba931c
+"Move row {index} up","Переместить строку {index} вверх",,site/modules/React/src/I18n/TranslationCatalogService.php,ffbf572468485f1f1fcd17fde801a432
+"Move row {index} down","Переместить строку {index} вниз",,site/modules/React/src/I18n/TranslationCatalogService.php,66a970ee9ff587601c9642de1254c3de
+"Duplicate key ""{key}"". Each key must be unique.","Дублирующийся ключ «{key}». Каждый ключ должен быть уникальным.",,site/modules/React/src/I18n/TranslationCatalogService.php,a6dc8c8c04e2a649a533e79f857d521b
+"""{key}"" is a reserved key name.","«{key}» — зарезервированное имя ключа.",,site/modules/React/src/I18n/TranslationCatalogService.php,1dfe2368b96d2aac54553c2dca729981
+"""{key}"" does not match the required key format.","«{key}» не соответствует требуемому формату ключа.",,site/modules/React/src/I18n/TranslationCatalogService.php,a7e31f9bb0061070a747b3904a1926a8
+"{count} pair(s)","{count} пар(ы)",,site/modules/React/src/I18n/TranslationCatalogService.php,d6a91fddfdad84b2fb4cbf660c4926ab
+"{count} / {max}","{count} / {max}",,site/modules/React/src/I18n/TranslationCatalogService.php,9805fee7dc9e56ac789467789cc569d2
+"No key-value pairs","Нет пар ключ-значение",,site/modules/React/src/I18n/TranslationCatalogService.php,f078e5e545e92e15558c86cdc39aa7af
+"Select item...","Выберите элемент...",,site/modules/React/src/I18n/TranslationCatalogService.php,5c6b43c904ee7affd80f5570dd399c63
+"Select items...","Выберите элементы...",,site/modules/React/src/I18n/TranslationCatalogService.php,f558c7000390c00127ceb4582e767ae3
+"No matching items found.","Подходящие элементы не найдены.",,site/modules/React/src/I18n/TranslationCatalogService.php,e726430042d35ba7a01645e426fb53b9
+"No matching pages found.","Совпадающие страницы не найдены.",,site/modules/React/src/I18n/TranslationCatalogService.php,9aa45d2b5d98b8874f798e5e3ddffca6
+"No selectable pages found.","Доступные для выбора страницы не найдены.",,site/modules/React/src/I18n/TranslationCatalogService.php,ca8915abba799128a5651c5827936136
+"Loading options...","Загрузка вариантов...",,site/modules/React/src/I18n/TranslationCatalogService.php,0d3fbc55dae8e0a41ace8f0dd46140b4
+"Filter available items","Фильтровать доступные элементы",,site/modules/React/src/I18n/TranslationCatalogService.php,d2314e129617756e066162f5ef5acfd0
+"Filter available...","Фильтр доступных...",,site/modules/React/src/I18n/TranslationCatalogService.php,3d70a168f9c147ba1e22a84465ac5370
+"Filter selected items","Фильтровать выбранные элементы",,site/modules/React/src/I18n/TranslationCatalogService.php,a13d1c8ec35ba47884ec9576353517fe
+"Filter selected...","Фильтр выбранных...",,site/modules/React/src/I18n/TranslationCatalogService.php,5b2f45b143e3078a3ae8ebcfa5330ae9
+"Search pages or browse hierarchy below...","Поиск страниц или просмотр иерархии ниже...",,site/modules/React/src/I18n/TranslationCatalogService.php,b31d925a8164bd9e3658d6f2d2d1f9e2
+"Search by title, slug, ID, or path...","Поиск по заголовку, слагу, ID или пути...",,site/modules/React/src/I18n/TranslationCatalogService.php,6a69a62e382f6174c726cba9c4d28ef1
+"Move up","Переместить вверх",,site/modules/React/src/I18n/TranslationCatalogService.php,f77af7695f71323808f9b6e2795cde86
+"Move down","Переместить вниз",,site/modules/React/src/I18n/TranslationCatalogService.php,dd9f0c7e1bb3b749bd423e3544b4a8e3
+"Quick create","Быстрое создание",,site/modules/React/src/I18n/TranslationCatalogService.php,956eaa6186169471a13345860cad0757
+"Creating...","Создание...",,site/modules/React/src/I18n/TranslationCatalogService.php,d930f4451cc35bdcd216273a273cb891
+"Create & Select","Создать и выбрать",,site/modules/React/src/I18n/TranslationCatalogService.php,5fbf6630ad0e74e257c6221f551d6e13
+"Title","Заголовок",,site/modules/React/src/I18n/TranslationCatalogService.php,b78a3223503896721cca1303f776159b
+"Name / Slug (optional)","Имя / Слаг (необязательно)",,site/modules/React/src/I18n/TranslationCatalogService.php,b3cdb9702e78f45ebd3faeea0f0ed5b3
+"Reference","Ссылка",,site/modules/React/src/I18n/TranslationCatalogService.php,63d5049791d9d79d86e9a108b0a999ca
+"Type / Status","Тип / Статус",,site/modules/React/src/I18n/TranslationCatalogService.php,88cf1d6af905d5a419bbb35f779cd96e
+"Link existing","Привязать существующий",,site/modules/React/src/I18n/TranslationCatalogService.php,18add7649141635f4ba1dff73c13b5c9
+"Unlink","Отвязать",,site/modules/React/src/I18n/TranslationCatalogService.php,c1a39b6a60f8b2f87e23d60ab649d994
+"Unlink {label}","Отвязать {label}",,site/modules/React/src/I18n/TranslationCatalogService.php,400c37fc5635f0ed1793e997cdb2ba1c
+"Click to choose images, paste, or drag and drop","Нажмите для выбора изображений, вставьте или перетащите сюда",,site/modules/React/src/I18n/TranslationCatalogService.php,03e3ef1655ba17ad045259b94555a2d9
+"Click to choose files, paste, or drag and drop","Нажмите для выбора файлов, вставьте или перетащите сюда",,site/modules/React/src/I18n/TranslationCatalogService.php,79427c5a78e6e0275a50f59ea1619728
+"Choose image","Выбрать изображение",,site/modules/React/src/I18n/TranslationCatalogService.php,5a31ca938eff79f9dd79786b57b19173
+"Choose file","Выбрать файл",,site/modules/React/src/I18n/TranslationCatalogService.php,cbe55e77ffa67d13322eb1ce7d22f1ba
+"Choose images","Выбрать изображения",,site/modules/React/src/I18n/TranslationCatalogService.php,1fecb03bc5392b317485c838c1e84ef3
+"Choose files","Выбрать файлы",,site/modules/React/src/I18n/TranslationCatalogService.php,cdfe673a8db758eb8fa1809f899aa03b
+"Drop or paste","Перетащите или вставьте",,site/modules/React/src/I18n/TranslationCatalogService.php,f0a4d55c89d2229f32c9d91a586a5e9e
+"Drop to upload","Отпустите для загрузки",,site/modules/React/src/I18n/TranslationCatalogService.php,3f2bd2ae95d2e7c605f5629fb10b0e41
+"Drop file to replace","Перетащите файл для замены",,site/modules/React/src/I18n/TranslationCatalogService.php,ca0f915653f081b70adc5fd7ca4c7333
+"Add images","Добавить изображения",,site/modules/React/src/I18n/TranslationCatalogService.php,959485bd1014cd6d96ed0482b52dd43e
+"Add files","Добавить файлы",,site/modules/React/src/I18n/TranslationCatalogService.php,d39ec66f08507e26fe86aa5325d070df
+"Replace","Заменить",,site/modules/React/src/I18n/TranslationCatalogService.php,0ebe6df8a3ac338e0512acc741823fdb
+"Replacing...","Замена...",,site/modules/React/src/I18n/TranslationCatalogService.php,35d0feeb4bf8f406835933903f60d09f
+"Uploading {count} item(s)...","Загрузка элементов: {count}...",,site/modules/React/src/I18n/TranslationCatalogService.php,97f805ed63fefb1c2aea4bd780e6b419
+"Uploading {name} ({percent}%)","Загрузка {name} ({percent}%)",,site/modules/React/src/I18n/TranslationCatalogService.php,66ef5476db18dd11bb2dd4017241a2d3
+"Upload failed.","Не удалось загрузить файл.",,site/modules/React/src/I18n/TranslationCatalogService.php,cde28f5998d2dd5da84a4ab21143bc67
+"Max {size}","Макс. {size}",,site/modules/React/src/I18n/TranslationCatalogService.php,f808ad8dcf7d15d9fa3a3491d0d0fb5e
+"Up to {count} items","До {count} элементов",,site/modules/React/src/I18n/TranslationCatalogService.php,6f8df2165780ddddf60d042fe5f30480
+"Maximum file limit ({max}) reached.","Достигнут максимальный лимит файлов ({max}).",,site/modules/React/src/I18n/TranslationCatalogService.php,24e421b6a02813b4914e7278f2db14fe
+"Only one file can be dropped when replacing an item.","При замене элемента можно перетащить только один файл.",,site/modules/React/src/I18n/TranslationCatalogService.php,707e57f6a32903d027bb68340d314e79
+"Single item","Один элемент",,site/modules/React/src/I18n/TranslationCatalogService.php,317af23d2bfd619621001d50e7b4d49f
+"{count} item(s)","Элементов: {count}",,site/modules/React/src/I18n/TranslationCatalogService.php,e6396734a11282f165c6f4302f3e49cd
+"Grid view","Вид сеткой",,site/modules/React/src/I18n/TranslationCatalogService.php,b3d7c37eb8d31a2ca32fdc5850306f60
+"Table view","Вид таблицей",,site/modules/React/src/I18n/TranslationCatalogService.php,a02440b6c5ae80c41c0cceb53e494807
+"Drag or use arrow keys to reorder {name}","Перетащите или используйте клавиши со стрелками для сортировки {name}",,site/modules/React/src/I18n/TranslationCatalogService.php,56b5ebf8bba7b715d82f00f1558c5881
+"Edit Media Details","Редактировать параметры медиафайла",,site/modules/React/src/I18n/TranslationCatalogService.php,298110a1a84578b0358e84d902baf39f
+"Configure alt text, multi-language descriptions, tags, focal point, crop, and metadata.","Настройте alt-текст, многоязычные описания, теги, точку фокуса, обрезку и метаданные.",,site/modules/React/src/I18n/TranslationCatalogService.php,e291cdf0521fffd9324b9e2fd8008a06
+"Details","Детали",,site/modules/React/src/I18n/TranslationCatalogService.php,3ec365dd533ddb7ef3d1c111186ce872
+"Focal Point","Точка фокуса",,site/modules/React/src/I18n/TranslationCatalogService.php,39c3c90e90e174f42f16493a20320cd0
+"Crop & Transform","Обрезка и трансформация",,site/modules/React/src/I18n/TranslationCatalogService.php,2fcb83faab71283be03272ed826af689
+"Custom Fields","Пользовательские поля",,site/modules/React/src/I18n/TranslationCatalogService.php,833956a760d996ae61ea8b385e9fb6f0
+"Alt text / description","Alt-текст / описание",,site/modules/React/src/I18n/TranslationCatalogService.php,2927039bc4525f9f53ce7b30946a6fa4
+"Description","Описание",,site/modules/React/src/I18n/TranslationCatalogService.php,b5a7adde1af5c87d7fd797b6245c2a39
+"Describe this image for screen readers and SEO...","Опишите изображение для программ чтения с экрана и SEO...",,site/modules/React/src/I18n/TranslationCatalogService.php,55e6985522f9685200948139eb189f94
+"Add file description...","Добавьте описание файла...",,site/modules/React/src/I18n/TranslationCatalogService.php,c7d134733e9ce852ba0788c86517afbe
+"Missing alt","Нет alt",,site/modules/React/src/I18n/TranslationCatalogService.php,2bbf23509000f5e3f083cb540047c9ba
+"{filled}/{total} langs","{filled}/{total} яз.",,site/modules/React/src/I18n/TranslationCatalogService.php,d0dfb6667480f648febe27aa1cba2496
+"All languages","Все языки",,site/modules/React/src/I18n/TranslationCatalogService.php,abdffc07f137a3b4b3e4df13d2cafee4
+"Single tab","Одна вкладка",,site/modules/React/src/I18n/TranslationCatalogService.php,c52ea324b7f45ea118dea2e1ebf9abff
+"Tags","Теги",,site/modules/React/src/I18n/TranslationCatalogService.php,189f63f277cd73395561651753563065
+"Type a tag and press Enter...","Введите тег и нажмите Enter...",,site/modules/React/src/I18n/TranslationCatalogService.php,d41b1f563e8bc4e2a60951e438a5687d
+"Suggested tags","Рекомендуемые теги",,site/modules/React/src/I18n/TranslationCatalogService.php,02bdc086e3ca9bc63dbc2e91f1e7f18a
+"Select a tag below...","Выберите тег ниже...",,site/modules/React/src/I18n/TranslationCatalogService.php,3ad8313ea124bec9192af51722379a25
+"Inspector sections","Разделы инспектора",,site/modules/React/src/I18n/TranslationCatalogService.php,962d0f3184a7b6b18cb84f4e0dc2060c
+"Select crop area","Выбрать область обрезки",,site/modules/React/src/I18n/TranslationCatalogService.php,152004221c80f3b7576dbf4f5c476f3b
+"Focal point","Точка фокуса",,site/modules/React/src/I18n/TranslationCatalogService.php,88cf7d8a95820c1ae46677696f705093
+"Click anywhere on the image to set the focal point used by smart crops.","Нажмите в любом месте изображения, чтобы задать точку фокуса для умной обрезки.",,site/modules/React/src/I18n/TranslationCatalogService.php,e42a8c430f3c251acdb1703133f94d3c
+"Top {top}% · Left {left}%","Сверху {top}% · Слева {left}%",,site/modules/React/src/I18n/TranslationCatalogService.php,596c3125a0760d54518166d28f005e74
+"Zoom","Масштаб",,site/modules/React/src/I18n/TranslationCatalogService.php,4252b72e6ebcd4d4b4c2e46a786f03d2
+"Center focus","По центру",,site/modules/React/src/I18n/TranslationCatalogService.php,8cc442b86232a6c6281af310110789f7
+"Smart crop previews","Предпросмотр умной обрезки",,site/modules/React/src/I18n/TranslationCatalogService.php,2860e75905a5686de6c0ece062bb69d9
+"Free","Свободно",,site/modules/React/src/I18n/TranslationCatalogService.php,b24ce0cd392a5b0b8dedc66c25213594
+"Original","Оригинал",,site/modules/React/src/I18n/TranslationCatalogService.php,0a52da7a03a6de3beefe54f8c03ad80d
+"Apply crop","Применить обрезку",,site/modules/React/src/I18n/TranslationCatalogService.php,2575788607dc3187209eb5de1f25d04c
+"Clear selection","Сбросить выделение",,site/modules/React/src/I18n/TranslationCatalogService.php,80ffff123555bd5173345bc8f144edeb
+"Rotate -90°","Повернуть на -90°",,site/modules/React/src/I18n/TranslationCatalogService.php,702c5f0c445ec4b1b58c15fed5ebb5da
+"Rotate +90°","Повернуть на +90°",,site/modules/React/src/I18n/TranslationCatalogService.php,7fac3b0f85aa2d977fd48909539cd6d1
+"Rotate 180°","Повернуть на 180°",,site/modules/React/src/I18n/TranslationCatalogService.php,c3f606a2e1fae204da410754e5823017
+"Flip horizontal","Отразить по горизонтали",,site/modules/React/src/I18n/TranslationCatalogService.php,2f96dd2b9788ed9ecbc6f41c312bf455
+"Flip vertical","Отразить по вертикали",,site/modules/React/src/I18n/TranslationCatalogService.php,8373d2f18e29920f78459f34d71040ad
+"Applying image transform...","Применение трансформации изображения...",,site/modules/React/src/I18n/TranslationCatalogService.php,6fd250eded829d856bd37598518b1963
+"Drag on the image to select a crop area, or use quick rotate and flip actions.","Выделите область обрезки перетаскиванием по изображению или используйте быстрый поворот и отражение.",,site/modules/React/src/I18n/TranslationCatalogService.php,b65b7eaa6acece3048f0248fd245273f
+"Dimensions","Размеры",,site/modules/React/src/I18n/TranslationCatalogService.php,f4843c1c797abf1a256c8802b6cd9f51
+"File size","Размер файла",,site/modules/React/src/I18n/TranslationCatalogService.php,1908624a0bca678cd26b99bfd405324e
+"Format","Формат",,site/modules/React/src/I18n/TranslationCatalogService.php,520d0db389f362bf79ef56ca0af3dcab
+"Extracted palette","Извлечённая палитра",,site/modules/React/src/I18n/TranslationCatalogService.php,b6b8492978a983cd73b24953f65bf6e4
+"Extract colors","Извлечь цвета",,site/modules/React/src/I18n/TranslationCatalogService.php,941cf87e001156906fd9cbe73c40f9c4
+"Copied {hex}","Скопировано: {hex}",,site/modules/React/src/I18n/TranslationCatalogService.php,8f3c87ddda603f0268ced2da81cb4d43
+"Copy URL","Копировать URL",,site/modules/React/src/I18n/TranslationCatalogService.php,9de711d6eb379d46caa26e86cdafa0e9
+"URL copied","URL скопирован",,site/modules/React/src/I18n/TranslationCatalogService.php,5dc60c29c1e588a9c66eed361410fccb
+"Open original","Открыть оригинал",,site/modules/React/src/I18n/TranslationCatalogService.php,9d8d8f8322da0dee6443d8d9b4f1d431
+"Download","Скачать",,site/modules/React/src/I18n/TranslationCatalogService.php,801ab24683a4a8c433c6eb40c48bcd9d
+"More actions","Другие действия",,site/modules/React/src/I18n/TranslationCatalogService.php,284716247b12b363fd6b6a71bff0918e
+"Cancel upload","Отменить загрузку",,site/modules/React/src/I18n/TranslationCatalogService.php,59af3165c0a8fb51f60f666aa36827e1
+"Crop selection. Drag to move, or use arrow keys to nudge.","Область обрезки. Перетащите для перемещения или используйте клавиши со стрелками.",,site/modules/React/src/I18n/TranslationCatalogService.php,66022acfa27249d3e437077717d7e15d
+"Crop selection updated","Область обрезки обновлена",,site/modules/React/src/I18n/TranslationCatalogService.php,9557e20351cb7308d552387707580bcd
+"Pending save","Ожидает сохранения",,site/modules/React/src/I18n/TranslationCatalogService.php,118fecf21b98faf1e34d87b25027794e
+"Marked for deletion","Помечено на удаление",,site/modules/React/src/I18n/TranslationCatalogService.php,064315db8457fb92899575dde95d9aa3
+"Undo","Отменить",,site/modules/React/src/I18n/TranslationCatalogService.php,1cdc076b28f70afac5fcedadf99fa119
+"Remove {name}","Удалить {name}",,site/modules/React/src/I18n/TranslationCatalogService.php,37eb9bbace3a75b7364dd9efdb1169b6
+"Inspect & edit {name}","Просмотреть и изменить {name}",,site/modules/React/src/I18n/TranslationCatalogService.php,06abf2bba16bc1841811668bf3855006
+"Previous item","Предыдущий элемент",,site/modules/React/src/I18n/TranslationCatalogService.php,e472ee92cadec6aa540597fd71def57b
+"Next item","Следующий элемент",,site/modules/React/src/I18n/TranslationCatalogService.php,f032241504d7b559c7dd5f986e6947c4
+"File","Файл",,site/modules/React/src/I18n/TranslationCatalogService.php,0b27918290ff5323bea1e3b78a9cf04e
+"Alt / Description","Alt / Описание",,site/modules/React/src/I18n/TranslationCatalogService.php,b7e92f96751d3993796fb15fa1d812a4
+"Info","Инфо",,site/modules/React/src/I18n/TranslationCatalogService.php,4059b0251f66a18cb56f544728796875
+"Image upload is locked.","Загрузка изображений заблокирована.",,site/modules/React/src/I18n/TranslationCatalogService.php,ce4ea9eeb46fc8f25014eeca6961cc72
+"File upload is locked.","Загрузка файлов заблокирована.",,site/modules/React/src/I18n/TranslationCatalogService.php,0d74c2e05c1d054ba1fa67b37ba0dd55
+"Link type","Тип ссылки",,site/modules/React/src/I18n/TranslationCatalogService.php,e40e5cf7707c8efd70e8c220cb692b5e
+"Choose video","Выбрать видео",,site/modules/React/src/I18n/TranslationCatalogService.php,cbe18bc3cdf4dba823a85578f261ae14
+"Drop","Перетащить",,site/modules/React/src/I18n/TranslationCatalogService.php,3e679cff5b3a6f6f8f32aead541a0a12
+"Upload progress","Прогресс загрузки",,site/modules/React/src/I18n/TranslationCatalogService.php,22af9d321feab79bcba1a07feb3fd31d
+"Open {name}","Открыть {name}",,site/modules/React/src/I18n/TranslationCatalogService.php,a64c86443dd775087f080bc37105a756
+"Replace {name}","Заменить {name}",,site/modules/React/src/I18n/TranslationCatalogService.php,1b44146a304770f514430e0e91b55319
+"Replace file","Заменить файл",,site/modules/React/src/I18n/TranslationCatalogService.php,82c8ebc9209c20ea618ffe60b58096a5
+"Remove file","Удалить файл",,site/modules/React/src/I18n/TranslationCatalogService.php,b21f085d08623fc7a5a9da204cc66c8c
+"Clear selected target","Очистить выбранную цель",,site/modules/React/src/I18n/TranslationCatalogService.php,3444f11aee6d3919024746cfa34331e8
+"Search entries","Поиск записей",,site/modules/React/src/I18n/TranslationCatalogService.php,39cfbd4c7c25bd8e49c6e3fd859a66cd
+"Search pages","Поиск страниц",,site/modules/React/src/I18n/TranslationCatalogService.php,9003fc7489e6aec510d20674d0495601
+"Cancel search","Отменить поиск",,site/modules/React/src/I18n/TranslationCatalogService.php,036934cf9842451c835a9981a067d0c3
+"Email address","Адрес эл. почты",,site/modules/React/src/I18n/TranslationCatalogService.php,b357b524e740bc85b9790a0712d84a30
+"Phone number","Номер телефона",,site/modules/React/src/I18n/TranslationCatalogService.php,1f8261d17452a959e013666c5df45e07
+"Link URL or #anchor","URL ссылки или #якорь",,site/modules/React/src/I18n/TranslationCatalogService.php,833c9f57f8dda097dfce3bab0900592a
+"Clear link target","Очистить цель ссылки",,site/modules/React/src/I18n/TranslationCatalogService.php,a17a700e7f4c79b8ee3fabb53366be82
+"Link label","Текст ссылки",,site/modules/React/src/I18n/TranslationCatalogService.php,b9f110a8326f63c00c794d9e91a476f4
+"Link label (optional)","Текст ссылки (необязательно)",,site/modules/React/src/I18n/TranslationCatalogService.php,c5781485b71aedb383635ee88657118a
+"ARIA Label","Метка ARIA",,site/modules/React/src/I18n/TranslationCatalogService.php,ef6e927d0da7bbdb305f2b4c034ec74f
+"Screen reader label (optional)","Метка для программы чтения с экрана (необязательно)",,site/modules/React/src/I18n/TranslationCatalogService.php,75857515cc8d8d3d0ed59d756596e97e
+"Link options","Параметры ссылки",,site/modules/React/src/I18n/TranslationCatalogService.php,192d035ffb07b34f98ade39b20944c49
+"Searching...","Поиск...",,site/modules/React/src/I18n/TranslationCatalogService.php,1243daf593fa297e07ab03bf06d925af
+"Link Options","Параметры ссылки",,site/modules/React/src/I18n/TranslationCatalogService.php,0fb7010ec16c91ec543a440daab8917b
+"Close link options","Закрыть параметры ссылки",,site/modules/React/src/I18n/TranslationCatalogService.php,dd061f3a1eb06d25ee1af9e5b50a9ced
+"Open Target","Цель открытия",,site/modules/React/src/I18n/TranslationCatalogService.php,ee8fc50fbc2bce466f44e66d3aecd60c
+"Same tab (_self)","В этой же вкладке (_self)",,site/modules/React/src/I18n/TranslationCatalogService.php,e60b30326ec2eb67e109e0b586640381
+"New tab (_blank)","В новой вкладке (_blank)",,site/modules/React/src/I18n/TranslationCatalogService.php,c706fdfc0d0b28c44c28d7f3ce648a2b
+"Anchor Fragment (#)","Якорный фрагмент (#)",,site/modules/React/src/I18n/TranslationCatalogService.php,7d4a1ce8e6774a43290e424eaa30b818
+"Query Parameters (?)","Параметры запроса (?)",,site/modules/React/src/I18n/TranslationCatalogService.php,092d68d0dc6bb122560ce4ceff8d2764
+"Rel Attribute","Атрибут Rel",,site/modules/React/src/I18n/TranslationCatalogService.php,a72ed7c691daedb26de8a6a9ecdaa0c0
+"Phone number may only contain digits (0-9) and an optional leading + sign.","Номер телефона может содержать только цифры (0-9) и необязательный начальный знак +.",,site/modules/React/src/I18n/TranslationCatalogService.php,565a52271fd5b9146aad6020c91cb361
+"Enter a valid email address.","Введите корректный адрес электронной почты.",,site/modules/React/src/I18n/TranslationCatalogService.php,d68c7cd2cdc561bc55a5b8e6d8c4dd6c
+"Unsafe URL protocol is not allowed.","Небезопасный протокол URL не допускается.",,site/modules/React/src/I18n/TranslationCatalogService.php,540e3c510aeea10f4e39ed95557c5c64
+"Media upload context is not available for this field.","Контекст загрузки медиа недоступен для этого поля.",,site/modules/React/src/I18n/TranslationCatalogService.php,6a2a95bddcd94963944c67435da617cb
+"Selected file is not supported.","Выбранный файл не поддерживается.",,site/modules/React/src/I18n/TranslationCatalogService.php,a37cf8f4caea217468dca76878c83251
+"Failed to upload file.","Не удалось загрузить файл.",,site/modules/React/src/I18n/TranslationCatalogService.php,74318b4d780ce06c8dbf781c22c73a3a
+"Edit media details & alt text for {name}","Изменить сведения о медиафайле и alt-текст для {name}",,site/modules/React/src/I18n/TranslationCatalogService.php,c2e087a3a42a5ca4e023631c84894ca5
+"Edit media details, alt text & focal point","Изменить сведения о медиафайле, alt-текст и точку фокуса",,site/modules/React/src/I18n/TranslationCatalogService.php,15455322cb5ed157ae075a5e6c553741
+"New tab","В новой вкладке",,site/modules/React/src/I18n/TranslationCatalogService.php,c8a19ea6c79e23a1ee5372c8dbf3c6cf
+"Selected icon","Выбранная иконка",,site/modules/React/src/I18n/TranslationCatalogService.php,c3f172d89f52a265985eab184b7c2f20
+"Select an icon...","Выберите значок...",,site/modules/React/src/I18n/TranslationCatalogService.php,cd625882db0b286414cedd94738e8b32
+"Clear icon","Очистить иконку",,site/modules/React/src/I18n/TranslationCatalogService.php,18276346bd3773253fdc4c1c5e496eb2
+"Reset Style","Сбросить стиль",,site/modules/React/src/I18n/TranslationCatalogService.php,e86a54e13ae40856b7c38b514dc6974b
+"Size (px)","Размер (px)",,site/modules/React/src/I18n/TranslationCatalogService.php,4c36ec3ac2cb9bda46e6dacc2974d282
+"Stroke Width","Толщина линии",,site/modules/React/src/I18n/TranslationCatalogService.php,6d999904323d1dbe38ec7ce97aaff0ef
+"Icon Color","Цвет иконки",,site/modules/React/src/I18n/TranslationCatalogService.php,4315faf12d817f66b65bc0323c514c88
+"Auto (currentColor)","Авто (currentColor)",,site/modules/React/src/I18n/TranslationCatalogService.php,9f00f77ff0d3dc50a92474949b1b2908
+"Custom icon hex color","Пользовательский HEX-цвет иконки",,site/modules/React/src/I18n/TranslationCatalogService.php,88115bf701716c2e29c26f9184efbf40
+"Badge Background & Shape","Фон и форма значка",,site/modules/React/src/I18n/TranslationCatalogService.php,d2ac054ec2a32159792b9e4de3c2a27a
+"No background","Без фона",,site/modules/React/src/I18n/TranslationCatalogService.php,7291417479be88cf7dc61910d3bfae0e
+"Custom badge hex color","Пользовательский HEX-цвет фона",,site/modules/React/src/I18n/TranslationCatalogService.php,277229ed1d0014f6eea9a11c1da88490
+"Icons","Значки",,site/modules/React/src/I18n/TranslationCatalogService.php,8f67973007158337346584551b093be8
+"Search icons...","Поиск значков...",,site/modules/React/src/I18n/TranslationCatalogService.php,96e7dafae5db47a9df8b1c07af9e0421
+"Search {count} icons","Поиск среди {count} значков",,site/modules/React/src/I18n/TranslationCatalogService.php,85bdf2af0dcf18702347117874747126
+"Category","Категория",,site/modules/React/src/I18n/TranslationCatalogService.php,3adbdb3ac060038aa0e6e6c138ef9873
+"All categories","Все категории",,site/modules/React/src/I18n/TranslationCatalogService.php,62f5d708d6ad1fa1ddd9429a65cccbea
+"Style","Стиль",,site/modules/React/src/I18n/TranslationCatalogService.php,ae284f900f9d6e21ba69144cfc91e41b
+"All styles","Все стили",,site/modules/React/src/I18n/TranslationCatalogService.php,964f10b2515883ce73cd5db07fff012e
+"Outline","Контур",,site/modules/React/src/I18n/TranslationCatalogService.php,606b51cc1c9d0b4af394419a22f2ff1f
+"Filled","Заливка",,site/modules/React/src/I18n/TranslationCatalogService.php,d9d586f8c792f8f661052af42536323c
+"Popular","Популярные",,site/modules/React/src/I18n/TranslationCatalogService.php,2cc1943d4c0b46bfcf503a75c44f988b
+"All icons","Все значки",,site/modules/React/src/I18n/TranslationCatalogService.php,b50d4ff0ac4f73bcb419a4396a3989f5
+"No matching icons found.","Подходящие иконки не найдены.",,site/modules/React/src/I18n/TranslationCatalogService.php,6fe730153d19457d273abdb1d0b92039
+"icon","иконка",,site/modules/React/src/I18n/TranslationCatalogService.php,baec6461b0d69dde1b861aefbe375d8a
+"icons","иконок",,site/modules/React/src/I18n/TranslationCatalogService.php,bd21190449b7e88db48fa0f580a8f666
+"Data grid","Таблица данных",,site/modules/React/src/I18n/TranslationCatalogService.php,7a295345749190b5a5897a59e7e18b01
+"Resize column","Изменить ширину столбца",,site/modules/React/src/I18n/TranslationCatalogService.php,7df1f65fec6e37b0f79119bc0ce720ff
+"Select row","Выбрать строку",,site/modules/React/src/I18n/TranslationCatalogService.php,bc2a8d43c82f4a68a6779ba2f249476c
+"Select date","Выбрать дату",,site/modules/React/src/I18n/TranslationCatalogService.php,75319e99a808565ccc78353d84131846
+"Select date range","Выбрать диапазон дат",,site/modules/React/src/I18n/TranslationCatalogService.php,b4a18b61095db7e554460f542e2d3239
+"Clear date range","Очистить диапазон дат",,site/modules/React/src/I18n/TranslationCatalogService.php,2fb455b1a3ba4c2e0d79b32670c5c04b
+"Picked up {label}","{label} захвачен для перемещения",,site/modules/React/src/I18n/TranslationCatalogService.php,ce93e3720beea6b49d923d43987919b0
+"Drag cancelled","Перетаскивание отменено",,site/modules/React/src/I18n/TranslationCatalogService.php,66b83d3db0619bb076ecae33fdd109dd
+"Moved {label} to position {position} of {total}","Элемент {label} перемещён на позицию {position} из {total}",,site/modules/React/src/I18n/TranslationCatalogService.php,ae569efa68481552cbe5e33923d19c9c
+"Moved {label} to position {position}","Элемент {label} перемещён на позицию {position}",,site/modules/React/src/I18n/TranslationCatalogService.php,38e9da47e0eab16ffd44a7e6b618dfe2
+"Moved {label} to level {level}","Элемент {label} перемещён на уровень {level}",,site/modules/React/src/I18n/TranslationCatalogService.php,1cc267f498bf394ded895eac25df023a
+"Moved {label} to position {position}, level {level}","Элемент {label} перемещён на позицию {position}, уровень {level}",,site/modules/React/src/I18n/TranslationCatalogService.php,1912015f31e195903b008f021d9b8298
+"Keyboard Shortcuts","Сочетания клавиш",,site/modules/React/src/I18n/TranslationCatalogService.php,5f405eb9720e7065c9c383de4d40e664
+"Available keyboard shortcuts for navigation, lists, and forms.","Доступные сочетания клавиш для навигации, списков и форм.",,site/modules/React/src/I18n/TranslationCatalogService.php,27fbb88b2855a5a0de3a15e95d15c895
+"Show keyboard shortcuts","Показать сочетания клавиш",,site/modules/React/src/I18n/TranslationCatalogService.php,646dfcfe178c536fd31eb43171ab8c78
+"General","Общие",,site/modules/React/src/I18n/TranslationCatalogService.php,0db377921f4ce762c62526131097968f
+"Forms","Формы",,site/modules/React/src/I18n/TranslationCatalogService.php,6450242531912981c3683cae88a32a66
+"Lists & Viewports","Списки и представления",,site/modules/React/src/I18n/TranslationCatalogService.php,81953616022b71a92d0947ccf6f52537
+"Current Workspace","Текущее пространство",,site/modules/React/src/I18n/TranslationCatalogService.php,76422b37d9f8aec30e9e0495a30cc896
+"Open Quick Switcher","Открыть быстрый переход",,site/modules/React/src/I18n/TranslationCatalogService.php,c621b18a8c00bb06f953efbb61e8c55d
+"Go to Workspace Dashboard","Перейти на главную панель",,site/modules/React/src/I18n/TranslationCatalogService.php,4c72a344fccdeaca018d54eb710db816
+"Return to Admin Panel","Вернуться в панель администратора",,site/modules/React/src/I18n/TranslationCatalogService.php,dca934acd2ab89028ce198d0c5ef216d
+"Switch to section tab 1-9","Переключиться на вкладку раздела 1-9",,site/modules/React/src/I18n/TranslationCatalogService.php,a43c1b654aff7ed6e734242ace5dc9ae
+"Save form","Сохранить форму",,site/modules/React/src/I18n/TranslationCatalogService.php,4abf00b2d141d640a689a148587aa875
+"Save & exit form","Сохранить форму и выйти",,site/modules/React/src/I18n/TranslationCatalogService.php,40a528d102ea5b2f0df81f287d094be4
+"Go back","Вернуться назад",,site/modules/React/src/I18n/TranslationCatalogService.php,22b653bd8d2edcebb9e0036b4ac79262
+"Focus search input","Перейти к поиску",,site/modules/React/src/I18n/TranslationCatalogService.php,1b63a9bb3c18f21673d98e9147789a21
+"Create new item","Создать новый элемент",,site/modules/React/src/I18n/TranslationCatalogService.php,b89eb9120677d96e405c63bd5ceab526
+"Refresh view","Обновить представление",,site/modules/React/src/I18n/TranslationCatalogService.php,aab9285b511b639fa4cf3375ed57e948
+"Close dialog or menu","Закрыть окно или меню",,site/modules/React/src/I18n/TranslationCatalogService.php,3c9caa43cf29e7c9135ba77e4627591a
+"No shortcuts registered on this view.","Для этого представления сочетания клавиш не зарегистрированы.",,site/modules/React/src/I18n/TranslationCatalogService.php,72aa765c765e4bc2b1eeb0f09dbf8a2d
+"Press ? anytime to toggle this help dialog.","Нажмите ? в любой момент, чтобы открыть или закрыть эту справку.",,site/modules/React/src/I18n/TranslationCatalogService.php,73585e8441a501841f3a6c654868561d
 "Please select at least %d item(s).","Выберите не менее %d элемент(ов).",,site/modules/React/src/Media/InteractWithReactMediaInputfield.php,cfecdec3aa548f6f05dd7fb4aac1f0fa
 "Authentication required.","Требуется аутентификация.",,site/modules/React/src/Media/MediaGateway.php,27d1d715bcd77c610edb102f776c63c6
 "Missing mediaToken.","Отсутствует mediaToken.",,site/modules/React/src/Media/MediaGateway.php,2800ea5493d7e5e07b3dac69293b5215
@@ -824,39 +903,39 @@ Configuration,Конфигурация,,site/modules/React/src/Form/FormSchemaSe
 "Target page link field not found.","Целевое поле ссылки страницы не найдено.",,site/modules/React/src/Media/PageLinkMediaHostAdapter.php,32520c9554c10ccfbcb049ada646b456
 "You do not have permission to modify this link media field.","У вас нет прав для изменения этого медиа-поля ссылки.",,site/modules/React/src/Media/PageLinkMediaHostAdapter.php,cd9d5ea980837bc70e94cdcbe7be9098
 "Requested media profile is not enabled on this link field.","Запрошенный медиа-профиль не включён для этого поля ссылки.",,site/modules/React/src/Media/PageLinkMediaHostAdapter.php,ce65978501e94a100eefa52250efea9b
-Records,Записи,,site/modules/React/src/Provider/ArrayDataProvider.php,db231ec39f2ce4d5ad1de0abfc8970d9
-Title,Заголовок,,site/modules/React/src/Provider/ArrayDataProvider.php,b78a3223503896721cca1303f776159b
-Published,Опубликовано,,site/modules/React/src/Provider/ArrayDataProvider.php,9b9d8a976b42e0bd66381797644943d5
-Draft,Черновик,,site/modules/React/src/Provider/ArrayDataProvider.php,f03ab16cd58372c77ba45a3d9a5a1cb9
-Trash,Корзина,,site/modules/React/src/Provider/ArrayDataProvider.php,a7e253cd8dd95da3e20daf45519a8dc2
+"Records","Записи",,site/modules/React/src/Provider/ArrayDataProvider.php,db231ec39f2ce4d5ad1de0abfc8970d9
+"Title","Заголовок",,site/modules/React/src/Provider/ArrayDataProvider.php,b78a3223503896721cca1303f776159b
+"Published","Опубликовано",,site/modules/React/src/Provider/ArrayDataProvider.php,9b9d8a976b42e0bd66381797644943d5
+"Draft","Черновик",,site/modules/React/src/Provider/ArrayDataProvider.php,f03ab16cd58372c77ba45a3d9a5a1cb9
+"Trash","Корзина",,site/modules/React/src/Provider/ArrayDataProvider.php,a7e253cd8dd95da3e20daf45519a8dc2
 "To Do","К выполнению",,site/modules/React/src/Provider/ArrayDataProvider.php,0a386db7267f3ca1e5eb587bcc9ccc7e
 "In Progress","В работе",,site/modules/React/src/Provider/ArrayDataProvider.php,c9413dd7682a45da9ecc9efa8cea47d7
-Done,Готово,,site/modules/React/src/Provider/ArrayDataProvider.php,f92965e2c8a7afb3c1b9a5c09a263636
-Sum,Сумма,,site/modules/React/src/Provider/ArrayDataProvider.php,a0ec87054b5e5b7847d0d8780a01a3d5
-Avg,Сред.,,site/modules/React/src/Provider/ArrayDataProvider.php,5c0c148daa2c67922abe6018b87a759f
-Min,Мин,,site/modules/React/src/Provider/ArrayDataProvider.php,78d811e98514cd165dda532286610fd2
-Max,Макс,,site/modules/React/src/Provider/ArrayDataProvider.php,6a061313d22e51e0f25b7cd4dc065233
-Count,Кол-во,,site/modules/React/src/Provider/ArrayDataProvider.php,e93f994f01c537c4e2f7d8528c3eb5e9
+"Done","Готово",,site/modules/React/src/Provider/ArrayDataProvider.php,f92965e2c8a7afb3c1b9a5c09a263636
+"Sum","Сумма",,site/modules/React/src/Provider/ArrayDataProvider.php,a0ec87054b5e5b7847d0d8780a01a3d5
+"Avg","Сред.",,site/modules/React/src/Provider/ArrayDataProvider.php,5c0c148daa2c67922abe6018b87a759f
+"Min","Мин",,site/modules/React/src/Provider/ArrayDataProvider.php,78d811e98514cd165dda532286610fd2
+"Max","Макс",,site/modules/React/src/Provider/ArrayDataProvider.php,6a061313d22e51e0f25b7cd4dc065233
+"Count","Кол-во",,site/modules/React/src/Provider/ArrayDataProvider.php,e93f994f01c537c4e2f7d8528c3eb5e9
 "Provider is locked.","Провайдер заблокирован.",,site/modules/React/src/Provider/ArrayDataProvider.php,658752e259aa3cb793ee404b4d347bde
 "Title is required.","Заголовок обязателен.",,site/modules/React/src/Provider/ArrayDataProvider.php,c1e190918f029b350e2c7cc16298abcd
 "Created record.","Запись создана.",,site/modules/React/src/Provider/ArrayDataProvider.php,0e8fe2f605fec7f47aaabb8e3812d72c
 "Saved record.","Запись сохранена.",,site/modules/React/src/Provider/ArrayDataProvider.php,a088a84d9a3162ca3e209d202abd694c
 "Record not found.","Запись не найдена.",,site/modules/React/src/Provider/ArrayDataProvider.php,a22645bb48b7bc050a1de2dccbb49bc8
-Pages,Страницы,,site/modules/React/src/Provider/PagesDataProvider.php,453aceb005ceaf54a47da15fee8b2a26
-Title,Заголовок,,site/modules/React/src/Provider/PagesDataProvider.php,b78a3223503896721cca1303f776159b
-Name,Имя,,site/modules/React/src/Provider/PagesDataProvider.php,49ee3087348e8d44e1feda1917443987
-Modified,Изменено,,site/modules/React/src/Provider/PagesDataProvider.php,35e0c8c0b180c95d4e122e55ed62cc64
-Status,Статус,,site/modules/React/src/Provider/PagesDataProvider.php,ec53a8c4f07baed5d8825072c89799be
-Published,Опубликовано,,site/modules/React/src/Provider/PagesDataProvider.php,9b9d8a976b42e0bd66381797644943d5
-Draft,Черновик,,site/modules/React/src/Provider/PagesDataProvider.php,f03ab16cd58372c77ba45a3d9a5a1cb9
-Hidden,Скрыто,,site/modules/React/src/Provider/PagesDataProvider.php,7acdf85c69cc3c5305456a293524386e
-Trash,Корзина,,site/modules/React/src/Provider/PagesDataProvider.php,a7e253cd8dd95da3e20daf45519a8dc2
-Edit,Изменить,,site/modules/React/src/Provider/PagesDataProvider.php,7dce122004969d56ae2e0245cb754d35
+"Pages","Страницы",,site/modules/React/src/Provider/PagesDataProvider.php,453aceb005ceaf54a47da15fee8b2a26
+"Title","Заголовок",,site/modules/React/src/Provider/PagesDataProvider.php,b78a3223503896721cca1303f776159b
+"Name","Имя",,site/modules/React/src/Provider/PagesDataProvider.php,49ee3087348e8d44e1feda1917443987
+"Modified","Изменено",,site/modules/React/src/Provider/PagesDataProvider.php,35e0c8c0b180c95d4e122e55ed62cc64
+"Status","Статус",,site/modules/React/src/Provider/PagesDataProvider.php,ec53a8c4f07baed5d8825072c89799be
+"Published","Опубликовано",,site/modules/React/src/Provider/PagesDataProvider.php,9b9d8a976b42e0bd66381797644943d5
+"Draft","Черновик",,site/modules/React/src/Provider/PagesDataProvider.php,f03ab16cd58372c77ba45a3d9a5a1cb9
+"Hidden","Скрыто",,site/modules/React/src/Provider/PagesDataProvider.php,7acdf85c69cc3c5305456a293524386e
+"Trash","Корзина",,site/modules/React/src/Provider/PagesDataProvider.php,a7e253cd8dd95da3e20daf45519a8dc2
+"Edit","Изменить",,site/modules/React/src/Provider/PagesDataProvider.php,7dce122004969d56ae2e0245cb754d35
 "View Page","Просмотреть страницу",,site/modules/React/src/Provider/PagesDataProvider.php,e4b846392f10f46b032cf155c39a0eaf
-Unpublish,"Снять с публикации",,site/modules/React/src/Provider/PagesDataProvider.php,181e9a13059454fb2212f1bf10f394ac
+"Unpublish","Снять с публикации",,site/modules/React/src/Provider/PagesDataProvider.php,181e9a13059454fb2212f1bf10f394ac
 "Move to Trash","В корзину",,site/modules/React/src/Provider/PagesDataProvider.php,7a289ea949902e8fa53efb4b3b4ccea0
 "Move this page to the trash?","Переместить эту страницу в корзину?",,site/modules/React/src/Provider/PagesDataProvider.php,33615f2cfa0bfa77144f488a75e5d178
-Restore,Восстановить,,site/modules/React/src/Provider/PagesDataProvider.php,2bd339d85ee3b33e513359ce781b60cc
+"Restore","Восстановить",,site/modules/React/src/Provider/PagesDataProvider.php,2bd339d85ee3b33e513359ce781b60cc
 "Delete Permanently","Удалить навсегда",,site/modules/React/src/Provider/PagesDataProvider.php,aa47bb0913144619a0a9abc59d59d6ed
 "Permanently delete this page? This cannot be undone.","Удалить эту страницу навсегда? Это действие нельзя отменить.",,site/modules/React/src/Provider/PagesDataProvider.php,fa6cc4b6c461758d2b18070576eedfd7
 "Provider descriptor cannot be empty.","Дескриптор провайдера не может быть пустым.",,site/modules/React/src/Provider/ProviderRegistry.php,6151eeb136331a45d4eaae6cbafa3c69
@@ -878,11 +957,11 @@ Restore,Восстановить,,site/modules/React/src/Provider/PagesDataProvi
 "Allow Inline Quick Create","Разрешить быстрое создание на месте",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,4f2f55e4fc2b10f739f67704cdfe67ba
 "Allow Custom Free-Text Value","Разрешить произвольное текстовое значение",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,fb45974d23738865bb9f9aa8ba0c28db
 "Show Quick Edit Link","Показывать ссылку быстрого редактирования",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,00a50f5a25c047c56272ce0815116644
-Field,Поле,,site/modules/React/src/Relation/Resource/FieldResourceAdapter.php,6f16a5f8ff5d75ab84c018adacdfcbb7
-Language,Язык,,site/modules/React/src/Relation/Resource/LanguageResourceAdapter.php,4994a8ffeba4ac3140beb89e8d41f174
+"Field","Поле",,site/modules/React/src/Relation/Resource/FieldResourceAdapter.php,6f16a5f8ff5d75ab84c018adacdfcbb7
+"Language","Язык",,site/modules/React/src/Relation/Resource/LanguageResourceAdapter.php,4994a8ffeba4ac3140beb89e8d41f174
 "Default language","Язык по умолчанию",,site/modules/React/src/Relation/Resource/LanguageResourceAdapter.php,c96a77fb323a41898c3b6941a58dc741
-Module,Модуль,,site/modules/React/src/Relation/Resource/ModuleResourceAdapter.php,e55f75a29310d7b60f7ac1d390c8ae42
-Page,Страница,,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,193cfc9be3b995831c6af2fea6650e60
+"Module","Модуль",,site/modules/React/src/Relation/Resource/ModuleResourceAdapter.php,e55f75a29310d7b60f7ac1d390c8ae42
+"Page","Страница",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,193cfc9be3b995831c6af2fea6650e60
 "Quick creation is not enabled for this field.","Быстрое создание не включено для этого поля.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,a46075624a41bed5ef3b48e8887b83bd
 "Title is required to create a page.","Для создания страницы необходим заголовок.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,ff18d6ee9bebcb23f4f1aa98ae4f82f2
 "Target parent page does not exist.","Целевая родительская страница не существует.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,59218d74256d9c13c5b562e26e5695bc
@@ -892,12 +971,12 @@ Page,Страница,,site/modules/React/src/Relation/Resource/PageResourceAdap
 "A target template must be configured to quick-create pages.","Для быстрого создания страниц необходимо настроить целевой шаблон.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,48eca31391fe73ee493dc6afe61e46bf
 "Selected template is not allowed for this relation field.","Выбранный шаблон не разрешён для этого поля связи.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,ed7e42bcc4ec0365a82fa35247114df1
 "Invalid or system template specified for quick create.","Указан недопустимый или системный шаблон для быстрого создания.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,e947024044075ed447c710c122ad8f95
-Permission,Разрешение,,site/modules/React/src/Relation/Resource/PermissionResourceAdapter.php,ed5dea09095f671b801bee34ea28a319
-Role,Роль,,site/modules/React/src/Relation/Resource/RoleResourceAdapter.php,bbbabdbe1b262f75d99d62880b953be1
+"Permission","Разрешение",,site/modules/React/src/Relation/Resource/PermissionResourceAdapter.php,ed5dea09095f671b801bee34ea28a319
+"Role","Роль",,site/modules/React/src/Relation/Resource/RoleResourceAdapter.php,bbbabdbe1b262f75d99d62880b953be1
 "%d permissions","%d разрешений",,site/modules/React/src/Relation/Resource/RoleResourceAdapter.php,f2387342894ffddabc85cd8f0551c18a
-Template,Шаблон,,site/modules/React/src/Relation/Resource/TemplateResourceAdapter.php,278c491bdd8a53618c149c4ac790da34
+"Template","Шаблон",,site/modules/React/src/Relation/Resource/TemplateResourceAdapter.php,278c491bdd8a53618c149c4ac790da34
 "%s · %d fields","%s · %d полей",,site/modules/React/src/Relation/Resource/TemplateResourceAdapter.php,0bada80a587bb611c1eb7ce9cd6a08ac
-User,Пользователь,,site/modules/React/src/Relation/Resource/UserResourceAdapter.php,8f9bfe9d1345237cb3b2b205864da075
+"User","Пользователь",,site/modules/React/src/Relation/Resource/UserResourceAdapter.php,8f9bfe9d1345237cb3b2b205864da075
 "Tiptap Rich Text Editor","Визуальный редактор Tiptap",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,9804aa3a4781cad65c3c0c50e5872d56
 "Inherit Settings From Field","Наследовать настройки из поля",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,aa367ba283ce7ad5128d2f1fa29f195e
 "Optionally inherit Tiptap toolbar, headline, and feature settings from another Tiptap field.","Позволяет наследовать панель инструментов, заголовки и функции из другого поля Tiptap.",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,0f0d701a604a5d57649f94c631462c85
@@ -984,11 +1063,11 @@ User,Пользователь,,site/modules/React/src/Relation/Resource/UserReso
 "Emptied trash.","Корзина очищена.",,site/modules/React/src/Viewport/MarkupReactViewport.php,8758e1979803e88020ed42aca37210f4
 "Updated %d record(s).","Обновлено записей: %d.",,site/modules/React/src/Viewport/MarkupReactViewport.php,2ef993b35328d6a5e000e0908a84a10f
 "Shifted dates on %d record(s).","Сдвинуты даты у %d записей.",,site/modules/React/src/Viewport/MarkupReactViewport.php,9dc33cb5c391141a7962dde8f17b658c
-Publish,Опубликовать,,site/modules/React/src/Viewport/MarkupReactViewport.php,110a4b01beabd53b661a47d4b44bd7a8
+"Publish","Опубликовать",,site/modules/React/src/Viewport/MarkupReactViewport.php,110a4b01beabd53b661a47d4b44bd7a8
 "Set Draft","В черновики",,site/modules/React/src/Viewport/MarkupReactViewport.php,5c657df85958ec041cd9de39ecab133b
 "Move to Trash","В корзину",,site/modules/React/src/Viewport/MarkupReactViewport.php,7a289ea949902e8fa53efb4b3b4ccea0
 "Move selected records to trash?","Переместить выбранные записи в корзину?",,site/modules/React/src/Viewport/MarkupReactViewport.php,bb3d3e97d788b9700e12e7f149580b84
-"Create New",Создать,,site/modules/React/src/Viewport/MarkupReactViewport.php,49e5878c7a1901b0a9baae9e0c774150
+"Create New","Создать",,site/modules/React/src/Viewport/MarkupReactViewport.php,49e5878c7a1901b0a9baae9e0c774150
 "Saved view ""%s"".","Вид «%s» сохранён.",,site/modules/React/src/Viewport/MarkupReactViewport.php,65192d3077f22c24ade9e797bdfe9405
 "Toggled record status.","Статус записи переключён.",,site/modules/React/src/Viewport/MarkupReactViewport.php,64e755510cb927e82b1d25145e0cfdb9
 "Item duplicated.","Элемент дублирован.",,site/modules/React/src/Viewport/MarkupReactViewport.php,b5e22a378685019bc0759c70208333bb
@@ -1006,7 +1085,7 @@ Publish,Опубликовать,,site/modules/React/src/Viewport/MarkupReactVie
 "Record updated.","Запись обновлена.",,site/modules/React/src/Viewport/MarkupReactViewport.php,83d4b207495d6d8e7d0ea9e31391da94
 "Created ""%s"".","Создано «%s».",,site/modules/React/src/Viewport/MarkupReactViewport.php,a1df15e8235050cfb7b8adc51769aeee
 "Exported %s.","Экспортировано: %s.",,site/modules/React/src/Viewport/MarkupReactViewport.php,cba243b6c3b232050531edccfb21f961
-Status,Статус,,site/modules/React/src/Viewport/MarkupReactViewport.php,ec53a8c4f07baed5d8825072c89799be
-Title,Заголовок,,site/modules/React/src/Viewport/MarkupReactViewport.php,b78a3223503896721cca1303f776159b
-Workspace,"Рабочее пространство",,site/modules/React/src/Workspace/WorkspaceLauncherProcess.php,03a21915504df93cf5dba0636080f62e
+"Status","Статус",,site/modules/React/src/Viewport/MarkupReactViewport.php,ec53a8c4f07baed5d8825072c89799be
+"Title","Заголовок",,site/modules/React/src/Viewport/MarkupReactViewport.php,b78a3223503896721cca1303f776159b
+"Workspace","Рабочее пространство",,site/modules/React/src/Workspace/WorkspaceLauncherProcess.php,03a21915504df93cf5dba0636080f62e
 "Manage site content, menus, forms, SEO, API access, and system operations from your personalized dashboard.","Управляйте контентом сайта, меню, формами, SEO, доступом к API и системными операциями с персональной панели.",,site/modules/React/src/Workspace/WorkspaceLauncherProcess.php,983a78b14f319f495894d70da7b761f0

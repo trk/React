@@ -20,8 +20,8 @@ en,fr,description,file,hash
 "Searchable vector icon picker with optional style, size, color, stroke width, and badge customization.","Sélecteur d'icônes vectorielles consultable avec personnalisation optionnelle du style, de la taille, de la couleur, de l'épaisseur de trait et du badge.",,site/modules/React/InputfieldReactIcon.module.php,794a827fc41f230dc533bca17292905a
 "React Image","Image React",,site/modules/React/InputfieldReactImage.module.php,74aa81a1e31ec0a49648bb7cda282a95
 "Image studio field with instant upload, focal point, zoom, crop/rotate/flip, color palette extraction, multi-language alt text, tags, and custom details.","Champ studio d'image avec téléversement instantané, point focal, zoom, recadrage/rotation/retournement, extraction de palette de couleurs, texte alternatif multilingue, étiquettes et détails personnalisés.",,site/modules/React/InputfieldReactImage.module.php,86c6b14fdcd62228fd750e0aa98bc5f9
-Key,Clé,,site/modules/React/InputfieldReactKeyValue.module.php,897356954c2cd3d41b221e3f24f99bba
-Value,Valeur,,site/modules/React/InputfieldReactKeyValue.module.php,689202409e48743b914713f96d93947c
+"Key","Clé",,site/modules/React/InputfieldReactKeyValue.module.php,897356954c2cd3d41b221e3f24f99bba
+"Value","Valeur",,site/modules/React/InputfieldReactKeyValue.module.php,689202409e48743b914713f96d93947c
 "Add Row","Ajouter une ligne",,site/modules/React/InputfieldReactKeyValue.module.php,03e0c5bbd5488f1e5ec282529dac9635
 "Remove row","Supprimer la ligne",,site/modules/React/InputfieldReactKeyValue.module.php,f22cc12954f8a6326b87efac5ab3bbd4
 "Reserved key name(s) are not allowed: %s","Les noms de clé réservés ne sont pas autorisés : %s",,site/modules/React/InputfieldReactKeyValue.module.php,8888ff3f88044cb4b14e14b52c9d24fa
@@ -50,11 +50,11 @@ Value,Valeur,,site/modules/React/InputfieldReactKeyValue.module.php,689202409e48
 "Please enter a valid email address.","Veuillez saisir une adresse e-mail valide.",,site/modules/React/InputfieldReactLink.module.php,b5bccda6d3a04e1d8f79846355290435
 "A destination link is required.","Un lien de destination est requis.",,site/modules/React/InputfieldReactLink.module.php,cb311eaceec84e4ff0ca8c0157d55096
 "Allowed Target Types","Types de cibles autorisés",,site/modules/React/InputfieldReactLink.module.php,f1cd66d64a739d24fa96dc925b54f80b
-Page,Page,,site/modules/React/InputfieldReactLink.module.php,193cfc9be3b995831c6af2fea6650e60
-Entry,Entrée,,site/modules/React/InputfieldReactLink.module.php,b948e8a02a7f8dc9f098c89e8df9892c
+"Page","Page",,site/modules/React/InputfieldReactLink.module.php,193cfc9be3b995831c6af2fea6650e60
+"Entry","Entrée",,site/modules/React/InputfieldReactLink.module.php,b948e8a02a7f8dc9f098c89e8df9892c
 "URL & Anchor (#)","URL et ancre (#)",,site/modules/React/InputfieldReactLink.module.php,c1ef16ed062f7fb8a0da64983519475b
 "Phone (+ & digits)","Téléphone (+ et chiffres)",,site/modules/React/InputfieldReactLink.module.php,23231889af1f705df7ac3422bf86ee74
-Email,E-mail,,site/modules/React/InputfieldReactLink.module.php,ce8ae9da5b7cd6c3df2929543a9af92d
+"Email","E-mail",,site/modules/React/InputfieldReactLink.module.php,ce8ae9da5b7cd6c3df2929543a9af92d
 "Media: File","Média : Fichier",,site/modules/React/InputfieldReactLink.module.php,5f7b9d5782b299fcba0a3abda050471f
 "Media: Image","Média : Image",,site/modules/React/InputfieldReactLink.module.php,d500e7c95997c1cc0ad5d5b21e073e83
 "Media: Video","Média : Vidéo",,site/modules/React/InputfieldReactLink.module.php,779a32ba9edc89809d0b27e6764342b2
@@ -62,9 +62,11 @@ Email,E-mail,,site/modules/React/InputfieldReactLink.module.php,ce8ae9da5b7cd6c3
 "Media Upload Profiles","Profils de téléversement média",,site/modules/React/InputfieldReactLink.module.php,77ced2b23f1d0b3738f2ddb41b411826
 "Optional per-profile allowed file extensions (one per line as `profile: ext1 ext2` or JSON object, e.g. `image: jpg png webp`, `video: mp4 webm`, `file: pdf zip`).","Extensions de fichiers autorisées par profil en option (une par ligne sous `profile: ext1 ext2` ou objet JSON, p. ex. `image: jpg png webp`, `video: mp4 webm`, `file: pdf zip`).",,site/modules/React/InputfieldReactLink.module.php,91ce497b8843b1d124ca5671c8f439d6
 "Enable Link Label","Activer le libellé du lien",,site/modules/React/InputfieldReactLink.module.php,e289053e411e24f58511cc53392258c8
+"Enable ARIA Label","Activer le libellé ARIA",,site/modules/React/InputfieldReactLink.module.php,bda40024bfe4b27f5933ee3ac6ee1199
+"Enable Open Target","Activer la cible d’ouverture",,site/modules/React/InputfieldReactLink.module.php,16799607fada339039ecd6960eb02d2b
+"Enable Rel Attribute","Activer l’attribut Rel",,site/modules/React/InputfieldReactLink.module.php,1ada8b0bffb7087f906ac46dde04c480
 "Enable Anchor (#)","Activer l’ancre (#)",,site/modules/React/InputfieldReactLink.module.php,d8cc17bf84833cf1d80cd2ae3f3c743e
 "Enable Query (?)","Activer les paramètres de requête (?)",,site/modules/React/InputfieldReactLink.module.php,865d39779b680a728606720516de9506
-"Enable Target & Rel","Activer Target et Rel",,site/modules/React/InputfieldReactLink.module.php,3183d9403563356ae9eab5c0181241d9
 "Page Target Selector","Sélecteur de pages cibles",,site/modules/React/InputfieldReactLink.module.php,bf0d0be8666b215319901f7a2a15cbed
 "Entry Target Blueprint","Blueprint des entrées cibles",,site/modules/React/InputfieldReactLink.module.php,2772d73ea6021f1395c49f5055fde9de
 "React Link & Media Target","Lien et cible média React",,site/modules/React/InputfieldReactLink.module.php,a531caf428140f5a29cf7d19fb3d2940
@@ -128,30 +130,30 @@ Email,E-mail,,site/modules/React/InputfieldReactLink.module.php,ce8ae9da5b7cd6c3
 "Text alignment","Alignement du texte",,site/modules/React/InputfieldTiptap.module.php,bf6bee6d96403148e9cd065820514efb
 "Lists and blocks","Listes et blocs",,site/modules/React/InputfieldTiptap.module.php,d4cc4ee7ed191ab03e5323bb2aeaa1e8
 "Insert elements","Insérer des éléments",,site/modules/React/InputfieldTiptap.module.php,9d25389aec7c1c1c49020e85bc25af58
-History,Historique,,site/modules/React/InputfieldTiptap.module.php,16d2b386b2034b9488996466aaae0b57
+"History","Historique",,site/modules/React/InputfieldTiptap.module.php,16d2b386b2034b9488996466aaae0b57
 "Editor utilities","Outils de l’éditeur",,site/modules/React/InputfieldTiptap.module.php,fe04df2097e684b41b8d13309117f9de
 "Formatting group {index}","Groupe de mise en forme {index}",,site/modules/React/InputfieldTiptap.module.php,47217d1a538a5e469656f6e26aaaf903
 "Paragraph style","Style de paragraphe",,site/modules/React/InputfieldTiptap.module.php,9c1a2af13f3c652d42d2f48ce173c554
-Paragraph,Paragraphe,,site/modules/React/InputfieldTiptap.module.php,feaf0a320c3d678ad30dd179b7d21584
+"Paragraph","Paragraphe",,site/modules/React/InputfieldTiptap.module.php,feaf0a320c3d678ad30dd179b7d21584
 "Heading {level}","Titre {level}",,site/modules/React/InputfieldTiptap.module.php,6637c23d78403523cba7438db80aad38
-Bold,Gras,,site/modules/React/InputfieldTiptap.module.php,114c3050111d8b8ddd830b99ccebd246
-Italic,Italique,,site/modules/React/InputfieldTiptap.module.php,1d874710ccdcd46b95397049d2e7500c
-Underline,Souligné,,site/modules/React/InputfieldTiptap.module.php,852721aa5fc738dfedff2945d71da439
-Strikethrough,Barré,,site/modules/React/InputfieldTiptap.module.php,926a51baad949d12035107e5d06e2fdb
+"Bold","Gras",,site/modules/React/InputfieldTiptap.module.php,114c3050111d8b8ddd830b99ccebd246
+"Italic","Italique",,site/modules/React/InputfieldTiptap.module.php,1d874710ccdcd46b95397049d2e7500c
+"Underline","Souligné",,site/modules/React/InputfieldTiptap.module.php,852721aa5fc738dfedff2945d71da439
+"Strikethrough","Barré",,site/modules/React/InputfieldTiptap.module.php,926a51baad949d12035107e5d06e2fdb
 "Inline code","Code en ligne",,site/modules/React/InputfieldTiptap.module.php,9908b5feeb1dee676a41a9700873d646
-Highlight,Surligner,,site/modules/React/InputfieldTiptap.module.php,0b90582f4589d84be89f5b847d4d1ed1
-Subscript,Indice,,site/modules/React/InputfieldTiptap.module.php,928558e2f9712e38d447d674f2672200
-Superscript,Exposant,,site/modules/React/InputfieldTiptap.module.php,6316f99acec341fbdd5cc006dc5a7ba7
+"Highlight","Surligner",,site/modules/React/InputfieldTiptap.module.php,0b90582f4589d84be89f5b847d4d1ed1
+"Subscript","Indice",,site/modules/React/InputfieldTiptap.module.php,928558e2f9712e38d447d674f2672200
+"Superscript","Exposant",,site/modules/React/InputfieldTiptap.module.php,6316f99acec341fbdd5cc006dc5a7ba7
 "Align left","Aligner à gauche",,site/modules/React/InputfieldTiptap.module.php,ded0ea9d2cbb6e177900015adeb15cdf
-"Align center",Centrer,,site/modules/React/InputfieldTiptap.module.php,d5f99d7d9fdc1af3e236ae1833287bc6
+"Align center","Centrer",,site/modules/React/InputfieldTiptap.module.php,d5f99d7d9fdc1af3e236ae1833287bc6
 "Align right","Aligner à droite",,site/modules/React/InputfieldTiptap.module.php,acdc5a7bb60bf1fbc33eee11117fee61
-Justify,Justifier,,site/modules/React/InputfieldTiptap.module.php,4b425d212a2e7b36c38703bfdcd57823
+"Justify","Justifier",,site/modules/React/InputfieldTiptap.module.php,4b425d212a2e7b36c38703bfdcd57823
 "Bullet list","Liste à puces",,site/modules/React/InputfieldTiptap.module.php,54cc4792af10120e92b61096abc4dc19
 "Numbered list","Liste numérotée",,site/modules/React/InputfieldTiptap.module.php,4b985b57aabbd3110aac1d53b1a921c1
 "Task list","Liste de tâches",,site/modules/React/InputfieldTiptap.module.php,65709fd2505ff82f0d43a3c97eb505f3
-Blockquote,Citation,,site/modules/React/InputfieldTiptap.module.php,146aaf1333c7e82829fe9c5c52340b56
+"Blockquote","Citation",,site/modules/React/InputfieldTiptap.module.php,146aaf1333c7e82829fe9c5c52340b56
 "Code block","Bloc de code",,site/modules/React/InputfieldTiptap.module.php,10a7314bd561c0d130bd189a6f836e5e
-Link,Lien,,site/modules/React/InputfieldTiptap.module.php,97e7c9a7d06eac006a28bf05467fcc8b
+"Link","Lien",,site/modules/React/InputfieldTiptap.module.php,97e7c9a7d06eac006a28bf05467fcc8b
 "Remove link","Supprimer le lien",,site/modules/React/InputfieldTiptap.module.php,79820c0aefba8326e5aebd0ecf1a8aaa
 "Insert anchor","Insérer une ancre",,site/modules/React/InputfieldTiptap.module.php,e8550807200f55308bed9d36c0522e0c
 "Insert image","Insérer une image",,site/modules/React/InputfieldTiptap.module.php,21051abf79012a1b2ee50d13b9731a16
@@ -160,18 +162,18 @@ Link,Lien,,site/modules/React/InputfieldTiptap.module.php,97e7c9a7d06eac006a28bf
 "Insert 3x3 table","Insérer un tableau 3x3",,site/modules/React/InputfieldTiptap.module.php,d70e084bf0d08441f9b5d7e82aa7d052
 "Insert horizontal rule","Insérer une ligne horizontale",,site/modules/React/InputfieldTiptap.module.php,4f74d1e915dbe90847aaf6692911fc82
 "Insert block","Insérer un bloc",,site/modules/React/InputfieldTiptap.module.php,a1020668e25156f8e890f258f99e2f51
-Block,Bloc,,site/modules/React/InputfieldTiptap.module.php,e1e4c8c9ccd9fc39c391da4bcd093fb2
+"Block","Bloc",,site/modules/React/InputfieldTiptap.module.php,e1e4c8c9ccd9fc39c391da4bcd093fb2
 "Clear formatting","Effacer la mise en forme",,site/modules/React/InputfieldTiptap.module.php,4494691b92e1f195feb25bd63ee5468b
 "HTML source code","Code source HTML",,site/modules/React/InputfieldTiptap.module.php,239eccf4e5abd114e97207aae0d92197
 "Fullscreen editor","Éditeur plein écran",,site/modules/React/InputfieldTiptap.module.php,95541eb590778e943f559eb56cd7e97c
 "Exit fullscreen","Quitter le plein écran",,site/modules/React/InputfieldTiptap.module.php,b5607fef9c8acba81dc21eda39252e9e
 "Exit Fullscreen","Quitter le plein écran",,site/modules/React/InputfieldTiptap.module.php,53d67f1a3519e1d85c6ce095d78eaea8
-Undo,Annuler,,site/modules/React/InputfieldTiptap.module.php,1cdc076b28f70afac5fcedadf99fa119
-Redo,Rétablir,,site/modules/React/InputfieldTiptap.module.php,5afeaba074ef570dc720caaa855d49f6
+"Undo","Annuler",,site/modules/React/InputfieldTiptap.module.php,1cdc076b28f70afac5fcedadf99fa119
+"Redo","Rétablir",,site/modules/React/InputfieldTiptap.module.php,5afeaba074ef570dc720caaa855d49f6
 "https://example.com or /page/","https://example.com ou /page/",,site/modules/React/InputfieldTiptap.module.php,3ff4d5e5cf852f9e7fc443388d54205f
 "New tab","Nouvel onglet",,site/modules/React/InputfieldTiptap.module.php,c8a19ea6c79e23a1ee5372c8dbf3c6cf
-Unlink,Dissocier,,site/modules/React/InputfieldTiptap.module.php,c1a39b6a60f8b2f87e23d60ab649d994
-Cancel,Annuler,,site/modules/React/InputfieldTiptap.module.php,ea4788705e6873b424c65e91c2846b19
+"Unlink","Dissocier",,site/modules/React/InputfieldTiptap.module.php,c1a39b6a60f8b2f87e23d60ab649d994
+"Cancel","Annuler",,site/modules/React/InputfieldTiptap.module.php,ea4788705e6873b424c65e91c2846b19
 "Enter a valid https://, http://, mailto:, tel:, or relative URL.","Saisissez une URL valide en https://, http://, mailto:, tel: ou relative.",,site/modules/React/InputfieldTiptap.module.php,51df59363ba07f44658778e63a870e90
 "Insert Link","Insérer un lien",,site/modules/React/InputfieldTiptap.module.php,259738ca35a086ce9d269623e5ab5d37
 "Edit Link","Modifier le lien",,site/modules/React/InputfieldTiptap.module.php,ff15d4e97d08c2ab0351169af757b0f2
@@ -184,8 +186,8 @@ Cancel,Annuler,,site/modules/React/InputfieldTiptap.module.php,ea4788705e6873b42
 "Matching pages","Pages correspondantes",,site/modules/React/InputfieldTiptap.module.php,4835e287e634d400f60312eec75c68fa
 "Select Child Page","Sélectionner une sous-page",,site/modules/React/InputfieldTiptap.module.php,d98192e3cb911892e861fde0f812f062
 "This page has no child pages yet.","Cette page n’a pas encore de sous-pages.",,site/modules/React/InputfieldTiptap.module.php,6e4cbfcf3d586a694b96e7728e402a36
-Unpublished,"Non publiée",,site/modules/React/InputfieldTiptap.module.php,0774e163cd7df482edd2abd498189f8b
-Hidden,Masqué,,site/modules/React/InputfieldTiptap.module.php,7acdf85c69cc3c5305456a293524386e
+"Unpublished","Non publiée",,site/modules/React/InputfieldTiptap.module.php,0774e163cd7df482edd2abd498189f8b
+"Hidden","Masqué",,site/modules/React/InputfieldTiptap.module.php,7acdf85c69cc3c5305456a293524386e
 "File source","Source des fichiers",,site/modules/React/InputfieldTiptap.module.php,de7978a84c25bf4e86c1f2451249623d
 "Select Page","Sélectionner une page",,site/modules/React/InputfieldTiptap.module.php,99e7707748ae048e17c5810fad119e0b
 "Select File","Sélectionner un fichier",,site/modules/React/InputfieldTiptap.module.php,1aa14e9f377b528b5537d70fbd35c6a2
@@ -200,12 +202,12 @@ Hidden,Masqué,,site/modules/React/InputfieldTiptap.module.php,7acdf85c69cc3c530
 "Loading files...","Chargement des fichiers...",,site/modules/React/InputfieldTiptap.module.php,1118898b357188ce4702f44b78aec012
 "No files are attached to this item.","Aucun fichier n’est joint à cet élément.",,site/modules/React/InputfieldTiptap.module.php,eee9dbb57af9080d69fd9b9f9c528e77
 "Anchor ID","Identifiant de l’ancre",,site/modules/React/InputfieldTiptap.module.php,8cd18cba08c431ac7c4a497539c42a75
-section-heading,titre-section,,site/modules/React/InputfieldTiptap.module.php,2bc5305834a2e9ed89b00de8a37e2142
+"section-heading","titre-section",,site/modules/React/InputfieldTiptap.module.php,2bc5305834a2e9ed89b00de8a37e2142
 "Anchor ID must start with a letter and contain only letters, numbers, hyphens, or underscores.","L’identifiant d’ancre doit commencer par une lettre et ne contenir que des lettres, chiffres, tirets ou traits de soulignement.",,site/modules/React/InputfieldTiptap.module.php,44e7c55ee7b930c51a50974d3ed141ee
 "Insert Named Anchor","Insérer une ancre nommée",,site/modules/React/InputfieldTiptap.module.php,21acd11ce44fb4af7d5f4ca3f3aae3fe
 "Insert Anchor","Insérer l’ancre",,site/modules/React/InputfieldTiptap.module.php,741f45009593e3e2a206e1350f6ef884
 "Remove Anchor","Supprimer l’ancre",,site/modules/React/InputfieldTiptap.module.php,4bd19ea92cece62cb89d5caa5903ef6b
-Attributes,Attributs,,site/modules/React/InputfieldTiptap.module.php,287234a1ff35a314b5b6bc4e5828e745
+"Attributes","Attributs",,site/modules/React/InputfieldTiptap.module.php,287234a1ff35a314b5b6bc4e5828e745
 "Title attribute","Attribut title",,site/modules/React/InputfieldTiptap.module.php,70e5a90fda0fca373f65e61df0840f77
 "Additional text to describe the link.","Texte supplémentaire décrivant le lien.",,site/modules/React/InputfieldTiptap.module.php,e16e9828d7fde614ac138cfe20c8bfd3
 "Target window","Fenêtre cible",,site/modules/React/InputfieldTiptap.module.php,1638aff8fb7ff24f562e168fed37c329
@@ -219,7 +221,7 @@ Attributes,Attributs,,site/modules/React/InputfieldTiptap.module.php,287234a1ff3
 "/site/assets/files/... or https://...","/site/assets/files/... ou https://...",,site/modules/React/InputfieldTiptap.module.php,d5f733e8b5dd72b4fb76c5d2dc411628
 "Image alt text","Texte alternatif de l’image",,site/modules/React/InputfieldTiptap.module.php,390c85457d882307445484d4813faf0e
 "Alt description","Description alternative",,site/modules/React/InputfieldTiptap.module.php,a60b0112edf57d22b3631e6ed6d30543
-Insert,Insérer,,site/modules/React/InputfieldTiptap.module.php,a458be0f08b7e4ff3c0f633c100176c0
+"Insert","Insérer",,site/modules/React/InputfieldTiptap.module.php,a458be0f08b7e4ff3c0f633c100176c0
 "Enter a valid https://, http://, or site-relative image URL.","Saisissez une URL d’image valide en https://, http:// ou relative au site.",,site/modules/React/InputfieldTiptap.module.php,61bcb67b1abe9c4ec58213e7bd9bb9dc
 "Select Image","Sélectionner une image",,site/modules/React/InputfieldTiptap.module.php,446a6000511ab6fb0711400379a62a04
 "Edit Image","Modifier l’image",,site/modules/React/InputfieldTiptap.module.php,03274f27f51f0c39e06e0e6cd07e01a9
@@ -243,13 +245,13 @@ Insert,Insérer,,site/modules/React/InputfieldTiptap.module.php,a458be0f08b7e4ff
 "Keep aspect ratio","Conserver les proportions",,site/modules/React/InputfieldTiptap.module.php,a899dc2af338fa9316506646c65ae2ca
 "Original size ({width}x{height})","Taille d’origine ({width}x{height})",,site/modules/React/InputfieldTiptap.module.php,f24f439664ac6ae773d42e1e7ff9080b
 "HiDPI / Retina","HiDPI / Retina",,site/modules/React/InputfieldTiptap.module.php,a383ac9cf4adcdadde6c646e2afb66fa
-Alignment,Alignement,,site/modules/React/InputfieldTiptap.module.php,a63706eecfa33f67b315f978392ad7ae
+"Alignment","Alignement",,site/modules/React/InputfieldTiptap.module.php,a63706eecfa33f67b315f978392ad7ae
 "No alignment","Aucun alignement",,site/modules/React/InputfieldTiptap.module.php,f5d0e7591f0d5da3cf09c599fd314c47
 "Show caption (<figure>)","Afficher la légende (<figure>)",,site/modules/React/InputfieldTiptap.module.php,f82fea85cbd2eced26ed189329866d89
 "Caption text","Texte de la légende",,site/modules/React/InputfieldTiptap.module.php,0859dc2279a778d36d21ed0f012a36fc
 "Enter image caption...","Saisir la légende de l’image...",,site/modules/React/InputfieldTiptap.module.php,8788001f25ff9c0bad935d36e8645d29
 "Link to full-size original image","Lien vers l’image originale en taille réelle",,site/modules/React/InputfieldTiptap.module.php,1a00c4ab80e34d7d64e4073a31708225
-Crop,Recadrer,,site/modules/React/InputfieldTiptap.module.php,d388632d05e8826abe4b95de0b110529
+"Crop","Recadrer",,site/modules/React/InputfieldTiptap.module.php,d388632d05e8826abe4b95de0b110529
 "Cancel Crop","Annuler le recadrage",,site/modules/React/InputfieldTiptap.module.php,426afb7d36a4bd61a451860d0eb8a5e9
 "Rotate 90° counter-clockwise","Pivoter de 90° dans le sens antihoraire",,site/modules/React/InputfieldTiptap.module.php,711b2d3ad39641efad41242959cc26bb
 "Rotate 90° clockwise","Pivoter de 90° dans le sens horaire",,site/modules/React/InputfieldTiptap.module.php,c582c6fbe549d884cfdede85f5d4ed0e
@@ -262,7 +264,7 @@ Crop,Recadrer,,site/modules/React/InputfieldTiptap.module.php,d388632d05e8826abe
 "Remove image","Supprimer l’image",,site/modules/React/InputfieldTiptap.module.php,f4701af4852c350444ecdca3fe3ecfc5
 "Drag to resize image","Faire glisser pour redimensionner l’image",,site/modules/React/InputfieldTiptap.module.php,e5e05476cc73f52a1a98cfedad41dc46
 "Table controls","Contrôles du tableau",,site/modules/React/InputfieldTiptap.module.php,4799f2bcbb614f86b00e53b60a45a78f
-Table:,"Tableau :",,site/modules/React/InputfieldTiptap.module.php,4e77d096b16a8f7fd1658f9768e5d7c8
+"Table:","Tableau :",,site/modules/React/InputfieldTiptap.module.php,4e77d096b16a8f7fd1658f9768e5d7c8
 "+ Row","+ Ligne",,site/modules/React/InputfieldTiptap.module.php,9b84429085994afa0f063543620a381a
 "- Row","- Ligne",,site/modules/React/InputfieldTiptap.module.php,bc72b2650697d1a93c5d35932de55cd2
 "+ Column","+ Colonne",,site/modules/React/InputfieldTiptap.module.php,7d1aca503b0b931ba353ac419e0b9bbf
@@ -273,7 +275,7 @@ Table:,"Tableau :",,site/modules/React/InputfieldTiptap.module.php,4e77d096b16a8
 "{count} char","{count} caractère",,site/modules/React/InputfieldTiptap.module.php,aa1e2648b21bf2126e2b557f319f7841
 "{count} chars","{count} caractères",,site/modules/React/InputfieldTiptap.module.php,68d471b5229df8a529b26610ecfe2beb
 "{count} / {max} chars","{count} / {max} caractères",,site/modules/React/InputfieldTiptap.module.php,c235b1f1656f9ee551faa82084e4d92c
-Read-only,"Lecture seule",,site/modules/React/InputfieldTiptap.module.php,d8bd6e60adcc01ce20f509ea6800de8f
+"Read-only","Lecture seule",,site/modules/React/InputfieldTiptap.module.php,d8bd6e60adcc01ce20f509ea6800de8f
 "Switched to rich text view","Basculé vers la vue texte enrichi",,site/modules/React/InputfieldTiptap.module.php,689ac6fa65a3005184c57d4a1d6c22c8
 "Switched to HTML source view","Basculé vers la vue code source HTML",,site/modules/React/InputfieldTiptap.module.php,aeab0d00dad8d2c812a51b97ab4f1919
 "Link applied","Lien appliqué",,site/modules/React/InputfieldTiptap.module.php,23c212ddab1ba757e416c0ca67d585c8
@@ -312,17 +314,17 @@ Read-only,"Lecture seule",,site/modules/React/InputfieldTiptap.module.php,d8bd6e
 "Optional callout title...","Titre d'encadré facultatif...",,site/modules/React/InputfieldTiptap.module.php,4142f7d45f36dd55112ef3b907b343ac
 "Callout title","Titre de l'encadré",,site/modules/React/InputfieldTiptap.module.php,20f27503a616f7a1b1e70b1bba97e1d4
 "Callout style","Style de l'encadré",,site/modules/React/InputfieldTiptap.module.php,6a8b00b5aa7709eaf56ccbbef00bc747
-Info,Infos,,site/modules/React/InputfieldTiptap.module.php,4059b0251f66a18cb56f544728796875
-Tip,Astuce,,site/modules/React/InputfieldTiptap.module.php,12ae2a12586001e30745cb0457586ae3
-Warning,Avertissement,,site/modules/React/InputfieldTiptap.module.php,0eaadb4fcb48a0a0ed7bc9868be9fbaa
-Danger,Danger,,site/modules/React/InputfieldTiptap.module.php,990816b607ebf99b1415760965e4d564
-Figure,Figure,,site/modules/React/InputfieldTiptap.module.php,666df2f48cd16f38212c093999248769
+"Info","Infos",,site/modules/React/InputfieldTiptap.module.php,4059b0251f66a18cb56f544728796875
+"Tip","Astuce",,site/modules/React/InputfieldTiptap.module.php,12ae2a12586001e30745cb0457586ae3
+"Warning","Avertissement",,site/modules/React/InputfieldTiptap.module.php,0eaadb4fcb48a0a0ed7bc9868be9fbaa
+"Danger","Danger",,site/modules/React/InputfieldTiptap.module.php,990816b607ebf99b1415760965e4d564
+"Figure","Figure",,site/modules/React/InputfieldTiptap.module.php,666df2f48cd16f38212c093999248769
 "Figure alignment","Alignement de la figure",,site/modules/React/InputfieldTiptap.module.php,690140430510d155c088630acee6e2a0
-Inline,"En ligne",,site/modules/React/InputfieldTiptap.module.php,0125cf5f3ca38b312ca5d3b511c45a13
-Wide,Large,,site/modules/React/InputfieldTiptap.module.php,e7c770a61dbdf81ca922ae0260e327c1
-Full,"Pleine largeur",,site/modules/React/InputfieldTiptap.module.php,bbd47109890259c0127154db1af26c75
-Left,Gauche,,site/modules/React/InputfieldTiptap.module.php,945d5e233cf7d6240f6b783b36a374ff
-Right,Droite,,site/modules/React/InputfieldTiptap.module.php,92b09c7c48c520c3c55e497875da437c
+"Inline","En ligne",,site/modules/React/InputfieldTiptap.module.php,0125cf5f3ca38b312ca5d3b511c45a13
+"Wide","Large",,site/modules/React/InputfieldTiptap.module.php,e7c770a61dbdf81ca922ae0260e327c1
+"Full","Pleine largeur",,site/modules/React/InputfieldTiptap.module.php,bbd47109890259c0127154db1af26c75
+"Left","Gauche",,site/modules/React/InputfieldTiptap.module.php,945d5e233cf7d6240f6b783b36a374ff
+"Right","Droite",,site/modules/React/InputfieldTiptap.module.php,92b09c7c48c520c3c55e497875da437c
 "Edit image URL and alt text","Modifier l'URL et le texte alternatif de l'image",,site/modules/React/InputfieldTiptap.module.php,c89599958bfed8a5b295e8451da6b211
 "Paste an image URL above to preview the figure","Collez une URL d'image ci-dessus pour prévisualiser",,site/modules/React/InputfieldTiptap.module.php,f91b19f8889bcbaf03d09acc515a4eec
 "Optional figure caption...","Légende facultative...",,site/modules/React/InputfieldTiptap.module.php,a46ac7388768a4cd452e9ca1ae3efd1b
@@ -330,18 +332,18 @@ Right,Droite,,site/modules/React/InputfieldTiptap.module.php,92b09c7c48c520c3c55
 "Toggle accordion preview","Basculer l'aperçu de l'accordéon",,site/modules/React/InputfieldTiptap.module.php,4d6fa081a9fa1ffbaf069b3cb1eccdfb
 "Accordion summary title...","Titre du résumé de l'accordéon...",,site/modules/React/InputfieldTiptap.module.php,0a7a90777fb2566a6bacfba21b650642
 "Accordion summary","Résumé de l'accordéon",,site/modules/React/InputfieldTiptap.module.php,bb4f9c320eb74a3ef523ed67ef016e6c
-Details,Détails,,site/modules/React/InputfieldTiptap.module.php,3ec365dd533ddb7ef3d1c111186ce872
+"Details","Détails",,site/modules/React/InputfieldTiptap.module.php,3ec365dd533ddb7ef3d1c111186ce872
 "Open by default","Ouvert par défaut",,site/modules/React/InputfieldTiptap.module.php,edbb805daf80b5f81eb6228807c5639d
-Pullquote,"Citation mise en exergue",,site/modules/React/InputfieldTiptap.module.php,b68befd5d22055d45ed59015d1799f5f
+"Pullquote","Citation mise en exergue",,site/modules/React/InputfieldTiptap.module.php,b68befd5d22055d45ed59015d1799f5f
 "Citation or author (optional)...","Source ou auteur (facultatif)...",,site/modules/React/InputfieldTiptap.module.php,c9a39f8c2180e2e999174eac6b66d434
 "Quote citation","Source de la citation",,site/modules/React/InputfieldTiptap.module.php,353e19df544aeaf07ca16a5574e2ca09
 "Editorial mini-block","Mini-bloc éditorial",,site/modules/React/InputfieldTiptap.module.php,c2f1f08179fe25f94ee069adb1f7a3d4
 "Add block below","Ajouter un bloc en dessous",,site/modules/React/InputfieldTiptap.module.php,427e0d0f044cd65509b431606fda26f4
 "Block actions (drag to reorder or click for menu)","Actions du bloc (faire glisser pour réorganiser ou cliquer pour le menu)",,site/modules/React/InputfieldTiptap.module.php,d1e28c51bbe474f07cd39ca75cd3ce68
 "Turn into","Convertir en",,site/modules/React/InputfieldTiptap.module.php,2a514c858adedac8dc9796f958a02fd0
-"Move up",Monter,,site/modules/React/InputfieldTiptap.module.php,f77af7695f71323808f9b6e2795cde86
-"Move down",Descendre,,site/modules/React/InputfieldTiptap.module.php,dd9f0c7e1bb3b749bd423e3544b4a8e3
-Duplicate,Dupliquer,,site/modules/React/InputfieldTiptap.module.php,ed75712b0eb1913c28a3872731ffd48d
+"Move up","Monter",,site/modules/React/InputfieldTiptap.module.php,f77af7695f71323808f9b6e2795cde86
+"Move down","Descendre",,site/modules/React/InputfieldTiptap.module.php,dd9f0c7e1bb3b749bd423e3544b4a8e3
+"Duplicate","Dupliquer",,site/modules/React/InputfieldTiptap.module.php,ed75712b0eb1913c28a3872731ffd48d
 "Delete block","Supprimer le bloc",,site/modules/React/InputfieldTiptap.module.php,c613629aef5762bb8c3f646a4035b7fd
 "Block moved to position {position}","Bloc déplacé à la position {position}",,site/modules/React/InputfieldTiptap.module.php,c3557396a86d276224633efcfc1653e3
 "Block duplicated","Bloc dupliqué",,site/modules/React/InputfieldTiptap.module.php,660894298592581bff779586ee243599
@@ -349,12 +351,12 @@ Duplicate,Dupliquer,,site/modules/React/InputfieldTiptap.module.php,ed75712b0eb1
 "Block reorder cancelled","Réorganisation du bloc annulée",,site/modules/React/InputfieldTiptap.module.php,dceeb603259c6b0c25aa70c69e98790e
 "Loading dialog...","Chargement de la boîte de dialogue...",,site/modules/React/InputfieldTiptap.module.php,1a89f3af761388df23eb23f1c1a4458e
 "Value exceeds maximum recommended length of %1$d characters (length=%2$d).","La valeur dépasse la longueur maximale recommandée de %1$d caractères (longueur=%2$d).",,site/modules/React/InputfieldTiptap.module.php,8fe5e05f660fa7d2db7f9bd444d77358
-Tiptap,Tiptap,,site/modules/React/InputfieldTiptap.module.php,da560e1075ec0ffe2da39361aafad4c5
+"Tiptap","Tiptap",,site/modules/React/InputfieldTiptap.module.php,da560e1075ec0ffe2da39361aafad4c5
 "Rich text editor with customizable toolbars, content blocks, HTML cleanup, and multi-language support.","Éditeur de texte enrichi avec barres d'outils personnalisables, blocs de contenu, nettoyage HTML et prise en charge multilingue.",,site/modules/React/InputfieldTiptap.module.php,5fad4bbc356d9e98c87459e275779f84
 "React Cards Viewport","Vue en cartes React",,site/modules/React/MarkupReactCards.module.php,8492cf2ce465c3229a396650598d237c
 "Interactive responsive card grid with search, filters, bulk actions, and pagination.","Grille de cartes interactive et adaptative avec recherche, filtres, actions groupées et pagination.",,site/modules/React/MarkupReactCards.module.php,5978e6de4cd6f6cf8294fbeeb7f0729b
-General,Général,,site/modules/React/MarkupReactTab.module.php,0db377921f4ce762c62526131097968f
-Sections,Sections,,site/modules/React/MarkupReactTab.module.php,855c3eca6c7aaef477b4f03e4699944d
+"General","Général",,site/modules/React/MarkupReactTab.module.php,0db377921f4ce762c62526131097968f
+"Sections","Sections",,site/modules/React/MarkupReactTab.module.php,855c3eca6c7aaef477b4f03e4699944d
 "Tab Bar Style Variant","Variante de style des onglets",,site/modules/React/MarkupReactTab.module.php,ba01477907bfa826253790e6c5605d16
 "Line (Standard Tabs)","Ligne (Onglets standard)",,site/modules/React/MarkupReactTab.module.php,2f9cc5e6dfd7e41c8cae6b5634a73b3d
 "Segmented (Compact Pill Bar)","Segmenté (Barre compacte)",,site/modules/React/MarkupReactTab.module.php,2ef3c75cb7726580a9b9109e233756c8
@@ -368,395 +370,28 @@ Sections,Sections,,site/modules/React/MarkupReactTab.module.php,855c3eca6c7aaef4
 "%d validation errors","%d erreurs de validation","Plural Version",site/modules/React/MarkupReactTab.module.php,ec828fd611b57248325002f413e64b32
 "React Table Viewport","Vue tableau React",,site/modules/React/MarkupReactTable.module.php,0d06a2a4eb05a7e835a3e9a4572fe325
 "Interactive data table with search, filters, inline editing, bulk actions, and pagination.","Tableau de données interactif avec recherche, filtres, édition en ligne, actions groupées et pagination.",,site/modules/React/MarkupReactTable.module.php,81fbcc4d713141339befa98baa9a66f0
-Panel,Panneau,,site/modules/React/React.module.php,b8da6df14bf06283cbf588df6998722e
-"Vector Icon","Icône vectorielle",,site/modules/React/React.module.php,3b8ba766a67302eea93b73f89375cf76
-"Select a vector icon. When populated, this overrides the standard ProcessWire icon above.","Sélectionnez une icône vectorielle. Lorsqu’elle est renseignée, elle remplace l’icône ProcessWire standard ci-dessus.",,site/modules/React/React.module.php,7cd34d6d99b289c33e05ccaf30109f55
-"Relation request failed.","Échec de la requête de relation.",,site/modules/React/React.module.php,417311c0a499db762f631392d723fa39
-Save,Enregistrer,,site/modules/React/React.module.php,c9cc8cce247e49bae79f15173ce97354
-Saving...,Enregistrement...,,site/modules/React/React.module.php,575f5f86d2c7ea113c6710c1037c4465
-Cancel,Annuler,,site/modules/React/React.module.php,ea4788705e6873b424c65e91c2846b19
-Close,Fermer,,site/modules/React/React.module.php,d3d2e617335f08df83599665eef8a418
-Done,Terminé,,site/modules/React/React.module.php,f92965e2c8a7afb3c1b9a5c09a263636
-Open,Ouvrir,,site/modules/React/React.module.php,c3bf447eabe632720a3aa1a7ce401274
-Apply,Appliquer,,site/modules/React/React.module.php,9639e32cab248434a17ab32237cb3b71
-Applying...,Application...,,site/modules/React/React.module.php,2d36bbeac4e19bf400214726dd626cdb
-Executing...,"Exécution en cours...",,site/modules/React/React.module.php,3d202de4cde88726a42cedcd4d1b28c3
-Reset,Réinitialiser,,site/modules/React/React.module.php,526d688f37a86d3c3f27d0c5016eb71d
-Refresh,Actualiser,,site/modules/React/React.module.php,63a6a88c066880c5ac42394a22803ca6
-Refreshing...,Actualisation...,,site/modules/React/React.module.php,01b08e48869f180ff19a7f7aa3c3f18f
-Reload,Recharger,,site/modules/React/React.module.php,4d1c8263ba1036754f8db14a98f9f006
-Search,Rechercher,,site/modules/React/React.module.php,13348442cc6a27032d2b4aa28b75a5d3
-Clear,Effacer,,site/modules/React/React.module.php,dc30bc0c7914db5918da4263fce93ad2
-Create,Créer,,site/modules/React/React.module.php,686e697538050e4664636337cc3b834f
-Edit,Modifier,,site/modules/React/React.module.php,7dce122004969d56ae2e0245cb754d35
-Delete,Supprimer,,site/modules/React/React.module.php,f2a6c498fb90ee345d997f888fce3b18
-Remove,Retirer,,site/modules/React/React.module.php,1063e38cb53d94d386f21227fcd84717
-Dismiss,Ignorer,,site/modules/React/React.module.php,c8a59e7135a20b362f9c768b09454fdb
-Confirm,Confirmer,,site/modules/React/React.module.php,70d9be9b139893aa6c69b5e77e614311
-"Confirm & Execute","Confirmer et exécuter",,site/modules/React/React.module.php,4b8fa648bd96b68b3f5c6477c2a0ae91
-"I understand the impact of this operation and wish to proceed.","Je comprends l’impact de cette opération et souhaite continuer.",,site/modules/React/React.module.php,719ddb902afa805552fb15479a75fee1
-Copy,Copier,,site/modules/React/React.module.php,5fb63579fc981698f97d55bfecb213ea
-Copied,Copié,,site/modules/React/React.module.php,a588b1abc58b8b758c4b34b69b9e10bb
-"Copy command","Copier la commande",,site/modules/React/React.module.php,ec5eefe5a1b8d46ef1126992881fd5d4
-Export,Exporter,,site/modules/React/React.module.php,0095a9fa74d1713e43e370a7d7846224
-Import,Importer,,site/modules/React/React.module.php,72d6d7a1885885bb55a565fd1070581a
-Loading...,Chargement...,,site/modules/React/React.module.php,8524de963f07201e5c086830d370797f
-Actions,Actions,,site/modules/React/React.module.php,06df33001c1d7187fdd81ea1f5b277aa
-Languages,Langues,,site/modules/React/React.module.php,3a08e2e340ab29fd9263af48193cbf8e
-Error,Erreur,,site/modules/React/React.module.php,902b0d55fddef6f8d651fe1035b7d4bd
-Warning,Avertissement,,site/modules/React/React.module.php,0eaadb4fcb48a0a0ed7bc9868be9fbaa
-Notice,Notification,,site/modules/React/React.module.php,24efa7ee4511563b16144f39706d594f
-All,Tous,,site/modules/React/React.module.php,b1c94ca2fbc3e78fc30069c8d0f01680
-None,Aucun,,site/modules/React/React.module.php,6adf97f83acf6453d4a6a4b1070f3754
-Yes,Oui,,site/modules/React/React.module.php,93cba07454f06a4a960172bbd6e2a435
-No,Non,,site/modules/React/React.module.php,bafd7322c6e97d25b6299b5d6fe8920b
-More,Plus,,site/modules/React/React.module.php,d3da97e2d9aee5c8fbe03156ad051c99
-"No matching options","Aucune option correspondante",,site/modules/React/React.module.php,2911d2dd34d4e33b692661c26348cf49
-Unavailable,Indisponible,,site/modules/React/React.module.php,453e6aa38d87b28ccae545967c53004f
-Workspace,"Espace de travail",,site/modules/React/React.module.php,03a21915504df93cf5dba0636080f62e
-Workspaces,"Espaces de travail",,site/modules/React/React.module.php,d5e92609cf510f5f97ac326e907a0540
-"Workspace Dashboard","Tableau de bord de l’espace de travail",,site/modules/React/React.module.php,9ed7329637f544d772bdba0d61398d04
-"All modules, favorites, and customizable dashboard widgets","Tous les modules, favoris et widgets de tableau de bord personnalisables",,site/modules/React/React.module.php,e68b79df7f2d4278eb0960fd444fdf1d
-"Current workspace section","Section actuelle de l’espace de travail",,site/modules/React/React.module.php,5e20a96b94291c93caaf1dce0e254cbc
-"Workspace navigation","Navigation de l’espace de travail",,site/modules/React/React.module.php,8908efdd3ec402154d562f6487b92f1a
-Navigation,Navigation,,site/modules/React/React.module.php,846495f9ceed11accf8879f555936a7d
-"Open workspace navigation menu","Ouvrir le menu de navigation",,site/modules/React/React.module.php,60e439470c45c239b2e25a510fceb428
-"Close navigation menu","Fermer le menu de navigation",,site/modules/React/React.module.php,d302e7fbcdb33e2877353e7f703fd4a9
-"Search workspaces...","Rechercher des espaces de travail...",,site/modules/React/React.module.php,6350e80efab2bb6dc30cea9dba50dac7
-"Search workspaces","Rechercher des espaces de travail",,site/modules/React/React.module.php,28ba707df5d8962217e5a32a08f712f2
-"Find workspace...","Trouver un espace de travail...",,site/modules/React/React.module.php,a59403457c95f98f52aa1e83c7b0a3ca
-"No matching workspaces","Aucun espace correspondant",,site/modules/React/React.module.php,c7d00daca755a67628aad03a442fa01b
-"No matching destinations found.","Aucune destination correspondante trouvée.",,site/modules/React/React.module.php,a8cf450cedad306f1ef0981292eda677
-"Quick Jump","Accès rapide",,site/modules/React/React.module.php,ae69932309b0c8fbd2565f85e2729961
-"Quick Switcher","Sélecteur rapide",,site/modules/React/React.module.php,33a8d8c8002c17b26e545ee67595825f
-"Quick Switcher (Cmd/Ctrl+K)","Sélecteur rapide (Cmd/Ctrl+K)",,site/modules/React/React.module.php,a6d3e2a4b7e5ea93da96575262eb33aa
-"Jump to workspace or section...","Aller à un espace ou une section...",,site/modules/React/React.module.php,9c0902ca5c76e62c37dde2c59b158356
-"Return to {target}","Retour à {target}",,site/modules/React/React.module.php,f6f53af1527f750b7046b85beee500d3
-"Open in Workspace","Ouvrir dans l’espace de travail",,site/modules/React/React.module.php,8509b1db3b9493f2aba2a88439edb1b4
-"Switch to full-screen Workspace view","Basculer vers la vue plein écran de l’espace de travail",,site/modules/React/React.module.php,1c7f26dd5993adca7f5e2d79f997f8cd
-Light,Clair,,site/modules/React/React.module.php,9914a0ce04a7b7b6a8e39bec55064b82
-Dark,Sombre,,site/modules/React/React.module.php,a18366b217ebf811ad1886e4f4f865b2
-System,Système,,site/modules/React/React.module.php,a45da96d0bf6575970f2d27af22be28a
-"Toggle theme","Changer de thème",,site/modules/React/React.module.php,5a9663b09544b4cfe12a13a805d7ac2b
-"Theme mode: {mode} (click to switch)","Mode de thème : {mode} (cliquer pour changer)",,site/modules/React/React.module.php,ed66a4fc75e940c960bb14f16063194f
-"Keyboard shortcuts","Raccourcis clavier",,site/modules/React/React.module.php,de334061ddee0a9008edd133af533c04
-"Dismiss errors","Fermer les erreurs",,site/modules/React/React.module.php,ef12db18801e484d0d785f73cd9604b4
-"Dismiss warnings","Fermer les avertissements",,site/modules/React/React.module.php,990f649a83a3fbbee1d350a1ebf60a06
-"Dismiss notices","Fermer les notifications",,site/modules/React/React.module.php,b4c60e29e6ea44ad2d45ba8ed6b7d594
-"Quick overview, live status cards, and all admin workspaces.","Vue d’ensemble rapide, cartes d’état en direct et tous les espaces d’administration.",,site/modules/React/React.module.php,52c2b43875b6d96f10a81b71b16b145a
-Overview,"Vue d’ensemble",,site/modules/React/React.module.php,3b878279a04dc47d60932cb294d96259
-"Operational Overview","Vue d’ensemble opérationnelle",,site/modules/React/React.module.php,46966912240d4bc4c19fc9389727943b
-"All Workspaces","Tous les espaces",,site/modules/React/React.module.php,ab0a66d5e7f3e6b0db0f96721d64c245
-"Module Directory","Répertoire des modules",,site/modules/React/React.module.php,6a51ac3b146536a407f3429c8f2f2a6f
-Module,Module,,site/modules/React/React.module.php,e55f75a29310d7b60f7ac1d390c8ae42
-Favorites,Favoris,,site/modules/React/React.module.php,d78986947356ddd37b43d57df289dee9
-Pinned,Épinglés,,site/modules/React/React.module.php,3c5e891bff07947cbae2fda89162df9f
-"Pinned Shortcuts","Raccourcis épinglés",,site/modules/React/React.module.php,8f1f46957a9aa8224c8e93f56d57a598
-"Pin to top bar","Épingler à la barre supérieure",,site/modules/React/React.module.php,2fa2c585863a83a9024a0ec877848d73
-"Unpin from top bar","Désépingler de la barre supérieure",,site/modules/React/React.module.php,da80cbcfd56f935cfb9a329f43498112
-"Pin {title}","Épingler {title}",,site/modules/React/React.module.php,ab6cdb7b7a64b4c924c47bd793c2efb4
-"Unpin {title}","Désépingler {title}",,site/modules/React/React.module.php,08775dfb2eeb84f0daf59a8cd3306b4b
-Customize,Personnaliser,,site/modules/React/React.module.php,63a78ed4647f7c63c2929e35ec1c95e3
-"Customize Layout","Personnaliser la disposition",,site/modules/React/React.module.php,c5b7cb3159ecf84ffc87b9725b1225e1
-"Done Customizing","Personnalisation terminée",,site/modules/React/React.module.php,08ee89aac2ef96b48c9c2e718b11b687
-"Export Layout","Exporter la disposition",,site/modules/React/React.module.php,304278e931b0f6f2ff0148dde89436cc
-"Export JSON","Exporter en JSON",,site/modules/React/React.module.php,b7b35e678fac8e3ac6493d09e6bf8ec4
-"Import Layout","Importer la disposition",,site/modules/React/React.module.php,de5f3994e77a62b31078014c34cdcbed
-"Apply a saved workspace layout preset (.json) to update your pinned shortcuts, widget order, widths, and visibility.","Appliquez une disposition enregistrée (.json) pour mettre à jour vos raccourcis épinglés, l’ordre, la largeur et la visibilité des widgets.",,site/modules/React/React.module.php,c009bdc2ef160c5b6dc71628b7c3d5b8
-"Workspace layout preset JSON","JSON de disposition de l’espace de travail",,site/modules/React/React.module.php,180714e8ef26f4474a47f2a98602e0c1
-"Import JSON","Importer un JSON",,site/modules/React/React.module.php,786df2cec47f9e9c005483f4c7ec9632
-"Apply Layout","Appliquer la disposition",,site/modules/React/React.module.php,40ff1f28a90b7724a0653403e9056bfb
-"Choose JSON File","Choisir un fichier JSON",,site/modules/React/React.module.php,276e42ebd90183f60b19ae95fa54864a
-"Reset Layout","Réinitialiser la disposition",,site/modules/React/React.module.php,6dc6e32ad3860bd9cf4e567673bcafbf
-"Reset Default","Rétablir par défaut",,site/modules/React/React.module.php,d6ed253ff449bbd9606eff83124f1f2e
-"Reset Default Layout","Réinitialiser la disposition par défaut",,site/modules/React/React.module.php,1050bc9cb8b00a00620f2aa03bc35d6f
-"Reset your pinned shortcuts, widget order, widths, and hidden widget settings back to defaults?","Réinitialiser vos raccourcis épinglés, l’ordre, la largeur et la visibilité des widgets par défaut ?",,site/modules/React/React.module.php,7ef2e15cc260153efe4516aaf6d53ca3
-"Choose Widgets","Choisir les widgets",,site/modules/React/React.module.php,b14eac5358d6997de83ef1a66ed53767
-"{count} hidden widget(s)","{count} widget(s) masqué(s)",,site/modules/React/React.module.php,f825d68e168242bb62a01fcf2f7c4390
-"Hide widget from dashboard","Masquer le widget du tableau de bord",,site/modules/React/React.module.php,3a271cded492b1af00f478afb36dff88
-"Hide {title}","Masquer {title}",,site/modules/React/React.module.php,989687042589d0714062081623af4493
-"Show {title}","Afficher {title}",,site/modules/React/React.module.php,0995ce286e32d12920a7cbd90265f4c7
-"Looking for a specific capability or administration tool?","Vous cherchez une fonctionnalité ou un outil d’administration précis ?",,site/modules/React/React.module.php,0466da2abbb3b4b8c7d2a8d666eb76e5
-"Browse all {count} modules","Parcourir les {count} modules",,site/modules/React/React.module.php,fee875c9d7d6f816f968d2f387309b86
-"No live widgets registered","Aucun widget en direct enregistré",,site/modules/React/React.module.php,9c56c5f5edf8e03b459db2c5b249edae
-"Installed modules have not registered live summary widgets yet. Open the Module Directory to launch any workspace.","Les modules installés n’ont pas encore enregistré de widgets de synthèse. Ouvrez le répertoire des modules pour lancer un espace.",,site/modules/React/React.module.php,f9ce53c3bca4a20c7704248094bf868e
-"All dashboard widgets are hidden","Tous les widgets du tableau de bord sont masqués",,site/modules/React/React.module.php,6bdac11628cbad1b72ef18fcc0f06357
-"You have hidden all widgets for your profile. Re-enable widgets or reset your layout to view live module status.","Vous avez masqué tous les widgets de votre profil. Réactivez des widgets ou réinitialisez votre mise en page pour voir l'état en direct des modules.",,site/modules/React/React.module.php,e5936720f3724385253842dccc5a0564
-"Open Module Directory","Ouvrir le répertoire des modules",,site/modules/React/React.module.php,25dc1ae20edec7b8eabfdc2bc53f80a1
-"Open {title}","Ouvrir {title}",,site/modules/React/React.module.php,aa7230bade66b8b21ac6744ccc6819dd
-"Search modules by name, capability, or topic...","Rechercher des modules par nom, capacité ou sujet...",,site/modules/React/React.module.php,00240549c08261b54bb8a19821613919
-"No matching workspaces found.","Aucun espace de travail correspondant trouvé.",,site/modules/React/React.module.php,da75bcd7ecf5b0a8624c1e01b780ee87
-"No matching modules found","Aucun module correspondant trouvé",,site/modules/React/React.module.php,6e1fe1d3cc72b89885d1f65b4735ae5d
-"No installed module matched your current search or category filter.","Aucun module installé ne correspond à votre recherche ou filtre de catégorie.",,site/modules/React/React.module.php,bbd1d8458fa333c5437b513d289316f6
-"No workspaces available","Aucun espace de travail disponible",,site/modules/React/React.module.php,5ec633fc43306fc36c3cf968b9428a80
-"Install or enable a workspace module to access it here.","Installez ou activez un module d’espace de travail pour y accéder ici.",,site/modules/React/React.module.php,92829baaf46a7f41b1201d8cb5ec2c4c
-"Reset Filter","Réinitialiser le filtre",,site/modules/React/React.module.php,831b1cff02a12da1b010f8cb39147c8d
-"just now","à l’instant",,site/modules/React/React.module.php,2654992d78afbd40bad349302a6f2b6a
-"{seconds}s ago","il y a {seconds}s",,site/modules/React/React.module.php,b0f776690c4ba484158a8d04bc119e1d
-"{minutes}m ago","il y a {minutes} min",,site/modules/React/React.module.php,6c0cef977fba600c9517c8a0c8dff73d
-"Updated by {user}","Mis à jour par {user}",,site/modules/React/React.module.php,3fe86196f9f5f89c8c10394b56aa3f29
-"This record was saved in another session while you had it open. Reload the latest version before saving to avoid overwriting those changes.","Cet enregistrement a été sauvegardé dans une autre session pendant qu’il était ouvert. Rechargez la dernière version avant d’enregistrer pour éviter d’écraser ces modifications.",,site/modules/React/React.module.php,b2286b53112eac23e803d62d29a3cb04
-"Reload Latest","Recharger la dernière version",,site/modules/React/React.module.php,24353cfc254f52144a8ee7a604b78e2e
-"Dismiss remote save warning","Fermer l’alerte d’enregistrement distant",,site/modules/React/React.module.php,04e340552c787fa0de7e9bb886824196
-"is currently editing this record ({age}).","modifie actuellement cet enregistrement ({age}).",,site/modules/React/React.module.php,d747c52f62546f81bf5ef65a8bd67ffd
-"are currently editing this record.","modifient actuellement cet enregistrement.",,site/modules/React/React.module.php,db9ab4c9b4f4d56676e285c7014a2604
-"Coordinate changes before saving","Coordonnez vos modifications avant d’enregistrer",,site/modules/React/React.module.php,0e750f0fe1702dd4a27233eaed9f6c7b
-"Search records...","Rechercher des enregistrements...",,site/modules/React/React.module.php,46878f3052876993d095fb186ece42ee
-Search...,Rechercher...,,site/modules/React/React.module.php,2a37324bb4c331c859044121df3f576b
-Filters,Filtres,,site/modules/React/React.module.php,f3f43e30c8c7d78c6ac0173515e57a00
-"Filter view","Filtrer la vue",,site/modules/React/React.module.php,5f2338679d4a0e08885fd7c0176eb6e6
-"Filter options...","Filtrer les options...",,site/modules/React/React.module.php,e6c46618cf501e7229c8bba662560b1c
-"Clear filters","Effacer les filtres",,site/modules/React/React.module.php,0b275442d6556cff30b75f37f1918899
-Columns,Colonnes,,site/modules/React/React.module.php,168b82d33f8073018c50a4f658a02559
-"Toggle Columns","Afficher/masquer les colonnes",,site/modules/React/React.module.php,29f4c433c598a0d91bf3c3920d2cd645
-"Reset columns","Réinitialiser les colonnes",,site/modules/React/React.module.php,1eb64ecf3802fac71df227dc50ae1c8c
-"Saved Views","Vues enregistrées",,site/modules/React/React.module.php,368ae15de538213cd25b68560eb50521
-"Save View","Enregistrer la vue",,site/modules/React/React.module.php,753c2861dde3b99d1714edc57004b907
-"Delete saved view","Supprimer la vue enregistrée",,site/modules/React/React.module.php,d8388976b5db163929cfdd07f96d4f20
-"Delete the saved view ""{label}""?","Supprimer la vue enregistrée ""{label}"" ?",,site/modules/React/React.module.php,3706d830efe9fe00dd509aaadb61d105
-"Preset name...","Nom de la vue...",,site/modules/React/React.module.php,51a75ab261668b0d24a1e031a6828717
-"Bulk actions","Actions groupées",,site/modules/React/React.module.php,9ffa4765d2da990741800bbe1ad4e7f8
-"Select all rows","Sélectionner toutes les lignes",,site/modules/React/React.module.php,2d73c7eae2d36003755c343ddf607e71
-"{count} selected","{count} sélectionné(s)",,site/modules/React/React.module.php,ef1b031573031a3eca39e4b16e1eacec
-Order,Ordre,,site/modules/React/React.module.php,a240fa27925a635b08dc28c9e4f9216d
-"Click to edit inline","Cliquer pour modifier en ligne",,site/modules/React/React.module.php,ccbbf00a2560a1789ef802f9254868db
-"No records found","Aucun enregistrement trouvé",,site/modules/React/React.module.php,087fb8756d4add87f2d162304ccd486b
-"Try adjusting your search or filter criteria.","Essayez d’ajuster vos critères de recherche ou de filtrage.",,site/modules/React/React.module.php,992535ae7666175356cdab4154658065
-"No items yet","Aucun élément pour le moment",,site/modules/React/React.module.php,529bd24c0f1522f793c736f65df9e8b5
-"Try changing your search or filters.","Essayez de modifier votre recherche ou vos filtres.",,site/modules/React/React.module.php,54e5c834b186eb672b5579a7e468d624
-"Network error while updating this list.","Erreur réseau lors de l’actualisation de cette liste.",,site/modules/React/React.module.php,6fce21b16a2046460d7b37c52d73d363
-Previous,Précédent,,site/modules/React/React.module.php,dd1f775e443ff3b9a89270713580a51b
-Next,Suivant,,site/modules/React/React.module.php,10ac3d04253ef7e1ddc73e6091c0cd55
-"Page {page} of {totalPages}","Page {page} sur {totalPages}",,site/modules/React/React.module.php,c55db04c8c3722f2e1d9b2d618134a6c
-"{count} items","{count} éléments",,site/modules/React/React.module.php,ad3da129e14b05ef4090066697b98487
-"New Item","Nouvel élément",,site/modules/React/React.module.php,0534f4f9b4506ce58165489e030886fb
-"Quick Edit","Modification rapide",,site/modules/React/React.module.php,73f79dd90cb67b7438919d31aef50a3f
-"Quick Edit: {title}","Modification rapide : {title}",,site/modules/React/React.module.php,ae42467b63eb56e2d015c6fa83963e2b
-"Edit key fields without leaving this list.","Modifiez les champs principaux sans quitter cette liste.",,site/modules/React/React.module.php,52e4769238ce64e4e6cd49d5ac3ab64d
-"Save Changes","Enregistrer les modifications",,site/modules/React/React.module.php,f5d6040ed78ca86ddc73296a49b18510
-Required,Obligatoire,,site/modules/React/React.module.php,b651efdb98a5d6bd2b3935d0c3f4a5e2
-"You have unsaved changes.","Vous avez des modifications non enregistrées.",,site/modules/React/React.module.php,604a9a8f13d447df5c82b824ef2de820
-"Unsaved changes","Modifications non enregistrées",,site/modules/React/React.module.php,c227ad77f168e7fd3e21583b324eddf4
-"Leaving or reloading this page will discard the edits you have not saved.","Quitter ou recharger cette page annulera les modifications que vous n’avez pas enregistrées.",,site/modules/React/React.module.php,bd426a1b74c862fd727bd7807affbcd8
-"Discard & Leave","Ignorer et quitter",,site/modules/React/React.module.php,e4dd258ef1d11b3df71dcc7511814bc3
-"Next Step","Étape suivante",,site/modules/React/React.module.php,2bb4cbbf4c51025867d47131e79ad05f
-"Please review the highlighted fields.","Veuillez vérifier les champs mis en évidence.",,site/modules/React/React.module.php,2d7d932a4de2d9a02bb502fd0bd44940
-"Add item","Ajouter un élément",,site/modules/React/React.module.php,ff19c966036b4a0c7350b2fc7e2861c2
-"No items selected.","Aucun élément sélectionné.",,site/modules/React/React.module.php,e3540df61299a71ee0a3dba1e3a988d5
-"Search items...","Rechercher des éléments...",,site/modules/React/React.module.php,b41f8031cebdec8ec27ea418116b82b1
-Select...,Sélectionner...,,site/modules/React/React.module.php,777475dcd2749b94375fe07762d9d76f
-"Quick column presets","Préréglages rapides de colonnes",,site/modules/React/React.module.php,30b31807f23b112303cbe88e4bd3885d
-"Close field settings","Fermer les paramètres du champ",,site/modules/React/React.module.php,a5efa83fa11035324583a048ee851d8a
-"Click to switch this field · Double-click to switch all fields","Cliquer pour ce champ · Double-cliquer pour tous les champs",,site/modules/React/React.module.php,a0c692cb508669a5983a56f72ed26840
-Now,Maintenant,,site/modules/React/React.module.php,1e1cc9bdeb2f29f5480106aec7e9bc48
-Today,Aujourd’hui,,site/modules/React/React.module.php,1dd1c5fb7f25cd41b291d43a89e3aefd
-"Clear date","Effacer la date",,site/modules/React/React.module.php,4239f67c37eed41d01bce841e2409c08
-"Copy secret","Copier la clé secrète",,site/modules/React/React.module.php,6185b626d083b9955fe99d0f04027add
-"Generate new secret","Générer une nouvelle clé secrète",,site/modules/React/React.module.php,64481fb3129df05f8fcb93180631a4ad
-Generate,Générer,,site/modules/React/React.module.php,32b919d18cfaca89383f6000dcc9c031
-"More submit actions","Autres actions d’envoi",,site/modules/React/React.module.php,c37a7a14d4f44c0210494b5fa42c9e37
-"Signature pad","Zone de signature",,site/modules/React/React.module.php,abd47bec49607672c9c93600b8371983
-"Sign above inside the pad","Signez ci-dessus dans le cadre",,site/modules/React/React.module.php,1c517f38d389db1cbab621070b374f8d
-Key,Clé,,site/modules/React/React.module.php,897356954c2cd3d41b221e3f24f99bba
-Value,Valeur,,site/modules/React/React.module.php,689202409e48743b914713f96d93947c
-"Add Row","Ajouter une ligne",,site/modules/React/React.module.php,03e0c5bbd5488f1e5ec282529dac9635
-"Remove row","Supprimer la ligne",,site/modules/React/React.module.php,f22cc12954f8a6326b87efac5ab3bbd4
-"Remove {key}","Supprimer {key}",,site/modules/React/React.module.php,ce3c8cbb3dc37630f83efba07e9b8268
-"Remove row {index}","Supprimer la ligne {index}",,site/modules/React/React.module.php,31fffc08b26f9624d2f3fd27f3ce08f2
-"{label} for row {index}","{label} pour la ligne {index}",,site/modules/React/React.module.php,cb52d5dd3a9ad68a8e5868a4f9a3b741
-"{label} for {key}","{label} pour {key}",,site/modules/React/React.module.php,783c12811d863273263544624cba931c
-"Move row {index} up","Monter la ligne {index}",,site/modules/React/React.module.php,ffbf572468485f1f1fcd17fde801a432
-"Move row {index} down","Descendre la ligne {index}",,site/modules/React/React.module.php,66a970ee9ff587601c9642de1254c3de
-"Duplicate key ""{key}"". Each key must be unique.","Clé en double « {key} ». Chaque clé doit être unique.",,site/modules/React/React.module.php,a6dc8c8c04e2a649a533e79f857d521b
-"""{key}"" is a reserved key name.","« {key} » est un nom de clé réservé.",,site/modules/React/React.module.php,1dfe2368b96d2aac54553c2dca729981
-"""{key}"" does not match the required key format.","« {key} » ne correspond pas au format de clé requis.",,site/modules/React/React.module.php,a7e31f9bb0061070a747b3904a1926a8
-"{count} pair(s)","{count} paire(s)",,site/modules/React/React.module.php,d6a91fddfdad84b2fb4cbf660c4926ab
-"{count} / {max}","{count} / {max}",,site/modules/React/React.module.php,9805fee7dc9e56ac789467789cc569d2
-"No key-value pairs","Aucune paire clé-valeur",,site/modules/React/React.module.php,f078e5e545e92e15558c86cdc39aa7af
-"Select item...","Sélectionner un élément...",,site/modules/React/React.module.php,5c6b43c904ee7affd80f5570dd399c63
-"Select items...","Sélectionner des éléments...",,site/modules/React/React.module.php,f558c7000390c00127ceb4582e767ae3
-"No matching items found.","Aucun élément correspondant trouvé.",,site/modules/React/React.module.php,e726430042d35ba7a01645e426fb53b9
-"No matching pages found.","Aucune page correspondante trouvée.",,site/modules/React/React.module.php,9aa45d2b5d98b8874f798e5e3ddffca6
-"No selectable pages found.","Aucune page sélectionnable trouvée.",,site/modules/React/React.module.php,ca8915abba799128a5651c5827936136
-"Loading options...","Chargement des options...",,site/modules/React/React.module.php,0d3fbc55dae8e0a41ace8f0dd46140b4
-"Filter available items","Filtrer les éléments disponibles",,site/modules/React/React.module.php,d2314e129617756e066162f5ef5acfd0
-"Filter available...","Filtrer disponibles...",,site/modules/React/React.module.php,3d70a168f9c147ba1e22a84465ac5370
-"Filter selected items","Filtrer les éléments sélectionnés",,site/modules/React/React.module.php,a13d1c8ec35ba47884ec9576353517fe
-"Filter selected...","Filtrer sélectionnés...",,site/modules/React/React.module.php,5b2f45b143e3078a3ae8ebcfa5330ae9
-"Search pages or browse hierarchy below...","Rechercher des pages ou parcourir la hiérarchie ci-dessous...",,site/modules/React/React.module.php,b31d925a8164bd9e3658d6f2d2d1f9e2
-"Search by title, slug, ID, or path...","Rechercher par titre, slug, ID ou chemin...",,site/modules/React/React.module.php,6a69a62e382f6174c726cba9c4d28ef1
-"Move up",Monter,,site/modules/React/React.module.php,f77af7695f71323808f9b6e2795cde86
-"Move down",Descendre,,site/modules/React/React.module.php,dd9f0c7e1bb3b749bd423e3544b4a8e3
-"Quick create","Création rapide",,site/modules/React/React.module.php,956eaa6186169471a13345860cad0757
-Creating...,"Création en cours...",,site/modules/React/React.module.php,d930f4451cc35bdcd216273a273cb891
-"Create & Select","Créer et sélectionner",,site/modules/React/React.module.php,5fbf6630ad0e74e257c6221f551d6e13
-Title,Titre,,site/modules/React/React.module.php,b78a3223503896721cca1303f776159b
-"Name / Slug (optional)","Nom / Slug (facultatif)",,site/modules/React/React.module.php,b3cdb9702e78f45ebd3faeea0f0ed5b3
-Reference,Référence,,site/modules/React/React.module.php,63d5049791d9d79d86e9a108b0a999ca
-"Type / Status","Type / Statut",,site/modules/React/React.module.php,88cf1d6af905d5a419bbb35f779cd96e
-"Link existing","Lier un existant",,site/modules/React/React.module.php,18add7649141635f4ba1dff73c13b5c9
-Unlink,Dissocier,,site/modules/React/React.module.php,c1a39b6a60f8b2f87e23d60ab649d994
-"Unlink {label}","Délier {label}",,site/modules/React/React.module.php,400c37fc5635f0ed1793e997cdb2ba1c
-"Click to choose images, paste, or drag and drop","Cliquez pour choisir des images, collez ou glissez-déposez",,site/modules/React/React.module.php,03e3ef1655ba17ad045259b94555a2d9
-"Click to choose files, paste, or drag and drop","Cliquez pour choisir des fichiers, collez ou glissez-déposez",,site/modules/React/React.module.php,79427c5a78e6e0275a50f59ea1619728
-"Choose image","Choisir une image",,site/modules/React/React.module.php,5a31ca938eff79f9dd79786b57b19173
-"Choose file","Choisir un fichier",,site/modules/React/React.module.php,cbe55e77ffa67d13322eb1ce7d22f1ba
-"Choose images","Choisir des images",,site/modules/React/React.module.php,1fecb03bc5392b317485c838c1e84ef3
-"Choose files","Choisir des fichiers",,site/modules/React/React.module.php,cdfe673a8db758eb8fa1809f899aa03b
-"Drop or paste","Déposer ou coller",,site/modules/React/React.module.php,f0a4d55c89d2229f32c9d91a586a5e9e
-"Drop to upload","Déposer pour téléverser",,site/modules/React/React.module.php,3f2bd2ae95d2e7c605f5629fb10b0e41
-"Drop file to replace","Déposez le fichier pour remplacer",,site/modules/React/React.module.php,ca0f915653f081b70adc5fd7ca4c7333
-"Add images","Ajouter des images",,site/modules/React/React.module.php,959485bd1014cd6d96ed0482b52dd43e
-"Add files","Ajouter des fichiers",,site/modules/React/React.module.php,d39ec66f08507e26fe86aa5325d070df
-Replace,Remplacer,,site/modules/React/React.module.php,0ebe6df8a3ac338e0512acc741823fdb
-Replacing...,Remplacement...,,site/modules/React/React.module.php,35d0feeb4bf8f406835933903f60d09f
-"Uploading {count} item(s)...","Téléversement de {count} élément(s)...",,site/modules/React/React.module.php,97f805ed63fefb1c2aea4bd780e6b419
-"Uploading {name} ({percent}%)","Téléversement de {name} ({percent}%)",,site/modules/React/React.module.php,66ef5476db18dd11bb2dd4017241a2d3
-"Upload failed.","Échec du téléversement.",,site/modules/React/React.module.php,cde28f5998d2dd5da84a4ab21143bc67
-"Max {size}","Max. {size}",,site/modules/React/React.module.php,f808ad8dcf7d15d9fa3a3491d0d0fb5e
-"Up to {count} items","Jusqu’à {count} éléments",,site/modules/React/React.module.php,6f8df2165780ddddf60d042fe5f30480
-"Maximum file limit ({max}) reached.","Limite maximale de fichiers ({max}) atteinte.",,site/modules/React/React.module.php,24e421b6a02813b4914e7278f2db14fe
-"Only one file can be dropped when replacing an item.","Un seul fichier peut être déposé lors du remplacement d’un élément.",,site/modules/React/React.module.php,707e57f6a32903d027bb68340d314e79
-"Single item","Élément unique",,site/modules/React/React.module.php,317af23d2bfd619621001d50e7b4d49f
-"{count} item(s)","{count} élément(s)",,site/modules/React/React.module.php,e6396734a11282f165c6f4302f3e49cd
-"Grid view","Vue en grille",,site/modules/React/React.module.php,b3d7c37eb8d31a2ca32fdc5850306f60
-"Table view","Vue en tableau",,site/modules/React/React.module.php,a02440b6c5ae80c41c0cceb53e494807
-"Drag or use arrow keys to reorder {name}","Glissez ou utilisez les flèches pour réorganiser {name}",,site/modules/React/React.module.php,56b5ebf8bba7b715d82f00f1558c5881
-"Edit Media Details","Modifier les détails du média",,site/modules/React/React.module.php,298110a1a84578b0358e84d902baf39f
-"Configure alt text, multi-language descriptions, tags, focal point, crop, and metadata.","Configurez le texte alternatif, les descriptions multilingues, les étiquettes, le point focal, le recadrage et les métadonnées.",,site/modules/React/React.module.php,e291cdf0521fffd9324b9e2fd8008a06
-Details,Détails,,site/modules/React/React.module.php,3ec365dd533ddb7ef3d1c111186ce872
-"Focal Point","Point focal",,site/modules/React/React.module.php,39c3c90e90e174f42f16493a20320cd0
-"Crop & Transform","Recadrer et transformer",,site/modules/React/React.module.php,2fcb83faab71283be03272ed826af689
-"Custom Fields","Champs personnalisés",,site/modules/React/React.module.php,833956a760d996ae61ea8b385e9fb6f0
-"Alt text / description","Texte alternatif / description",,site/modules/React/React.module.php,2927039bc4525f9f53ce7b30946a6fa4
-Description,Description,,site/modules/React/React.module.php,b5a7adde1af5c87d7fd797b6245c2a39
-"Describe this image for screen readers and SEO...","Décrivez cette image pour les lecteurs d’écran et le SEO...",,site/modules/React/React.module.php,55e6985522f9685200948139eb189f94
-"Add file description...","Ajouter une description du fichier...",,site/modules/React/React.module.php,c7d134733e9ce852ba0788c86517afbe
-"Missing alt","Alt manquant",,site/modules/React/React.module.php,2bbf23509000f5e3f083cb540047c9ba
-"{filled}/{total} langs","{filled}/{total} langues",,site/modules/React/React.module.php,d0dfb6667480f648febe27aa1cba2496
-"All languages","Toutes les langues",,site/modules/React/React.module.php,abdffc07f137a3b4b3e4df13d2cafee4
-"Single tab","Onglet unique",,site/modules/React/React.module.php,c52ea324b7f45ea118dea2e1ebf9abff
-Tags,Étiquettes,,site/modules/React/React.module.php,189f63f277cd73395561651753563065
-"Type a tag and press Enter...","Saisissez une étiquette puis appuyez sur Entrée...",,site/modules/React/React.module.php,d41b1f563e8bc4e2a60951e438a5687d
-"Suggested tags","Étiquettes suggérées",,site/modules/React/React.module.php,02bdc086e3ca9bc63dbc2e91f1e7f18a
-"Select a tag below...","Sélectionnez une étiquette ci-dessous...",,site/modules/React/React.module.php,3ad8313ea124bec9192af51722379a25
-"Inspector sections","Sections de l’inspecteur",,site/modules/React/React.module.php,962d0f3184a7b6b18cb84f4e0dc2060c
-"Select crop area","Sélectionner la zone de recadrage",,site/modules/React/React.module.php,152004221c80f3b7576dbf4f5c476f3b
-"Focal point","Point focal",,site/modules/React/React.module.php,88cf7d8a95820c1ae46677696f705093
-"Click anywhere on the image to set the focal point used by smart crops.","Cliquez n’importe où sur l’image pour définir le point focal utilisé par les recadrages intelligents.",,site/modules/React/React.module.php,e42a8c430f3c251acdb1703133f94d3c
-"Top {top}% · Left {left}%","Haut {top}% · Gauche {left}%",,site/modules/React/React.module.php,596c3125a0760d54518166d28f005e74
-Zoom,Zoom,,site/modules/React/React.module.php,4252b72e6ebcd4d4b4c2e46a786f03d2
-"Center focus","Centrer le point focal",,site/modules/React/React.module.php,8cc442b86232a6c6281af310110789f7
-"Smart crop previews","Aperçus des recadrages intelligents",,site/modules/React/React.module.php,2860e75905a5686de6c0ece062bb69d9
-Free,Libre,,site/modules/React/React.module.php,b24ce0cd392a5b0b8dedc66c25213594
-Original,Original,,site/modules/React/React.module.php,0a52da7a03a6de3beefe54f8c03ad80d
-"Apply crop","Appliquer le recadrage",,site/modules/React/React.module.php,2575788607dc3187209eb5de1f25d04c
-"Clear selection","Effacer la sélection",,site/modules/React/React.module.php,80ffff123555bd5173345bc8f144edeb
-"Rotate -90°","Pivoter -90°",,site/modules/React/React.module.php,702c5f0c445ec4b1b58c15fed5ebb5da
-"Rotate +90°","Pivoter +90°",,site/modules/React/React.module.php,7fac3b0f85aa2d977fd48909539cd6d1
-"Rotate 180°","Pivoter 180°",,site/modules/React/React.module.php,c3f606a2e1fae204da410754e5823017
-"Flip horizontal","Retourner horizontalement",,site/modules/React/React.module.php,2f96dd2b9788ed9ecbc6f41c312bf455
-"Flip vertical","Retourner verticalement",,site/modules/React/React.module.php,8373d2f18e29920f78459f34d71040ad
-"Applying image transform...","Transformation de l’image en cours...",,site/modules/React/React.module.php,6fd250eded829d856bd37598518b1963
-"Drag on the image to select a crop area, or use quick rotate and flip actions.","Faites glisser sur l’image pour sélectionner une zone à recadrer, ou utilisez les actions de rotation et de retournement.",,site/modules/React/React.module.php,b65b7eaa6acece3048f0248fd245273f
-Dimensions,Dimensions,,site/modules/React/React.module.php,f4843c1c797abf1a256c8802b6cd9f51
-"File size","Taille du fichier",,site/modules/React/React.module.php,1908624a0bca678cd26b99bfd405324e
-Format,Format,,site/modules/React/React.module.php,520d0db389f362bf79ef56ca0af3dcab
-"Extracted palette","Palette extraite",,site/modules/React/React.module.php,b6b8492978a983cd73b24953f65bf6e4
-"Extract colors","Extraire les couleurs",,site/modules/React/React.module.php,941cf87e001156906fd9cbe73c40f9c4
-"Copied {hex}","{hex} copié",,site/modules/React/React.module.php,8f3c87ddda603f0268ced2da81cb4d43
-"Copy URL","Copier l’URL",,site/modules/React/React.module.php,9de711d6eb379d46caa26e86cdafa0e9
-"URL copied","URL copiée",,site/modules/React/React.module.php,5dc60c29c1e588a9c66eed361410fccb
-"Open original","Ouvrir l’original",,site/modules/React/React.module.php,9d8d8f8322da0dee6443d8d9b4f1d431
-Download,Télécharger,,site/modules/React/React.module.php,801ab24683a4a8c433c6eb40c48bcd9d
-"More actions","Plus d’actions",,site/modules/React/React.module.php,284716247b12b363fd6b6a71bff0918e
-"Cancel upload","Annuler le téléversement",,site/modules/React/React.module.php,59af3165c0a8fb51f60f666aa36827e1
-"Crop selection. Drag to move, or use arrow keys to nudge.","Sélection de recadrage. Faites glisser pour déplacer ou utilisez les flèches.",,site/modules/React/React.module.php,66022acfa27249d3e437077717d7e15d
-"Crop selection updated","Sélection de recadrage mise à jour",,site/modules/React/React.module.php,9557e20351cb7308d552387707580bcd
-"Pending save","En attente d’enregistrement",,site/modules/React/React.module.php,118fecf21b98faf1e34d87b25027794e
-"Marked for deletion","Marqué pour suppression",,site/modules/React/React.module.php,064315db8457fb92899575dde95d9aa3
-Undo,Annuler,,site/modules/React/React.module.php,1cdc076b28f70afac5fcedadf99fa119
-"Remove {name}","Supprimer {name}",,site/modules/React/React.module.php,37eb9bbace3a75b7364dd9efdb1169b6
-"Inspect & edit {name}","Inspecter et modifier {name}",,site/modules/React/React.module.php,06abf2bba16bc1841811668bf3855006
-"Previous item","Élément précédent",,site/modules/React/React.module.php,e472ee92cadec6aa540597fd71def57b
-"Next item","Élément suivant",,site/modules/React/React.module.php,f032241504d7b559c7dd5f986e6947c4
-File,Fichier,,site/modules/React/React.module.php,0b27918290ff5323bea1e3b78a9cf04e
-"Alt / Description","Texte alternatif / Description",,site/modules/React/React.module.php,b7e92f96751d3993796fb15fa1d812a4
-Info,Infos,,site/modules/React/React.module.php,4059b0251f66a18cb56f544728796875
-"Link type","Type de lien",,site/modules/React/React.module.php,e40e5cf7707c8efd70e8c220cb692b5e
-"Choose video","Choisir une vidéo",,site/modules/React/React.module.php,cbe18bc3cdf4dba823a85578f261ae14
-Drop,Déposer,,site/modules/React/React.module.php,3e679cff5b3a6f6f8f32aead541a0a12
-"Upload progress","Progression du téléversement",,site/modules/React/React.module.php,22af9d321feab79bcba1a07feb3fd31d
-"Open {name}","Ouvrir {name}",,site/modules/React/React.module.php,a64c86443dd775087f080bc37105a756
-"Replace {name}","Remplacer {name}",,site/modules/React/React.module.php,1b44146a304770f514430e0e91b55319
-"Replace file","Remplacer le fichier",,site/modules/React/React.module.php,82c8ebc9209c20ea618ffe60b58096a5
-"Remove file","Supprimer le fichier",,site/modules/React/React.module.php,b21f085d08623fc7a5a9da204cc66c8c
-"Clear selected target","Effacer la cible sélectionnée",,site/modules/React/React.module.php,3444f11aee6d3919024746cfa34331e8
-"Search entries","Rechercher des entrées",,site/modules/React/React.module.php,39cfbd4c7c25bd8e49c6e3fd859a66cd
-"Search pages","Rechercher des pages",,site/modules/React/React.module.php,9003fc7489e6aec510d20674d0495601
-"Cancel search","Annuler la recherche",,site/modules/React/React.module.php,036934cf9842451c835a9981a067d0c3
-"Email address","Adresse e-mail",,site/modules/React/React.module.php,b357b524e740bc85b9790a0712d84a30
-"Phone number","Numéro de téléphone",,site/modules/React/React.module.php,1f8261d17452a959e013666c5df45e07
-"Link URL or #anchor","URL du lien ou #ancre",,site/modules/React/React.module.php,833c9f57f8dda097dfce3bab0900592a
-"Clear link target","Effacer la cible du lien",,site/modules/React/React.module.php,a17a700e7f4c79b8ee3fabb53366be82
-"Link label","Libellé du lien",,site/modules/React/React.module.php,b9f110a8326f63c00c794d9e91a476f4
-"Link label (optional)","Libellé du lien (facultatif)",,site/modules/React/React.module.php,c5781485b71aedb383635ee88657118a
-"Link options","Options du lien",,site/modules/React/React.module.php,192d035ffb07b34f98ade39b20944c49
-Searching...,Recherche...,,site/modules/React/React.module.php,1243daf593fa297e07ab03bf06d925af
-"Link Options","Options du lien",,site/modules/React/React.module.php,0fb7010ec16c91ec543a440daab8917b
-"Close link options","Fermer les options du lien",,site/modules/React/React.module.php,dd061f3a1eb06d25ee1af9e5b50a9ced
-"Open Target","Cible d’ouverture",,site/modules/React/React.module.php,ee8fc50fbc2bce466f44e66d3aecd60c
-"Same tab (_self)","Même onglet (_self)",,site/modules/React/React.module.php,e60b30326ec2eb67e109e0b586640381
-"New tab (_blank)","Nouvel onglet (_blank)",,site/modules/React/React.module.php,c706fdfc0d0b28c44c28d7f3ce648a2b
-"Anchor Fragment (#)","Fragment d’ancre (#)",,site/modules/React/React.module.php,7d4a1ce8e6774a43290e424eaa30b818
-"Query Parameters (?)","Paramètres de requête (?)",,site/modules/React/React.module.php,092d68d0dc6bb122560ce4ceff8d2764
-"Title Attribute","Attribut Title",,site/modules/React/React.module.php,d79162782feef239dca92bdaf1d87485
-"Accessible link title (optional)","Titre accessible du lien (facultatif)",,site/modules/React/React.module.php,3b65caffe66f7665a832bdfd517fa0f5
-"Rel Attribute","Attribut Rel",,site/modules/React/React.module.php,a72ed7c691daedb26de8a6a9ecdaa0c0
-"Phone number may only contain digits (0-9) and an optional leading + sign.","Le numéro de téléphone ne peut contenir que des chiffres (0-9) et un signe + initial facultatif.",,site/modules/React/React.module.php,565a52271fd5b9146aad6020c91cb361
-"Enter a valid email address.","Saisissez une adresse e-mail valide.",,site/modules/React/React.module.php,d68c7cd2cdc561bc55a5b8e6d8c4dd6c
-"Unsafe URL protocol is not allowed.","Les protocoles d’URL non sécurisés ne sont pas autorisés.",,site/modules/React/React.module.php,540e3c510aeea10f4e39ed95557c5c64
-"Media upload context is not available for this field.","Le contexte de téléversement média n’est pas disponible pour ce champ.",,site/modules/React/React.module.php,6a2a95bddcd94963944c67435da617cb
-"Selected file is not supported.","Le fichier sélectionné n’est pas pris en charge.",,site/modules/React/React.module.php,a37cf8f4caea217468dca76878c83251
-"Failed to upload file.","Échec du téléversement du fichier.",,site/modules/React/React.module.php,74318b4d780ce06c8dbf781c22c73a3a
-"Edit media details & alt text for {name}","Modifier les détails média et le texte alternatif de {name}",,site/modules/React/React.module.php,c2e087a3a42a5ca4e023631c84894ca5
-"Edit media details, alt text & focal point","Modifier les détails du média, le texte alternatif et le point focal",,site/modules/React/React.module.php,15455322cb5ed157ae075a5e6c553741
-"New tab","Nouvel onglet",,site/modules/React/React.module.php,c8a19ea6c79e23a1ee5372c8dbf3c6cf
-title,titre,,site/modules/React/React.module.php,d5d3db1765287eef77d7927cc956f50a
-"Selected icon","Icône sélectionnée",,site/modules/React/React.module.php,c3f172d89f52a265985eab184b7c2f20
-"Select an icon...","Sélectionner une icône...",,site/modules/React/React.module.php,cd625882db0b286414cedd94738e8b32
-"Clear icon","Effacer l'icône",,site/modules/React/React.module.php,18276346bd3773253fdc4c1c5e496eb2
-"Reset Style","Réinitialiser le style",,site/modules/React/React.module.php,e86a54e13ae40856b7c38b514dc6974b
-"Size (px)","Taille (px)",,site/modules/React/React.module.php,4c36ec3ac2cb9bda46e6dacc2974d282
-"Stroke Width","Épaisseur du trait",,site/modules/React/React.module.php,6d999904323d1dbe38ec7ce97aaff0ef
-"Icon Color","Couleur de l'icône",,site/modules/React/React.module.php,4315faf12d817f66b65bc0323c514c88
-"Auto (currentColor)","Auto (couleur actuelle)",,site/modules/React/React.module.php,9f00f77ff0d3dc50a92474949b1b2908
-"Custom icon hex color","Couleur hexadécimale personnalisée",,site/modules/React/React.module.php,88115bf701716c2e29c26f9184efbf40
-"Badge Background & Shape","Fond et forme du badge",,site/modules/React/React.module.php,d2ac054ec2a32159792b9e4de3c2a27a
-"No background","Aucun fond",,site/modules/React/React.module.php,7291417479be88cf7dc61910d3bfae0e
-"Custom badge hex color","Couleur hexadécimale du badge",,site/modules/React/React.module.php,277229ed1d0014f6eea9a11c1da88490
-Icons,Icônes,,site/modules/React/React.module.php,8f67973007158337346584551b093be8
-Appearance,Apparence,,site/modules/React/React.module.php,a1c58e94227389415de133efdf78ea6e
-"Search icons...","Rechercher des icônes...",,site/modules/React/React.module.php,96e7dafae5db47a9df8b1c07af9e0421
-"Search {count} icons","Rechercher parmi {count} icônes",,site/modules/React/React.module.php,85bdf2af0dcf18702347117874747126
-Category,Catégorie,,site/modules/React/React.module.php,3adbdb3ac060038aa0e6e6c138ef9873
-"All categories","Toutes les catégories",,site/modules/React/React.module.php,62f5d708d6ad1fa1ddd9429a65cccbea
-Style,Style,,site/modules/React/React.module.php,ae284f900f9d6e21ba69144cfc91e41b
-"All styles","Tous les styles",,site/modules/React/React.module.php,964f10b2515883ce73cd5db07fff012e
-Outline,Contour,,site/modules/React/React.module.php,606b51cc1c9d0b4af394419a22f2ff1f
-Filled,Plein,,site/modules/React/React.module.php,d9d586f8c792f8f661052af42536323c
-Popular,Populaires,,site/modules/React/React.module.php,2cc1943d4c0b46bfcf503a75c44f988b
-"All icons","Toutes les icônes",,site/modules/React/React.module.php,b50d4ff0ac4f73bcb419a4396a3989f5
-"No matching icons found.","Aucune icône correspondante trouvée.",,site/modules/React/React.module.php,6fe730153d19457d273abdb1d0b92039
-icon,icône,,site/modules/React/React.module.php,baec6461b0d69dde1b861aefbe375d8a
-icons,icônes,,site/modules/React/React.module.php,bd21190449b7e88db48fa0f580a8f666
+"Panel","Panneau",,site/modules/React/React.module.php,b8da6df14bf06283cbf588df6998722e
 "Default Theme Mode","Mode de thème par défaut",,site/modules/React/React.module.php,74435ddc2833dc22de4b519833b95a8d
 "Select the default color theme for React admin pages and data views.","Sélectionnez le thème de couleur par défaut pour les pages d’administration et vues de données React.",,site/modules/React/React.module.php,dd43061a8373ea4ab8e131b563764c0c
 "System Preference (Auto)","Préférence système (Auto)",,site/modules/React/React.module.php,6e8284e1277a7f10aee3ee1ab96c56a7
 "Light Mode","Mode clair",,site/modules/React/React.module.php,370104a87f84d72ef9a9a525fc3296fb
 "Dark Mode","Mode sombre",,site/modules/React/React.module.php,51b5e76089f5da04cf725ec11b16716d
+"Default Theme Preset","Thème prédéfini par défaut",,site/modules/React/React.module.php,90c70e2440c0d085f1f819c853a4d41d
+"Default color theme applied across React workspaces, embedded module panels, overlays, and form controls when a user has not selected a personal theme scheme in their Workspace account menu.","Thème de couleurs par défaut appliqué aux espaces de travail React, panneaux intégrés, fenêtres superposées et contrôles de formulaire lorsqu'un utilisateur n'a pas choisi de schéma personnel dans son menu de compte.",,site/modules/React/React.module.php,3963e48b2cae4a1f4d85c55713b9c4f8
+"ProcessWire Native (Admin Color Scheme)","ProcessWire natif (palette de l’administration)",,site/modules/React/React.module.php,d05d6e588d46c0414d1e2faac8bee780
+"Neutral","Neutre",,site/modules/React/React.module.php,e9bb5320b3890b6747c91b5a71ae5a01
+"Slate","Ardoise",,site/modules/React/React.module.php,b301eeecae37166dd0b7987360d341b7
+"Ocean","Océan",,site/modules/React/React.module.php,f41054884f4a8c8cb596222e2a31f098
+"Emerald","Émeraude",,site/modules/React/React.module.php,0b6e98d660e2901c33333347da37ad36
+"Violet","Violet",,site/modules/React/React.module.php,80f1187112e2e5e0403499147f7014b8
+"Rose","Rose",,site/modules/React/React.module.php,0df4dccc4aac3f6f36e00ef2a6a4bfac
+"Amber","Ambre",,site/modules/React/React.module.php,88068e33c78eb72f1b371c7110846085
+"Custom Theme Tokens","Variables de thème personnalisées",,site/modules/React/React.module.php,835e1684f9e7b41e3f32514392e01de6
+"Custom Theme Tokens (CSS)","Variables de thème personnalisées (CSS)",,site/modules/React/React.module.php,72c18f2bfda2c0faf7618ec2c6eff66b
+"Paste Tailwind CSS v4 theme variables (`:root { ... }` for light mode and `.dark { ... }` for dark mode). Only recognized color, radius, font, and shadow tokens with safe values are applied; everything else is ignored.","Collez les variables de thème Tailwind CSS v4 (`:root { ... }` pour le mode clair et `.dark { ... }` pour le mode sombre). Seules les variables reconnues de couleur, de rayon, de police et d’ombre avec des valeurs sûres sont appliquées ; tout le reste est ignoré.",,site/modules/React/React.module.php,96eaf33ba9bf3f58cdcad2cffe6a0dd6
+"Custom theme tokens must define at least --background, --foreground, --primary, and --primary-foreground. The native admin theme is used until they are valid.","Les variables de thème personnalisées doivent définir au minimum --background, --foreground, --primary et --primary-foreground. Le thème natif de l’administration est utilisé tant qu’elles ne sont pas valides.",,site/modules/React/React.module.php,5be5495e394bc3269980fd6e45366ab3
 "Enable Keyboard Shortcuts","Activer les raccourcis clavier",,site/modules/React/React.module.php,b6a366ab30c40f2933bcb2376a180f6b
-"Enable Cmd/Ctrl+K command palette and keyboard navigation inside React workspaces.","Active la palette de commandes Cmd/Ctrl+K et la navigation au clavier dans les espaces React.",,site/modules/React/React.module.php,864eab57e155b062751d228ca86c1853
+"Enable Cmd/Ctrl+K command palette, shortcut help dialog (?), form save shortcuts, viewport shortcuts, and keyboard navigation inside React workspaces.","Active la palette de commandes Cmd/Ctrl+K, l'aide des raccourcis clavier (?), les raccourcis d'enregistrement de formulaire, les raccourcis de vue et la navigation clavier dans les espaces React.",,site/modules/React/React.module.php,52f1d5c6958ab6d91889b4216e55ec24
 "Admin Return Button Label","Libellé du bouton de retour à l’administration",,site/modules/React/React.module.php,0e6a93844e1ec5ebdf37abee7dbb4687
 "Label displayed on the top-left button that returns from a Workspace to the main Admin panel (default: Panel). Supports multi-language values.","Libellé affiché sur le bouton en haut à gauche permettant de revenir d’un espace de travail au panneau d’administration principal (par défaut : Panel). Prend en charge le multilingue.",,site/modules/React/React.module.php,262fa3a43401ba36d210a9932a1e0039
 "Use React Image & File Editors on Pages","Utiliser les éditeurs d'images et de fichiers React sur les pages",,site/modules/React/React.module.php,8130edf14262ef525727ccbe0606d589
@@ -768,17 +403,461 @@ icons,icônes,,site/modules/React/React.module.php,bd21190449b7e88db48fa0f580a8f
 "Preview icon size on Edit Template and Edit Field screens (16–64).","Taille de l'aperçu sur les écrans Modifier le modèle et Modifier le champ (16–64).",,site/modules/React/React.module.php,6230677443f310b60dfb59d7c228f10f
 "Tiptap Mini-Blocks Renderer","Moteur de rendu des mini-blocs Tiptap",,site/modules/React/TextformatterTiptapMiniBlocks.module.php,7c3faead0795ac6b3010fb3c157f2feb
 "Renders inline content blocks from the Tiptap rich text editor using templates in ./site/templates/tiptap/.","Affiche les blocs de contenu du Tiptap éditeur à l’aide des modèles de ./site/templates/tiptap/.",,site/modules/React/TextformatterTiptapMiniBlocks.module.php,41713bc7294132fb564cbd8708c8b016
-Yes,Oui,,site/modules/React/src/Data/ReactRecord.php,93cba07454f06a4a960172bbd6e2a435
-Submit,Envoyer,,site/modules/React/src/Form/FormSchemaSerializer.php,a4d3b161ce1309df1c4e25df28694b7b
-Yes,Oui,,site/modules/React/src/Form/FormSchemaSerializer.php,93cba07454f06a4a960172bbd6e2a435
-No,Non,,site/modules/React/src/Form/FormSchemaSerializer.php,bafd7322c6e97d25b6299b5d6fe8920b
-Other,Autre,,site/modules/React/src/Form/FormSchemaSerializer.php,6311ae17c1ee52b36e68aaf4ad066387
-Delete,Supprimer,,site/modules/React/src/Form/FormSchemaSerializer.php,f2a6c498fb90ee345d997f888fce3b18
+"Yes","Oui",,site/modules/React/src/Data/ReactRecord.php,93cba07454f06a4a960172bbd6e2a435
+"Submit","Envoyer",,site/modules/React/src/Form/FormSchemaSerializer.php,a4d3b161ce1309df1c4e25df28694b7b
+"Yes","Oui",,site/modules/React/src/Form/FormSchemaSerializer.php,93cba07454f06a4a960172bbd6e2a435
+"No","Non",,site/modules/React/src/Form/FormSchemaSerializer.php,bafd7322c6e97d25b6299b5d6fe8920b
+"Other","Autre",,site/modules/React/src/Form/FormSchemaSerializer.php,6311ae17c1ee52b36e68aaf4ad066387
+"Delete","Supprimer",,site/modules/React/src/Form/FormSchemaSerializer.php,f2a6c498fb90ee345d997f888fce3b18
 "Confirm Deletion","Confirmer la suppression",,site/modules/React/src/Form/FormSchemaSerializer.php,44928cfda52bc66163d158d1ff69d415
-record,enregistrement,,site/modules/React/src/Form/FormSchemaSerializer.php,de17f0f24b49f8364187891f8550ffbb
+"record","enregistrement",,site/modules/React/src/Form/FormSchemaSerializer.php,de17f0f24b49f8364187891f8550ffbb
 "Permanently delete this %s on save","Supprimer définitivement ce %s lors de l’enregistrement",,site/modules/React/src/Form/FormSchemaSerializer.php,92dcde4a2ed9b39c700e3da1ed261b70
 "Check this box and click Save to permanently delete this record. This action cannot be undone.","Cochez cette case et cliquez sur Enregistrer pour supprimer définitivement cet enregistrement. Cette action est irréversible.",,site/modules/React/src/Form/FormSchemaSerializer.php,05e71e018fc5049302c5d3b5264cf908
-Configuration,Configuration,,site/modules/React/src/Form/FormSchemaSerializer.php,254f642527b45bc260048e30704edb39
+"Configuration","Configuration",,site/modules/React/src/Form/FormSchemaSerializer.php,254f642527b45bc260048e30704edb39
+"Vector Icon","Icône vectorielle",,site/modules/React/src/Hook/FieldIntegrationHooks.php,3b8ba766a67302eea93b73f89375cf76
+"Select a vector icon. When populated, this overrides the standard ProcessWire icon above.","Sélectionnez une icône vectorielle. Lorsqu’elle est renseignée, elle remplace l’icône ProcessWire standard ci-dessus.",,site/modules/React/src/Hook/FieldIntegrationHooks.php,7cd34d6d99b289c33e05ccaf30109f55
+"Relation request failed.","Échec de la requête de relation.",,site/modules/React/src/Http/ReactGatewayRouter.php,417311c0a499db762f631392d723fa39
+"Save","Enregistrer",,site/modules/React/src/I18n/TranslationCatalogService.php,c9cc8cce247e49bae79f15173ce97354
+"Saving...","Enregistrement...",,site/modules/React/src/I18n/TranslationCatalogService.php,575f5f86d2c7ea113c6710c1037c4465
+"Cancel","Annuler",,site/modules/React/src/I18n/TranslationCatalogService.php,ea4788705e6873b424c65e91c2846b19
+"Close","Fermer",,site/modules/React/src/I18n/TranslationCatalogService.php,d3d2e617335f08df83599665eef8a418
+"Done","Terminé",,site/modules/React/src/I18n/TranslationCatalogService.php,f92965e2c8a7afb3c1b9a5c09a263636
+"Open","Ouvrir",,site/modules/React/src/I18n/TranslationCatalogService.php,c3bf447eabe632720a3aa1a7ce401274
+"Apply","Appliquer",,site/modules/React/src/I18n/TranslationCatalogService.php,9639e32cab248434a17ab32237cb3b71
+"Applying...","Application...",,site/modules/React/src/I18n/TranslationCatalogService.php,2d36bbeac4e19bf400214726dd626cdb
+"Executing...","Exécution en cours...",,site/modules/React/src/I18n/TranslationCatalogService.php,3d202de4cde88726a42cedcd4d1b28c3
+"Reset","Réinitialiser",,site/modules/React/src/I18n/TranslationCatalogService.php,526d688f37a86d3c3f27d0c5016eb71d
+"Refresh","Actualiser",,site/modules/React/src/I18n/TranslationCatalogService.php,63a6a88c066880c5ac42394a22803ca6
+"Refreshing...","Actualisation...",,site/modules/React/src/I18n/TranslationCatalogService.php,01b08e48869f180ff19a7f7aa3c3f18f
+"Reload","Recharger",,site/modules/React/src/I18n/TranslationCatalogService.php,4d1c8263ba1036754f8db14a98f9f006
+"Search","Rechercher",,site/modules/React/src/I18n/TranslationCatalogService.php,13348442cc6a27032d2b4aa28b75a5d3
+"Clear","Effacer",,site/modules/React/src/I18n/TranslationCatalogService.php,dc30bc0c7914db5918da4263fce93ad2
+"Create","Créer",,site/modules/React/src/I18n/TranslationCatalogService.php,686e697538050e4664636337cc3b834f
+"Edit","Modifier",,site/modules/React/src/I18n/TranslationCatalogService.php,7dce122004969d56ae2e0245cb754d35
+"Delete","Supprimer",,site/modules/React/src/I18n/TranslationCatalogService.php,f2a6c498fb90ee345d997f888fce3b18
+"Remove","Retirer",,site/modules/React/src/I18n/TranslationCatalogService.php,1063e38cb53d94d386f21227fcd84717
+"Dismiss","Ignorer",,site/modules/React/src/I18n/TranslationCatalogService.php,c8a59e7135a20b362f9c768b09454fdb
+"Confirm","Confirmer",,site/modules/React/src/I18n/TranslationCatalogService.php,70d9be9b139893aa6c69b5e77e614311
+"Confirm & Execute","Confirmer et exécuter",,site/modules/React/src/I18n/TranslationCatalogService.php,4b8fa648bd96b68b3f5c6477c2a0ae91
+"I understand the impact of this operation and wish to proceed.","Je comprends l’impact de cette opération et souhaite continuer.",,site/modules/React/src/I18n/TranslationCatalogService.php,719ddb902afa805552fb15479a75fee1
+"Copy","Copier",,site/modules/React/src/I18n/TranslationCatalogService.php,5fb63579fc981698f97d55bfecb213ea
+"Copied","Copié",,site/modules/React/src/I18n/TranslationCatalogService.php,a588b1abc58b8b758c4b34b69b9e10bb
+"Copy command","Copier la commande",,site/modules/React/src/I18n/TranslationCatalogService.php,ec5eefe5a1b8d46ef1126992881fd5d4
+"Export","Exporter",,site/modules/React/src/I18n/TranslationCatalogService.php,0095a9fa74d1713e43e370a7d7846224
+"Import","Importer",,site/modules/React/src/I18n/TranslationCatalogService.php,72d6d7a1885885bb55a565fd1070581a
+"Loading...","Chargement...",,site/modules/React/src/I18n/TranslationCatalogService.php,8524de963f07201e5c086830d370797f
+"Actions","Actions",,site/modules/React/src/I18n/TranslationCatalogService.php,06df33001c1d7187fdd81ea1f5b277aa
+"Languages","Langues",,site/modules/React/src/I18n/TranslationCatalogService.php,3a08e2e340ab29fd9263af48193cbf8e
+"Error","Erreur",,site/modules/React/src/I18n/TranslationCatalogService.php,902b0d55fddef6f8d651fe1035b7d4bd
+"Warning","Avertissement",,site/modules/React/src/I18n/TranslationCatalogService.php,0eaadb4fcb48a0a0ed7bc9868be9fbaa
+"Notice","Notification",,site/modules/React/src/I18n/TranslationCatalogService.php,24efa7ee4511563b16144f39706d594f
+"All","Tous",,site/modules/React/src/I18n/TranslationCatalogService.php,b1c94ca2fbc3e78fc30069c8d0f01680
+"None","Aucun",,site/modules/React/src/I18n/TranslationCatalogService.php,6adf97f83acf6453d4a6a4b1070f3754
+"Yes","Oui",,site/modules/React/src/I18n/TranslationCatalogService.php,93cba07454f06a4a960172bbd6e2a435
+"No","Non",,site/modules/React/src/I18n/TranslationCatalogService.php,bafd7322c6e97d25b6299b5d6fe8920b
+"More","Plus",,site/modules/React/src/I18n/TranslationCatalogService.php,d3da97e2d9aee5c8fbe03156ad051c99
+"No matching options","Aucune option correspondante",,site/modules/React/src/I18n/TranslationCatalogService.php,2911d2dd34d4e33b692661c26348cf49
+"Select an option...","Sélectionner une option...",,site/modules/React/src/I18n/TranslationCatalogService.php,4a86bc1626d448c4e375614c7b1783a6
+"Toggle options","Afficher/masquer les options",,site/modules/React/src/I18n/TranslationCatalogService.php,56f1ad01cf5988f3459018ff9c43ca95
+"No results found.","Aucun résultat trouvé.",,site/modules/React/src/I18n/TranslationCatalogService.php,3f24537d9d26ddf4fd334a881e46a0ec
+"Notifications","Notifications",,site/modules/React/src/I18n/TranslationCatalogService.php,a274f4d4670213a9045ce258c6c56b80
+"Back","Retour",,site/modules/React/src/I18n/TranslationCatalogService.php,0557fa923dcee4d0f86b1409f5c2167f
+"Unavailable","Indisponible",,site/modules/React/src/I18n/TranslationCatalogService.php,453e6aa38d87b28ccae545967c53004f
+"Workspace","Espace de travail",,site/modules/React/src/I18n/TranslationCatalogService.php,03a21915504df93cf5dba0636080f62e
+"Workspaces","Espaces de travail",,site/modules/React/src/I18n/TranslationCatalogService.php,d5e92609cf510f5f97ac326e907a0540
+"Workspace Dashboard","Tableau de bord de l’espace de travail",,site/modules/React/src/I18n/TranslationCatalogService.php,9ed7329637f544d772bdba0d61398d04
+"All modules, favorites, and customizable dashboard widgets","Tous les modules, favoris et widgets de tableau de bord personnalisables",,site/modules/React/src/I18n/TranslationCatalogService.php,e68b79df7f2d4278eb0960fd444fdf1d
+"Current workspace section","Section actuelle de l’espace de travail",,site/modules/React/src/I18n/TranslationCatalogService.php,5e20a96b94291c93caaf1dce0e254cbc
+"Workspace navigation","Navigation de l’espace de travail",,site/modules/React/src/I18n/TranslationCatalogService.php,8908efdd3ec402154d562f6487b92f1a
+"Navigation","Navigation",,site/modules/React/src/I18n/TranslationCatalogService.php,846495f9ceed11accf8879f555936a7d
+"Open workspace navigation menu","Ouvrir le menu de navigation",,site/modules/React/src/I18n/TranslationCatalogService.php,60e439470c45c239b2e25a510fceb428
+"Close navigation menu","Fermer le menu de navigation",,site/modules/React/src/I18n/TranslationCatalogService.php,d302e7fbcdb33e2877353e7f703fd4a9
+"Search workspaces...","Rechercher des espaces de travail...",,site/modules/React/src/I18n/TranslationCatalogService.php,6350e80efab2bb6dc30cea9dba50dac7
+"Search workspaces","Rechercher des espaces de travail",,site/modules/React/src/I18n/TranslationCatalogService.php,28ba707df5d8962217e5a32a08f712f2
+"Find workspace...","Trouver un espace de travail...",,site/modules/React/src/I18n/TranslationCatalogService.php,a59403457c95f98f52aa1e83c7b0a3ca
+"No matching workspaces","Aucun espace correspondant",,site/modules/React/src/I18n/TranslationCatalogService.php,c7d00daca755a67628aad03a442fa01b
+"No matching destinations found.","Aucune destination correspondante trouvée.",,site/modules/React/src/I18n/TranslationCatalogService.php,a8cf450cedad306f1ef0981292eda677
+"Quick Jump","Accès rapide",,site/modules/React/src/I18n/TranslationCatalogService.php,ae69932309b0c8fbd2565f85e2729961
+"Quick Switcher","Sélecteur rapide",,site/modules/React/src/I18n/TranslationCatalogService.php,33a8d8c8002c17b26e545ee67595825f
+"Quick Switcher (Cmd/Ctrl+K)","Sélecteur rapide (Cmd/Ctrl+K)",,site/modules/React/src/I18n/TranslationCatalogService.php,a6d3e2a4b7e5ea93da96575262eb33aa
+"Jump to workspace or section...","Aller à un espace ou une section...",,site/modules/React/src/I18n/TranslationCatalogService.php,9c0902ca5c76e62c37dde2c59b158356
+"Panel","Panneau",,site/modules/React/src/I18n/TranslationCatalogService.php,b8da6df14bf06283cbf588df6998722e
+"Return to {target}","Retour à {target}",,site/modules/React/src/I18n/TranslationCatalogService.php,f6f53af1527f750b7046b85beee500d3
+"Open in Workspace","Ouvrir dans l’espace de travail",,site/modules/React/src/I18n/TranslationCatalogService.php,8509b1db3b9493f2aba2a88439edb1b4
+"Switch to full-screen Workspace view","Basculer vers la vue plein écran de l’espace de travail",,site/modules/React/src/I18n/TranslationCatalogService.php,1c7f26dd5993adca7f5e2d79f997f8cd
+"Theme","Thème",,site/modules/React/src/I18n/TranslationCatalogService.php,d721757161f7f70c5b0949fdb6ec2c30
+"Appearance","Apparence",,site/modules/React/src/I18n/TranslationCatalogService.php,a1c58e94227389415de133efdf78ea6e
+"Color Scheme","Schéma de couleurs",,site/modules/React/src/I18n/TranslationCatalogService.php,6761e135fa31a256983cc0de4ff8d7d9
+"Use site default","Utiliser le défaut du site",,site/modules/React/src/I18n/TranslationCatalogService.php,1a786a38cef47eb8d217ebc0401b34cd
+"Site default","Défaut du site",,site/modules/React/src/I18n/TranslationCatalogService.php,1da71dc1ead54d8aaf7c8692a1f32f84
+"Light","Clair",,site/modules/React/src/I18n/TranslationCatalogService.php,9914a0ce04a7b7b6a8e39bec55064b82
+"Dark","Sombre",,site/modules/React/src/I18n/TranslationCatalogService.php,a18366b217ebf811ad1886e4f4f865b2
+"System","Système",,site/modules/React/src/I18n/TranslationCatalogService.php,a45da96d0bf6575970f2d27af22be28a
+"Toggle theme","Changer de thème",,site/modules/React/src/I18n/TranslationCatalogService.php,5a9663b09544b4cfe12a13a805d7ac2b
+"Theme mode: {mode} (click to switch)","Mode de thème : {mode} (cliquer pour changer)",,site/modules/React/src/I18n/TranslationCatalogService.php,ed66a4fc75e940c960bb14f16063194f
+"Color theme: {preset}","Thème de couleur : {preset}",,site/modules/React/src/I18n/TranslationCatalogService.php,05cc73499300c55612b4b868bb1eabac
+"Color theme presets","Préréglages du thème de couleur",,site/modules/React/src/I18n/TranslationCatalogService.php,2ad9de28e2f2f2a7de61d7f2c49f7680
+"Applies across all modules and workspaces","S’applique à tous les modules et espaces de travail",,site/modules/React/src/I18n/TranslationCatalogService.php,bf489f082ed3a18475f726300ac50ff5
+"Native Admin","Admin natif",,site/modules/React/src/I18n/TranslationCatalogService.php,0d434f610f3d223ab5133dabeadbeeff
+"Neutral","Neutre",,site/modules/React/src/I18n/TranslationCatalogService.php,e9bb5320b3890b6747c91b5a71ae5a01
+"Slate","Ardoise",,site/modules/React/src/I18n/TranslationCatalogService.php,b301eeecae37166dd0b7987360d341b7
+"Ocean","Océan",,site/modules/React/src/I18n/TranslationCatalogService.php,f41054884f4a8c8cb596222e2a31f098
+"Emerald","Émeraude",,site/modules/React/src/I18n/TranslationCatalogService.php,0b6e98d660e2901c33333347da37ad36
+"Violet","Violet",,site/modules/React/src/I18n/TranslationCatalogService.php,80f1187112e2e5e0403499147f7014b8
+"Rose","Rose",,site/modules/React/src/I18n/TranslationCatalogService.php,0df4dccc4aac3f6f36e00ef2a6a4bfac
+"Amber","Ambre",,site/modules/React/src/I18n/TranslationCatalogService.php,88068e33c78eb72f1b371c7110846085
+"Custom Tokens","Variables personnalisées",,site/modules/React/src/I18n/TranslationCatalogService.php,bd5ee67e7225f0ea522e7ab9af418651
+"User account menu","Menu du compte utilisateur",,site/modules/React/src/I18n/TranslationCatalogService.php,a325cd66d5ff510f06a7a89293c98177
+"View site","Voir le site",,site/modules/React/src/I18n/TranslationCatalogService.php,90dd5a9776ef2638eebdd94ae76a1902
+"Profile","Profil",,site/modules/React/src/I18n/TranslationCatalogService.php,cce99c598cfdb9773ab041d54c3d973a
+"Logout","Déconnexion",,site/modules/React/src/I18n/TranslationCatalogService.php,0323de4f66a1700e2173e9bcdce02715
+"Keyboard shortcuts","Raccourcis clavier",,site/modules/React/src/I18n/TranslationCatalogService.php,de334061ddee0a9008edd133af533c04
+"Dismiss errors","Fermer les erreurs",,site/modules/React/src/I18n/TranslationCatalogService.php,ef12db18801e484d0d785f73cd9604b4
+"Dismiss warnings","Fermer les avertissements",,site/modules/React/src/I18n/TranslationCatalogService.php,990f649a83a3fbbee1d350a1ebf60a06
+"Dismiss notices","Fermer les notifications",,site/modules/React/src/I18n/TranslationCatalogService.php,b4c60e29e6ea44ad2d45ba8ed6b7d594
+"Quick overview, live status cards, and all admin workspaces.","Vue d’ensemble rapide, cartes d’état en direct et tous les espaces d’administration.",,site/modules/React/src/I18n/TranslationCatalogService.php,52c2b43875b6d96f10a81b71b16b145a
+"Overview","Vue d’ensemble",,site/modules/React/src/I18n/TranslationCatalogService.php,3b878279a04dc47d60932cb294d96259
+"Operational Overview","Vue d’ensemble opérationnelle",,site/modules/React/src/I18n/TranslationCatalogService.php,46966912240d4bc4c19fc9389727943b
+"All Workspaces","Tous les espaces",,site/modules/React/src/I18n/TranslationCatalogService.php,ab0a66d5e7f3e6b0db0f96721d64c245
+"Module Directory","Répertoire des modules",,site/modules/React/src/I18n/TranslationCatalogService.php,6a51ac3b146536a407f3429c8f2f2a6f
+"Module","Module",,site/modules/React/src/I18n/TranslationCatalogService.php,e55f75a29310d7b60f7ac1d390c8ae42
+"Favorites","Favoris",,site/modules/React/src/I18n/TranslationCatalogService.php,d78986947356ddd37b43d57df289dee9
+"Pinned","Épinglés",,site/modules/React/src/I18n/TranslationCatalogService.php,3c5e891bff07947cbae2fda89162df9f
+"Pinned Shortcuts","Raccourcis épinglés",,site/modules/React/src/I18n/TranslationCatalogService.php,8f1f46957a9aa8224c8e93f56d57a598
+"Pin to top bar","Épingler à la barre supérieure",,site/modules/React/src/I18n/TranslationCatalogService.php,2fa2c585863a83a9024a0ec877848d73
+"Unpin from top bar","Désépingler de la barre supérieure",,site/modules/React/src/I18n/TranslationCatalogService.php,da80cbcfd56f935cfb9a329f43498112
+"Pin {title}","Épingler {title}",,site/modules/React/src/I18n/TranslationCatalogService.php,ab6cdb7b7a64b4c924c47bd793c2efb4
+"Unpin {title}","Désépingler {title}",,site/modules/React/src/I18n/TranslationCatalogService.php,08775dfb2eeb84f0daf59a8cd3306b4b
+"Customize","Personnaliser",,site/modules/React/src/I18n/TranslationCatalogService.php,63a78ed4647f7c63c2929e35ec1c95e3
+"Customize Layout","Personnaliser la disposition",,site/modules/React/src/I18n/TranslationCatalogService.php,c5b7cb3159ecf84ffc87b9725b1225e1
+"Done Customizing","Personnalisation terminée",,site/modules/React/src/I18n/TranslationCatalogService.php,08ee89aac2ef96b48c9c2e718b11b687
+"Export Layout","Exporter la disposition",,site/modules/React/src/I18n/TranslationCatalogService.php,304278e931b0f6f2ff0148dde89436cc
+"Export JSON","Exporter en JSON",,site/modules/React/src/I18n/TranslationCatalogService.php,b7b35e678fac8e3ac6493d09e6bf8ec4
+"Import Layout","Importer la disposition",,site/modules/React/src/I18n/TranslationCatalogService.php,de5f3994e77a62b31078014c34cdcbed
+"Apply a saved workspace layout preset (.json) to update your pinned shortcuts, widget order, widths, and visibility.","Appliquez une disposition enregistrée (.json) pour mettre à jour vos raccourcis épinglés, l’ordre, la largeur et la visibilité des widgets.",,site/modules/React/src/I18n/TranslationCatalogService.php,c009bdc2ef160c5b6dc71628b7c3d5b8
+"Workspace layout preset JSON","JSON de disposition de l’espace de travail",,site/modules/React/src/I18n/TranslationCatalogService.php,180714e8ef26f4474a47f2a98602e0c1
+"Import JSON","Importer un JSON",,site/modules/React/src/I18n/TranslationCatalogService.php,786df2cec47f9e9c005483f4c7ec9632
+"Apply Layout","Appliquer la disposition",,site/modules/React/src/I18n/TranslationCatalogService.php,40ff1f28a90b7724a0653403e9056bfb
+"Choose JSON File","Choisir un fichier JSON",,site/modules/React/src/I18n/TranslationCatalogService.php,276e42ebd90183f60b19ae95fa54864a
+"Reset Layout","Réinitialiser la disposition",,site/modules/React/src/I18n/TranslationCatalogService.php,6dc6e32ad3860bd9cf4e567673bcafbf
+"Reset Default","Rétablir par défaut",,site/modules/React/src/I18n/TranslationCatalogService.php,d6ed253ff449bbd9606eff83124f1f2e
+"Reset Default Layout","Réinitialiser la disposition par défaut",,site/modules/React/src/I18n/TranslationCatalogService.php,1050bc9cb8b00a00620f2aa03bc35d6f
+"Reset your pinned shortcuts, widget order, widths, and hidden widget settings back to defaults?","Réinitialiser vos raccourcis épinglés, l’ordre, la largeur et la visibilité des widgets par défaut ?",,site/modules/React/src/I18n/TranslationCatalogService.php,7ef2e15cc260153efe4516aaf6d53ca3
+"Choose Widgets","Choisir les widgets",,site/modules/React/src/I18n/TranslationCatalogService.php,b14eac5358d6997de83ef1a66ed53767
+"{count} hidden widget(s)","{count} widget(s) masqué(s)",,site/modules/React/src/I18n/TranslationCatalogService.php,f825d68e168242bb62a01fcf2f7c4390
+"Hide widget from dashboard","Masquer le widget du tableau de bord",,site/modules/React/src/I18n/TranslationCatalogService.php,3a271cded492b1af00f478afb36dff88
+"Hide {title}","Masquer {title}",,site/modules/React/src/I18n/TranslationCatalogService.php,989687042589d0714062081623af4493
+"Show {title}","Afficher {title}",,site/modules/React/src/I18n/TranslationCatalogService.php,0995ce286e32d12920a7cbd90265f4c7
+"Looking for a specific capability or administration tool?","Vous cherchez une fonctionnalité ou un outil d’administration précis ?",,site/modules/React/src/I18n/TranslationCatalogService.php,0466da2abbb3b4b8c7d2a8d666eb76e5
+"Browse all {count} modules","Parcourir les {count} modules",,site/modules/React/src/I18n/TranslationCatalogService.php,fee875c9d7d6f816f968d2f387309b86
+"No live widgets registered","Aucun widget en direct enregistré",,site/modules/React/src/I18n/TranslationCatalogService.php,9c56c5f5edf8e03b459db2c5b249edae
+"Installed modules have not registered live summary widgets yet. Open the Module Directory to launch any workspace.","Les modules installés n’ont pas encore enregistré de widgets de synthèse. Ouvrez le répertoire des modules pour lancer un espace.",,site/modules/React/src/I18n/TranslationCatalogService.php,f9ce53c3bca4a20c7704248094bf868e
+"All dashboard widgets are hidden","Tous les widgets du tableau de bord sont masqués",,site/modules/React/src/I18n/TranslationCatalogService.php,6bdac11628cbad1b72ef18fcc0f06357
+"You have hidden all widgets for your profile. Re-enable widgets or reset your layout to view live module status.","Vous avez masqué tous les widgets de votre profil. Réactivez des widgets ou réinitialisez votre mise en page pour voir l'état en direct des modules.",,site/modules/React/src/I18n/TranslationCatalogService.php,e5936720f3724385253842dccc5a0564
+"Open Module Directory","Ouvrir le répertoire des modules",,site/modules/React/src/I18n/TranslationCatalogService.php,25dc1ae20edec7b8eabfdc2bc53f80a1
+"Open {title}","Ouvrir {title}",,site/modules/React/src/I18n/TranslationCatalogService.php,aa7230bade66b8b21ac6744ccc6819dd
+"Search modules by name, capability, or topic...","Rechercher des modules par nom, capacité ou sujet...",,site/modules/React/src/I18n/TranslationCatalogService.php,00240549c08261b54bb8a19821613919
+"No matching workspaces found.","Aucun espace de travail correspondant trouvé.",,site/modules/React/src/I18n/TranslationCatalogService.php,da75bcd7ecf5b0a8624c1e01b780ee87
+"No matching modules found","Aucun module correspondant trouvé",,site/modules/React/src/I18n/TranslationCatalogService.php,6e1fe1d3cc72b89885d1f65b4735ae5d
+"No installed module matched your current search or category filter.","Aucun module installé ne correspond à votre recherche ou filtre de catégorie.",,site/modules/React/src/I18n/TranslationCatalogService.php,bbd1d8458fa333c5437b513d289316f6
+"No workspaces available","Aucun espace de travail disponible",,site/modules/React/src/I18n/TranslationCatalogService.php,5ec633fc43306fc36c3cf968b9428a80
+"Install or enable a workspace module to access it here.","Installez ou activez un module d’espace de travail pour y accéder ici.",,site/modules/React/src/I18n/TranslationCatalogService.php,92829baaf46a7f41b1201d8cb5ec2c4c
+"Reset Filter","Réinitialiser le filtre",,site/modules/React/src/I18n/TranslationCatalogService.php,831b1cff02a12da1b010f8cb39147c8d
+"just now","à l’instant",,site/modules/React/src/I18n/TranslationCatalogService.php,2654992d78afbd40bad349302a6f2b6a
+"{seconds}s ago","il y a {seconds}s",,site/modules/React/src/I18n/TranslationCatalogService.php,b0f776690c4ba484158a8d04bc119e1d
+"{minutes}m ago","il y a {minutes} min",,site/modules/React/src/I18n/TranslationCatalogService.php,6c0cef977fba600c9517c8a0c8dff73d
+"Updated by {user}","Mis à jour par {user}",,site/modules/React/src/I18n/TranslationCatalogService.php,3fe86196f9f5f89c8c10394b56aa3f29
+"This record was saved in another session while you had it open. Reload the latest version before saving to avoid overwriting those changes.","Cet enregistrement a été sauvegardé dans une autre session pendant qu’il était ouvert. Rechargez la dernière version avant d’enregistrer pour éviter d’écraser ces modifications.",,site/modules/React/src/I18n/TranslationCatalogService.php,b2286b53112eac23e803d62d29a3cb04
+"Reload Latest","Recharger la dernière version",,site/modules/React/src/I18n/TranslationCatalogService.php,24353cfc254f52144a8ee7a604b78e2e
+"Dismiss remote save warning","Fermer l’alerte d’enregistrement distant",,site/modules/React/src/I18n/TranslationCatalogService.php,04e340552c787fa0de7e9bb886824196
+"is currently editing this record ({age}).","modifie actuellement cet enregistrement ({age}).",,site/modules/React/src/I18n/TranslationCatalogService.php,d747c52f62546f81bf5ef65a8bd67ffd
+"are currently editing this record.","modifient actuellement cet enregistrement.",,site/modules/React/src/I18n/TranslationCatalogService.php,db9ab4c9b4f4d56676e285c7014a2604
+"Coordinate changes before saving","Coordonnez vos modifications avant d’enregistrer",,site/modules/React/src/I18n/TranslationCatalogService.php,0e750f0fe1702dd4a27233eaed9f6c7b
+"Search records...","Rechercher des enregistrements...",,site/modules/React/src/I18n/TranslationCatalogService.php,46878f3052876993d095fb186ece42ee
+"Search...","Rechercher...",,site/modules/React/src/I18n/TranslationCatalogService.php,2a37324bb4c331c859044121df3f576b
+"Filters","Filtres",,site/modules/React/src/I18n/TranslationCatalogService.php,f3f43e30c8c7d78c6ac0173515e57a00
+"Filter view","Filtrer la vue",,site/modules/React/src/I18n/TranslationCatalogService.php,5f2338679d4a0e08885fd7c0176eb6e6
+"Filter options...","Filtrer les options...",,site/modules/React/src/I18n/TranslationCatalogService.php,e6c46618cf501e7229c8bba662560b1c
+"Clear filters","Effacer les filtres",,site/modules/React/src/I18n/TranslationCatalogService.php,0b275442d6556cff30b75f37f1918899
+"Columns","Colonnes",,site/modules/React/src/I18n/TranslationCatalogService.php,168b82d33f8073018c50a4f658a02559
+"Toggle Columns","Afficher/masquer les colonnes",,site/modules/React/src/I18n/TranslationCatalogService.php,29f4c433c598a0d91bf3c3920d2cd645
+"Reset columns","Réinitialiser les colonnes",,site/modules/React/src/I18n/TranslationCatalogService.php,1eb64ecf3802fac71df227dc50ae1c8c
+"Saved Views","Vues enregistrées",,site/modules/React/src/I18n/TranslationCatalogService.php,368ae15de538213cd25b68560eb50521
+"Save View","Enregistrer la vue",,site/modules/React/src/I18n/TranslationCatalogService.php,753c2861dde3b99d1714edc57004b907
+"Delete saved view","Supprimer la vue enregistrée",,site/modules/React/src/I18n/TranslationCatalogService.php,d8388976b5db163929cfdd07f96d4f20
+"Delete the saved view ""{label}""?","Supprimer la vue enregistrée ""{label}"" ?",,site/modules/React/src/I18n/TranslationCatalogService.php,3706d830efe9fe00dd509aaadb61d105
+"Preset name...","Nom de la vue...",,site/modules/React/src/I18n/TranslationCatalogService.php,51a75ab261668b0d24a1e031a6828717
+"Bulk actions","Actions groupées",,site/modules/React/src/I18n/TranslationCatalogService.php,9ffa4765d2da990741800bbe1ad4e7f8
+"Select all rows","Sélectionner toutes les lignes",,site/modules/React/src/I18n/TranslationCatalogService.php,2d73c7eae2d36003755c343ddf607e71
+"{count} selected","{count} sélectionné(s)",,site/modules/React/src/I18n/TranslationCatalogService.php,ef1b031573031a3eca39e4b16e1eacec
+"Order","Ordre",,site/modules/React/src/I18n/TranslationCatalogService.php,a240fa27925a635b08dc28c9e4f9216d
+"Click to edit inline","Cliquer pour modifier en ligne",,site/modules/React/src/I18n/TranslationCatalogService.php,ccbbf00a2560a1789ef802f9254868db
+"No records found","Aucun enregistrement trouvé",,site/modules/React/src/I18n/TranslationCatalogService.php,087fb8756d4add87f2d162304ccd486b
+"Try adjusting your search or filter criteria.","Essayez d’ajuster vos critères de recherche ou de filtrage.",,site/modules/React/src/I18n/TranslationCatalogService.php,992535ae7666175356cdab4154658065
+"No items yet","Aucun élément pour le moment",,site/modules/React/src/I18n/TranslationCatalogService.php,529bd24c0f1522f793c736f65df9e8b5
+"Try changing your search or filters.","Essayez de modifier votre recherche ou vos filtres.",,site/modules/React/src/I18n/TranslationCatalogService.php,54e5c834b186eb672b5579a7e468d624
+"Network error while updating this list.","Erreur réseau lors de l’actualisation de cette liste.",,site/modules/React/src/I18n/TranslationCatalogService.php,6fce21b16a2046460d7b37c52d73d363
+"Previous","Précédent",,site/modules/React/src/I18n/TranslationCatalogService.php,dd1f775e443ff3b9a89270713580a51b
+"Next","Suivant",,site/modules/React/src/I18n/TranslationCatalogService.php,10ac3d04253ef7e1ddc73e6091c0cd55
+"Page {page} of {totalPages}","Page {page} sur {totalPages}",,site/modules/React/src/I18n/TranslationCatalogService.php,c55db04c8c3722f2e1d9b2d618134a6c
+"{count} items","{count} éléments",,site/modules/React/src/I18n/TranslationCatalogService.php,ad3da129e14b05ef4090066697b98487
+"New Item","Nouvel élément",,site/modules/React/src/I18n/TranslationCatalogService.php,0534f4f9b4506ce58165489e030886fb
+"Quick Edit","Modification rapide",,site/modules/React/src/I18n/TranslationCatalogService.php,73f79dd90cb67b7438919d31aef50a3f
+"Quick Edit: {title}","Modification rapide : {title}",,site/modules/React/src/I18n/TranslationCatalogService.php,ae42467b63eb56e2d015c6fa83963e2b
+"Edit key fields without leaving this list.","Modifiez les champs principaux sans quitter cette liste.",,site/modules/React/src/I18n/TranslationCatalogService.php,52e4769238ce64e4e6cd49d5ac3ab64d
+"Save Changes","Enregistrer les modifications",,site/modules/React/src/I18n/TranslationCatalogService.php,f5d6040ed78ca86ddc73296a49b18510
+"Required","Obligatoire",,site/modules/React/src/I18n/TranslationCatalogService.php,b651efdb98a5d6bd2b3935d0c3f4a5e2
+"You have unsaved changes.","Vous avez des modifications non enregistrées.",,site/modules/React/src/I18n/TranslationCatalogService.php,604a9a8f13d447df5c82b824ef2de820
+"Unsaved changes","Modifications non enregistrées",,site/modules/React/src/I18n/TranslationCatalogService.php,c227ad77f168e7fd3e21583b324eddf4
+"Leaving or reloading this page will discard the edits you have not saved.","Quitter ou recharger cette page annulera les modifications que vous n’avez pas enregistrées.",,site/modules/React/src/I18n/TranslationCatalogService.php,bd426a1b74c862fd727bd7807affbcd8
+"Discard & Leave","Ignorer et quitter",,site/modules/React/src/I18n/TranslationCatalogService.php,e4dd258ef1d11b3df71dcc7511814bc3
+"Next Step","Étape suivante",,site/modules/React/src/I18n/TranslationCatalogService.php,2bb4cbbf4c51025867d47131e79ad05f
+"Please review the highlighted fields.","Veuillez vérifier les champs mis en évidence.",,site/modules/React/src/I18n/TranslationCatalogService.php,2d7d932a4de2d9a02bb502fd0bd44940
+"Add item","Ajouter un élément",,site/modules/React/src/I18n/TranslationCatalogService.php,ff19c966036b4a0c7350b2fc7e2861c2
+"No items selected.","Aucun élément sélectionné.",,site/modules/React/src/I18n/TranslationCatalogService.php,e3540df61299a71ee0a3dba1e3a988d5
+"Search items...","Rechercher des éléments...",,site/modules/React/src/I18n/TranslationCatalogService.php,b41f8031cebdec8ec27ea418116b82b1
+"Select...","Sélectionner...",,site/modules/React/src/I18n/TranslationCatalogService.php,777475dcd2749b94375fe07762d9d76f
+"Quick column presets","Préréglages rapides de colonnes",,site/modules/React/src/I18n/TranslationCatalogService.php,30b31807f23b112303cbe88e4bd3885d
+"Close field settings","Fermer les paramètres du champ",,site/modules/React/src/I18n/TranslationCatalogService.php,a5efa83fa11035324583a048ee851d8a
+"{field} settings","Paramètres de {field}",,site/modules/React/src/I18n/TranslationCatalogService.php,56f3586f373702c6e88d0a9950adcc30
+"{field} Settings","Paramètres de {field}",,site/modules/React/src/I18n/TranslationCatalogService.php,2f41fff05e90ad04964206347c566ad4
+"{count} customized","{count} personnalisé(s)",,site/modules/React/src/I18n/TranslationCatalogService.php,60ec0bb0501bbb3c476182751ec0ed50
+"Controls unlock once ""{field}"" has a value.","Les contrôles sont déverrouillés dès que « {field} » contient une valeur.",,site/modules/React/src/I18n/TranslationCatalogService.php,a3e7585435a3e281ab416ee057880a31
+"Click to switch this field · Double-click to switch all fields","Cliquer pour ce champ · Double-cliquer pour tous les champs",,site/modules/React/src/I18n/TranslationCatalogService.php,a0c692cb508669a5983a56f72ed26840
+"Now","Maintenant",,site/modules/React/src/I18n/TranslationCatalogService.php,1e1cc9bdeb2f29f5480106aec7e9bc48
+"Today","Aujourd’hui",,site/modules/React/src/I18n/TranslationCatalogService.php,1dd1c5fb7f25cd41b291d43a89e3aefd
+"Clear date","Effacer la date",,site/modules/React/src/I18n/TranslationCatalogService.php,4239f67c37eed41d01bce841e2409c08
+"Copy secret","Copier la clé secrète",,site/modules/React/src/I18n/TranslationCatalogService.php,6185b626d083b9955fe99d0f04027add
+"Generate new secret","Générer une nouvelle clé secrète",,site/modules/React/src/I18n/TranslationCatalogService.php,64481fb3129df05f8fcb93180631a4ad
+"Generate","Générer",,site/modules/React/src/I18n/TranslationCatalogService.php,32b919d18cfaca89383f6000dcc9c031
+"More submit actions","Autres actions d’envoi",,site/modules/React/src/I18n/TranslationCatalogService.php,c37a7a14d4f44c0210494b5fa42c9e37
+"Signature pad","Zone de signature",,site/modules/React/src/I18n/TranslationCatalogService.php,abd47bec49607672c9c93600b8371983
+"Sign above inside the pad","Signez ci-dessus dans le cadre",,site/modules/React/src/I18n/TranslationCatalogService.php,1c517f38d389db1cbab621070b374f8d
+"Key","Clé",,site/modules/React/src/I18n/TranslationCatalogService.php,897356954c2cd3d41b221e3f24f99bba
+"Value","Valeur",,site/modules/React/src/I18n/TranslationCatalogService.php,689202409e48743b914713f96d93947c
+"Add Row","Ajouter une ligne",,site/modules/React/src/I18n/TranslationCatalogService.php,03e0c5bbd5488f1e5ec282529dac9635
+"Remove row","Supprimer la ligne",,site/modules/React/src/I18n/TranslationCatalogService.php,f22cc12954f8a6326b87efac5ab3bbd4
+"Remove {key}","Supprimer {key}",,site/modules/React/src/I18n/TranslationCatalogService.php,ce3c8cbb3dc37630f83efba07e9b8268
+"Remove row {index}","Supprimer la ligne {index}",,site/modules/React/src/I18n/TranslationCatalogService.php,31fffc08b26f9624d2f3fd27f3ce08f2
+"{label} for row {index}","{label} pour la ligne {index}",,site/modules/React/src/I18n/TranslationCatalogService.php,cb52d5dd3a9ad68a8e5868a4f9a3b741
+"{label} for {key}","{label} pour {key}",,site/modules/React/src/I18n/TranslationCatalogService.php,783c12811d863273263544624cba931c
+"Move row {index} up","Monter la ligne {index}",,site/modules/React/src/I18n/TranslationCatalogService.php,ffbf572468485f1f1fcd17fde801a432
+"Move row {index} down","Descendre la ligne {index}",,site/modules/React/src/I18n/TranslationCatalogService.php,66a970ee9ff587601c9642de1254c3de
+"Duplicate key ""{key}"". Each key must be unique.","Clé en double « {key} ». Chaque clé doit être unique.",,site/modules/React/src/I18n/TranslationCatalogService.php,a6dc8c8c04e2a649a533e79f857d521b
+"""{key}"" is a reserved key name.","« {key} » est un nom de clé réservé.",,site/modules/React/src/I18n/TranslationCatalogService.php,1dfe2368b96d2aac54553c2dca729981
+"""{key}"" does not match the required key format.","« {key} » ne correspond pas au format de clé requis.",,site/modules/React/src/I18n/TranslationCatalogService.php,a7e31f9bb0061070a747b3904a1926a8
+"{count} pair(s)","{count} paire(s)",,site/modules/React/src/I18n/TranslationCatalogService.php,d6a91fddfdad84b2fb4cbf660c4926ab
+"{count} / {max}","{count} / {max}",,site/modules/React/src/I18n/TranslationCatalogService.php,9805fee7dc9e56ac789467789cc569d2
+"No key-value pairs","Aucune paire clé-valeur",,site/modules/React/src/I18n/TranslationCatalogService.php,f078e5e545e92e15558c86cdc39aa7af
+"Select item...","Sélectionner un élément...",,site/modules/React/src/I18n/TranslationCatalogService.php,5c6b43c904ee7affd80f5570dd399c63
+"Select items...","Sélectionner des éléments...",,site/modules/React/src/I18n/TranslationCatalogService.php,f558c7000390c00127ceb4582e767ae3
+"No matching items found.","Aucun élément correspondant trouvé.",,site/modules/React/src/I18n/TranslationCatalogService.php,e726430042d35ba7a01645e426fb53b9
+"No matching pages found.","Aucune page correspondante trouvée.",,site/modules/React/src/I18n/TranslationCatalogService.php,9aa45d2b5d98b8874f798e5e3ddffca6
+"No selectable pages found.","Aucune page sélectionnable trouvée.",,site/modules/React/src/I18n/TranslationCatalogService.php,ca8915abba799128a5651c5827936136
+"Loading options...","Chargement des options...",,site/modules/React/src/I18n/TranslationCatalogService.php,0d3fbc55dae8e0a41ace8f0dd46140b4
+"Filter available items","Filtrer les éléments disponibles",,site/modules/React/src/I18n/TranslationCatalogService.php,d2314e129617756e066162f5ef5acfd0
+"Filter available...","Filtrer disponibles...",,site/modules/React/src/I18n/TranslationCatalogService.php,3d70a168f9c147ba1e22a84465ac5370
+"Filter selected items","Filtrer les éléments sélectionnés",,site/modules/React/src/I18n/TranslationCatalogService.php,a13d1c8ec35ba47884ec9576353517fe
+"Filter selected...","Filtrer sélectionnés...",,site/modules/React/src/I18n/TranslationCatalogService.php,5b2f45b143e3078a3ae8ebcfa5330ae9
+"Search pages or browse hierarchy below...","Rechercher des pages ou parcourir la hiérarchie ci-dessous...",,site/modules/React/src/I18n/TranslationCatalogService.php,b31d925a8164bd9e3658d6f2d2d1f9e2
+"Search by title, slug, ID, or path...","Rechercher par titre, slug, ID ou chemin...",,site/modules/React/src/I18n/TranslationCatalogService.php,6a69a62e382f6174c726cba9c4d28ef1
+"Move up","Monter",,site/modules/React/src/I18n/TranslationCatalogService.php,f77af7695f71323808f9b6e2795cde86
+"Move down","Descendre",,site/modules/React/src/I18n/TranslationCatalogService.php,dd9f0c7e1bb3b749bd423e3544b4a8e3
+"Quick create","Création rapide",,site/modules/React/src/I18n/TranslationCatalogService.php,956eaa6186169471a13345860cad0757
+"Creating...","Création en cours...",,site/modules/React/src/I18n/TranslationCatalogService.php,d930f4451cc35bdcd216273a273cb891
+"Create & Select","Créer et sélectionner",,site/modules/React/src/I18n/TranslationCatalogService.php,5fbf6630ad0e74e257c6221f551d6e13
+"Title","Titre",,site/modules/React/src/I18n/TranslationCatalogService.php,b78a3223503896721cca1303f776159b
+"Name / Slug (optional)","Nom / Slug (facultatif)",,site/modules/React/src/I18n/TranslationCatalogService.php,b3cdb9702e78f45ebd3faeea0f0ed5b3
+"Reference","Référence",,site/modules/React/src/I18n/TranslationCatalogService.php,63d5049791d9d79d86e9a108b0a999ca
+"Type / Status","Type / Statut",,site/modules/React/src/I18n/TranslationCatalogService.php,88cf1d6af905d5a419bbb35f779cd96e
+"Link existing","Lier un existant",,site/modules/React/src/I18n/TranslationCatalogService.php,18add7649141635f4ba1dff73c13b5c9
+"Unlink","Dissocier",,site/modules/React/src/I18n/TranslationCatalogService.php,c1a39b6a60f8b2f87e23d60ab649d994
+"Unlink {label}","Délier {label}",,site/modules/React/src/I18n/TranslationCatalogService.php,400c37fc5635f0ed1793e997cdb2ba1c
+"Click to choose images, paste, or drag and drop","Cliquez pour choisir des images, collez ou glissez-déposez",,site/modules/React/src/I18n/TranslationCatalogService.php,03e3ef1655ba17ad045259b94555a2d9
+"Click to choose files, paste, or drag and drop","Cliquez pour choisir des fichiers, collez ou glissez-déposez",,site/modules/React/src/I18n/TranslationCatalogService.php,79427c5a78e6e0275a50f59ea1619728
+"Choose image","Choisir une image",,site/modules/React/src/I18n/TranslationCatalogService.php,5a31ca938eff79f9dd79786b57b19173
+"Choose file","Choisir un fichier",,site/modules/React/src/I18n/TranslationCatalogService.php,cbe55e77ffa67d13322eb1ce7d22f1ba
+"Choose images","Choisir des images",,site/modules/React/src/I18n/TranslationCatalogService.php,1fecb03bc5392b317485c838c1e84ef3
+"Choose files","Choisir des fichiers",,site/modules/React/src/I18n/TranslationCatalogService.php,cdfe673a8db758eb8fa1809f899aa03b
+"Drop or paste","Déposer ou coller",,site/modules/React/src/I18n/TranslationCatalogService.php,f0a4d55c89d2229f32c9d91a586a5e9e
+"Drop to upload","Déposer pour téléverser",,site/modules/React/src/I18n/TranslationCatalogService.php,3f2bd2ae95d2e7c605f5629fb10b0e41
+"Drop file to replace","Déposez le fichier pour remplacer",,site/modules/React/src/I18n/TranslationCatalogService.php,ca0f915653f081b70adc5fd7ca4c7333
+"Add images","Ajouter des images",,site/modules/React/src/I18n/TranslationCatalogService.php,959485bd1014cd6d96ed0482b52dd43e
+"Add files","Ajouter des fichiers",,site/modules/React/src/I18n/TranslationCatalogService.php,d39ec66f08507e26fe86aa5325d070df
+"Replace","Remplacer",,site/modules/React/src/I18n/TranslationCatalogService.php,0ebe6df8a3ac338e0512acc741823fdb
+"Replacing...","Remplacement...",,site/modules/React/src/I18n/TranslationCatalogService.php,35d0feeb4bf8f406835933903f60d09f
+"Uploading {count} item(s)...","Téléversement de {count} élément(s)...",,site/modules/React/src/I18n/TranslationCatalogService.php,97f805ed63fefb1c2aea4bd780e6b419
+"Uploading {name} ({percent}%)","Téléversement de {name} ({percent}%)",,site/modules/React/src/I18n/TranslationCatalogService.php,66ef5476db18dd11bb2dd4017241a2d3
+"Upload failed.","Échec du téléversement.",,site/modules/React/src/I18n/TranslationCatalogService.php,cde28f5998d2dd5da84a4ab21143bc67
+"Max {size}","Max. {size}",,site/modules/React/src/I18n/TranslationCatalogService.php,f808ad8dcf7d15d9fa3a3491d0d0fb5e
+"Up to {count} items","Jusqu’à {count} éléments",,site/modules/React/src/I18n/TranslationCatalogService.php,6f8df2165780ddddf60d042fe5f30480
+"Maximum file limit ({max}) reached.","Limite maximale de fichiers ({max}) atteinte.",,site/modules/React/src/I18n/TranslationCatalogService.php,24e421b6a02813b4914e7278f2db14fe
+"Only one file can be dropped when replacing an item.","Un seul fichier peut être déposé lors du remplacement d’un élément.",,site/modules/React/src/I18n/TranslationCatalogService.php,707e57f6a32903d027bb68340d314e79
+"Single item","Élément unique",,site/modules/React/src/I18n/TranslationCatalogService.php,317af23d2bfd619621001d50e7b4d49f
+"{count} item(s)","{count} élément(s)",,site/modules/React/src/I18n/TranslationCatalogService.php,e6396734a11282f165c6f4302f3e49cd
+"Grid view","Vue en grille",,site/modules/React/src/I18n/TranslationCatalogService.php,b3d7c37eb8d31a2ca32fdc5850306f60
+"Table view","Vue en tableau",,site/modules/React/src/I18n/TranslationCatalogService.php,a02440b6c5ae80c41c0cceb53e494807
+"Drag or use arrow keys to reorder {name}","Glissez ou utilisez les flèches pour réorganiser {name}",,site/modules/React/src/I18n/TranslationCatalogService.php,56b5ebf8bba7b715d82f00f1558c5881
+"Edit Media Details","Modifier les détails du média",,site/modules/React/src/I18n/TranslationCatalogService.php,298110a1a84578b0358e84d902baf39f
+"Configure alt text, multi-language descriptions, tags, focal point, crop, and metadata.","Configurez le texte alternatif, les descriptions multilingues, les étiquettes, le point focal, le recadrage et les métadonnées.",,site/modules/React/src/I18n/TranslationCatalogService.php,e291cdf0521fffd9324b9e2fd8008a06
+"Details","Détails",,site/modules/React/src/I18n/TranslationCatalogService.php,3ec365dd533ddb7ef3d1c111186ce872
+"Focal Point","Point focal",,site/modules/React/src/I18n/TranslationCatalogService.php,39c3c90e90e174f42f16493a20320cd0
+"Crop & Transform","Recadrer et transformer",,site/modules/React/src/I18n/TranslationCatalogService.php,2fcb83faab71283be03272ed826af689
+"Custom Fields","Champs personnalisés",,site/modules/React/src/I18n/TranslationCatalogService.php,833956a760d996ae61ea8b385e9fb6f0
+"Alt text / description","Texte alternatif / description",,site/modules/React/src/I18n/TranslationCatalogService.php,2927039bc4525f9f53ce7b30946a6fa4
+"Description","Description",,site/modules/React/src/I18n/TranslationCatalogService.php,b5a7adde1af5c87d7fd797b6245c2a39
+"Describe this image for screen readers and SEO...","Décrivez cette image pour les lecteurs d’écran et le SEO...",,site/modules/React/src/I18n/TranslationCatalogService.php,55e6985522f9685200948139eb189f94
+"Add file description...","Ajouter une description du fichier...",,site/modules/React/src/I18n/TranslationCatalogService.php,c7d134733e9ce852ba0788c86517afbe
+"Missing alt","Alt manquant",,site/modules/React/src/I18n/TranslationCatalogService.php,2bbf23509000f5e3f083cb540047c9ba
+"{filled}/{total} langs","{filled}/{total} langues",,site/modules/React/src/I18n/TranslationCatalogService.php,d0dfb6667480f648febe27aa1cba2496
+"All languages","Toutes les langues",,site/modules/React/src/I18n/TranslationCatalogService.php,abdffc07f137a3b4b3e4df13d2cafee4
+"Single tab","Onglet unique",,site/modules/React/src/I18n/TranslationCatalogService.php,c52ea324b7f45ea118dea2e1ebf9abff
+"Tags","Étiquettes",,site/modules/React/src/I18n/TranslationCatalogService.php,189f63f277cd73395561651753563065
+"Type a tag and press Enter...","Saisissez une étiquette puis appuyez sur Entrée...",,site/modules/React/src/I18n/TranslationCatalogService.php,d41b1f563e8bc4e2a60951e438a5687d
+"Suggested tags","Étiquettes suggérées",,site/modules/React/src/I18n/TranslationCatalogService.php,02bdc086e3ca9bc63dbc2e91f1e7f18a
+"Select a tag below...","Sélectionnez une étiquette ci-dessous...",,site/modules/React/src/I18n/TranslationCatalogService.php,3ad8313ea124bec9192af51722379a25
+"Inspector sections","Sections de l’inspecteur",,site/modules/React/src/I18n/TranslationCatalogService.php,962d0f3184a7b6b18cb84f4e0dc2060c
+"Select crop area","Sélectionner la zone de recadrage",,site/modules/React/src/I18n/TranslationCatalogService.php,152004221c80f3b7576dbf4f5c476f3b
+"Focal point","Point focal",,site/modules/React/src/I18n/TranslationCatalogService.php,88cf7d8a95820c1ae46677696f705093
+"Click anywhere on the image to set the focal point used by smart crops.","Cliquez n’importe où sur l’image pour définir le point focal utilisé par les recadrages intelligents.",,site/modules/React/src/I18n/TranslationCatalogService.php,e42a8c430f3c251acdb1703133f94d3c
+"Top {top}% · Left {left}%","Haut {top}% · Gauche {left}%",,site/modules/React/src/I18n/TranslationCatalogService.php,596c3125a0760d54518166d28f005e74
+"Zoom","Zoom",,site/modules/React/src/I18n/TranslationCatalogService.php,4252b72e6ebcd4d4b4c2e46a786f03d2
+"Center focus","Centrer le point focal",,site/modules/React/src/I18n/TranslationCatalogService.php,8cc442b86232a6c6281af310110789f7
+"Smart crop previews","Aperçus des recadrages intelligents",,site/modules/React/src/I18n/TranslationCatalogService.php,2860e75905a5686de6c0ece062bb69d9
+"Free","Libre",,site/modules/React/src/I18n/TranslationCatalogService.php,b24ce0cd392a5b0b8dedc66c25213594
+"Original","Original",,site/modules/React/src/I18n/TranslationCatalogService.php,0a52da7a03a6de3beefe54f8c03ad80d
+"Apply crop","Appliquer le recadrage",,site/modules/React/src/I18n/TranslationCatalogService.php,2575788607dc3187209eb5de1f25d04c
+"Clear selection","Effacer la sélection",,site/modules/React/src/I18n/TranslationCatalogService.php,80ffff123555bd5173345bc8f144edeb
+"Rotate -90°","Pivoter -90°",,site/modules/React/src/I18n/TranslationCatalogService.php,702c5f0c445ec4b1b58c15fed5ebb5da
+"Rotate +90°","Pivoter +90°",,site/modules/React/src/I18n/TranslationCatalogService.php,7fac3b0f85aa2d977fd48909539cd6d1
+"Rotate 180°","Pivoter 180°",,site/modules/React/src/I18n/TranslationCatalogService.php,c3f606a2e1fae204da410754e5823017
+"Flip horizontal","Retourner horizontalement",,site/modules/React/src/I18n/TranslationCatalogService.php,2f96dd2b9788ed9ecbc6f41c312bf455
+"Flip vertical","Retourner verticalement",,site/modules/React/src/I18n/TranslationCatalogService.php,8373d2f18e29920f78459f34d71040ad
+"Applying image transform...","Transformation de l’image en cours...",,site/modules/React/src/I18n/TranslationCatalogService.php,6fd250eded829d856bd37598518b1963
+"Drag on the image to select a crop area, or use quick rotate and flip actions.","Faites glisser sur l’image pour sélectionner une zone à recadrer, ou utilisez les actions de rotation et de retournement.",,site/modules/React/src/I18n/TranslationCatalogService.php,b65b7eaa6acece3048f0248fd245273f
+"Dimensions","Dimensions",,site/modules/React/src/I18n/TranslationCatalogService.php,f4843c1c797abf1a256c8802b6cd9f51
+"File size","Taille du fichier",,site/modules/React/src/I18n/TranslationCatalogService.php,1908624a0bca678cd26b99bfd405324e
+"Format","Format",,site/modules/React/src/I18n/TranslationCatalogService.php,520d0db389f362bf79ef56ca0af3dcab
+"Extracted palette","Palette extraite",,site/modules/React/src/I18n/TranslationCatalogService.php,b6b8492978a983cd73b24953f65bf6e4
+"Extract colors","Extraire les couleurs",,site/modules/React/src/I18n/TranslationCatalogService.php,941cf87e001156906fd9cbe73c40f9c4
+"Copied {hex}","{hex} copié",,site/modules/React/src/I18n/TranslationCatalogService.php,8f3c87ddda603f0268ced2da81cb4d43
+"Copy URL","Copier l’URL",,site/modules/React/src/I18n/TranslationCatalogService.php,9de711d6eb379d46caa26e86cdafa0e9
+"URL copied","URL copiée",,site/modules/React/src/I18n/TranslationCatalogService.php,5dc60c29c1e588a9c66eed361410fccb
+"Open original","Ouvrir l’original",,site/modules/React/src/I18n/TranslationCatalogService.php,9d8d8f8322da0dee6443d8d9b4f1d431
+"Download","Télécharger",,site/modules/React/src/I18n/TranslationCatalogService.php,801ab24683a4a8c433c6eb40c48bcd9d
+"More actions","Plus d’actions",,site/modules/React/src/I18n/TranslationCatalogService.php,284716247b12b363fd6b6a71bff0918e
+"Cancel upload","Annuler le téléversement",,site/modules/React/src/I18n/TranslationCatalogService.php,59af3165c0a8fb51f60f666aa36827e1
+"Crop selection. Drag to move, or use arrow keys to nudge.","Sélection de recadrage. Faites glisser pour déplacer ou utilisez les flèches.",,site/modules/React/src/I18n/TranslationCatalogService.php,66022acfa27249d3e437077717d7e15d
+"Crop selection updated","Sélection de recadrage mise à jour",,site/modules/React/src/I18n/TranslationCatalogService.php,9557e20351cb7308d552387707580bcd
+"Pending save","En attente d’enregistrement",,site/modules/React/src/I18n/TranslationCatalogService.php,118fecf21b98faf1e34d87b25027794e
+"Marked for deletion","Marqué pour suppression",,site/modules/React/src/I18n/TranslationCatalogService.php,064315db8457fb92899575dde95d9aa3
+"Undo","Annuler",,site/modules/React/src/I18n/TranslationCatalogService.php,1cdc076b28f70afac5fcedadf99fa119
+"Remove {name}","Supprimer {name}",,site/modules/React/src/I18n/TranslationCatalogService.php,37eb9bbace3a75b7364dd9efdb1169b6
+"Inspect & edit {name}","Inspecter et modifier {name}",,site/modules/React/src/I18n/TranslationCatalogService.php,06abf2bba16bc1841811668bf3855006
+"Previous item","Élément précédent",,site/modules/React/src/I18n/TranslationCatalogService.php,e472ee92cadec6aa540597fd71def57b
+"Next item","Élément suivant",,site/modules/React/src/I18n/TranslationCatalogService.php,f032241504d7b559c7dd5f986e6947c4
+"File","Fichier",,site/modules/React/src/I18n/TranslationCatalogService.php,0b27918290ff5323bea1e3b78a9cf04e
+"Alt / Description","Texte alternatif / Description",,site/modules/React/src/I18n/TranslationCatalogService.php,b7e92f96751d3993796fb15fa1d812a4
+"Info","Infos",,site/modules/React/src/I18n/TranslationCatalogService.php,4059b0251f66a18cb56f544728796875
+"Image upload is locked.","Le téléversement d’images est verrouillé.",,site/modules/React/src/I18n/TranslationCatalogService.php,ce4ea9eeb46fc8f25014eeca6961cc72
+"File upload is locked.","Le téléversement de fichiers est verrouillé.",,site/modules/React/src/I18n/TranslationCatalogService.php,0d74c2e05c1d054ba1fa67b37ba0dd55
+"Link type","Type de lien",,site/modules/React/src/I18n/TranslationCatalogService.php,e40e5cf7707c8efd70e8c220cb692b5e
+"Choose video","Choisir une vidéo",,site/modules/React/src/I18n/TranslationCatalogService.php,cbe18bc3cdf4dba823a85578f261ae14
+"Drop","Déposer",,site/modules/React/src/I18n/TranslationCatalogService.php,3e679cff5b3a6f6f8f32aead541a0a12
+"Upload progress","Progression du téléversement",,site/modules/React/src/I18n/TranslationCatalogService.php,22af9d321feab79bcba1a07feb3fd31d
+"Open {name}","Ouvrir {name}",,site/modules/React/src/I18n/TranslationCatalogService.php,a64c86443dd775087f080bc37105a756
+"Replace {name}","Remplacer {name}",,site/modules/React/src/I18n/TranslationCatalogService.php,1b44146a304770f514430e0e91b55319
+"Replace file","Remplacer le fichier",,site/modules/React/src/I18n/TranslationCatalogService.php,82c8ebc9209c20ea618ffe60b58096a5
+"Remove file","Supprimer le fichier",,site/modules/React/src/I18n/TranslationCatalogService.php,b21f085d08623fc7a5a9da204cc66c8c
+"Clear selected target","Effacer la cible sélectionnée",,site/modules/React/src/I18n/TranslationCatalogService.php,3444f11aee6d3919024746cfa34331e8
+"Search entries","Rechercher des entrées",,site/modules/React/src/I18n/TranslationCatalogService.php,39cfbd4c7c25bd8e49c6e3fd859a66cd
+"Search pages","Rechercher des pages",,site/modules/React/src/I18n/TranslationCatalogService.php,9003fc7489e6aec510d20674d0495601
+"Cancel search","Annuler la recherche",,site/modules/React/src/I18n/TranslationCatalogService.php,036934cf9842451c835a9981a067d0c3
+"Email address","Adresse e-mail",,site/modules/React/src/I18n/TranslationCatalogService.php,b357b524e740bc85b9790a0712d84a30
+"Phone number","Numéro de téléphone",,site/modules/React/src/I18n/TranslationCatalogService.php,1f8261d17452a959e013666c5df45e07
+"Link URL or #anchor","URL du lien ou #ancre",,site/modules/React/src/I18n/TranslationCatalogService.php,833c9f57f8dda097dfce3bab0900592a
+"Clear link target","Effacer la cible du lien",,site/modules/React/src/I18n/TranslationCatalogService.php,a17a700e7f4c79b8ee3fabb53366be82
+"Link label","Libellé du lien",,site/modules/React/src/I18n/TranslationCatalogService.php,b9f110a8326f63c00c794d9e91a476f4
+"Link label (optional)","Libellé du lien (facultatif)",,site/modules/React/src/I18n/TranslationCatalogService.php,c5781485b71aedb383635ee88657118a
+"ARIA Label","Libellé ARIA",,site/modules/React/src/I18n/TranslationCatalogService.php,ef6e927d0da7bbdb305f2b4c034ec74f
+"Screen reader label (optional)","Libellé pour lecteur d’écran (facultatif)",,site/modules/React/src/I18n/TranslationCatalogService.php,75857515cc8d8d3d0ed59d756596e97e
+"Link options","Options du lien",,site/modules/React/src/I18n/TranslationCatalogService.php,192d035ffb07b34f98ade39b20944c49
+"Searching...","Recherche...",,site/modules/React/src/I18n/TranslationCatalogService.php,1243daf593fa297e07ab03bf06d925af
+"Link Options","Options du lien",,site/modules/React/src/I18n/TranslationCatalogService.php,0fb7010ec16c91ec543a440daab8917b
+"Close link options","Fermer les options du lien",,site/modules/React/src/I18n/TranslationCatalogService.php,dd061f3a1eb06d25ee1af9e5b50a9ced
+"Open Target","Cible d’ouverture",,site/modules/React/src/I18n/TranslationCatalogService.php,ee8fc50fbc2bce466f44e66d3aecd60c
+"Same tab (_self)","Même onglet (_self)",,site/modules/React/src/I18n/TranslationCatalogService.php,e60b30326ec2eb67e109e0b586640381
+"New tab (_blank)","Nouvel onglet (_blank)",,site/modules/React/src/I18n/TranslationCatalogService.php,c706fdfc0d0b28c44c28d7f3ce648a2b
+"Anchor Fragment (#)","Fragment d’ancre (#)",,site/modules/React/src/I18n/TranslationCatalogService.php,7d4a1ce8e6774a43290e424eaa30b818
+"Query Parameters (?)","Paramètres de requête (?)",,site/modules/React/src/I18n/TranslationCatalogService.php,092d68d0dc6bb122560ce4ceff8d2764
+"Rel Attribute","Attribut Rel",,site/modules/React/src/I18n/TranslationCatalogService.php,a72ed7c691daedb26de8a6a9ecdaa0c0
+"Phone number may only contain digits (0-9) and an optional leading + sign.","Le numéro de téléphone ne peut contenir que des chiffres (0-9) et un signe + initial facultatif.",,site/modules/React/src/I18n/TranslationCatalogService.php,565a52271fd5b9146aad6020c91cb361
+"Enter a valid email address.","Saisissez une adresse e-mail valide.",,site/modules/React/src/I18n/TranslationCatalogService.php,d68c7cd2cdc561bc55a5b8e6d8c4dd6c
+"Unsafe URL protocol is not allowed.","Les protocoles d’URL non sécurisés ne sont pas autorisés.",,site/modules/React/src/I18n/TranslationCatalogService.php,540e3c510aeea10f4e39ed95557c5c64
+"Media upload context is not available for this field.","Le contexte de téléversement média n’est pas disponible pour ce champ.",,site/modules/React/src/I18n/TranslationCatalogService.php,6a2a95bddcd94963944c67435da617cb
+"Selected file is not supported.","Le fichier sélectionné n’est pas pris en charge.",,site/modules/React/src/I18n/TranslationCatalogService.php,a37cf8f4caea217468dca76878c83251
+"Failed to upload file.","Échec du téléversement du fichier.",,site/modules/React/src/I18n/TranslationCatalogService.php,74318b4d780ce06c8dbf781c22c73a3a
+"Edit media details & alt text for {name}","Modifier les détails média et le texte alternatif de {name}",,site/modules/React/src/I18n/TranslationCatalogService.php,c2e087a3a42a5ca4e023631c84894ca5
+"Edit media details, alt text & focal point","Modifier les détails du média, le texte alternatif et le point focal",,site/modules/React/src/I18n/TranslationCatalogService.php,15455322cb5ed157ae075a5e6c553741
+"New tab","Nouvel onglet",,site/modules/React/src/I18n/TranslationCatalogService.php,c8a19ea6c79e23a1ee5372c8dbf3c6cf
+"Selected icon","Icône sélectionnée",,site/modules/React/src/I18n/TranslationCatalogService.php,c3f172d89f52a265985eab184b7c2f20
+"Select an icon...","Sélectionner une icône...",,site/modules/React/src/I18n/TranslationCatalogService.php,cd625882db0b286414cedd94738e8b32
+"Clear icon","Effacer l'icône",,site/modules/React/src/I18n/TranslationCatalogService.php,18276346bd3773253fdc4c1c5e496eb2
+"Reset Style","Réinitialiser le style",,site/modules/React/src/I18n/TranslationCatalogService.php,e86a54e13ae40856b7c38b514dc6974b
+"Size (px)","Taille (px)",,site/modules/React/src/I18n/TranslationCatalogService.php,4c36ec3ac2cb9bda46e6dacc2974d282
+"Stroke Width","Épaisseur du trait",,site/modules/React/src/I18n/TranslationCatalogService.php,6d999904323d1dbe38ec7ce97aaff0ef
+"Icon Color","Couleur de l'icône",,site/modules/React/src/I18n/TranslationCatalogService.php,4315faf12d817f66b65bc0323c514c88
+"Auto (currentColor)","Auto (couleur actuelle)",,site/modules/React/src/I18n/TranslationCatalogService.php,9f00f77ff0d3dc50a92474949b1b2908
+"Custom icon hex color","Couleur hexadécimale personnalisée",,site/modules/React/src/I18n/TranslationCatalogService.php,88115bf701716c2e29c26f9184efbf40
+"Badge Background & Shape","Fond et forme du badge",,site/modules/React/src/I18n/TranslationCatalogService.php,d2ac054ec2a32159792b9e4de3c2a27a
+"No background","Aucun fond",,site/modules/React/src/I18n/TranslationCatalogService.php,7291417479be88cf7dc61910d3bfae0e
+"Custom badge hex color","Couleur hexadécimale du badge",,site/modules/React/src/I18n/TranslationCatalogService.php,277229ed1d0014f6eea9a11c1da88490
+"Icons","Icônes",,site/modules/React/src/I18n/TranslationCatalogService.php,8f67973007158337346584551b093be8
+"Search icons...","Rechercher des icônes...",,site/modules/React/src/I18n/TranslationCatalogService.php,96e7dafae5db47a9df8b1c07af9e0421
+"Search {count} icons","Rechercher parmi {count} icônes",,site/modules/React/src/I18n/TranslationCatalogService.php,85bdf2af0dcf18702347117874747126
+"Category","Catégorie",,site/modules/React/src/I18n/TranslationCatalogService.php,3adbdb3ac060038aa0e6e6c138ef9873
+"All categories","Toutes les catégories",,site/modules/React/src/I18n/TranslationCatalogService.php,62f5d708d6ad1fa1ddd9429a65cccbea
+"Style","Style",,site/modules/React/src/I18n/TranslationCatalogService.php,ae284f900f9d6e21ba69144cfc91e41b
+"All styles","Tous les styles",,site/modules/React/src/I18n/TranslationCatalogService.php,964f10b2515883ce73cd5db07fff012e
+"Outline","Contour",,site/modules/React/src/I18n/TranslationCatalogService.php,606b51cc1c9d0b4af394419a22f2ff1f
+"Filled","Plein",,site/modules/React/src/I18n/TranslationCatalogService.php,d9d586f8c792f8f661052af42536323c
+"Popular","Populaires",,site/modules/React/src/I18n/TranslationCatalogService.php,2cc1943d4c0b46bfcf503a75c44f988b
+"All icons","Toutes les icônes",,site/modules/React/src/I18n/TranslationCatalogService.php,b50d4ff0ac4f73bcb419a4396a3989f5
+"No matching icons found.","Aucune icône correspondante trouvée.",,site/modules/React/src/I18n/TranslationCatalogService.php,6fe730153d19457d273abdb1d0b92039
+"icon","icône",,site/modules/React/src/I18n/TranslationCatalogService.php,baec6461b0d69dde1b861aefbe375d8a
+"icons","icônes",,site/modules/React/src/I18n/TranslationCatalogService.php,bd21190449b7e88db48fa0f580a8f666
+"Data grid","Grille de données",,site/modules/React/src/I18n/TranslationCatalogService.php,7a295345749190b5a5897a59e7e18b01
+"Resize column","Redimensionner la colonne",,site/modules/React/src/I18n/TranslationCatalogService.php,7df1f65fec6e37b0f79119bc0ce720ff
+"Select row","Sélectionner la ligne",,site/modules/React/src/I18n/TranslationCatalogService.php,bc2a8d43c82f4a68a6779ba2f249476c
+"Select date","Sélectionner une date",,site/modules/React/src/I18n/TranslationCatalogService.php,75319e99a808565ccc78353d84131846
+"Select date range","Sélectionner une plage de dates",,site/modules/React/src/I18n/TranslationCatalogService.php,b4a18b61095db7e554460f542e2d3239
+"Clear date range","Effacer la plage de dates",,site/modules/React/src/I18n/TranslationCatalogService.php,2fb455b1a3ba4c2e0d79b32670c5c04b
+"Picked up {label}","{label} sélectionné pour déplacement",,site/modules/React/src/I18n/TranslationCatalogService.php,ce93e3720beea6b49d923d43987919b0
+"Drag cancelled","Déplacement annulé",,site/modules/React/src/I18n/TranslationCatalogService.php,66b83d3db0619bb076ecae33fdd109dd
+"Moved {label} to position {position} of {total}","{label} déplacé à la position {position} sur {total}",,site/modules/React/src/I18n/TranslationCatalogService.php,ae569efa68481552cbe5e33923d19c9c
+"Moved {label} to position {position}","{label} déplacé à la position {position}",,site/modules/React/src/I18n/TranslationCatalogService.php,38e9da47e0eab16ffd44a7e6b618dfe2
+"Moved {label} to level {level}","{label} déplacé au niveau {level}",,site/modules/React/src/I18n/TranslationCatalogService.php,1cc267f498bf394ded895eac25df023a
+"Moved {label} to position {position}, level {level}","{label} déplacé à la position {position}, niveau {level}",,site/modules/React/src/I18n/TranslationCatalogService.php,1912015f31e195903b008f021d9b8298
+"Keyboard Shortcuts","Raccourcis clavier",,site/modules/React/src/I18n/TranslationCatalogService.php,5f405eb9720e7065c9c383de4d40e664
+"Available keyboard shortcuts for navigation, lists, and forms.","Raccourcis clavier disponibles pour la navigation, les listes et les formulaires.",,site/modules/React/src/I18n/TranslationCatalogService.php,27fbb88b2855a5a0de3a15e95d15c895
+"Show keyboard shortcuts","Afficher les raccourcis clavier",,site/modules/React/src/I18n/TranslationCatalogService.php,646dfcfe178c536fd31eb43171ab8c78
+"General","Général",,site/modules/React/src/I18n/TranslationCatalogService.php,0db377921f4ce762c62526131097968f
+"Forms","Formulaires",,site/modules/React/src/I18n/TranslationCatalogService.php,6450242531912981c3683cae88a32a66
+"Lists & Viewports","Listes et vues",,site/modules/React/src/I18n/TranslationCatalogService.php,81953616022b71a92d0947ccf6f52537
+"Current Workspace","Espace de travail actif",,site/modules/React/src/I18n/TranslationCatalogService.php,76422b37d9f8aec30e9e0495a30cc896
+"Open Quick Switcher","Ouvrir le sélecteur rapide",,site/modules/React/src/I18n/TranslationCatalogService.php,c621b18a8c00bb06f953efbb61e8c55d
+"Go to Workspace Dashboard","Aller au tableau de bord",,site/modules/React/src/I18n/TranslationCatalogService.php,4c72a344fccdeaca018d54eb710db816
+"Return to Admin Panel","Retour au panneau d'administration",,site/modules/React/src/I18n/TranslationCatalogService.php,dca934acd2ab89028ce198d0c5ef216d
+"Switch to section tab 1-9","Passer à l'onglet de section 1-9",,site/modules/React/src/I18n/TranslationCatalogService.php,a43c1b654aff7ed6e734242ace5dc9ae
+"Save form","Enregistrer le formulaire",,site/modules/React/src/I18n/TranslationCatalogService.php,4abf00b2d141d640a689a148587aa875
+"Save & exit form","Enregistrer et quitter",,site/modules/React/src/I18n/TranslationCatalogService.php,40a528d102ea5b2f0df81f287d094be4
+"Go back","Revenir en arrière",,site/modules/React/src/I18n/TranslationCatalogService.php,22b653bd8d2edcebb9e0036b4ac79262
+"Focus search input","Activer la recherche",,site/modules/React/src/I18n/TranslationCatalogService.php,1b63a9bb3c18f21673d98e9147789a21
+"Create new item","Créer un nouvel élément",,site/modules/React/src/I18n/TranslationCatalogService.php,b89eb9120677d96e405c63bd5ceab526
+"Refresh view","Actualiser la vue",,site/modules/React/src/I18n/TranslationCatalogService.php,aab9285b511b639fa4cf3375ed57e948
+"Close dialog or menu","Fermer la fenêtre ou le menu",,site/modules/React/src/I18n/TranslationCatalogService.php,3c9caa43cf29e7c9135ba77e4627591a
+"No shortcuts registered on this view.","Aucun raccourci enregistré pour cette vue.",,site/modules/React/src/I18n/TranslationCatalogService.php,72aa765c765e4bc2b1eeb0f09dbf8a2d
+"Press ? anytime to toggle this help dialog.","Appuyez sur ? à tout moment pour afficher ou masquer cette aide.",,site/modules/React/src/I18n/TranslationCatalogService.php,73585e8441a501841f3a6c654868561d
 "Please select at least %d item(s).","Veuillez sélectionner au moins %d élément(s).",,site/modules/React/src/Media/InteractWithReactMediaInputfield.php,cfecdec3aa548f6f05dd7fb4aac1f0fa
 "Authentication required.","Authentification requise.",,site/modules/React/src/Media/MediaGateway.php,27d1d715bcd77c610edb102f776c63c6
 "Missing mediaToken.","mediaToken manquant.",,site/modules/React/src/Media/MediaGateway.php,2800ea5493d7e5e07b3dac69293b5215
@@ -824,39 +903,39 @@ Configuration,Configuration,,site/modules/React/src/Form/FormSchemaSerializer.ph
 "Target page link field not found.","Champ de lien de page cible introuvable.",,site/modules/React/src/Media/PageLinkMediaHostAdapter.php,32520c9554c10ccfbcb049ada646b456
 "You do not have permission to modify this link media field.","Vous n’avez pas l’autorisation de modifier ce champ média de lien.",,site/modules/React/src/Media/PageLinkMediaHostAdapter.php,cd9d5ea980837bc70e94cdcbe7be9098
 "Requested media profile is not enabled on this link field.","Le profil média demandé n’est pas activé sur ce champ de lien.",,site/modules/React/src/Media/PageLinkMediaHostAdapter.php,ce65978501e94a100eefa52250efea9b
-Records,Enregistrements,,site/modules/React/src/Provider/ArrayDataProvider.php,db231ec39f2ce4d5ad1de0abfc8970d9
-Title,Titre,,site/modules/React/src/Provider/ArrayDataProvider.php,b78a3223503896721cca1303f776159b
-Published,Publié,,site/modules/React/src/Provider/ArrayDataProvider.php,9b9d8a976b42e0bd66381797644943d5
-Draft,Brouillon,,site/modules/React/src/Provider/ArrayDataProvider.php,f03ab16cd58372c77ba45a3d9a5a1cb9
-Trash,Corbeille,,site/modules/React/src/Provider/ArrayDataProvider.php,a7e253cd8dd95da3e20daf45519a8dc2
+"Records","Enregistrements",,site/modules/React/src/Provider/ArrayDataProvider.php,db231ec39f2ce4d5ad1de0abfc8970d9
+"Title","Titre",,site/modules/React/src/Provider/ArrayDataProvider.php,b78a3223503896721cca1303f776159b
+"Published","Publié",,site/modules/React/src/Provider/ArrayDataProvider.php,9b9d8a976b42e0bd66381797644943d5
+"Draft","Brouillon",,site/modules/React/src/Provider/ArrayDataProvider.php,f03ab16cd58372c77ba45a3d9a5a1cb9
+"Trash","Corbeille",,site/modules/React/src/Provider/ArrayDataProvider.php,a7e253cd8dd95da3e20daf45519a8dc2
 "To Do","À faire",,site/modules/React/src/Provider/ArrayDataProvider.php,0a386db7267f3ca1e5eb587bcc9ccc7e
 "In Progress","En cours",,site/modules/React/src/Provider/ArrayDataProvider.php,c9413dd7682a45da9ecc9efa8cea47d7
-Done,Terminé,,site/modules/React/src/Provider/ArrayDataProvider.php,f92965e2c8a7afb3c1b9a5c09a263636
-Sum,Somme,,site/modules/React/src/Provider/ArrayDataProvider.php,a0ec87054b5e5b7847d0d8780a01a3d5
-Avg,Moy.,,site/modules/React/src/Provider/ArrayDataProvider.php,5c0c148daa2c67922abe6018b87a759f
-Min,Min,,site/modules/React/src/Provider/ArrayDataProvider.php,78d811e98514cd165dda532286610fd2
-Max,Max,,site/modules/React/src/Provider/ArrayDataProvider.php,6a061313d22e51e0f25b7cd4dc065233
-Count,Nombre,,site/modules/React/src/Provider/ArrayDataProvider.php,e93f994f01c537c4e2f7d8528c3eb5e9
+"Done","Terminé",,site/modules/React/src/Provider/ArrayDataProvider.php,f92965e2c8a7afb3c1b9a5c09a263636
+"Sum","Somme",,site/modules/React/src/Provider/ArrayDataProvider.php,a0ec87054b5e5b7847d0d8780a01a3d5
+"Avg","Moy.",,site/modules/React/src/Provider/ArrayDataProvider.php,5c0c148daa2c67922abe6018b87a759f
+"Min","Min",,site/modules/React/src/Provider/ArrayDataProvider.php,78d811e98514cd165dda532286610fd2
+"Max","Max",,site/modules/React/src/Provider/ArrayDataProvider.php,6a061313d22e51e0f25b7cd4dc065233
+"Count","Nombre",,site/modules/React/src/Provider/ArrayDataProvider.php,e93f994f01c537c4e2f7d8528c3eb5e9
 "Provider is locked.","Le fournisseur est verrouillé.",,site/modules/React/src/Provider/ArrayDataProvider.php,658752e259aa3cb793ee404b4d347bde
 "Title is required.","Le titre est obligatoire.",,site/modules/React/src/Provider/ArrayDataProvider.php,c1e190918f029b350e2c7cc16298abcd
 "Created record.","Enregistrement créé.",,site/modules/React/src/Provider/ArrayDataProvider.php,0e8fe2f605fec7f47aaabb8e3812d72c
 "Saved record.","Enregistrement sauvegardé.",,site/modules/React/src/Provider/ArrayDataProvider.php,a088a84d9a3162ca3e209d202abd694c
 "Record not found.","Enregistrement introuvable.",,site/modules/React/src/Provider/ArrayDataProvider.php,a22645bb48b7bc050a1de2dccbb49bc8
-Pages,Pages,,site/modules/React/src/Provider/PagesDataProvider.php,453aceb005ceaf54a47da15fee8b2a26
-Title,Titre,,site/modules/React/src/Provider/PagesDataProvider.php,b78a3223503896721cca1303f776159b
-Name,Nom,,site/modules/React/src/Provider/PagesDataProvider.php,49ee3087348e8d44e1feda1917443987
-Modified,Modifié,,site/modules/React/src/Provider/PagesDataProvider.php,35e0c8c0b180c95d4e122e55ed62cc64
-Status,Statut,,site/modules/React/src/Provider/PagesDataProvider.php,ec53a8c4f07baed5d8825072c89799be
-Published,Publié,,site/modules/React/src/Provider/PagesDataProvider.php,9b9d8a976b42e0bd66381797644943d5
-Draft,Brouillon,,site/modules/React/src/Provider/PagesDataProvider.php,f03ab16cd58372c77ba45a3d9a5a1cb9
-Hidden,Masqué,,site/modules/React/src/Provider/PagesDataProvider.php,7acdf85c69cc3c5305456a293524386e
-Trash,Corbeille,,site/modules/React/src/Provider/PagesDataProvider.php,a7e253cd8dd95da3e20daf45519a8dc2
-Edit,Modifier,,site/modules/React/src/Provider/PagesDataProvider.php,7dce122004969d56ae2e0245cb754d35
+"Pages","Pages",,site/modules/React/src/Provider/PagesDataProvider.php,453aceb005ceaf54a47da15fee8b2a26
+"Title","Titre",,site/modules/React/src/Provider/PagesDataProvider.php,b78a3223503896721cca1303f776159b
+"Name","Nom",,site/modules/React/src/Provider/PagesDataProvider.php,49ee3087348e8d44e1feda1917443987
+"Modified","Modifié",,site/modules/React/src/Provider/PagesDataProvider.php,35e0c8c0b180c95d4e122e55ed62cc64
+"Status","Statut",,site/modules/React/src/Provider/PagesDataProvider.php,ec53a8c4f07baed5d8825072c89799be
+"Published","Publié",,site/modules/React/src/Provider/PagesDataProvider.php,9b9d8a976b42e0bd66381797644943d5
+"Draft","Brouillon",,site/modules/React/src/Provider/PagesDataProvider.php,f03ab16cd58372c77ba45a3d9a5a1cb9
+"Hidden","Masqué",,site/modules/React/src/Provider/PagesDataProvider.php,7acdf85c69cc3c5305456a293524386e
+"Trash","Corbeille",,site/modules/React/src/Provider/PagesDataProvider.php,a7e253cd8dd95da3e20daf45519a8dc2
+"Edit","Modifier",,site/modules/React/src/Provider/PagesDataProvider.php,7dce122004969d56ae2e0245cb754d35
 "View Page","Voir la page",,site/modules/React/src/Provider/PagesDataProvider.php,e4b846392f10f46b032cf155c39a0eaf
-Unpublish,Dépublier,,site/modules/React/src/Provider/PagesDataProvider.php,181e9a13059454fb2212f1bf10f394ac
+"Unpublish","Dépublier",,site/modules/React/src/Provider/PagesDataProvider.php,181e9a13059454fb2212f1bf10f394ac
 "Move to Trash","Mettre à la corbeille",,site/modules/React/src/Provider/PagesDataProvider.php,7a289ea949902e8fa53efb4b3b4ccea0
 "Move this page to the trash?","Mettre cette page à la corbeille ?",,site/modules/React/src/Provider/PagesDataProvider.php,33615f2cfa0bfa77144f488a75e5d178
-Restore,Restaurer,,site/modules/React/src/Provider/PagesDataProvider.php,2bd339d85ee3b33e513359ce781b60cc
+"Restore","Restaurer",,site/modules/React/src/Provider/PagesDataProvider.php,2bd339d85ee3b33e513359ce781b60cc
 "Delete Permanently","Supprimer définitivement",,site/modules/React/src/Provider/PagesDataProvider.php,aa47bb0913144619a0a9abc59d59d6ed
 "Permanently delete this page? This cannot be undone.","Supprimer définitivement cette page ? Cette action est irréversible.",,site/modules/React/src/Provider/PagesDataProvider.php,fa6cc4b6c461758d2b18070576eedfd7
 "Provider descriptor cannot be empty.","Le descripteur du fournisseur ne peut pas être vide.",,site/modules/React/src/Provider/ProviderRegistry.php,6151eeb136331a45d4eaae6cbafa3c69
@@ -878,11 +957,11 @@ Restore,Restaurer,,site/modules/React/src/Provider/PagesDataProvider.php,2bd339d
 "Allow Inline Quick Create","Autoriser la création rapide en ligne",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,4f2f55e4fc2b10f739f67704cdfe67ba
 "Allow Custom Free-Text Value","Autoriser une valeur libre personnalisée",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,fb45974d23738865bb9f9aa8ba0c28db
 "Show Quick Edit Link","Afficher le lien de modification rapide",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,00a50f5a25c047c56272ce0815116644
-Field,Champ,,site/modules/React/src/Relation/Resource/FieldResourceAdapter.php,6f16a5f8ff5d75ab84c018adacdfcbb7
-Language,Langue,,site/modules/React/src/Relation/Resource/LanguageResourceAdapter.php,4994a8ffeba4ac3140beb89e8d41f174
+"Field","Champ",,site/modules/React/src/Relation/Resource/FieldResourceAdapter.php,6f16a5f8ff5d75ab84c018adacdfcbb7
+"Language","Langue",,site/modules/React/src/Relation/Resource/LanguageResourceAdapter.php,4994a8ffeba4ac3140beb89e8d41f174
 "Default language","Langue par défaut",,site/modules/React/src/Relation/Resource/LanguageResourceAdapter.php,c96a77fb323a41898c3b6941a58dc741
-Module,Module,,site/modules/React/src/Relation/Resource/ModuleResourceAdapter.php,e55f75a29310d7b60f7ac1d390c8ae42
-Page,Page,,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,193cfc9be3b995831c6af2fea6650e60
+"Module","Module",,site/modules/React/src/Relation/Resource/ModuleResourceAdapter.php,e55f75a29310d7b60f7ac1d390c8ae42
+"Page","Page",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,193cfc9be3b995831c6af2fea6650e60
 "Quick creation is not enabled for this field.","La création rapide n’est pas activée pour ce champ.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,a46075624a41bed5ef3b48e8887b83bd
 "Title is required to create a page.","Un titre est obligatoire pour créer une page.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,ff18d6ee9bebcb23f4f1aa98ae4f82f2
 "Target parent page does not exist.","La page parente cible n’existe pas.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,59218d74256d9c13c5b562e26e5695bc
@@ -892,12 +971,12 @@ Page,Page,,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,193c
 "A target template must be configured to quick-create pages.","Un modèle cible doit être configuré pour créer rapidement des pages.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,48eca31391fe73ee493dc6afe61e46bf
 "Selected template is not allowed for this relation field.","Le modèle sélectionné n’est pas autorisé pour ce champ de relation.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,ed7e42bcc4ec0365a82fa35247114df1
 "Invalid or system template specified for quick create.","Modèle invalide ou système spécifié pour la création rapide.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,e947024044075ed447c710c122ad8f95
-Permission,Permission,,site/modules/React/src/Relation/Resource/PermissionResourceAdapter.php,ed5dea09095f671b801bee34ea28a319
-Role,Rôle,,site/modules/React/src/Relation/Resource/RoleResourceAdapter.php,bbbabdbe1b262f75d99d62880b953be1
+"Permission","Permission",,site/modules/React/src/Relation/Resource/PermissionResourceAdapter.php,ed5dea09095f671b801bee34ea28a319
+"Role","Rôle",,site/modules/React/src/Relation/Resource/RoleResourceAdapter.php,bbbabdbe1b262f75d99d62880b953be1
 "%d permissions","%d autorisations",,site/modules/React/src/Relation/Resource/RoleResourceAdapter.php,f2387342894ffddabc85cd8f0551c18a
-Template,Modèle,,site/modules/React/src/Relation/Resource/TemplateResourceAdapter.php,278c491bdd8a53618c149c4ac790da34
+"Template","Modèle",,site/modules/React/src/Relation/Resource/TemplateResourceAdapter.php,278c491bdd8a53618c149c4ac790da34
 "%s · %d fields","%s · %d champs",,site/modules/React/src/Relation/Resource/TemplateResourceAdapter.php,0bada80a587bb611c1eb7ce9cd6a08ac
-User,Utilisateur,,site/modules/React/src/Relation/Resource/UserResourceAdapter.php,8f9bfe9d1345237cb3b2b205864da075
+"User","Utilisateur",,site/modules/React/src/Relation/Resource/UserResourceAdapter.php,8f9bfe9d1345237cb3b2b205864da075
 "Tiptap Rich Text Editor","Éditeur de texte enrichi Tiptap",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,9804aa3a4781cad65c3c0c50e5872d56
 "Inherit Settings From Field","Hériter des paramètres du champ",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,aa367ba283ce7ad5128d2f1fa29f195e
 "Optionally inherit Tiptap toolbar, headline, and feature settings from another Tiptap field.","Hérite facultativement des paramètres de barre d’outils, de titres et de fonctionnalités d’un autre champ Tiptap.",,site/modules/React/src/Tiptap/TiptapConfigFormBuilder.php,0f0d701a604a5d57649f94c631462c85
@@ -984,7 +1063,7 @@ User,Utilisateur,,site/modules/React/src/Relation/Resource/UserResourceAdapter.p
 "Emptied trash.","Corbeille vidée.",,site/modules/React/src/Viewport/MarkupReactViewport.php,8758e1979803e88020ed42aca37210f4
 "Updated %d record(s).","%d enregistrement(s) mis à jour.",,site/modules/React/src/Viewport/MarkupReactViewport.php,2ef993b35328d6a5e000e0908a84a10f
 "Shifted dates on %d record(s).","Dates décalées sur %d enregistrement(s).",,site/modules/React/src/Viewport/MarkupReactViewport.php,9dc33cb5c391141a7962dde8f17b658c
-Publish,Publier,,site/modules/React/src/Viewport/MarkupReactViewport.php,110a4b01beabd53b661a47d4b44bd7a8
+"Publish","Publier",,site/modules/React/src/Viewport/MarkupReactViewport.php,110a4b01beabd53b661a47d4b44bd7a8
 "Set Draft","Mettre en brouillon",,site/modules/React/src/Viewport/MarkupReactViewport.php,5c657df85958ec041cd9de39ecab133b
 "Move to Trash","Mettre à la corbeille",,site/modules/React/src/Viewport/MarkupReactViewport.php,7a289ea949902e8fa53efb4b3b4ccea0
 "Move selected records to trash?","Mettre les enregistrements sélectionnés à la corbeille ?",,site/modules/React/src/Viewport/MarkupReactViewport.php,bb3d3e97d788b9700e12e7f149580b84
@@ -1006,7 +1085,7 @@ Publish,Publier,,site/modules/React/src/Viewport/MarkupReactViewport.php,110a4b0
 "Record updated.","Enregistrement mis à jour.",,site/modules/React/src/Viewport/MarkupReactViewport.php,83d4b207495d6d8e7d0ea9e31391da94
 "Created ""%s"".","« %s » créé.",,site/modules/React/src/Viewport/MarkupReactViewport.php,a1df15e8235050cfb7b8adc51769aeee
 "Exported %s.","%s exporté.",,site/modules/React/src/Viewport/MarkupReactViewport.php,cba243b6c3b232050531edccfb21f961
-Status,Statut,,site/modules/React/src/Viewport/MarkupReactViewport.php,ec53a8c4f07baed5d8825072c89799be
-Title,Titre,,site/modules/React/src/Viewport/MarkupReactViewport.php,b78a3223503896721cca1303f776159b
-Workspace,"Espace de travail",,site/modules/React/src/Workspace/WorkspaceLauncherProcess.php,03a21915504df93cf5dba0636080f62e
+"Status","Statut",,site/modules/React/src/Viewport/MarkupReactViewport.php,ec53a8c4f07baed5d8825072c89799be
+"Title","Titre",,site/modules/React/src/Viewport/MarkupReactViewport.php,b78a3223503896721cca1303f776159b
+"Workspace","Espace de travail",,site/modules/React/src/Workspace/WorkspaceLauncherProcess.php,03a21915504df93cf5dba0636080f62e
 "Manage site content, menus, forms, SEO, API access, and system operations from your personalized dashboard.","Gérez le contenu du site, les menus, les formulaires, le SEO, les accès API et les opérations système depuis votre tableau de bord personnalisé.",,site/modules/React/src/Workspace/WorkspaceLauncherProcess.php,983a78b14f319f495894d70da7b761f0
