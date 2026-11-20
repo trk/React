@@ -7,6 +7,8 @@ namespace ProcessWire;
 use Totoglu\React\Form\FormSchemaSerializer;
 use Totoglu\React\Inertia\InputfieldReact;
 use Totoglu\React\Media\PageLinkMediaHostAdapter;
+use Totoglu\React\Security\UrlSanitizer;
+use Totoglu\React\Support\IslandMarkup;
 
 /**
  * InputfieldReactLink
@@ -18,10 +20,12 @@ use Totoglu\React\Media\PageLinkMediaHostAdapter;
  * @property array<int, string>|string $linkTypes Allowed target types (e.g. `['page', 'url', 'tel', 'email', 'file']`)
  * @property string $defaultType Default active target type (default: `'page'`)
  * @property array<string, mixed>|string $mediaProfiles Custom or overridden media upload profiles (`image`, `video`, `file`, etc.)
- * @property bool $enableLabel Show inline link label input (default: `true`)
- * @property bool $enableAnchor Show `#anchor` fragment input in Link Options (default: `true`)
- * @property bool $enableQuery Show `?query` parameter input in Link Options (default: `true`)
- * @property bool $enableAttributes Show `target`, `title`, and `rel` inputs in Link Options (default: `true`)
+ * @property bool $enableLabel Show Link Label input when target is populated (default: `true`)
+ * @property bool $enableAriaLabel Show ARIA Label input when target is populated (default: `true`)
+ * @property bool $enableTarget Show Open Target selector in Link Settings (default: `true`)
+ * @property bool $enableRel Show Rel Attribute input in Link Settings (default: `true`)
+ * @property bool $enableAnchor Show `#anchor` fragment input in Link Settings (default: `true`)
+ * @property bool $enableQuery Show `?query` parameter input in Link Settings (default: `true`)
  * @property string $selector Optional ProcessWire selector narrowing selectable `Page` targets
  * @property string $blueprintType Optional entity blueprint handle narrowing selectable `Entry` targets
  * @property bool $readOnly Render in read-only mode
@@ -137,9 +141,11 @@ class InputfieldReactLink extends InputfieldReact
 		$this->set('defaultType', 'page');
 		$this->set('mediaProfiles', '');
 		$this->set('enableLabel', true);
+		$this->set('enableAriaLabel', true);
+		$this->set('enableTarget', true);
+		$this->set('enableRel', true);
 		$this->set('enableAnchor', true);
 		$this->set('enableQuery', true);
-		$this->set('enableAttributes', true);
 		$this->set('selector', '');
 		$this->set('blueprintType', '');
 		$this->set('readOnly', false);
@@ -223,39 +229,7 @@ class InputfieldReactLink extends InputfieldReact
 	 */
 	public static function sanitizeHref(string $href): string
 	{
-		$trimmed = trim($href);
-		if ($trimmed === '' || preg_match('/[\x00-\x20\x7F]/', $trimmed) === 1) {
-			return '';
-		}
-		if (
-			str_starts_with($trimmed, '//')
-			|| str_starts_with($trimmed, '/\\')
-			|| str_starts_with($trimmed, '\\')
-		) {
-			return '';
-		}
-		if (
-			str_starts_with($trimmed, '/')
-			|| str_starts_with($trimmed, './')
-			|| str_starts_with($trimmed, '../')
-			|| str_starts_with($trimmed, '#')
-			|| str_starts_with($trimmed, '?')
-		) {
-			return $trimmed;
-		}
-		if (preg_match('#^https?://#i', $trimmed) === 1) {
-			$host = (string) parse_url($trimmed, PHP_URL_HOST);
-
-			return $host !== '' ? $trimmed : '';
-		}
-		if (preg_match('#^(?:mailto:|tel:)#i', $trimmed) === 1) {
-			return $trimmed;
-		}
-		if (preg_match('/^[a-zA-Z][a-zA-Z0-9+.-]*:/', $trimmed) === 1) {
-			return '';
-		}
-
-		return $trimmed;
+		return UrlSanitizer::sanitizeHref($href, true);
 	}
 
 	/**
@@ -517,9 +491,15 @@ class InputfieldReactLink extends InputfieldReact
 	 *   query: string,
 	 *   anchor: string,
 	 *   label: string,
-	 *   title: string,
+	 *   ariaLabel: string,
 	 *   target: string,
-	 *   rel: string
+	 *   rel: string,
+	 *   labels?: array<string, string>,
+	 *   ariaLabels?: array<string, string>,
+	 *   alt?: string,
+	 *   descriptions?: array<string, string>,
+	 *   focus?: string,
+	 *   tags?: string
 	 * }
 	 */
 	public static function normalizeValue(mixed $value, string $defaultType = 'url'): array
@@ -539,7 +519,7 @@ class InputfieldReactLink extends InputfieldReact
 			'query' => '',
 			'anchor' => '',
 			'label' => '',
-			'title' => '',
+			'ariaLabel' => '',
 			'target' => '_self',
 			'rel' => '',
 		];
@@ -625,7 +605,17 @@ class InputfieldReactLink extends InputfieldReact
 
 		$cleanFile = $rawFile !== '' ? self::sanitizeHref($rawFile) : '';
 		$label = isset($value['label']) && is_scalar($value['label']) ? trim((string) $value['label']) : '';
-		$title = isset($value['title']) && is_scalar($value['title']) ? trim((string) $value['title']) : '';
+		$labels = self::normalizeLocalizedTextMap($value['labels'] ?? null, $label);
+		if ($label === '' && isset($labels['default'])) {
+			$label = $labels['default'];
+		}
+		$rawAriaLabel = $value['ariaLabel'] ?? $value['aria_label'] ?? null;
+		$ariaLabel = is_scalar($rawAriaLabel) ? trim((string) $rawAriaLabel) : '';
+		$rawAriaLabels = $value['ariaLabels'] ?? $value['aria_labels'] ?? null;
+		$ariaLabels = self::normalizeLocalizedTextMap($rawAriaLabels, $ariaLabel);
+		if ($ariaLabel === '' && isset($ariaLabels['default'])) {
+			$ariaLabel = $ariaLabels['default'];
+		}
 		$rawTarget = isset($value['target']) && is_string($value['target']) ? trim($value['target']) : '_self';
 		$target = in_array($rawTarget, ['_self', '_blank'], true) ? $rawTarget : '_self';
 		$rel = isset($value['rel']) && is_scalar($value['rel']) ? trim((string) $value['rel']) : '';
@@ -640,10 +630,16 @@ class InputfieldReactLink extends InputfieldReact
 			'query' => $rawQuery,
 			'anchor' => $rawAnchor,
 			'label' => $label,
-			'title' => $title,
+			'ariaLabel' => $ariaLabel,
 			'target' => $target,
 			'rel' => $rel,
 		];
+		if ($labels !== []) {
+			$out['labels'] = $labels;
+		}
+		if ($ariaLabels !== []) {
+			$out['ariaLabels'] = $ariaLabels;
+		}
 
 		$hasMediaRef = $cleanFile !== '' || ($cleanUrl !== '' && in_array($type, ['image', 'video', 'file'], true));
 		if ($hasMediaRef) {
@@ -746,6 +742,127 @@ class InputfieldReactLink extends InputfieldReact
 	}
 
 	/**
+	 * Normalize a localized string map keyed by `'default'` and/or ProcessWire language IDs/names.
+	 * Returns `[]` when no non-default language entry is present so single-language payloads stay compact.
+	 *
+	 * @return array<string, string>
+	 */
+	private static function normalizeLocalizedTextMap(mixed $rawMap, string $defaultText): array
+	{
+		if ($rawMap instanceof \stdClass) {
+			$rawMap = get_object_vars($rawMap);
+		}
+		$clean = [];
+		$hasNonDefault = false;
+		if (is_array($rawMap)) {
+			foreach ($rawMap as $rawKey => $rawVal) {
+				$cleanKey = trim((string) $rawKey);
+				if ($cleanKey === '' || preg_match('/^[a-zA-Z0-9_-]{1,32}$/', $cleanKey) !== 1 || !is_scalar($rawVal)) {
+					continue;
+				}
+				$trimmedVal = trim((string) $rawVal);
+				if ($trimmedVal === '') {
+					continue;
+				}
+				$clean[$cleanKey] = $trimmedVal;
+				if ($cleanKey !== 'default') {
+					$hasNonDefault = true;
+				}
+			}
+		}
+		if ($defaultText !== '') {
+			$clean['default'] = $defaultText;
+		}
+		if (!$hasNonDefault) {
+			return [];
+		}
+
+		return $clean;
+	}
+
+	/**
+	 * Resolve a localized link text value for a target Language, falling back to the default string.
+	 */
+	private static function resolveLocalizedText(string $defaultText, mixed $rawMap, ?Language $language): string
+	{
+		$map = is_array($rawMap) ? $rawMap : [];
+		if ($language instanceof Language && !$language->isDefault()) {
+			$idKey = (string) $language->id;
+			if (isset($map[$idKey]) && is_scalar($map[$idKey]) && trim((string) $map[$idKey]) !== '') {
+				return trim((string) $map[$idKey]);
+			}
+			$nameKey = (string) $language->name;
+			if (isset($map[$nameKey]) && is_scalar($map[$nameKey]) && trim((string) $map[$nameKey]) !== '') {
+				return trim((string) $map[$nameKey]);
+			}
+		}
+		if ($defaultText !== '') {
+			return $defaultText;
+		}
+
+		return isset($map['default']) && is_scalar($map['default']) ? trim((string) $map['default']) : '';
+	}
+
+	/**
+	 * Normalize link sub-field enablement flags from camelCase or snake_case config arrays.
+	 *
+	 * @param array<string, mixed> $config
+	 * @return array{
+	 *   enableLabel: bool,
+	 *   enableAriaLabel: bool,
+	 *   enableTarget: bool,
+	 *   enableRel: bool,
+	 *   enableAnchor: bool,
+	 *   enableQuery: bool
+	 * }
+	 */
+	public static function normalizeFeatureFlags(array $config): array
+	{
+		return [
+			'enableLabel' => (bool) ($config['enableLabel'] ?? $config['enable_label'] ?? true),
+			'enableAriaLabel' => (bool) ($config['enableAriaLabel'] ?? $config['enable_aria_label'] ?? true),
+			'enableTarget' => (bool) ($config['enableTarget'] ?? $config['enable_target'] ?? true),
+			'enableRel' => (bool) ($config['enableRel'] ?? $config['enable_rel'] ?? true),
+			'enableAnchor' => (bool) ($config['enableAnchor'] ?? $config['enable_anchor'] ?? true),
+			'enableQuery' => (bool) ($config['enableQuery'] ?? $config['enable_query'] ?? true),
+		];
+	}
+
+	/**
+	 * Strip disabled link sub-fields according to normalized `enable*` feature flags.
+	 *
+	 * @param array<string, mixed> $norm
+	 * @param array<string, mixed> $config
+	 * @return array<string, mixed>
+	 */
+	public static function applyConfigFlags(array $norm, array $config): array
+	{
+		$flags = self::normalizeFeatureFlags($config);
+		if (!$flags['enableLabel']) {
+			$norm['label'] = '';
+			unset($norm['labels']);
+		}
+		if (!$flags['enableAriaLabel']) {
+			$norm['ariaLabel'] = '';
+			unset($norm['ariaLabels']);
+		}
+		if (!$flags['enableTarget']) {
+			$norm['target'] = '_self';
+		}
+		if (!$flags['enableRel']) {
+			$norm['rel'] = '';
+		}
+		if (!$flags['enableAnchor']) {
+			$norm['anchor'] = '';
+		}
+		if (!$flags['enableQuery']) {
+			$norm['query'] = '';
+		}
+
+		return $norm;
+	}
+
+	/**
 	 * Encode normalized link payload as canonical JSON object string (`""` when empty).
 	 */
 	public static function encodeJsonObject(mixed $value, string $defaultType = 'url'): string
@@ -772,6 +889,16 @@ class InputfieldReactLink extends InputfieldReact
 	): array {
 		$defaultType = $field instanceof Field ? ((string) ($field->get('defaultType') ?: 'page')) : 'url';
 		$norm = self::normalizeValue($value, $defaultType);
+		if ($field instanceof Field) {
+			$norm = self::applyConfigFlags($norm, [
+				'enableLabel' => $field->get('enableLabel'),
+				'enableAriaLabel' => $field->get('enableAriaLabel'),
+				'enableTarget' => $field->get('enableTarget'),
+				'enableRel' => $field->get('enableRel'),
+				'enableAnchor' => $field->get('enableAnchor'),
+				'enableQuery' => $field->get('enableQuery'),
+			]);
+		}
 		$type = $norm['type'];
 
 		$href = '';
@@ -916,14 +1043,21 @@ class InputfieldReactLink extends InputfieldReact
 			}
 		}
 
+		$wireContext = $ownerPage?->wire() ?? $field?->wire() ?? wire();
+		$effectiveLanguage = $language instanceof Language
+			? $language
+			: ($wireContext->user->language instanceof Language ? $wireContext->user->language : null);
+		$resolvedCustomLabel = self::resolveLocalizedText((string) $norm['label'], $norm['labels'] ?? [], $effectiveLanguage);
+		$resolvedAriaLabel = self::resolveLocalizedText((string) $norm['ariaLabel'], $norm['ariaLabels'] ?? [], $effectiveLanguage);
+
 		return [
 			'type' => $type,
 			'href' => $href,
 			'url' => $href,
 			'file' => $norm['file'],
-			'label' => $norm['label'] !== '' ? $norm['label'] : $fallbackLabel,
-			'customLabel' => $norm['label'],
-			'title' => $norm['title'],
+			'label' => $resolvedCustomLabel !== '' ? $resolvedCustomLabel : $fallbackLabel,
+			'customLabel' => $resolvedCustomLabel,
+			'ariaLabel' => $resolvedAriaLabel,
 			'target' => $target,
 			'rel' => implode(' ', $relTokens),
 			'query' => $norm['query'],
@@ -1067,7 +1201,7 @@ class InputfieldReactLink extends InputfieldReact
 	{
 		$existing = $this->getSetting('linkConfig');
 		if (is_array($existing) && $existing !== []) {
-			return $existing;
+			return array_merge($existing, self::normalizeFeatureFlags($existing));
 		}
 
 		$rawMedia = $this->getSetting('mediaProfiles') ?? $this->getSetting('media') ?? '';
@@ -1079,17 +1213,27 @@ class InputfieldReactLink extends InputfieldReact
 			$defaultType = $types[0];
 		}
 
-		return [
-			'types' => $types,
-			'defaultType' => $defaultType,
-			'media' => $profiles,
-			'enableLabel' => (bool) ($this->getSetting('enableLabel') ?? true),
-			'enableAnchor' => (bool) ($this->getSetting('enableAnchor') ?? true),
-			'enableQuery' => (bool) ($this->getSetting('enableQuery') ?? true),
-			'enableAttributes' => (bool) ($this->getSetting('enableAttributes') ?? true),
-			'selector' => trim((string) ($this->getSetting('selector') ?? '')),
-			'blueprintType' => trim((string) ($this->getSetting('blueprintType') ?? '')),
-		];
+		$flags = self::normalizeFeatureFlags([
+			'enableLabel' => $this->getSetting('enableLabel'),
+			'enableAriaLabel' => $this->getSetting('enableAriaLabel'),
+			'enableTarget' => $this->getSetting('enableTarget'),
+			'enableRel' => $this->getSetting('enableRel'),
+			'enableAnchor' => $this->getSetting('enableAnchor'),
+			'enableQuery' => $this->getSetting('enableQuery'),
+		]);
+
+		return array_merge(
+			[
+				'types' => $types,
+				'defaultType' => $defaultType,
+				'media' => $profiles,
+			],
+			$flags,
+			[
+				'selector' => trim((string) ($this->getSetting('selector') ?? '')),
+				'blueprintType' => trim((string) ($this->getSetting('blueprintType') ?? '')),
+			],
+		);
 	}
 
 	/**
@@ -1124,9 +1268,6 @@ class InputfieldReactLink extends InputfieldReact
 		}
 
 		$component = is_string($data['component'] ?? null) ? $data['component'] : $this->inertiaComponent();
-		$safeComponent = $this->encodeHtmlAttribute($component);
-		$jsonProps = json_encode($data, \ProcessWire\Inertia::JSON_HTML_SAFE_FLAGS);
-		$safeProps = $this->encodeHtmlAttribute(is_string($jsonProps) ? $jsonProps : '{}');
 		$hasPage = $this->getSetting('hasPage');
 		$hasField = $this->getSetting('hasField');
 		$fallbackHtml = self::renderLinkMarkup(
@@ -1135,7 +1276,10 @@ class InputfieldReactLink extends InputfieldReact
 			$hasField instanceof Field ? $hasField : null,
 		);
 
-		return "<div class=\"pw-inertia-inputfield-island\" data-inertia-island=\"{$safeComponent}\" data-react-island=\"{$safeComponent}\" data-readonly=\"true\" data-props=\"{$safeProps}\">{$fallbackHtml}</div>";
+		return IslandMarkup::render($component, $data, [
+			'class' => 'pw-inertia-inputfield-island',
+			'data-readonly' => 'true',
+		], $fallbackHtml);
 	}
 
 	public function ___processInput(WireInputData $input): self
@@ -1167,7 +1311,7 @@ class InputfieldReactLink extends InputfieldReact
 			}
 		}
 
-		$normalized = self::normalizeValue($rawPosted, $defaultType);
+		$normalized = self::applyConfigFlags(self::normalizeValue($rawPosted, $defaultType), $cfg);
 		$isEmpty = self::isEmptyValue($normalized);
 
 		if (!$isEmpty && !in_array($normalized['type'], $allowedTypes, true)) {
@@ -1250,44 +1394,24 @@ class InputfieldReactLink extends InputfieldReact
 			$inputfields->add($mediaField);
 		}
 
-		/** @var InputfieldCheckbox|null $lblField */
-		$lblField = $modules->get('InputfieldCheckbox');
-		if ($lblField) {
-			$lblField->attr('name', 'enableLabel');
-			$lblField->label = $this->_('Enable Link Label');
-			$lblField->attr('checked', (bool) ($this->getSetting('enableLabel') ?? true) ? 'checked' : '');
-			$lblField->columnWidth = 25;
-			$inputfields->add($lblField);
-		}
-
-		/** @var InputfieldCheckbox|null $ancField */
-		$ancField = $modules->get('InputfieldCheckbox');
-		if ($ancField) {
-			$ancField->attr('name', 'enableAnchor');
-			$ancField->label = $this->_('Enable Anchor (#)');
-			$ancField->attr('checked', (bool) ($this->getSetting('enableAnchor') ?? true) ? 'checked' : '');
-			$ancField->columnWidth = 25;
-			$inputfields->add($ancField);
-		}
-
-		/** @var InputfieldCheckbox|null $qryField */
-		$qryField = $modules->get('InputfieldCheckbox');
-		if ($qryField) {
-			$qryField->attr('name', 'enableQuery');
-			$qryField->label = $this->_('Enable Query (?)');
-			$qryField->attr('checked', (bool) ($this->getSetting('enableQuery') ?? true) ? 'checked' : '');
-			$qryField->columnWidth = 25;
-			$inputfields->add($qryField);
-		}
-
-		/** @var InputfieldCheckbox|null $attrField */
-		$attrField = $modules->get('InputfieldCheckbox');
-		if ($attrField) {
-			$attrField->attr('name', 'enableAttributes');
-			$attrField->label = $this->_('Enable Target & Rel');
-			$attrField->attr('checked', (bool) ($this->getSetting('enableAttributes') ?? true) ? 'checked' : '');
-			$attrField->columnWidth = 25;
-			$inputfields->add($attrField);
+		$flagInputs = [
+			'enableLabel' => [$this->_('Enable Link Label'), 50],
+			'enableAriaLabel' => [$this->_('Enable ARIA Label'), 50],
+			'enableTarget' => [$this->_('Enable Open Target'), 25],
+			'enableRel' => [$this->_('Enable Rel Attribute'), 25],
+			'enableAnchor' => [$this->_('Enable Anchor (#)'), 25],
+			'enableQuery' => [$this->_('Enable Query (?)'), 25],
+		];
+		foreach ($flagInputs as $flagName => [$flagLabel, $flagWidth]) {
+			/** @var InputfieldCheckbox|null $flagField */
+			$flagField = $modules->get('InputfieldCheckbox');
+			if ($flagField) {
+				$flagField->attr('name', $flagName);
+				$flagField->label = $flagLabel;
+				$flagField->attr('checked', (bool) ($this->getSetting($flagName) ?? true) ? 'checked' : '');
+				$flagField->columnWidth = $flagWidth;
+				$inputfields->add($flagField);
+			}
 		}
 
 		/** @var InputfieldText|null $selField */
@@ -1324,9 +1448,11 @@ class InputfieldReactLink extends InputfieldReact
 			'defaultType',
 			'mediaProfiles',
 			'enableLabel',
+			'enableAriaLabel',
+			'enableTarget',
+			'enableRel',
 			'enableAnchor',
 			'enableQuery',
-			'enableAttributes',
 			'selector',
 			'blueprintType',
 		]);

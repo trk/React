@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Totoglu\React\Relation;
 
+use ProcessWire\React;
 use ProcessWire\Wire;
-use Totoglu\React\Security\SignedTokenCodec;
 
 /**
  * RelationStateSigner
@@ -78,10 +78,7 @@ final class RelationStateSigner extends Wire
 		$envelope['typ'] = 'relation';
 		$envelope['uid'] = $resolvedUid;
 
-		$codec = new SignedTokenCodec();
-		$this->wire($codec);
-
-		return $codec->encode($envelope);
+		return React::instance($this)->tokenCodec()->encode($envelope);
 	}
 
 	/**
@@ -91,10 +88,8 @@ final class RelationStateSigner extends Wire
 	 */
 	public function verify(string $token, ?int $expectedUserId = null): ?array
 	{
-		$codec = new SignedTokenCodec();
-		$this->wire($codec);
 		$currentUid = $expectedUserId ?? (int) $this->wire()->user->id;
-		$decoded = $codec->decode($token, $currentUid);
+		$decoded = React::instance($this)->tokenCodec()->decode($token, $currentUid);
 		if (
 			$decoded === null
 			|| ($decoded['typ'] ?? '') !== 'relation'

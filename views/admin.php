@@ -19,6 +19,7 @@ namespace ProcessWire;
  * @var string $themeMode
  * @var bool|null $useInputFocus
  * @var string $colorSchemeCss
+ * @var string $themeCss
  * @var string $head
  * @var list<string> $styles
  * @var list<string> $scripts
@@ -70,6 +71,9 @@ $uikitFontUrlBase = is_dir($uikitFontDir)
 <?php } ?>
 <?php if (!empty($colorSchemeCss)) { ?>
 	<style id="pw-color-scheme-tokens"><?= (string) preg_replace('~<\s*/\s*style~i', '<\\/style', (string) $colorSchemeCss) ?></style>
+<?php } ?>
+<?php if (!empty($themeCss)) { ?>
+	<style id="rw-theme-tokens"><?= (string) preg_replace('~<\s*/\s*style~i', '<\\/style', (string) $themeCss) ?></style>
 <?php } ?>
 <?php if (!empty($styles) && is_array($styles)) { ?>
 <?php foreach ($styles as $styleUrl) { ?>

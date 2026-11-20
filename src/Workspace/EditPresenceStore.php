@@ -6,6 +6,7 @@ namespace Totoglu\React\Workspace;
 
 use ProcessWire\User;
 use ProcessWire\Wire;
+use Totoglu\React\Security\AccessGuard;
 
 /**
  * File-backed concurrent edit presence & remote-save tracker (`site/assets/cache/React/presence/*.json`).
@@ -553,9 +554,8 @@ final class EditPresenceStore extends Wire
 
 	private function resolveUserId(User $user): int
 	{
-		$guestId = (int) ($this->wire()->config->guestUserPageID ?: 40);
 		$id = (int) $user->id;
-		if ($id <= 0 || $user->isGuest() || ($id === $guestId && !$user->isSuperuser()) || $user->name === 'guest') {
+		if ($id <= 0 || !AccessGuard::isAuthenticatedOrSuperuser($user)) {
 			return 0;
 		}
 

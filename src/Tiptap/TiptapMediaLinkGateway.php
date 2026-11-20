@@ -29,7 +29,7 @@ use ProcessWire\Wire;
 use ProcessWire\WirePageEditor;
 use ProcessWire\WireUpload;
 use Totoglu\React\Media\MediaGateway;
-use Totoglu\React\Security\SignedTokenCodec;
+use Totoglu\React\Security\AccessGuard;
 
 /**
  * TiptapMediaLinkGateway
@@ -106,10 +106,7 @@ final class TiptapMediaLinkGateway extends Wire
 		$envelope['typ'] = 'tiptap';
 		$envelope['uid'] = $resolvedUid;
 
-		$codec = new SignedTokenCodec();
-		$this->wire($codec);
-
-		return $codec->encode($envelope);
+		return React::instance($this)->tokenCodec()->encode($envelope);
 	}
 
 	/**
@@ -119,10 +116,8 @@ final class TiptapMediaLinkGateway extends Wire
 	 */
 	public function verify(string $token, ?int $expectedUserId = null): ?array
 	{
-		$codec = new SignedTokenCodec();
-		$this->wire($codec);
 		$currentUid = $expectedUserId ?? (int) $this->wire()->user->id;
-		$decoded = $codec->decode($token, $currentUid);
+		$decoded = React::instance($this)->tokenCodec()->decode($token, $currentUid);
 		if ($decoded === null || ($decoded['typ'] ?? '') !== 'tiptap') {
 			return null;
 		}
@@ -355,13 +350,7 @@ final class TiptapMediaLinkGateway extends Wire
 	): array {
 		$workspace = React::instance($this);
 		$resolvedUser = $user ?? $this->wire()->user;
-		$guestId = (int) ($this->wire()->config->guestUserPageID ?: 40);
-
-		if (
-			$resolvedUser->isGuest()
-			|| (int) $resolvedUser->id <= 0
-			|| (int) $resolvedUser->id === $guestId
-		) {
+		if (!AccessGuard::isAuthenticated($resolvedUser)) {
 			return [
 				'ok' => false,
 				'status' => 403,
@@ -527,7 +516,6 @@ final class TiptapMediaLinkGateway extends Wire
 	): array {
 		$user = $this->wire()->user;
 		$config = $this->wire()->config;
-		$guestId = (int) ($config->guestUserPageID ?: 40);
 		$rootUrl = rtrim((string) ($config->urls->root ?: '/'), '/') . '/';
 		$endpoint = $rootUrl . '_react/tiptap';
 
@@ -567,7 +555,7 @@ final class TiptapMediaLinkGateway extends Wire
 		}
 
 		$tiptapToken = '';
-		if (!$user->isGuest() && (int) $user->id > 0 && (int) $user->id !== $guestId) {
+		if (AccessGuard::isAuthenticated($user)) {
 			$tiptapToken = $this->sign([
 				'pageId' => $pageId,
 				'editPageId' => $editPageId,

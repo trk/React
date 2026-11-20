@@ -13,6 +13,7 @@ use Totoglu\React\Tiptap\TiptapAssetResolver;
 use Totoglu\React\Tiptap\TiptapConfigFormBuilder;
 use Totoglu\React\Tiptap\TiptapContentPolicy;
 use Totoglu\React\Tiptap\TiptapPresetCatalog;
+use Totoglu\React\Support\IslandMarkup;
 
 /**
  * InputfieldTiptap
@@ -55,7 +56,7 @@ class InputfieldTiptap extends InputfieldTextarea implements ConfigurableModule,
 	use InteractWithInertia;
 	use InteractWithReactTranslations;
 
-	public const string tiptapVersion = '3.33.1';
+	public const string tiptapVersion = '3.34.0';
 
 	public const bool INERTIA_IS_MARKUP_FIELD = true;
 
@@ -1035,7 +1036,7 @@ class InputfieldTiptap extends InputfieldTextarea implements ConfigurableModule,
 		if (in_array($collapsed, [Inputfield::collapsedNoLocked, Inputfield::collapsedYesLocked], true)) {
 			return true;
 		}
-		$isDynamicReadOnly = (bool) ($this->get('_rwDynamicReadOnly') || $this->get('_weDynamicReadOnly'));
+		$isDynamicReadOnly = (bool) $this->get('_rwDynamicReadOnly');
 		if ($isDynamicReadOnly) {
 			return false;
 		}
@@ -1135,11 +1136,6 @@ class InputfieldTiptap extends InputfieldTextarea implements ConfigurableModule,
 
 		$safeId = $this->encodeHtmlAttribute($id);
 		$safeName = $this->encodeHtmlAttribute($name);
-		$safeComponent = $this->encodeHtmlAttribute($component);
-
-		$jsonProps = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_INVALID_UTF8_SUBSTITUTE);
-		$safeProps = $this->encodeHtmlAttribute(is_string($jsonProps) ? $jsonProps : '{}');
-
 		$out = '';
 		$languages = isset($data['languages']) && is_array($data['languages']) ? $data['languages'] : [];
 		if (!empty($data['useLanguages']) && count($languages) > 1) {
@@ -1159,10 +1155,11 @@ class InputfieldTiptap extends InputfieldTextarea implements ConfigurableModule,
 			$out .= "<textarea id=\"{$safeId}\" name=\"{$safeName}\" hidden data-inertia-input=\"{$safeName}\">{$safeVal}</textarea>";
 		}
 
-		$nameAttr = $name !== '' ? " data-input-name=\"{$safeName}\"" : '';
-		$out .= "<div class=\"pw-inertia-inputfield-island\" data-inertia-island=\"{$safeComponent}\" data-react-island=\"{$safeComponent}\" data-input-id=\"{$safeId}\"{$nameAttr} data-props=\"{$safeProps}\"></div>";
-
-		return $out;
+		return $out . IslandMarkup::render($component, $data, [
+			'class' => 'pw-inertia-inputfield-island',
+			'data-input-id' => $id,
+			'data-input-name' => $name !== '' ? $name : null,
+		]);
 	}
 
 	public function ___renderValue(): string
@@ -1172,11 +1169,7 @@ class InputfieldTiptap extends InputfieldTextarea implements ConfigurableModule,
 		if (isset($data['props']) && is_array($data['props'])) {
 			$data['props']['readOnly'] = true;
 		}
-		$safeComponent = $this->encodeHtmlAttribute($this->inertiaComponent());
-		$jsonProps = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_INVALID_UTF8_SUBSTITUTE);
-		$safeProps = $this->encodeHtmlAttribute(is_string($jsonProps) ? $jsonProps : '{}');
-
-		return "<div class=\"pw-inertia-inputfield-island\" data-inertia-island=\"{$safeComponent}\" data-react-island=\"{$safeComponent}\" data-props=\"{$safeProps}\"></div>";
+		return IslandMarkup::render($this->inertiaComponent(), $data, ['class' => 'pw-inertia-inputfield-island']);
 	}
 
 	/**

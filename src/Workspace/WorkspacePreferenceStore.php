@@ -6,12 +6,15 @@ namespace Totoglu\React\Workspace;
 
 use ProcessWire\User;
 use ProcessWire\Wire;
+use Totoglu\React\Security\AccessGuard;
+use Totoglu\React\Theme\ThemePreset;
 
 /**
  * File-backed per-user Workspace & Dashboard preference store (`site/assets/cache/React/workspaces/{user-id}.json`).
  *
- * Persists user-specific workspace favorites, widget ordering, hidden widgets, and widget column sizes,
- * and self-heals when modules or widgets are uninstalled or permissions change.
+ * Persists user-specific workspace favorites, widget ordering, hidden widgets, widget column sizes,
+ * theme mode (`light`/`dark`/`system`), and theme color preset override, and self-heals when modules
+ * or widgets are uninstalled or permissions change.
  */
 final class WorkspacePreferenceStore extends Wire
 {
@@ -51,6 +54,8 @@ final class WorkspacePreferenceStore extends Wire
 	 *     widgetOrder: list<string>,
 	 *     hiddenWidgets: list<string>,
 	 *     widgetSizes: array<string, string>,
+	 *     themeMode: string,
+	 *     themePreset: string,
 	 *     updatedAt: string
 	 * }
 	 */
@@ -63,6 +68,8 @@ final class WorkspacePreferenceStore extends Wire
 			'widgetOrder' => [],
 			'hiddenWidgets' => [],
 			'widgetSizes' => [],
+			'themeMode' => '',
+			'themePreset' => '',
 			'updatedAt' => '',
 		];
 
@@ -91,6 +98,8 @@ final class WorkspacePreferenceStore extends Wire
 			'widgetOrder' => $this->normalizeIdList($decoded['widgetOrder'] ?? []),
 			'hiddenWidgets' => $this->normalizeIdList($decoded['hiddenWidgets'] ?? []),
 			'widgetSizes' => $this->normalizeSizeMap($decoded['widgetSizes'] ?? []),
+			'themeMode' => $this->normalizeThemeModeValue($decoded['themeMode'] ?? ''),
+			'themePreset' => $this->normalizeThemePresetValue($decoded['themePreset'] ?? ''),
 			'updatedAt' => is_string($decoded['updatedAt'] ?? null) ? $decoded['updatedAt'] : '',
 		];
 	}
@@ -111,6 +120,8 @@ final class WorkspacePreferenceStore extends Wire
 	 *     widgetOrder: list<string>,
 	 *     hiddenWidgets: list<string>,
 	 *     widgetSizes: array<string, string>,
+	 *     themeMode: string,
+	 *     themePreset: string,
 	 *     updatedAt: string
 	 * }
 	 */
@@ -139,6 +150,8 @@ final class WorkspacePreferenceStore extends Wire
 					'widgetOrder' => $prefs['widgetOrder'],
 					'hiddenWidgets' => $prefs['hiddenWidgets'],
 					'widgetSizes' => $prefs['widgetSizes'],
+					'themeMode' => $prefs['themeMode'],
+					'themePreset' => $prefs['themePreset'],
 				]);
 			}
 
@@ -148,6 +161,8 @@ final class WorkspacePreferenceStore extends Wire
 				'widgetOrder' => $prefs['widgetOrder'],
 				'hiddenWidgets' => $prefs['hiddenWidgets'],
 				'widgetSizes' => $prefs['widgetSizes'],
+				'themeMode' => $prefs['themeMode'],
+				'themePreset' => $prefs['themePreset'],
 				'updatedAt' => $prefs['updatedAt'],
 			];
 		}
@@ -189,6 +204,8 @@ final class WorkspacePreferenceStore extends Wire
 				'widgetOrder' => $widgetOrder,
 				'hiddenWidgets' => $hiddenWidgets,
 				'widgetSizes' => $widgetSizes,
+				'themeMode' => $prefs['themeMode'],
+				'themePreset' => $prefs['themePreset'],
 			]);
 		}
 
@@ -206,6 +223,8 @@ final class WorkspacePreferenceStore extends Wire
 			'widgetOrder' => $widgetOrder,
 			'hiddenWidgets' => $hiddenWidgets,
 			'widgetSizes' => $widgetSizes,
+			'themeMode' => $prefs['themeMode'],
+			'themePreset' => $prefs['themePreset'],
 			'updatedAt' => $prefs['updatedAt'],
 		];
 	}
@@ -298,7 +317,41 @@ final class WorkspacePreferenceStore extends Wire
 	}
 
 	/**
-	 * Bulk-update multiple preference keys at once (`favorites`, `widgetOrder`, `hiddenWidgets`, `widgetSizes`).
+	 * Save the per-user theme mode (`'light' | 'dark' | 'system'` or `''`) in `{user-id}.json`.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function setThemeMode(string $mode, ?User $user = null): array
+	{
+		$prefs = $this->load($user);
+		if ($prefs['userId'] <= 0) {
+			return $prefs;
+		}
+
+		return $this->write($prefs['userId'], array_merge($prefs, [
+			'themeMode' => $this->normalizeThemeModeValue($mode),
+		]));
+	}
+
+	/**
+	 * Save the per-user color preset override (or `''` to revert to site default) in `{user-id}.json`.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function setThemePreset(string $preset, ?User $user = null): array
+	{
+		$prefs = $this->load($user);
+		if ($prefs['userId'] <= 0) {
+			return $prefs;
+		}
+
+		return $this->write($prefs['userId'], array_merge($prefs, [
+			'themePreset' => $this->normalizeThemePresetValue($preset),
+		]));
+	}
+
+	/**
+	 * Bulk-update multiple preference keys at once (`favorites`, `widgetOrder`, `hiddenWidgets`, `widgetSizes`, `themeMode`, `themePreset`).
 	 *
 	 * @param array<string, mixed> $updates
 	 * @return array<string, mixed>
@@ -321,6 +374,12 @@ final class WorkspacePreferenceStore extends Wire
 		}
 		if (array_key_exists('widgetSizes', $updates)) {
 			$prefs['widgetSizes'] = $this->normalizeSizeMap($updates['widgetSizes']);
+		}
+		if (array_key_exists('themeMode', $updates)) {
+			$prefs['themeMode'] = $this->normalizeThemeModeValue($updates['themeMode']);
+		}
+		if (array_key_exists('themePreset', $updates)) {
+			$prefs['themePreset'] = $this->normalizeThemePresetValue($updates['themePreset']);
 		}
 
 		return $this->write($prefs['userId'], $prefs);
@@ -415,6 +474,8 @@ final class WorkspacePreferenceStore extends Wire
 			'widgetOrder' => [],
 			'hiddenWidgets' => [],
 			'widgetSizes' => [],
+			'themeMode' => '',
+			'themePreset' => '',
 			'updatedAt' => '',
 		];
 	}
@@ -453,6 +514,8 @@ final class WorkspacePreferenceStore extends Wire
 	 *     widgetOrder: list<string>,
 	 *     hiddenWidgets: list<string>,
 	 *     widgetSizes: array<string, string>,
+	 *     themeMode: string,
+	 *     themePreset: string,
 	 *     updatedAt: string
 	 * }
 	 */
@@ -464,6 +527,8 @@ final class WorkspacePreferenceStore extends Wire
 			'widgetOrder' => $this->normalizeIdList($data['widgetOrder'] ?? []),
 			'hiddenWidgets' => $this->normalizeIdList($data['hiddenWidgets'] ?? []),
 			'widgetSizes' => $this->normalizeSizeMap($data['widgetSizes'] ?? []),
+			'themeMode' => $this->normalizeThemeModeValue($data['themeMode'] ?? ''),
+			'themePreset' => $this->normalizeThemePresetValue($data['themePreset'] ?? ''),
 			'updatedAt' => gmdate('c'),
 		];
 
@@ -485,9 +550,8 @@ final class WorkspacePreferenceStore extends Wire
 	private function resolveUserId(?User $user = null): int
 	{
 		$resolved = $user ?? $this->wire()->user;
-		$guestId = (int) ($this->wire()->config->guestUserPageID ?: 40);
 		$id = (int) $resolved->id;
-		if ($id <= 0 || $resolved->isGuest() || ($id === $guestId && !$resolved->isSuperuser()) || $resolved->name === 'guest') {
+		if ($id <= 0 || !AccessGuard::isAuthenticatedOrSuperuser($resolved)) {
 			return 0;
 		}
 
@@ -573,5 +637,38 @@ final class WorkspacePreferenceStore extends Wire
 		}
 
 		return null;
+	}
+
+	private function normalizeThemeModeValue(mixed $raw): string
+	{
+		if (!is_string($raw) && !is_int($raw)) {
+			return '';
+		}
+		$norm = strtolower(trim((string) $raw));
+		if ($norm === 'auto' || $norm === '-1') {
+			return 'system';
+		}
+		if ($norm === '1') {
+			return 'dark';
+		}
+		if ($norm === '0') {
+			return 'light';
+		}
+
+		return in_array($norm, ['light', 'dark', 'system'], true) ? $norm : '';
+	}
+
+	private function normalizeThemePresetValue(mixed $raw): string
+	{
+		if (!is_string($raw)) {
+			return '';
+		}
+		$norm = strtolower(trim($raw));
+		if ($norm === '' || $norm === 'default') {
+			return '';
+		}
+		$preset = ThemePreset::tryFrom($norm);
+
+		return $preset !== null ? $preset->value : '';
 	}
 }

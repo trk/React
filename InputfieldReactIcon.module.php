@@ -22,7 +22,7 @@ use Totoglu\React\Inertia\InputfieldReact;
  * @property bool $allowStrokeWidth Allow customizing stroke width when customization is enabled (default: `true`)
  * @property bool $allowBackground Allow customizing badge background & corner radius when customization is enabled (default: `true`)
  * @property int $previewSize Preview size in pixels inside the input trigger (default: `20`)
- * @property string $iconPrefixMode Scalar storage prefix mode (`'none'`, `'lucide'`, or `'fa'`; default: `'none'`)
+ * @property string $iconPrefixMode Scalar storage prefix mode (`'none'`, `'vector'`, or `'fa'`; default: `'none'`)
  * @property bool $readOnly Render in read-only mode
  */
 class InputfieldReactIcon extends InputfieldReact
@@ -151,7 +151,7 @@ class InputfieldReactIcon extends InputfieldReact
 	{
 		$flags = self::extractFieldFlags($this);
 		$rawPrefix = strtolower(trim((string) ($this->getSetting('iconPrefixMode') ?? 'none')));
-		$prefixMode = in_array($rawPrefix, ['none', 'lucide', 'fa'], true) ? $rawPrefix : 'none';
+		$prefixMode = in_array($rawPrefix, ['none', 'vector', 'fa'], true) ? $rawPrefix : 'none';
 		$rootUrl = rtrim((string) ($this->wire()->config->urls->root ?: '/'), '/');
 		$totalVariants = IconManager::loadCatalog()['totalVariants'];
 
@@ -174,7 +174,7 @@ class InputfieldReactIcon extends InputfieldReact
 		$prefixMode = 'none';
 		if ($field instanceof Field) {
 			$rawMode = strtolower(trim((string) ($field->get('iconPrefixMode') ?? 'none')));
-			if (in_array($rawMode, ['none', 'lucide', 'fa'], true)) {
+			if (in_array($rawMode, ['none', 'vector', 'fa'], true)) {
 				$prefixMode = $rawMode;
 			}
 		}
@@ -329,10 +329,10 @@ class InputfieldReactIcon extends InputfieldReact
 			$prefixField->description = $this->_('Controls how plain icon names are saved when appearance customization is disabled.');
 			$prefixField->addOptions([
 				'none' => $this->_('Standard Icon Name (e.g. sparkles)'),
-				'lucide' => $this->_('Admin CSS Prefix'),
+				'vector' => $this->_('Admin CSS Prefix'),
 			]);
 			$rawMode = strtolower(trim((string) ($this->getSetting('iconPrefixMode') ?: 'none')));
-			$prefixField->val(in_array($rawMode, ['none', 'lucide'], true) ? $rawMode : 'none');
+			$prefixField->val(in_array($rawMode, ['none', 'vector'], true) ? $rawMode : 'none');
 			$prefixField->columnWidth = 50;
 			$inputfields->add($prefixField);
 		}

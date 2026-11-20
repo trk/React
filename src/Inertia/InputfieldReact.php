@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Totoglu\React\Inertia;
 
+use ProcessWire\Inertia;
 use ProcessWire\Inputfield;
 use ProcessWire\React;
 use Totoglu\Inertia\InputfieldInertia;
+use Totoglu\React\Support\IslandMarkup;
 
 /**
  * InputfieldReact
@@ -93,8 +95,11 @@ abstract class InputfieldReact extends InputfieldInertia
 			return null;
 		}
 
-		$resolved = $this->inertia()->resolver->resolveValue($this->toInertiaProp());
-		$props = is_array($resolved) ? $resolved : $this->toInertiaProp();
+		$props = Inertia::withoutEntityEncoding(function (): array {
+			$resolved = $this->inertia()->resolver->resolveValue($this->toInertiaProp());
+
+			return is_array($resolved) ? $resolved : $this->toInertiaProp();
+		});
 		$component = is_string($props['component'] ?? null) && $props['component'] !== ''
 			? $props['component']
 			: $this->inertiaComponent();
@@ -114,7 +119,7 @@ abstract class InputfieldReact extends InputfieldInertia
 
 	/**
 	 * Determine whether this Inputfield is permanently locked or read-only on the server,
-	 * while allowing dynamically unlocked `_rwDynamicReadOnly` / `_weDynamicReadOnly` fields.
+	 * while allowing dynamically unlocked `_rwDynamicReadOnly` fields.
 	 */
 	public function isEffectivelyReadOnly(): bool
 	{
@@ -127,7 +132,7 @@ abstract class InputfieldReact extends InputfieldInertia
 			return true;
 		}
 
-		$isDynamicReadOnly = (bool) ($this->get('_rwDynamicReadOnly') || $this->get('_weDynamicReadOnly'));
+		$isDynamicReadOnly = (bool) $this->get('_rwDynamicReadOnly');
 		if ($isDynamicReadOnly) {
 			return false;
 		}
@@ -147,8 +152,14 @@ abstract class InputfieldReact extends InputfieldInertia
 
 	public function ___render(): string
 	{
-		$payload = $this->inertia()->resolver->resolveValue($this->toInertiaProp());
-		$data = is_array($payload) ? $payload : $this->toInertiaProp();
+		$inertia = $this->inertia();
+		$inertia->ensureXsrfCookie();
+
+		$data = Inertia::withoutEntityEncoding(function () use ($inertia): array {
+			$payload = $inertia->resolver->resolveValue($this->toInertiaProp());
+
+			return is_array($payload) ? $payload : $this->toInertiaProp();
+		});
 
 		$name = $this->stringAttr('name');
 		$rawId = $this->stringAttr('id');
@@ -156,36 +167,36 @@ abstract class InputfieldReact extends InputfieldInertia
 		$component = is_string($data['component'] ?? null) ? $data['component'] : $this->inertiaComponent();
 		$hiddenVal = $this->serializeValueForHiddenInput($this->attr('value'));
 
-		$safeId = $this->encodeHtmlAttribute($id);
-		$safeName = $this->encodeHtmlAttribute($name);
-		$safeVal = $this->encodeHtmlAttribute($hiddenVal);
-		$safeComponent = $this->encodeHtmlAttribute($component);
-
-		$jsonProps = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_INVALID_UTF8_SUBSTITUTE);
-		$safeProps = $this->encodeHtmlAttribute(is_string($jsonProps) ? $jsonProps : '{}');
-
 		$out = '';
 		if ($name !== '') {
+			$safeId = $this->encodeHtmlAttribute($id);
+			$safeName = $this->encodeHtmlAttribute($name);
+			$safeVal = $this->encodeHtmlAttribute($hiddenVal);
 			$out .= "<input type=\"hidden\" id=\"{$safeId}\" name=\"{$safeName}\" value=\"{$safeVal}\" data-inertia-input=\"{$safeName}\" />";
 		}
-		$nameAttr = $name !== '' ? " data-input-name=\"{$safeName}\"" : '';
-		$out .= "<div class=\"pw-inertia-inputfield-island\" data-inertia-island=\"{$safeComponent}\" data-react-island=\"{$safeComponent}\" data-input-id=\"{$safeId}\"{$nameAttr} data-props=\"{$safeProps}\"></div>";
 
-		return $out;
+		return $out . IslandMarkup::render($component, $data, [
+			'class' => 'pw-inertia-inputfield-island',
+			'data-input-id' => $id,
+			'data-input-name' => $name !== '' ? $name : null,
+		]);
 	}
 
 	public function ___renderValue(): string
 	{
-		$payload = $this->inertia()->resolver->resolveValue($this->toInertiaProp());
-		$data = is_array($payload) ? $payload : $this->toInertiaProp();
+		$inertia = $this->inertia();
+		$data = Inertia::withoutEntityEncoding(function () use ($inertia): array {
+			$payload = $inertia->resolver->resolveValue($this->toInertiaProp());
+
+			return is_array($payload) ? $payload : $this->toInertiaProp();
+		});
 		$data['readOnly'] = true;
 
 		$component = is_string($data['component'] ?? null) ? $data['component'] : $this->inertiaComponent();
-		$safeComponent = $this->encodeHtmlAttribute($component);
 
-		$jsonProps = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_INVALID_UTF8_SUBSTITUTE);
-		$safeProps = $this->encodeHtmlAttribute(is_string($jsonProps) ? $jsonProps : '{}');
-
-		return "<div class=\"pw-inertia-inputfield-island\" data-inertia-island=\"{$safeComponent}\" data-react-island=\"{$safeComponent}\" data-readonly=\"true\" data-props=\"{$safeProps}\"></div>";
+		return IslandMarkup::render($component, $data, [
+			'class' => 'pw-inertia-inputfield-island',
+			'data-readonly' => 'true',
+		]);
 	}
 }

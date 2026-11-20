@@ -11,6 +11,7 @@ use ProcessWire\React;
 use ProcessWire\WireInputData;
 use Totoglu\Inertia\InteractWithInertia;
 use Totoglu\React\Inertia\InteractWithReactTranslations;
+use Totoglu\React\Support\IslandMarkup;
 
 /**
  * Shared Inertia island, serialization, and server-side input guard behavior
@@ -95,7 +96,7 @@ trait InteractWithReactMediaInputfield
 		if (in_array($collapsed, [Inputfield::collapsedNoLocked, Inputfield::collapsedYesLocked], true)) {
 			return true;
 		}
-		$isDynamicReadOnly = (bool) ($this->get('_rwDynamicReadOnly') || $this->get('_weDynamicReadOnly'));
+		$isDynamicReadOnly = (bool) $this->get('_rwDynamicReadOnly');
 		if ($isDynamicReadOnly) {
 			return false;
 		}
@@ -157,27 +158,13 @@ trait InteractWithReactMediaInputfield
 		$uploadFieldName = (string) ($data['uploadFieldName'] ?? $name);
 		$component = $this->inertiaComponent();
 
-		$safeId = $this->encodeHtmlAttribute($id);
-		$safeName = $this->encodeHtmlAttribute($name);
-		$safeComponent = $this->encodeHtmlAttribute($component);
-		$safePostUrl = $this->encodeHtmlAttribute($uploadUrl);
-		$safeFieldName = $this->encodeHtmlAttribute($uploadFieldName);
-
-		$jsonProps = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_INVALID_UTF8_SUBSTITUTE);
-		$safeProps = $this->encodeHtmlAttribute(is_string($jsonProps) ? $jsonProps : '{}');
-
-		$extraAttrs = '';
-		if ($name !== '') {
-			$extraAttrs .= " data-input-name=\"{$safeName}\"";
-		}
-		if ($uploadFieldName !== '') {
-			$extraAttrs .= " data-fieldname=\"{$safeFieldName}\"";
-		}
-		if ($uploadUrl !== '') {
-			$extraAttrs .= " data-posturl=\"{$safePostUrl}\"";
-		}
-
-		return "<div class=\"pw-inertia-inputfield-island\" data-inertia-island=\"{$safeComponent}\" data-react-island=\"{$safeComponent}\" data-input-id=\"{$safeId}\"{$extraAttrs} data-props=\"{$safeProps}\"></div>";
+		return IslandMarkup::render($component, $data, [
+			'class' => 'pw-inertia-inputfield-island',
+			'data-input-id' => $id,
+			'data-input-name' => $name !== '' ? $name : null,
+			'data-fieldname' => $uploadFieldName !== '' ? $uploadFieldName : null,
+			'data-posturl' => $uploadUrl !== '' ? $uploadUrl : null,
+		]);
 	}
 
 	public function ___renderValue(): string
@@ -194,11 +181,7 @@ trait InteractWithReactMediaInputfield
 			$data['props']['readOnly'] = true;
 		}
 
-		$safeComponent = $this->encodeHtmlAttribute($this->inertiaComponent());
-		$jsonProps = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_INVALID_UTF8_SUBSTITUTE);
-		$safeProps = $this->encodeHtmlAttribute(is_string($jsonProps) ? $jsonProps : '{}');
-
-		return "<div class=\"pw-inertia-inputfield-island\" data-inertia-island=\"{$safeComponent}\" data-react-island=\"{$safeComponent}\" data-props=\"{$safeProps}\"></div>";
+		return IslandMarkup::render($this->inertiaComponent(), $data, ['class' => 'pw-inertia-inputfield-island']);
 	}
 
 	public function ___processInput(WireInputData $input): static

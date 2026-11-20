@@ -93,11 +93,11 @@ final class EmbeddedAdminPageResponse extends PageResponse
 
 		$themeMode = is_string($viewData['themeMode'] ?? null)
 			? (string) $viewData['themeMode']
-			: $react->resolveEffectiveThemeMode($wire->user);
+			: $react->theme()->resolveEffectiveThemeMode($wire->user);
 		$resolvedThemeMode = in_array($themeMode, ['light', 'dark', 'system'], true) ? $themeMode : 'system';
 		$colorSchemeCss = is_string($viewData['colorSchemeCss'] ?? null)
 			? (string) $viewData['colorSchemeCss']
-			: $react->resolveAdminColorSchemeCss();
+			: $react->theme()->resolveAdminColorSchemeCss();
 		$adminRootAttr = (string) ($config->urls->admin ?: '/processwire/');
 		$launcherPathAttr = (string) (parse_url($react->resolveLauncherUrl(), PHP_URL_PATH) ?: '');
 
@@ -110,15 +110,21 @@ final class EmbeddedAdminPageResponse extends PageResponse
 			$safeCss = (string) preg_replace('~<\s*/\s*style~i', '<\\/style', $colorSchemeCss);
 			$headFragments[] = '<style id="pw-color-scheme-tokens">' . $safeCss . '</style>';
 		}
-		$headFragments[] = '<script>(function(){try{var d=document.documentElement;d.setAttribute("data-rw-shell-mode","admin");d.setAttribute("data-rw-admin-root",' . $safeAdminRootJson . ');d.setAttribute("data-rw-launcher-path",' . $safeLauncherPathJson . ');var m=' . $safeThemeJson . ';var dark=m==="dark"||(m==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);d.classList.toggle("dark",dark);d.classList.toggle("light",!dark);}catch(e){}})();</script>';
+		$headFragments[] = '<script>(function(){try{var d=document.documentElement;d.setAttribute("data-rw-shell-mode","admin");d.setAttribute("data-rw-admin-root",' . $safeAdminRootJson . ');d.setAttribute("data-rw-launcher-path",' . $safeLauncherPathJson . ');var m=' . $safeThemeJson . ';d.setAttribute("data-theme-mode",m);var dark=m==="dark"||(m==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);d.classList.toggle("dark",dark);d.classList.toggle("light",!dark);}catch(e){}})();</script>';
 
-		$extraHead = implode("\n", $headFragments);
 		$adminTheme = $wire->adminTheme;
 		if ($adminTheme instanceof AdminTheme) {
-			$adminTheme->addExtraMarkup('head', $extraHead);
+			$adminTheme->addExtraMarkup('head', implode("\n", $headFragments));
 			$inlineBootstrap = '';
 		} else {
-			$inlineBootstrap = $extraHead . "\n";
+			$themeCss = is_string($viewData['themeCss'] ?? null)
+				? (string) $viewData['themeCss']
+				: $react->theme()->resolveThemeTokenCss($wire->user);
+			if ($themeCss !== '') {
+				$safeThemeCss = (string) preg_replace('~<\s*/\s*style~i', '<\\/style', $themeCss);
+				$headFragments[] = '<style id="rw-theme-tokens">' . $safeThemeCss . '</style>';
+			}
+			$inlineBootstrap = implode("\n", $headFragments) . "\n";
 		}
 
 		$safeShellAttr = $sanitizer->entities('admin');

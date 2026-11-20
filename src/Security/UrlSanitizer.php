@@ -10,10 +10,11 @@ namespace Totoglu\React\Security;
 final class UrlSanitizer
 {
 	/**
-	 * Allow only `/`, `#`, `./`, `../`, `http://`, `https://`, `mailto:`, and `tel:` URLs.
+	 * Allow only `/`, `#`, `./`, `../`, `http://`, `https://`, `mailto:`, and `tel:` URLs
+	 * (plus `?` query strings and bare relative paths when `$allowBareRelative` is true).
 	 * Rejects protocol-relative (`//`), control-character-obfuscated, `javascript:`, `data:`, and `vbscript:` URLs.
 	 */
-	public static function sanitizeHref(string $url): string
+	public static function sanitizeHref(string $url, bool $allowBareRelative = false): string
 	{
 		$trimmed = trim($url);
 		if ($trimmed === '') {
@@ -37,11 +38,27 @@ final class UrlSanitizer
 			|| str_starts_with($trimmed, '#')
 			|| str_starts_with($trimmed, './')
 			|| str_starts_with($trimmed, '../')
+			|| ($allowBareRelative && str_starts_with($trimmed, '?'))
 		) {
 			return $trimmed;
 		}
 
-		if (preg_match('/^(?:https?:\/\/[^\/\\\\]|mailto:|tel:)/i', $trimmed) === 1) {
+		if (preg_match('/^https?:\/\//i', $trimmed) === 1) {
+			if (preg_match('/^https?:\/\/[^\/\\\\]/i', $trimmed) !== 1) {
+				return '';
+			}
+			if ($allowBareRelative && (string) parse_url($trimmed, PHP_URL_HOST) === '') {
+				return '';
+			}
+
+			return $trimmed;
+		}
+
+		if (preg_match('/^(?:mailto:|tel:)/i', $trimmed) === 1) {
+			return $trimmed;
+		}
+
+		if ($allowBareRelative && preg_match('/^[a-zA-Z][a-zA-Z0-9+.-]*:/', $trimmed) !== 1) {
 			return $trimmed;
 		}
 

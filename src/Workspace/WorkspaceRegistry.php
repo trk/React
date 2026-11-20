@@ -7,6 +7,7 @@ namespace Totoglu\React\Workspace;
 use ProcessWire\Page;
 use ProcessWire\User;
 use ProcessWire\Wire;
+use Totoglu\React\Security\AccessGuard;
 
 /**
  * Central registry for `ProcessReactWorkspace` admin workspaces.
@@ -118,9 +119,7 @@ final class WorkspaceRegistry extends Wire
 		}
 
 		$resolvedUser = $user ?? $this->wire()->user;
-		$guestId = (int) ($this->wire()->config->guestUserPageID ?: 40);
-		$isGuest = $resolvedUser->isGuest() || ((int) $resolvedUser->id === $guestId) || ($resolvedUser->name === 'guest');
-		if (!$resolvedUser->isSuperuser() && ($isGuest || (int) $resolvedUser->id <= 0)) {
+		if (!AccessGuard::isAuthenticatedOrSuperuser($resolvedUser)) {
 			return false;
 		}
 

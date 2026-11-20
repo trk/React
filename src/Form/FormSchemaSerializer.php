@@ -40,6 +40,7 @@ use Totoglu\React\Inertia\InputfieldReact;
 use Totoglu\React\Media\PageLinkMediaHostAdapter;
 use Totoglu\React\Relation\AbstractInputfieldReactRelation;
 use Totoglu\React\Tiptap\TiptapContentPolicy;
+use Totoglu\React\Security\AccessGuard;
 
 /**
  * FormSchemaSerializer
@@ -417,19 +418,28 @@ class FormSchemaSerializer extends Wire
 					? (bool) $raw['i18n']['inheritLanguage']
 					: true);
 
+			$isMediaField = self::isMediaControlType($type, $raw);
 			$val = $values[$name] ?? $raw['value'] ?? $raw['defaultValue'] ?? $raw['default'] ?? $raw['default_value'] ?? '';
+			if ($isMediaField && ($val === '' || $val === [])) {
+				$derivedFiles = self::extractFileNamesFromMediaList($raw['files'] ?? null);
+				if ($derivedFiles !== []) {
+					$val = $derivedFiles;
+				}
+			}
 			$langTabs = [];
 			if ($useLanguages) {
-				$langTabs = $this->extractDeclarativeLanguageValues($name, $raw, $val, $values);
-				if ($langTabs !== []) {
-					foreach ($langTabs as $langTab) {
-						$values[$langTab['inputName']] = $langTab['value'];
-						if ($langTab['isDefault']) {
-							$val = $langTab['value'];
+				$langTabs = $this->extractDeclarativeLanguageValues($name, $raw, $isMediaField ? '' : $val, $values);
+				if (!$isMediaField) {
+					if ($langTabs !== []) {
+						foreach ($langTabs as $langTab) {
+							$values[$langTab['inputName']] = $langTab['value'];
+							if ($langTab['isDefault']) {
+								$val = $langTab['value'];
+							}
 						}
+					} elseif (is_array($val)) {
+						$val = (string) ($val['default'] ?? reset($val) ?: '');
 					}
-				} elseif (is_array($val)) {
-					$val = (string) ($val['default'] ?? reset($val) ?: '');
 				}
 			}
 			$values[$name] = $val;
@@ -554,7 +564,7 @@ class FormSchemaSerializer extends Wire
 					: $raw;
 				$flags = IconManager::resolveCustomizationFlags($rawIconCfg);
 				$rawPrefix = strtolower(trim((string) ($rawIconCfg['prefixMode'] ?? $rawIconCfg['iconPrefixMode'] ?? 'none')));
-				$prefixMode = in_array($rawPrefix, ['none', 'lucide', 'fa'], true) ? $rawPrefix : 'none';
+				$prefixMode = in_array($rawPrefix, ['none', 'vector', 'fa'], true) ? $rawPrefix : 'none';
 				$rootUrl = rtrim((string) ($this->wire()->config->urls->root ?: '/'), '/');
 				$iconCfg = array_merge($flags, [
 					'previewSize' => IconManager::clampSize($rawIconCfg['previewSize'] ?? null, 20),
@@ -995,7 +1005,7 @@ class FormSchemaSerializer extends Wire
 		if (!$inputfield instanceof MarkupReactTab) {
 			return false;
 		}
-		if ((bool) ($inputfield->get('_rwInlineTabGroup') || $inputfield->get('_weInlineTabGroup') || $inputfield->get('inline'))) {
+		if ((bool) ($inputfield->get('_rwInlineTabGroup') || $inputfield->get('inline'))) {
 			return false;
 		}
 		$variant = strtolower(trim((string) ($inputfield->get('variant') ?: 'line')));
@@ -1003,7 +1013,7 @@ class FormSchemaSerializer extends Wire
 			return false;
 		}
 		$groupIdent = $this->strAttr($inputfield, 'name') ?: $this->strAttr($inputfield, 'id');
-		if ($groupIdent !== '' && preg_match('/^(?:rwtabgrp_|rwtab_|wetabgrp_|wetab_|tabgrp_|tab_)/i', $groupIdent) === 1) {
+		if ($groupIdent !== '' && preg_match('/^(?:rwtabgrp_|rwtab_|tabgrp_|tab_)/i', $groupIdent) === 1) {
 			return true;
 		}
 		foreach ($inputfield->children() as $child) {
@@ -1142,7 +1152,7 @@ class FormSchemaSerializer extends Wire
 			$kvData = $inputfield->inertiaWithData();
 			$common = $this->extractCommonFieldMeta($inputfield, $errors);
 			$attrs = $inputfield->getAttributes();
-			$isDynamicReadOnly = (bool) ($inputfield->get('_rwDynamicReadOnly') || $inputfield->get('_weDynamicReadOnly'));
+			$isDynamicReadOnly = (bool) $inputfield->get('_rwDynamicReadOnly');
 			$isLockedCollapsed = in_array((int) ($inputfield->collapsed ?? 0), [Inputfield::collapsedNoLocked, Inputfield::collapsedYesLocked], true);
 			$disabled = !$isDynamicReadOnly && !empty($attrs['disabled']);
 			$readOnly = $isLockedCollapsed || (!$isDynamicReadOnly && !empty($kvData['readOnly']));
@@ -1180,7 +1190,7 @@ class FormSchemaSerializer extends Wire
 		if ($inputfield instanceof InputfieldReactLink) {
 			$common = $this->extractCommonFieldMeta($inputfield, $errors);
 			$attrs = $inputfield->getAttributes();
-			$isDynamicReadOnly = (bool) ($inputfield->get('_rwDynamicReadOnly') || $inputfield->get('_weDynamicReadOnly'));
+			$isDynamicReadOnly = (bool) $inputfield->get('_rwDynamicReadOnly');
 			$isLockedCollapsed = in_array((int) ($inputfield->collapsed ?? 0), [Inputfield::collapsedNoLocked, Inputfield::collapsedYesLocked], true);
 			$disabled = !$isDynamicReadOnly && !empty($attrs['disabled']);
 			$readOnly = $isLockedCollapsed || (!$isDynamicReadOnly && $inputfield->isEffectivelyReadOnly());
@@ -1212,7 +1222,7 @@ class FormSchemaSerializer extends Wire
 		if ($inputfield instanceof InputfieldReactIcon) {
 			$common = $this->extractCommonFieldMeta($inputfield, $errors);
 			$attrs = $inputfield->getAttributes();
-			$isDynamicReadOnly = (bool) ($inputfield->get('_rwDynamicReadOnly') || $inputfield->get('_weDynamicReadOnly'));
+			$isDynamicReadOnly = (bool) $inputfield->get('_rwDynamicReadOnly');
 			$isLockedCollapsed = in_array((int) ($inputfield->collapsed ?? 0), [Inputfield::collapsedNoLocked, Inputfield::collapsedYesLocked], true);
 			$disabled = !$isDynamicReadOnly && !empty($attrs['disabled']);
 			$readOnly = $isLockedCollapsed || (!$isDynamicReadOnly && $inputfield->isEffectivelyReadOnly());
@@ -1264,7 +1274,7 @@ class FormSchemaSerializer extends Wire
 
 		if ($inputfield instanceof InputfieldTiptap) {
 			$ttData = $inputfield->inertiaWithData();
-			$isDynamicReadOnly = (bool) ($inputfield->get('_rwDynamicReadOnly') || $inputfield->get('_weDynamicReadOnly'));
+			$isDynamicReadOnly = (bool) $inputfield->get('_rwDynamicReadOnly');
 			$isLockedCollapsed = in_array((int) ($inputfield->collapsed ?? 0), [Inputfield::collapsedNoLocked, Inputfield::collapsedYesLocked], true);
 			if ($isDynamicReadOnly && !$isLockedCollapsed) {
 				$ttData['disabled'] = false;
@@ -1372,6 +1382,7 @@ class FormSchemaSerializer extends Wire
 			$fieldName = (string) ($control['name'] ?? '');
 			if ($fieldName !== '') {
 				$ctrlType = (string) ($control['type'] ?? '');
+				$isMediaField = self::isMediaControlType($ctrlType, $control);
 				$isMultiValue = !empty($control['multiple']) || in_array($ctrlType, ['checkboxes', 'asmselect', 'multiselect', 'repeater'], true);
 				if ($ctrlType === 'checkbox') {
 					$values[$fieldName] = !empty($control['checked']) ? '1' : '';
@@ -1380,7 +1391,13 @@ class FormSchemaSerializer extends Wire
 				} else {
 					$values[$fieldName] = $control['value'] ?? '';
 				}
-				if (!empty($control['useLanguages']) && isset($control['languages']) && is_array($control['languages'])) {
+				if ($isMediaField && ($values[$fieldName] === '' || $values[$fieldName] === [])) {
+					$derivedFiles = self::extractFileNamesFromMediaList($control['files'] ?? null);
+					if ($derivedFiles !== []) {
+						$values[$fieldName] = $derivedFiles;
+					}
+				}
+				if (!$isMediaField && !empty($control['useLanguages']) && isset($control['languages']) && is_array($control['languages'])) {
 					foreach ($control['languages'] as $langEntry) {
 						if (!is_array($langEntry)) {
 							continue;
@@ -1599,7 +1616,7 @@ class FormSchemaSerializer extends Wire
 		$id = (string) ($attrs['id'] ?? ($name !== '' ? 'Inputfield_' . $name : ''));
 
 		$common = $this->extractCommonFieldMeta($inputfield, $errors);
-		$isDynamicReadOnly = (bool) ($inputfield->get('_rwDynamicReadOnly') || $inputfield->get('_weDynamicReadOnly'));
+		$isDynamicReadOnly = (bool) $inputfield->get('_rwDynamicReadOnly');
 		$isLockedCollapsed = in_array((int) ($inputfield->collapsed ?? 0), [Inputfield::collapsedNoLocked, Inputfield::collapsedYesLocked], true);
 		$disabled = !$isDynamicReadOnly && !empty($attrs['disabled']);
 		$readOnly = $isLockedCollapsed || (!$isDynamicReadOnly && (!empty($attrs['readonly']) || (bool) $inputfield->getSetting('readOnly') || str_contains((string) ($inputfield->wrapClass ?? ''), 'readonly')));
@@ -2141,8 +2158,7 @@ class FormSchemaSerializer extends Wire
 		$mediaEndpoint = $rootUrl . '_react/media';
 		$mediaToken = '';
 		$mediaOwnerId = '';
-		$guestId = (int) ($this->wire()->config->guestUserPageID ?: 40);
-		if (!$user->isGuest() && (int) $user->id > 0 && (int) $user->id !== $guestId) {
+		if (AccessGuard::isAuthenticated($user)) {
 			$envelope = $gateway->buildEnvelopeFromInputfield($inputfield, $isImage, $name, $extensions, $isReadOnly);
 			if ($envelope !== null) {
 				$mediaToken = $gateway->sign($envelope, (int) $user->id);
@@ -2260,7 +2276,7 @@ class FormSchemaSerializer extends Wire
 		$suppressFallbackLabel = $inputfield instanceof MarkupReactTab
 			|| (($skipLabelFlags & (Inputfield::skipLabelHeader | Inputfield::skipLabelMarkup | Inputfield::skipLabelBlank)) !== 0);
 		$label = $suppressFallbackLabel ? $rawLabel : (string) ($rawLabel !== '' ? $rawLabel : ($inputfield->label ?? ''));
-		if ($label !== '' && preg_match('/^(?:rwtabgrp_|rwtab_|wetabgrp_|wetab_|tabgrp_|tab_)/i', $label) === 1) {
+		if ($label !== '' && preg_match('/^(?:rwtabgrp_|rwtab_|tabgrp_|tab_)/i', $label) === 1) {
 			$label = '';
 		}
 
@@ -3640,21 +3656,26 @@ class FormSchemaSerializer extends Wire
 			}
 		}
 
+		$featureFlags = InputfieldReactLink::normalizeFeatureFlags($rawConfig);
 		$langTabs = [];
 		$languages = $this->wire()->languages;
-		if ($mediaProfiles !== [] && is_iterable($languages)) {
+		$needsLanguages = $mediaProfiles !== [] || $featureFlags['enableLabel'] || $featureFlags['enableAriaLabel'];
+		if ($needsLanguages && is_iterable($languages)) {
 			foreach ($languages as $lang) {
 				if (!$lang instanceof Language) {
 					continue;
 				}
 				$isDef = $lang->isDefault();
 				$langId = (int) $lang->id;
+				$isEditable = is_object($languages) && method_exists($languages, 'editable')
+					? (bool) $languages->editable($lang)
+					: true;
 				$langTabs[] = [
 					'id' => $langId,
 					'name' => (string) $lang->name,
 					'title' => (string) ($lang->get('title|name') ?: $lang->name),
 					'isDefault' => $isDef,
-					'editable' => true,
+					'editable' => $isEditable,
 					'inputName' => $isDef ? $inputName : "{$inputName}__{$langId}",
 					'value' => '',
 				];
@@ -3662,23 +3683,24 @@ class FormSchemaSerializer extends Wire
 		}
 
 		$rootUrl = rtrim((string) ($this->wire()->config->urls->root ?: '/'), '/') . '/';
-		$linkConfig = [
-			'types' => $types,
-			'defaultType' => $defaultType,
-			'enableLabel' => ($rawConfig['enableLabel'] ?? $rawConfig['enable_label'] ?? true) !== false,
-			'enableAnchor' => ($rawConfig['enableAnchor'] ?? $rawConfig['enable_anchor'] ?? true) !== false,
-			'enableQuery' => ($rawConfig['enableQuery'] ?? $rawConfig['enable_query'] ?? true) !== false,
-			'enableAttributes' => ($rawConfig['enableAttributes'] ?? $rawConfig['enable_attributes'] ?? true) !== false,
-			'relationEndpoint' => $rootUrl . '_react/relation',
-			'relationTokens' => $relationTokens,
-			'selectedTarget' => $selectedTarget,
-			'mediaEndpoint' => $rootUrl . '_react/media',
-			'mediaProfiles' => $serializedProfiles,
-			'selectedMedia' => $selectedMedia,
-			'ownerId' => $ownerId,
-			'typeLabels' => $typeLabels,
-			'languages' => count($langTabs) > 1 ? $langTabs : [],
-		];
+		$linkConfig = array_merge(
+			[
+				'types' => $types,
+				'defaultType' => $defaultType,
+			],
+			$featureFlags,
+			[
+				'relationEndpoint' => $rootUrl . '_react/relation',
+				'relationTokens' => $relationTokens,
+				'selectedTarget' => $selectedTarget,
+				'mediaEndpoint' => $rootUrl . '_react/media',
+				'mediaProfiles' => $serializedProfiles,
+				'selectedMedia' => $selectedMedia,
+				'ownerId' => $ownerId,
+				'typeLabels' => $typeLabels,
+				'languages' => count($langTabs) > 1 ? $langTabs : [],
+			],
+		);
 
 		$result = array_merge($base, [
 			'type' => 'link',
@@ -3706,9 +3728,15 @@ class FormSchemaSerializer extends Wire
 	 *   query: string,
 	 *   anchor: string,
 	 *   label: string,
-	 *   title: string,
+	 *   ariaLabel: string,
 	 *   target: string,
-	 *   rel: string
+	 *   rel: string,
+	 *   labels?: array<string, string>,
+	 *   ariaLabels?: array<string, string>,
+	 *   alt?: string,
+	 *   descriptions?: array<string, string>,
+	 *   focus?: string,
+	 *   tags?: string
 	 * }
 	 */
 	private static function normalizeLinkPayload(mixed $raw, string $defaultType = 'url'): array
@@ -3854,6 +3882,60 @@ class FormSchemaSerializer extends Wire
 		}
 	}
 
+	/**
+	 * Determine whether a declarative or serialized control represents a file/image media field.
+	 *
+	 * Media controls use `languages` for per-file descriptions/alt text rather than the primary filename array.
+	 *
+	 * @param array<string, mixed> $control
+	 */
+	private static function isMediaControlType(string $type, array $control = []): bool
+	{
+		if (!empty($control['isImage']) || !empty($control['isFile'])) {
+			return true;
+		}
+
+		$normalized = strtolower(trim($type));
+		return in_array($normalized, [
+			'file',
+			'files',
+			'image',
+			'images',
+			'media',
+			'react_file',
+			'react_image',
+			'inputfieldfile',
+			'inputfieldimage',
+			'inputfieldreactfile',
+			'inputfieldreactimage',
+		], true);
+	}
+
+	/**
+	 * Extract non-empty filenames from a serialized `files` entry list.
+	 *
+	 * @return list<string>
+	 */
+	private static function extractFileNamesFromMediaList(mixed $files): array
+	{
+		if (!is_array($files)) {
+			return [];
+		}
+
+		$names = [];
+		foreach ($files as $entry) {
+			if (!is_array($entry)) {
+				continue;
+			}
+			$fileName = (string) ($entry['name'] ?? '');
+			if ($fileName !== '') {
+				$names[] = $fileName;
+			}
+		}
+
+		return $names;
+	}
+
 	private function shortClassName(object $obj): string
 	{
 		$class = $obj::class;
@@ -3869,11 +3951,11 @@ class FormSchemaSerializer extends Wire
 			return '';
 		}
 		$restored = str_ireplace(IconManager::ADMIN_SAFE_REPLACEMENT, 'fa-', $trimmed);
-		if (str_starts_with($restored, 'fa-lucide--')) {
-			return substr($restored, 11);
+		if (str_starts_with($restored, 'fa-' . IconManager::ADMIN_PREFIX)) {
+			return substr($restored, strlen('fa-' . IconManager::ADMIN_PREFIX));
 		}
-		if (str_starts_with($restored, 'lucide--')) {
-			return substr($restored, 8);
+		if (str_starts_with($restored, IconManager::ADMIN_PREFIX)) {
+			return substr($restored, strlen(IconManager::ADMIN_PREFIX));
 		}
 		if (str_starts_with($restored, 'fa-')) {
 			return substr($restored, 3);

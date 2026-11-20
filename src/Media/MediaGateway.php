@@ -24,7 +24,7 @@ use ProcessWire\Wire;
 use ProcessWire\WireException;
 use ProcessWire\WirePageEditor;
 use ProcessWire\WireUpload;
-use Totoglu\React\Security\SignedTokenCodec;
+use Totoglu\React\Security\AccessGuard;
 
 /**
  * MediaGateway
@@ -133,10 +133,7 @@ final class MediaGateway extends Wire
 		$envelope['typ'] = 'media';
 		$envelope['uid'] = $resolvedUid;
 
-		$codec = new SignedTokenCodec();
-		$this->wire($codec);
-
-		return $codec->encode($envelope);
+		return React::instance($this)->tokenCodec()->encode($envelope);
 	}
 
 	/**
@@ -146,10 +143,8 @@ final class MediaGateway extends Wire
 	 */
 	public function verify(string $token, ?int $expectedUserId = null): ?array
 	{
-		$codec = new SignedTokenCodec();
-		$this->wire($codec);
 		$currentUid = $expectedUserId ?? (int) $this->wire()->user->id;
-		$decoded = $codec->decode($token, $currentUid);
+		$decoded = React::instance($this)->tokenCodec()->decode($token, $currentUid);
 		if (
 			$decoded === null
 			|| ($decoded['typ'] ?? '') !== 'media'
@@ -521,13 +516,7 @@ final class MediaGateway extends Wire
 	): array {
 		$workspace = React::instance($this);
 		$resolvedUser = $user ?? $this->wire()->user;
-		$guestId = (int) ($this->wire()->config->guestUserPageID ?: 40);
-
-		if (
-			$resolvedUser->isGuest()
-			|| (int) $resolvedUser->id <= 0
-			|| (int) $resolvedUser->id === $guestId
-		) {
+		if (!AccessGuard::isAuthenticated($resolvedUser)) {
 			return [
 				'ok' => false,
 				'status' => 403,

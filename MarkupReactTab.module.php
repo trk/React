@@ -7,6 +7,7 @@ namespace ProcessWire;
 use Totoglu\Inertia\Contracts\InertiaSerializable;
 use Totoglu\Inertia\InteractWithInertia;
 use Totoglu\React\Inertia\InteractWithReactTranslations;
+use Totoglu\React\Support\IslandMarkup;
 
 /**
  * Tabbed Fieldset Container Markup Module (`MarkupReactTab`).
@@ -677,18 +678,9 @@ class MarkupReactTab extends InputfieldFieldset implements InertiaSerializable
 			'props' => $this->buildTabbedPayload($renderValueMode, $panes),
 		];
 
-		$jsonProps = json_encode(
-			$payload,
-			JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_INVALID_UTF8_SUBSTITUTE
-		);
-		$encodedProps = htmlspecialchars(
-			is_string($jsonProps) ? $jsonProps : '{}',
-			ENT_QUOTES | ENT_SUBSTITUTE,
-			'UTF-8'
-		);
-		$readOnlyAttr = $renderValueMode ? ' data-readonly="true"' : '';
-
-		return '<div data-inertia-island="MarkupReactTab" data-react-island="MarkupReactTab"' . $readOnlyAttr . ' data-props="' . $encodedProps . '"></div>';
+		return IslandMarkup::render('MarkupReactTab', $payload, [
+			'data-readonly' => $renderValueMode ? 'true' : null,
+		]);
 	}
 
 	/**

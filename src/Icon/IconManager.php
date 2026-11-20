@@ -28,8 +28,8 @@ use ProcessWire\Wire;
  */
 class IconManager extends Wire
 {
-	public const string ADMIN_PREFIX = 'lucide--';
-	public const string ADMIN_SAFE_REPLACEMENT = 'lucreplaced-';
+	public const string ADMIN_PREFIX = 'rwv--';
+	public const string ADMIN_SAFE_REPLACEMENT = 'rwvreplaced-';
 	public const int MAX_JSON_BYTES = 4096;
 	public const int MAX_JSON_DEPTH = 8;
 
@@ -109,24 +109,66 @@ class IconManager extends Wire
 	 */
 	private static array $registeredAdminIcons = [];
 
+	/**
+	 * Normalized canonical key cache (`canonical` or `canonical-filled`) of registered admin icons.
+	 *
+	 * @var array<string, true>|null
+	 */
+	private static ?array $registeredCanonicalCache = null;
+
 	private bool $adminCssVerified = false;
 
 	/**
-	 * Register canonical or `lucide--*` icon identifiers so `LucideIcons.css` includes `mask-image` rules for them.
+	 * Register canonical or `rwv--*` icon identifiers so `VectorIcons.css` includes `mask-image` rules for them.
 	 *
 	 * @param list<string> $icons
 	 */
 	public static function registerAdminIcons(array $icons): void
 	{
+		$added = false;
 		foreach ($icons as $raw) {
 			if (is_string($raw) && trim($raw) !== '') {
-				self::$registeredAdminIcons[trim($raw)] = true;
+				$clean = trim($raw);
+				if (!isset(self::$registeredAdminIcons[$clean])) {
+					self::$registeredAdminIcons[$clean] = true;
+					$added = true;
+				}
 			}
+		}
+
+		if ($added) {
+			self::$registeredCanonicalCache = null;
 		}
 	}
 
 	/**
-	 * Compute a deterministic hash of `self::$registeredAdminIcons` for fast O(1) `LucideIcons.css` freshness checks.
+	 * Check whether an icon (or its canonical alias) is registered for inclusion in `VectorIcons.css`.
+	 */
+	public static function isAdminIconRegistered(string $raw): bool
+	{
+		$prefixed = self::toAdminPrefixedValue($raw);
+		if ($prefixed === '') {
+			return false;
+		}
+
+		if (self::$registeredCanonicalCache === null) {
+			$normalized = [];
+			foreach (array_keys(self::$registeredAdminIcons) as $registeredIcon) {
+				$resolved = self::toAdminPrefixedValue($registeredIcon);
+				if ($resolved !== '') {
+					$normalized[substr($resolved, strlen(self::ADMIN_PREFIX))] = true;
+				}
+			}
+			self::$registeredCanonicalCache = $normalized;
+		}
+
+		$key = substr($prefixed, strlen(self::ADMIN_PREFIX));
+
+		return isset(self::$registeredCanonicalCache[$key]);
+	}
+
+	/**
+	 * Compute a deterministic hash of `self::$registeredAdminIcons` for fast O(1) `VectorIcons.css` freshness checks.
 	 */
 	private static function registeredIconsSignature(): string
 	{
@@ -342,7 +384,7 @@ class IconManager extends Wire
 	}
 
 	/**
-	 * Normalize a raw icon identifier string, stripping admin/class prefixes and `lucreplaced-` tokens.
+	 * Normalize a raw icon identifier string, stripping admin/class prefixes and `rwvreplaced-` tokens.
 	 */
 	public static function cleanIdentifier(string $raw): string
 	{
@@ -352,7 +394,7 @@ class IconManager extends Wire
 		}
 		$restored = str_ireplace(self::ADMIN_SAFE_REPLACEMENT, 'fa-', $trimmed);
 		$stripped = (string) preg_replace(
-			'/^(?:fa-lucide--|lucide--|fa-solid\s+fa-|fa-regular\s+fa-|fa-brands\s+fa-|fas\s+fa-|far\s+fa-|fab\s+fa-|ti\s+ti-|ti-|fa-|icon-|uk-icon-)/i',
+			'/^(?:fa-rwv--|rwv--|fa-solid\s+fa-|fa-regular\s+fa-|fa-brands\s+fa-|fas\s+fa-|far\s+fa-|fab\s+fa-|ti\s+ti-|ti-|fa-|icon-|uk-icon-)/i',
 			'',
 			$restored,
 		);
@@ -364,7 +406,7 @@ class IconManager extends Wire
 	}
 
 	/**
-	 * Extract `[cleanBaseIdentifier, variant]` from a raw string (`heart:filled`, `heart-filled`, `lucide--heart-filled`).
+	 * Extract `[cleanBaseIdentifier, variant]` from a raw string (`heart:filled`, `heart-filled`, `rwv--heart-filled`).
 	 *
 	 * @return array{0: string, 1: 'outline'|'filled'}
 	 */
@@ -856,7 +898,7 @@ class IconManager extends Wire
 			$scalar = ($norm['variant'] === 'filled' && (self::loadCatalog()['outline'] === [] || self::hasFilledVariant($norm['name'])))
 				? ($norm['name'] . '-filled')
 				: $norm['name'];
-			if ($prefixMode === 'lucide') {
+			if ($prefixMode === 'vector') {
 				return self::ADMIN_PREFIX . $scalar;
 			}
 			if ($prefixMode === 'fa') {
@@ -1052,7 +1094,7 @@ class IconManager extends Wire
 	 * ======================================================================= */
 
 	/**
-	 * Convert a raw icon selection into `lucide--{canonical}` or `lucide--{canonical}-filled` (or `''` when blank/invalid).
+	 * Convert a raw icon selection into `rwv--{canonical}` or `rwv--{canonical}-filled` (or `''` when blank/invalid).
 	 */
 	public static function toAdminPrefixedValue(mixed $raw): string
 	{
@@ -1072,9 +1114,9 @@ class IconManager extends Wire
 	/**
 	 * Guard against `InputfieldWrapper::render()` stripping `'icon-'` and `'fa-'` substrings inside icon names (e.g. `sofa-bed`).
 	 */
-	public static function sanitizeAdminIconClass(string $lucideIcon): string
+	public static function sanitizeAdminIconClass(string $vectorIcon): string
 	{
-		$clean = trim($lucideIcon);
+		$clean = trim($vectorIcon);
 		if ($clean === '') {
 			return '';
 		}
@@ -1102,17 +1144,17 @@ class IconManager extends Wire
 	{
 		$assetsPath = (string) $this->wire()->config->paths->assets;
 		if ($assetsPath === '') {
-			return dirname(__DIR__, 2) . '/dist/LucideIcons.css';
+			return dirname(__DIR__, 2) . '/dist/VectorIcons.css';
 		}
 
-		return rtrim($assetsPath, '/') . '/lucide-icons/LucideIcons.css';
+		return rtrim($assetsPath, '/') . '/vector-icons/VectorIcons.css';
 	}
 
 	public function getAdminCssUrl(): string
 	{
 		$assetsUrl = (string) ($this->wire()->config->urls->assets ?: '/site/assets/');
 
-		return rtrim($assetsUrl, '/') . '/lucide-icons/LucideIcons.css';
+		return rtrim($assetsUrl, '/') . '/vector-icons/VectorIcons.css';
 	}
 
 	public function ensureAdminCss(): string
@@ -1157,8 +1199,8 @@ class IconManager extends Wire
 	}
 
 	/**
-	 * Generate `site/assets/lucide-icons/LucideIcons.css` with inline SVG `mask-image` rules for all
-	 * `lucide--*` icons assigned across Modules, Templates, Fields (global + template contexts), and Admin `page_icon` pages.
+	 * Generate `site/assets/vector-icons/VectorIcons.css` with inline SVG `mask-image` rules for all
+	 * `rwv--*` icons assigned across Modules, Templates, Fields (global + template contexts), and Admin `page_icon` pages.
 	 */
 	public function generateAdminCss(): string
 	{
@@ -1210,9 +1252,9 @@ class IconManager extends Wire
 				if (!$template instanceof Template) {
 					continue;
 				}
-				$lucideProp = $template->get('lucideIcon');
-				if (is_string($lucideProp) && trim($lucideProp) !== '') {
-					$collect($lucideProp);
+				$vectorProp = $template->get('vectorIcon');
+				if (is_string($vectorProp) && trim($vectorProp) !== '') {
+					$collect($vectorProp);
 				}
 				$tplIcon = (string) $template->getIcon(false);
 				if ($tplIcon !== '' && self::isAdminVectorIcon($tplIcon)) {
@@ -1226,9 +1268,9 @@ class IconManager extends Wire
 				if (!$field instanceof Field) {
 					continue;
 				}
-				$lucideProp = $field->get('lucideIcon');
-				if (is_string($lucideProp) && trim($lucideProp) !== '') {
-					$collect($lucideProp);
+				$vectorProp = $field->get('vectorIcon');
+				if (is_string($vectorProp) && trim($vectorProp) !== '') {
+					$collect($vectorProp);
 				}
 				$fIcon = (string) $field->getIcon(false);
 				if ($fIcon !== '' && self::isAdminVectorIcon($fIcon)) {
@@ -1247,8 +1289,8 @@ class IconManager extends Wire
 						continue;
 					}
 					$ctx = $fg->getFieldContextArray($field->id);
-					if (isset($ctx['lucideIcon']) && is_string($ctx['lucideIcon']) && trim($ctx['lucideIcon']) !== '') {
-						$collect($ctx['lucideIcon']);
+					if (isset($ctx['vectorIcon']) && is_string($ctx['vectorIcon']) && trim($ctx['vectorIcon']) !== '') {
+						$collect($ctx['vectorIcon']);
 					}
 					if (isset($ctx['icon']) && is_string($ctx['icon']) && self::isAdminVectorIcon($ctx['icon'])) {
 						$collect($ctx['icon']);
@@ -1276,8 +1318,8 @@ class IconManager extends Wire
 
 		$cssLines = [
 			'/* Auto-generated by React IconManager | rw-reg-sig:' . self::registeredIconsSignature() . ' | rw-count:' . count($prefixedIcons) . ' */',
-			'[class*="fa-lucide--"]::before, [class*="fa-lucreplaced-"]::before { content: "" !important; display: none !important; }',
-			'[class*="fa-lucide--"], [class*="fa-lucreplaced-"] {',
+			'[class*="fa-rwv--"]::before, [class*="fa-rwvreplaced-"]::before { content: "" !important; display: none !important; }',
+			'[class*="fa-rwv--"], [class*="fa-rwvreplaced-"] {',
 			'  display: inline-block;',
 			'  vertical-align: middle;',
 			'  position: relative;',
@@ -1293,12 +1335,15 @@ class IconManager extends Wire
 			'  mask-size: contain;',
 			'  -webkit-mask-size: contain;',
 			'}',
-			'.PageListItem [class*="fa-lucide--"], .PageListItem [class*="fa-lucreplaced-"], .ui-menu-item [class*="fa-lucide--"], .uk-nav [class*="fa-lucide--"] {',
+			'.PageListItem [class*="fa-rwv--"], .PageListItem [class*="fa-rwvreplaced-"], .ui-menu-item [class*="fa-rwv--"], .ui-menu-item [class*="fa-rwvreplaced-"], .uk-nav [class*="fa-rwv--"], .uk-nav [class*="fa-rwvreplaced-"] {',
 			'  width: 16px;',
 			'  height: 16px;',
 			'  box-sizing: content-box;',
 			'}',
-			'h1 [class*="fa-lucide--"], h1 [class*="fa-lucreplaced-"] {',
+			'.ui-menu .ui-menu-item a i[class*="fa-rwv--"], .ui-menu .ui-menu-item a i[class*="fa-rwvreplaced-"], .uk-nav li a i[class*="fa-rwv--"], .uk-nav li a i[class*="fa-rwvreplaced-"] {',
+			'  margin-right: 6px;',
+			'}',
+			'h1 [class*="fa-rwv--"], h1 [class*="fa-rwvreplaced-"] {',
 			'  width: 28px;',
 			'  height: 28px;',
 			'}',

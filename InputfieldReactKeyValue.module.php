@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ProcessWire;
 
 use Totoglu\React\Inertia\InputfieldReact;
+use Totoglu\React\Support\IslandMarkup;
 
 /**
  * InputfieldReactKeyValue
@@ -543,12 +544,10 @@ class InputfieldReactKeyValue extends InputfieldReact implements InputfieldHasAr
 		}
 
 		$component = is_string($data['component'] ?? null) ? $data['component'] : $this->inertiaComponent();
-		$safeComponent = $this->encodeHtmlAttribute($component);
-		$jsonProps = json_encode($data, \ProcessWire\Inertia::JSON_HTML_SAFE_FLAGS);
-		$safeProps = $this->encodeHtmlAttribute(is_string($jsonProps) ? $jsonProps : '{}');
-		$fallbackHtml = self::renderPairsMarkup($this->getNormalizedMap());
-
-		return "<div class=\"pw-inertia-inputfield-island\" data-inertia-island=\"{$safeComponent}\" data-react-island=\"{$safeComponent}\" data-readonly=\"true\" data-props=\"{$safeProps}\">{$fallbackHtml}</div>";
+		return IslandMarkup::render($component, $data, [
+			'class' => 'pw-inertia-inputfield-island',
+			'data-readonly' => 'true',
+		], self::renderPairsMarkup($this->getNormalizedMap()));
 	}
 
 	/**

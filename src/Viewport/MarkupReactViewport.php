@@ -20,8 +20,8 @@ use Totoglu\React\Contract\ReactSummaryProvider;
 use Totoglu\React\Contract\ReactViewsProvider;
 use Totoglu\React\Data\ReactRecord;
 use Totoglu\React\Inertia\InteractWithReactTranslations;
-use Totoglu\React\Security\SignedTokenCodec;
 use Totoglu\React\Security\UrlSanitizer;
+use Totoglu\React\Support\IslandMarkup;
 
 /**
  * Base ProcessWire Markup module (`extends MarkupInertia`) for all `React` and downstream
@@ -860,29 +860,9 @@ abstract class MarkupReactViewport extends MarkupInertia
 
 		$this->renderReady();
 
-		$sanitizer = $this->wire()->sanitizer;
-		$component = $sanitizer->entities($this->inertiaComponent());
-		$payload = $this->toInertiaProp();
-		$jsonProps = json_encode(
-			$payload,
-			JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_INVALID_UTF8_SUBSTITUTE
-		);
-		$encodedProps = htmlspecialchars(
-			is_string($jsonProps) ? $jsonProps : '{}',
-			ENT_QUOTES | ENT_SUBSTITUTE,
-			'UTF-8'
-		);
-		$idAttr = $this->componentId !== ''
-			? ' id="' . $sanitizer->entities('rw-viewport-' . $this->componentId) . '"'
-			: '';
-
-		return sprintf(
-			'<div%s data-inertia-island="%s" data-react-island="%s" data-props="%s"></div>',
-			$idAttr,
-			$component,
-			$component,
-			$encodedProps
-		);
+		return IslandMarkup::render($this->inertiaComponent(), $this->toInertiaProp(), [
+			'id' => $this->componentId !== '' ? 'rw-viewport-' . $this->componentId : null,
+		]);
 	}
 
 	public function inertiaShared(): array
@@ -2324,6 +2304,7 @@ abstract class MarkupReactViewport extends MarkupInertia
 			'viewMode' => $this->viewMode,
 			'allowedViewModes' => array_values($this->allowedViewModes),
 			'viewScripts' => $this->resolveViewScriptsMap(),
+			'viewStyles' => $this->resolveViewStylesMap(),
 			'columns' => $this->columns,
 			'displayColumns' => $displayColumns,
 			'hiddenColumns' => array_values($this->hiddenColumns),
@@ -2495,10 +2476,7 @@ abstract class MarkupReactViewport extends MarkupInertia
 			'uid' => (int) $this->wire()->user->id,
 		];
 
-		$codec = new SignedTokenCodec();
-		$this->wire($codec);
-
-		return $codec->encode($envelope);
+		return React::instance($this)->tokenCodec()->encode($envelope);
 	}
 
 	/**
@@ -2508,10 +2486,8 @@ abstract class MarkupReactViewport extends MarkupInertia
 	 */
 	public function verifyViewportState(string $token): ?array
 	{
-		$codec = new SignedTokenCodec();
-		$this->wire($codec);
 		$currentUserId = (int) $this->wire()->user->id;
-		$decoded = $codec->decode($token, $currentUserId);
+		$decoded = React::instance($this)->tokenCodec()->decode($token, $currentUserId);
 		if (
 			$decoded === null
 			|| ($decoded['typ'] ?? '') !== 'viewport'
@@ -2531,12 +2507,38 @@ abstract class MarkupReactViewport extends MarkupInertia
 	private static array $viewScriptsCache = [];
 
 	/**
+	 * Cached standalone stylesheet asset URLs keyed by `"{mode}|{registeredModule}"`.
+	 *
+	 * @var array<string, list<string>>
+	 */
+	private static array $viewStylesCache = [];
+
+	/**
 	 * Map each allowed viewport mode (`table`, `cards`, `kanban`, `calendar`, etc.)
 	 * to its standalone script asset URLs so `<DataViewport />` can load view modes on demand.
 	 *
 	 * @return array<string, list<string>>
 	 */
 	protected function resolveViewScriptsMap(): array
+	{
+		return $this->resolveViewAssetMap(true);
+	}
+
+	/**
+	 * Map each allowed viewport mode (`table`, `cards`, `kanban`, `calendar`, etc.)
+	 * to its standalone stylesheet asset URLs so dynamically switched view modes load their delta CSS on demand.
+	 *
+	 * @return array<string, list<string>>
+	 */
+	protected function resolveViewStylesMap(): array
+	{
+		return $this->resolveViewAssetMap(false);
+	}
+
+	/**
+	 * @return array<string, list<string>>
+	 */
+	private function resolveViewAssetMap(bool $scripts): array
 	{
 		$map = [];
 		$workspace = $this->react();
@@ -2548,21 +2550,35 @@ abstract class MarkupReactViewport extends MarkupInertia
 				continue;
 			}
 			$cacheKey = $cleanMode . '|' . ($registered[$cleanMode]['module'] ?? '');
-			if (array_key_exists($cacheKey, self::$viewScriptsCache)) {
+			if ($scripts && array_key_exists($cacheKey, self::$viewScriptsCache)) {
 				if (self::$viewScriptsCache[$cacheKey] !== []) {
 					$map[$cleanMode] = self::$viewScriptsCache[$cacheKey];
 				}
 				continue;
 			}
+			if (!$scripts && array_key_exists($cacheKey, self::$viewStylesCache)) {
+				if (self::$viewStylesCache[$cacheKey] !== []) {
+					$map[$cleanMode] = self::$viewStylesCache[$cacheKey];
+				}
+				continue;
+			}
 			try {
 				$vp = $workspace->viewport($cleanMode);
-				$scripts = array_values($vp->getModuleScriptAssets());
-				self::$viewScriptsCache[$cacheKey] = $scripts;
-				if ($scripts !== []) {
-					$map[$cleanMode] = $scripts;
+				$assets = $scripts ? array_values($vp->getModuleScriptAssets()) : array_values($vp->getModuleStyleAssets());
+				if ($scripts) {
+					self::$viewScriptsCache[$cacheKey] = $assets;
+				} else {
+					self::$viewStylesCache[$cacheKey] = $assets;
+				}
+				if ($assets !== []) {
+					$map[$cleanMode] = $assets;
 				}
 			} catch (\Throwable) {
-				self::$viewScriptsCache[$cacheKey] = [];
+				if ($scripts) {
+					self::$viewScriptsCache[$cacheKey] = [];
+				} else {
+					self::$viewStylesCache[$cacheKey] = [];
+				}
 			}
 		}
 

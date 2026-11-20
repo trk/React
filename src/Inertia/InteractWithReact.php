@@ -12,6 +12,7 @@ use ProcessWire\Template;
 use ProcessWire\Wire;
 use Totoglu\Inertia\InteractWithInertia;
 use Totoglu\Inertia\PageResponse;
+use Totoglu\React\Icon\IconManager;
 use Totoglu\React\Workspace\WorkspaceDefinition;
 use UnitEnum;
 
@@ -91,7 +92,7 @@ trait InteractWithReact
 			if (in_array($seg1, ['navjson', 'export', 'download-backup'], true)) {
 				return false;
 			}
-			if ((int) $input->get('modal') === 1 || (string) $input->post('_rw_modal') === '1' || (string) $input->post('_we_modal') === '1') {
+			if ((int) $input->get('modal') === 1 || (string) $input->post('_rw_modal') === '1') {
 				return false;
 			}
 			if (trim((string) $input->get('export')) !== '' || trim((string) $input->get('download_token')) !== '') {
@@ -235,5 +236,198 @@ trait InteractWithReact
 		}
 
 		return null;
+	}
+
+	/**
+	 * Resolve the trailing-slashed admin URL for this `Process` controller, even in CLI or
+	 * non-page requests where `$wire->page` is not the module's admin page.
+	 */
+	protected function resolveAdminProcessRootUrl(): string
+	{
+		$wire = $this instanceof Wire ? $this->wire() : null;
+		if ($wire === null) {
+			return '/';
+		}
+
+		$page = $wire->page;
+		$processName = $this instanceof Process ? $this->className() : '';
+		if ($page instanceof Page && $page->id > 0 && $processName !== '' && (string) $page->process === $processName && (string) $page->url !== '') {
+			return rtrim((string) $page->url, '/') . '/';
+		}
+
+		if ($this instanceof Process && $processName !== '' && !str_contains($processName, '@anonymous')) {
+			$moduleId = (int) $wire->modules->getModuleID($this);
+			if ($moduleId > 0) {
+				$adminPage = $wire->pages->findOne("template=admin, process={$moduleId}, include=all, check_access=0");
+				if ($adminPage instanceof Page && $adminPage->id > 0 && (string) $adminPage->url !== '') {
+					return rtrim((string) $adminPage->url, '/') . '/';
+				}
+			}
+		}
+
+		if ($page instanceof Page && $page->id > 0 && (string) $page->url !== '') {
+			return rtrim((string) $page->url, '/') . '/';
+		}
+
+		return rtrim((string) ($wire->config->urls->admin ?: '/'), '/') . '/';
+	}
+
+	/**
+	 * Resolve an admin flyout navigation icon (`rwv--*` vector class when enabled, or classic icon slug).
+	 */
+	protected function resolveAdminNavIcon(string $icon, string $fallbackIcon = 'circle', bool $requireRegistered = false): string
+	{
+		$cleanIcon = trim($icon);
+		$cleanFallback = trim($fallbackIcon) !== '' ? trim($fallbackIcon) : 'circle';
+
+		if ((bool) $this->react()->get('enableAdminVectorIcons')) {
+			if ($cleanIcon !== '') {
+				$prefixed = IconManager::toAdminPrefixedValue($cleanIcon);
+				if ($prefixed !== '' && (!$requireRegistered || IconManager::isAdminIconRegistered($cleanIcon))) {
+					return IconManager::sanitizeAdminIconClass($prefixed);
+				}
+			}
+
+			$fallbackPrefixed = IconManager::toAdminPrefixedValue($cleanFallback);
+			if ($fallbackPrefixed !== '') {
+				return IconManager::sanitizeAdminIconClass($fallbackPrefixed);
+			}
+		}
+
+		$candidate = $cleanIcon !== '' ? $cleanIcon : $cleanFallback;
+		$stripped = IconManager::cleanIdentifier($candidate);
+		if ($stripped !== '') {
+			return $stripped;
+		}
+
+		return 'circle-o';
+	}
+
+	/**
+	 * Ensure `executeNavJSON()` payloads always expose a non-empty root URL and clickable hrefs
+	 * for Overview / root items across all ProcessWire AdminThemes.
+	 *
+	 * @param array<string, mixed> $data
+	 * @return array<string, mixed>
+	 */
+	protected function normalizeAdminNavJSONData(array $data): array
+	{
+		$rootUrl = $this->resolveAdminProcessRootUrl();
+		$rawDataUrl = is_string($data['url'] ?? null) ? trim($data['url']) : '';
+		if ($rawDataUrl === '' || ($rawDataUrl === '/' && $rootUrl !== '/')) {
+			$data['url'] = $rootUrl;
+		}
+
+		if (isset($data['list']) && is_array($data['list'])) {
+			foreach ($data['list'] as $idx => $entry) {
+				if (!is_array($entry)) {
+					continue;
+				}
+				$entryUrl = is_string($entry['url'] ?? null) ? trim($entry['url']) : '';
+				if ($entryUrl === '' || $entryUrl === './') {
+					$entry['url'] = $rootUrl;
+					$data['list'][$idx] = $entry;
+				}
+			}
+		}
+
+		return $data;
+	}
+
+	/**
+	 * Build a normalized, entity-safe ProcessWire `executeNavJSON()` flyout response with
+	 * clickable Overview/root links, registered vector icons, and clean section separators.
+	 *
+	 * @param list<array{
+	 *   url: string,
+	 *   label: string,
+	 *   badge?: string|int|null,
+	 *   icon?: string,
+	 *   fallbackIcon?: string,
+	 *   dynamicIcon?: bool,
+	 *   separator?: bool,
+	 *   class?: string
+	 * }> $items
+	 * @param array<string, mixed> $options
+	 * @return string|array<string, mixed>
+	 */
+	protected function buildAdminNavJSON(array $items, array $options = []): string|array
+	{
+		$rootUrl = $this->resolveAdminProcessRootUrl();
+		$decode = static fn(string $text): string => html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+		$normalizedItems = [];
+		foreach (array_values($items) as $idx => $item) {
+			$rawUrl = trim((string) ($item['url'] ?? ''));
+			$resolvedUrl = ($rawUrl === '' || $rawUrl === './') ? $rootUrl : $rawUrl;
+			$label = $decode((string) ($item['label'] ?? ''));
+			$rawBadge = $item['badge'] ?? '';
+			$badge = is_int($rawBadge) ? (string) $rawBadge : $decode((string) $rawBadge);
+
+			$rawIcon = trim((string) ($item['icon'] ?? ''));
+			$fallbackIcon = trim((string) ($item['fallbackIcon'] ?? ''));
+			$dynamicIcon = !empty($item['dynamicIcon']);
+			$resolvedIcon = $rawIcon !== ''
+				? $this->resolveAdminNavIcon($rawIcon, $fallbackIcon !== '' ? $fallbackIcon : 'circle', $dynamicIcon)
+				: ($fallbackIcon !== '' ? $this->resolveAdminNavIcon($fallbackIcon, 'circle', false) : '');
+
+			$classes = [];
+			if ($idx > 0 && !empty($item['separator'])) {
+				$classes[] = 'separator';
+			}
+			$extraClass = trim((string) ($item['class'] ?? ''));
+			if ($extraClass !== '') {
+				$classes[] = $extraClass;
+			}
+
+			$normalizedItems[] = [
+				'id' => $resolvedUrl,
+				'name' => $label,
+				'label2' => $badge,
+				'icon' => $resolvedIcon,
+				'_class' => implode(' ', $classes),
+			];
+		}
+
+		$wantsArray = !empty($options['getArray']);
+		$mergedOptions = $options;
+		$mergedOptions['items'] = $normalizedItems;
+		$mergedOptions['itemLabel'] = 'name';
+		$mergedOptions['itemLabel2'] = 'label2';
+		$mergedOptions['edit'] = '{id}';
+		$mergedOptions['iconKey'] = 'icon';
+		$mergedOptions['classKey'] = '_class';
+		$mergedOptions['sort'] = (bool) ($options['sort'] ?? false);
+		$mergedOptions['getArray'] = true;
+
+		$rawAdd = $options['add'] ?? null;
+		if (!is_string($rawAdd) || trim($rawAdd) === '') {
+			$mergedOptions['add'] = null;
+		} else {
+			$mergedOptions['add'] = trim($rawAdd);
+			$rawAddIcon = is_string($options['addIcon'] ?? null) ? trim($options['addIcon']) : '';
+			$mergedOptions['addIcon'] = $this->resolveAdminNavIcon($rawAddIcon !== '' ? $rawAddIcon : 'circle-plus', 'plus-circle');
+			if (isset($options['addLabel']) && is_string($options['addLabel']) && trim($options['addLabel']) !== '') {
+				$sanitizer = $this instanceof Wire ? $this->wire()->sanitizer : null;
+				$plainAddLabel = $decode(trim($options['addLabel']));
+				$mergedOptions['addLabel'] = $sanitizer !== null ? $sanitizer->entities1($plainAddLabel) : htmlspecialchars($plainAddLabel, ENT_QUOTES, 'UTF-8');
+			}
+		}
+
+		$raw = parent::___executeNavJSON($mergedOptions);
+		if (!is_array($raw)) {
+			return $raw;
+		}
+
+		$data = $this->normalizeAdminNavJSONData($raw);
+		if ($wantsArray) {
+			return $data;
+		}
+
+		if ($this instanceof Wire && (bool) $this->wire()->config->ajax && !headers_sent()) {
+			header('Content-Type: application/json');
+		}
+
+		return (string) json_encode($data);
 	}
 }
