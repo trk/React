@@ -196,7 +196,7 @@ test('readOnly relations force non-mutating flags before signing relationToken a
 		->and($verifiedLockedConfig['allowLink'])->toBeFalse()
 		->and($verifiedLockedConfig['allowUnlink'])->toBeFalse();
 
-	// 2. FormSchemaSerializer forces readOnly flags on static readOnly/disabled while preserving _weDynamicReadOnly / _rwDynamicReadOnly
+	// 2. FormSchemaSerializer forces readOnly flags on static readOnly/disabled while preserving _rwDynamicReadOnly
 	$wrapper = new InputfieldWrapper();
 	wire($wrapper);
 	$m2oStatic = new InputfieldReactM2O();

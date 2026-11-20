@@ -2,7 +2,27 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { evaluateSafeMathFormula } from '../../resources/ts/fields/controls/CalculationField';
-import { formatFocusPoint, parseFocusPoint, stripAdminCacheBuster } from '../../resources/ts/fields/media';
+import {
+	CompactMediaLockedBar,
+	formatFocusPoint,
+	parseFocusPoint,
+	stripAdminCacheBuster,
+} from '../../resources/ts/fields/media';
+import {
+	extractSchemaInitialValues,
+	formatInlineSettingSummaryChip,
+	getNeutralSettingValue,
+} from '../../resources/ts/fields/SchemaForm';
+import {
+	LINK_INLINE_SETTING_PREFIX,
+	applyLinkSettingPatches,
+	buildLinkInlineSettingFields,
+	createEmptyLinkValue,
+	evaluateShowIfCondition,
+	getLocalizedLinkText,
+	normalizeLinkConfigFlags,
+	setLocalizedLinkText,
+} from '../../resources/ts/fields/shared';
 import { hasTranslation, ingestTranslationPayload, registerTranslations, t, translate } from '../../resources/ts/lib/i18n';
 import { getCsrfToken, normalizeIconName, sanitizeHref } from '../../resources/ts/lib/utils';
 import { Dialog, Sheet, Switch } from '../../resources/ts/ui';
@@ -302,15 +322,20 @@ describe('Runtime Utilities, Formula Engine, i18n, Sortable Tree & Media Helpers
 		expect(resolveScopedFieldValue({ meta: { title: 'OK' } }, 'meta.__proto__.toString')).toBe('');
 		expect(resolveScopedFieldValue({ meta: { title: 'OK' } }, 'meta.constructor.name')).toBe('');
 
-		const { Tabs } = await import('../../resources/ts/ui');
+		const { Tabs, TabsList, TabsTrigger, TabsContent } = await import('../../resources/ts/ui');
 		const tabsHtml = renderToStaticMarkup(
-			React.createElement(Tabs, {
-				defaultValue: 'general',
-				tabs: [
-					{ value: 'general', label: 'General', content: React.createElement('p', null, 'Pane 1') },
-					{ value: 'advanced', label: 'Advanced', content: React.createElement('p', null, 'Pane 2') },
-				],
-			})
+			React.createElement(
+				Tabs,
+				{ defaultValue: 'general' },
+				React.createElement(
+					TabsList,
+					null,
+					React.createElement(TabsTrigger, { value: 'general' }, 'General'),
+					React.createElement(TabsTrigger, { value: 'advanced' }, 'Advanced')
+				),
+				React.createElement(TabsContent, { value: 'general' }, React.createElement('p', null, 'Pane 1')),
+				React.createElement(TabsContent, { value: 'advanced' }, React.createElement('p', null, 'Pane 2'))
+			)
 		);
 		expect(tabsHtml).toContain('aria-controls=');
 		expect(tabsHtml).toContain('aria-labelledby=');
@@ -648,5 +673,223 @@ describe('Runtime Utilities, Formula Engine, i18n, Sortable Tree & Media Helpers
 			})
 		);
 		expect(dirtyRecordHeaderHtml).toContain('data-rw-record-status="dirty"');
+	});
+
+	it('preserves media filenames across extractSchemaInitialValues and keeps dependent conditions unlocked', () => {
+		const populated = extractSchemaInitialValues({
+			values: {
+				hero_image: '',
+				hover_image: '',
+			},
+			fields: [
+				{
+					name: 'hero_image',
+					type: 'image',
+					isImage: true,
+					useLanguages: true,
+					value: '',
+					files: [
+						{
+							name: 'modified-fleet-01.jpg',
+							basename: 'modified-fleet-01.jpg',
+							ext: 'jpg',
+							size: 2048,
+							url: '/site/assets/files/1/modified-fleet-01.jpg',
+						},
+					],
+					languages: [
+						{ id: 1010, name: 'default', title: 'English', isDefault: true, inputName: 'hero_image', value: '' },
+						{ id: 1011, name: 'tr', title: 'Türkçe', isDefault: false, inputName: 'hero_image__1011', value: '' },
+					],
+				},
+				{
+					name: 'hover_image',
+					type: 'image',
+					isImage: true,
+					enableIf: 'hero_image!=0|',
+					value: [],
+					files: [],
+				},
+			],
+		});
+
+		expect(populated.hero_image).toEqual(['modified-fleet-01.jpg']);
+		expect(evaluateShowIfCondition('hero_image!=0|', populated)).toBe(true);
+
+		const emptyState = extractSchemaInitialValues({
+			values: {},
+			fields: [
+				{
+					name: 'hero_image',
+					type: 'image',
+					isImage: true,
+					useLanguages: true,
+					value: [],
+					files: [],
+					languages: [
+						{ id: 1010, name: 'default', title: 'English', isDefault: true, inputName: 'hero_image', value: '' },
+					],
+				},
+			],
+		});
+
+		expect(emptyState.hero_image).toEqual([]);
+		expect(evaluateShowIfCondition('hero_image!=0|', emptyState)).toBe(false);
+	});
+
+	it('formats inline settings summary chips and resolves neutral setting reset values cleanly', () => {
+		const toggleField = {
+			name: 'bordered',
+			type: 'toggle',
+			label: 'Subtle Frame Border',
+			options: [
+				{ value: '0', label: 'No' },
+				{ value: '1', label: 'Yes' },
+			],
+		};
+		expect(formatInlineSettingSummaryChip(toggleField, '1')).toBe('Subtle Frame…');
+		expect(formatInlineSettingSummaryChip(toggleField, '0')).toBeNull();
+		expect(getNeutralSettingValue(toggleField)).toBe('0');
+
+		const customToggleField = {
+			name: 'loading_mode',
+			type: 'toggle',
+			label: 'Loading',
+			options: [
+				{ value: 'lazy', label: 'Lazy' },
+				{ value: 'eager', label: 'Eager' },
+			],
+		};
+		expect(formatInlineSettingSummaryChip(customToggleField, 'eager')).toBe('eager');
+		expect(getNeutralSettingValue(customToggleField)).toBe('lazy');
+
+		const widthField = {
+			name: 'width',
+			type: 'integer',
+			label: 'Width (px)',
+		};
+		expect(formatInlineSettingSummaryChip(widthField, '800')).toBe('800px');
+		expect(formatInlineSettingSummaryChip(widthField, 'auto')).toBeNull();
+		expect(formatInlineSettingSummaryChip(widthField, 'default')).toBeNull();
+		expect(getNeutralSettingValue(widthField)).toBe('');
+
+		const radiusField = {
+			name: 'rounded',
+			type: 'select',
+			label: 'Media Corner Radius',
+			options: [
+				{ value: 'none', label: 'None' },
+				{ value: 'full', label: 'Pill / Circle' },
+			],
+		};
+		expect(formatInlineSettingSummaryChip(radiusField, 'full')).toBe('full');
+		expect(formatInlineSettingSummaryChip(radiusField, 'none')).toBeNull();
+		expect(getNeutralSettingValue(radiusField)).toBe('none');
+	});
+
+	it('renders media-specific locked vs read-only states in CompactMediaLockedBar', () => {
+		const disabledImageHtml = renderToStaticMarkup(
+			React.createElement(CompactMediaLockedBar, { isImage: true, isDisabled: true })
+		);
+		expect(disabledImageHtml).toContain('data-rw-media-locked="disabled"');
+		expect(disabledImageHtml).toContain('aria-disabled="true"');
+		expect(disabledImageHtml).toContain('Image upload is locked.');
+
+		const disabledFileHtml = renderToStaticMarkup(
+			React.createElement(CompactMediaLockedBar, { isImage: false, isDisabled: true })
+		);
+		expect(disabledFileHtml).toContain('data-rw-media-locked="disabled"');
+		expect(disabledFileHtml).toContain('File upload is locked.');
+
+		const readOnlyHtml = renderToStaticMarkup(
+			React.createElement(CompactMediaLockedBar, { isImage: true, isDisabled: false })
+		);
+		expect(readOnlyHtml).toContain('data-rw-media-locked="readonly"');
+		expect(readOnlyHtml).toContain('No items selected.');
+	});
+
+	it('builds 4 technical link inline settings and manages multi-language link label/ariaLabel safely', () => {
+		const flags = normalizeLinkConfigFlags({
+			enableLabel: 0 as unknown as boolean,
+			enableAriaLabel: true,
+			enableTarget: true,
+			enableRel: true,
+			enableAnchor: true,
+			enableQuery: true,
+		});
+		expect(flags).toEqual({
+			enableLabel: false,
+			enableAriaLabel: true,
+			enableTarget: true,
+			enableRel: true,
+			enableAnchor: true,
+			enableQuery: true,
+		});
+
+		const emptyMeta = buildLinkInlineSettingFields(
+			{ enableLabel: true, enableAriaLabel: true },
+			createEmptyLinkValue('url'),
+			false
+		);
+		expect(emptyMeta.isTargetEmpty).toBe(true);
+		expect(emptyMeta.fields.every((f) => f.disabled === true)).toBe(true);
+		expect(emptyMeta.fields.map((f) => f.name)).toEqual([
+			`${LINK_INLINE_SETTING_PREFIX}target`,
+			`${LINK_INLINE_SETTING_PREFIX}rel`,
+			`${LINK_INLINE_SETTING_PREFIX}anchor`,
+			`${LINK_INLINE_SETTING_PREFIX}query`,
+		]);
+
+		const telMeta = buildLinkInlineSettingFields(
+			undefined,
+			{ type: 'tel', url: '+905551112233' },
+			false
+		);
+		expect(telMeta.isTargetEmpty).toBe(false);
+		expect(telMeta.fields.every((f) => f.disabled === false)).toBe(true);
+		expect(telMeta.fields.map((f) => f.name)).toEqual([
+			`${LINK_INLINE_SETTING_PREFIX}target`,
+			`${LINK_INLINE_SETTING_PREFIX}rel`,
+		]);
+
+		const populatedMeta = buildLinkInlineSettingFields(
+			undefined,
+			{ type: 'url', url: 'https://example.com' },
+			false
+		);
+		const patched = applyLinkSettingPatches(
+			populatedMeta.normLink,
+			{
+				[`${LINK_INLINE_SETTING_PREFIX}target`]: '_blank',
+				[`${LINK_INLINE_SETTING_PREFIX}anchor`]: '#hero',
+				[`${LINK_INLINE_SETTING_PREFIX}query`]: '?ref=nav',
+			},
+			populatedMeta.flags
+		);
+		expect(patched.target).toBe('_blank');
+		expect(patched.rel).toBe('noopener noreferrer');
+		expect(patched.anchor).toBe('hero');
+		expect(patched.query).toBe('ref=nav');
+
+		const targetDef = populatedMeta.fields.find((f) => f.name === `${LINK_INLINE_SETTING_PREFIX}target`)!;
+		expect(formatInlineSettingSummaryChip(targetDef, '_self')).toBeNull();
+		expect(formatInlineSettingSummaryChip(targetDef, '_blank')).toBe('New tab');
+
+		// Multi-language helpers preserve typing spaces and omit empty secondary maps cleanly
+		const defLang = { id: 1010, name: 'default', title: 'English', isDefault: true, editable: true, inputName: 'l', value: '' };
+		const trLang = { id: 1025, name: 'tr', title: 'Türkçe', isDefault: false, editable: true, inputName: 'l__1025', value: '' };
+		const defStep = setLocalizedLinkText('', undefined, defLang, 'Explore ', true);
+		expect(defStep).toEqual({ value: 'Explore ', map: undefined });
+		expect(getLocalizedLinkText(defStep.value, defStep.map, trLang)).toBe('');
+
+		const trStep = setLocalizedLinkText(defStep.value, defStep.map, trLang, 'İleri ', true);
+		expect(trStep).toEqual({
+			value: 'Explore ',
+			map: { default: 'Explore ', '1025': 'İleri ' },
+		});
+		expect(getLocalizedLinkText(trStep.value, trStep.map, trLang)).toBe('İleri ');
+
+		const clearedTr = setLocalizedLinkText(trStep.value, trStep.map, trLang, '', true);
+		expect(clearedTr).toEqual({ value: 'Explore ', map: undefined });
 	});
 });

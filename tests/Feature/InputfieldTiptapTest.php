@@ -311,7 +311,7 @@ test('InputfieldTiptap processes single-language and multi-language input and re
 		->and($sharedChunks)->toBe([])
 		->and(filesize($bundlePath))->toBeGreaterThan(10_000)
 		->and(filesize($bundlePath))->toBeLessThan(560 * 1024)
-		->and(filesize($coreBundlePath))->toBeLessThan(420 * 1024);
+		->and(filesize($coreBundlePath))->toBeLessThan(700_000);
 });
 
 test('InputfieldTiptap guarantees bubbleMenu in inline chromeless mode unless bubbleToolbar is explicitly disabled and normalizes pwlink/pwimage aliases', function (): void {

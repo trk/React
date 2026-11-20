@@ -189,15 +189,58 @@ test.describe('ProcessReactWorkspace Comprehensive Subsystems E2E (Viewports, Me
 		const linkControl = page.locator('#e2e-link-host [data-rw-control="link"]');
 		await expect(linkControl).toBeVisible();
 
+		// Sub-row link texts must stay hidden while target is empty
+		await expect(linkControl.locator('[data-rw-link-texts]')).toHaveCount(0);
+
+		// Header inline settings trigger stays visible when link is empty and locks popover technical options
+		const headerSettingsTrigger = page.locator('#e2e-link-host [data-rw-inline-settings-trigger]');
+		await expect(headerSettingsTrigger).toBeVisible();
+		await expect(linkControl.locator('[data-rw-inline-settings-trigger]')).toHaveCount(0);
+
+		await headerSettingsTrigger.click();
+		const popover = page.locator('[data-rw-inline-settings-popover]');
+		await expect(popover).toBeVisible();
+		await expect(popover.locator('[data-rw-inline-settings-locked]')).toBeVisible();
+		// Popover strictly holds language-agnostic technical controls (zero text fields)
+		await expect(popover.locator('input[name="__rw_link_opt__label"]')).toHaveCount(0);
+		await expect(popover.locator('input[name="__rw_link_opt__ariaLabel"]')).toHaveCount(0);
+		await expect(popover.locator('input[name="__rw_link_opt__title"]')).toHaveCount(0);
+		await headerSettingsTrigger.click();
+		await expect(popover).toHaveCount(0);
+
 		const typeSelect = linkControl.locator('select[aria-label="Link type"]');
 		await expect(typeSelect).toBeVisible();
 
-		// 1. URL mode serializes clean https URL into hidden JSON input
+		// 1. URL mode reveals multi-language link texts below input row & unlocks header settings popover
 		await typeSelect.selectOption('url');
 		const urlInput = linkControl.locator('input[type="url"], input[type="text"]').first();
 		await urlInput.fill('https://processwire.com/about/');
 		const hiddenJsonInput = page.locator(`#e2e-link-host input[type="hidden"][name="${fixture.linkFieldName}"]`);
 		await expect(hiddenJsonInput).toHaveValue(/"url":"https:\/\/processwire\.com\/about\/"/);
+
+		const linkTexts = linkControl.locator('[data-rw-link-texts]');
+		await expect(linkTexts).toBeVisible();
+		await linkTexts.locator('[data-rw-link-text-input="label"]').fill('Explore ProcessWire');
+		await linkTexts.locator('[data-rw-link-text-input="ariaLabel"]').fill('Read more about ProcessWire');
+		await expect(hiddenJsonInput).toHaveValue(/"label":"Explore ProcessWire"/);
+		await expect(hiddenJsonInput).toHaveValue(/"ariaLabel":"Read more about ProcessWire"/);
+
+		const langTabs = linkTexts.locator('[data-rw-lang-tabs] [role="tab"]');
+		if ((await langTabs.count()) >= 2) {
+			await langTabs.nth(1).click();
+			await linkTexts.locator('[data-rw-link-text-input="ariaLabel"]').fill('ProcessWire Hakkında');
+			await expect(hiddenJsonInput).toHaveValue(/"ariaLabels":\{.*"ProcessWire Hakkında"/);
+		}
+
+		await headerSettingsTrigger.click();
+		await expect(popover).toBeVisible();
+		await expect(popover.locator('[data-rw-inline-settings-locked]')).toHaveCount(0);
+		await popover.getByLabel('Open Target').selectOption('_blank');
+		await expect(hiddenJsonInput).toHaveValue(/"target":"_blank"/);
+		await expect(hiddenJsonInput).toHaveValue(/"rel":"noopener noreferrer"/);
+		await headerSettingsTrigger.click();
+		await expect(popover).toHaveCount(0);
+		await expect(headerSettingsTrigger).toContainText('New tab');
 
 		// 2. Email mode formats email destination
 		await typeSelect.selectOption('email');
@@ -1013,15 +1056,15 @@ test.describe('ProcessReactWorkspace Comprehensive Subsystems E2E (Viewports, Me
 		});
 
 		const coreIconWrap = page.locator('#wrap_Inputfield_icon');
-		const lucideIconWrap = page.locator('#wrap_Inputfield_lucideIcon');
-		await expect(lucideIconWrap).toBeVisible();
-		await expect(lucideIconWrap).toContainText('Vector Icon');
-		await expect(lucideIconWrap).not.toContainText(/lucide|tabler/i);
+		const vectorIconWrap = page.locator('#wrap_Inputfield_vectorIcon');
+		await expect(vectorIconWrap).toBeVisible();
+		await expect(vectorIconWrap).toContainText('Vector Icon');
+		await expect(vectorIconWrap).not.toContainText(/lucide|tabler/i);
 		await expect(coreIconWrap).not.toHaveClass(/InputfieldStateHidden/);
 
 		// Expand collapsedBlank `Vector Icon` field header, open picker, and select `compass`
-		await lucideIconWrap.locator('> .InputfieldHeader').click();
-		const adminTrigger = lucideIconWrap.locator('button[aria-haspopup="dialog"]');
+		await vectorIconWrap.locator('> .InputfieldHeader').click();
+		const adminTrigger = vectorIconWrap.locator('button[aria-haspopup="dialog"]');
 		await expect(adminTrigger).toBeVisible();
 		await adminTrigger.click();
 
@@ -1030,14 +1073,569 @@ test.describe('ProcessReactWorkspace Comprehensive Subsystems E2E (Viewports, Me
 		await adminPopover.locator('input[type="search"]').fill('compass');
 		await adminPopover.locator('button[aria-label="compass"]').first().click();
 
-		await expect(page.locator('#Inputfield_lucideIcon')).toHaveValue('lucide--compass');
-		// ProcessWire showIf="lucideIcon=''" hides the native Icon field immediately!
+		await expect(page.locator('#Inputfield_vectorIcon')).toHaveValue('rwv--compass');
+		// ProcessWire showIf="vectorIcon=''" hides the native Icon field immediately!
 		await expect(coreIconWrap).toHaveClass(/InputfieldStateHidden/);
 
 		// Clearing Vector Icon reveals ProcessWire's native Icon field again!
-		await lucideIconWrap.locator('button[aria-label="Clear icon"]').click();
-		await expect(page.locator('#Inputfield_lucideIcon')).toHaveValue('');
+		await vectorIconWrap.locator('button[aria-label="Clear icon"]').click();
+		await expect(page.locator('#Inputfield_vectorIcon')).toHaveValue('');
 		await expect(coreIconWrap).not.toHaveClass(/InputfieldStateHidden/);
+
+		tracker.assertNoErrors();
+	});
+
+	test('drives all control types, conditional rules (showIf, hideIf, enableIf, disableIf, requiredIf), multi-language values, FormData mirror sync, and 2-level nested SchemaForm inside [data-rw-inline-settings-popover]', async ({
+		page,
+	}) => {
+		const tracker = attachRuntimeErrorTracker(page);
+		await page.goto(getAdminUrl('workspace/'), { waitUntil: 'networkidle' });
+
+		await page.evaluate(async () => {
+			(window as any).__inlinePopoverSubmits = 0;
+			const host = document.createElement('div');
+			host.id = 'e2e-inline-popover-host';
+			host.style.padding = '24px 24px 120px 24px';
+			document.body.appendChild(host);
+
+			const schema = {
+				id: 'e2e_popover_form',
+				name: 'e2e_popover_form',
+				action: './',
+				method: 'post',
+				isFragment: false,
+				dirtyGuard: false,
+				submits: [
+					{
+						kind: 'control',
+						type: 'submit',
+						id: 'submit_inline_pop',
+						name: 'submit_inline_pop',
+						label: 'Validate Popover Settings',
+					},
+				],
+				fields: [
+					{
+						kind: 'control',
+						type: 'select',
+						id: 'Inputfield_hero_variant',
+						name: 'hero_variant',
+						label: 'Hero Mode',
+						value: 'standard',
+						defaultValue: 'standard',
+						options: [
+							{ value: 'standard', label: 'Standard' },
+							{ value: 'split', label: 'Split Layout' },
+							{ value: 'minimal', label: 'Minimal' },
+						],
+						inlineSettings: [
+							'media_align',
+							'media_width',
+							'split_ratio',
+							'standard_note',
+							'lock_style',
+							'locked_preset',
+							'require_alt',
+							'alt_caption',
+							'show_badge',
+							'rounded_corners',
+							'alignment_choice',
+							'feature_flags',
+							'tag_multi',
+							'ordered_items',
+							'publish_date',
+							'opacity_pct',
+							'star_score',
+							'seo_subtitle',
+						],
+					},
+					{
+						kind: 'control',
+						type: 'select',
+						name: 'media_align',
+						label: 'Media Align',
+						inlineHidden: true,
+						value: 'top',
+						defaultValue: 'top',
+						options: [
+							{ value: 'top', label: 'Top' },
+							{ value: 'left', label: 'Left Split' },
+							{ value: 'right', label: 'Right Split' },
+						],
+					},
+					{
+						kind: 'control',
+						type: 'select',
+						name: 'media_width',
+						label: 'Media Width',
+						inlineHidden: true,
+						value: '2/5',
+						defaultValue: '2/5',
+						enableIf: 'media_align=left|right',
+						options: [
+							{ value: '1/3', label: 'One Third' },
+							{ value: '2/5', label: 'Balanced' },
+							{ value: '1/2', label: 'Half' },
+						],
+					},
+					{
+						kind: 'control',
+						type: 'select',
+						name: 'split_ratio',
+						label: 'Split Ratio',
+						inlineHidden: true,
+						value: '50-50',
+						defaultValue: '50-50',
+						showIf: 'hero_variant=split',
+						options: [
+							{ value: '50-50', label: '50 / 50' },
+							{ value: '60-40', label: '60 / 40' },
+						],
+					},
+					{
+						kind: 'control',
+						type: 'text',
+						name: 'standard_note',
+						label: 'Standard Note',
+						inlineHidden: true,
+						value: '',
+						hideIf: 'hero_variant=split|minimal',
+					},
+					{
+						kind: 'control',
+						type: 'toggle',
+						name: 'lock_style',
+						label: 'Lock Style Preset',
+						inlineHidden: true,
+						value: '0',
+						defaultValue: '0',
+						options: [
+							{ value: '0', label: 'No' },
+							{ value: '1', label: 'Yes' },
+						],
+					},
+					{
+						kind: 'control',
+						type: 'select',
+						name: 'locked_preset',
+						label: 'Locked Preset',
+						inlineHidden: true,
+						value: 'alpha',
+						defaultValue: 'alpha',
+						disableIf: 'lock_style=1',
+						options: [
+							{ value: 'alpha', label: 'Alpha' },
+							{ value: 'beta', label: 'Beta' },
+						],
+					},
+					{
+						kind: 'control',
+						type: 'toggle',
+						name: 'require_alt',
+						label: 'Require Alt Caption',
+						inlineHidden: true,
+						value: '0',
+						defaultValue: '0',
+						options: [
+							{ value: '0', label: 'No' },
+							{ value: '1', label: 'Yes' },
+						],
+					},
+					{
+						kind: 'control',
+						type: 'text',
+						name: 'alt_caption',
+						label: 'Alt Caption',
+						inlineHidden: true,
+						required: true,
+						requiredIf: 'require_alt=1',
+						value: '',
+					},
+					{
+						kind: 'control',
+						type: 'checkbox',
+						name: 'show_badge',
+						label: 'Badge Visibility',
+						checkboxLabel: 'Show Badge',
+						inlineHidden: true,
+						checked: false,
+						value: '',
+						checkedValue: '1',
+					},
+					{
+						kind: 'control',
+						type: 'toggle',
+						name: 'rounded_corners',
+						label: 'Rounded Corners',
+						inlineHidden: true,
+						value: '0',
+						defaultValue: '0',
+						options: [
+							{ value: '0', label: 'Off' },
+							{ value: '1', label: 'On' },
+						],
+					},
+					{
+						kind: 'control',
+						type: 'radios',
+						name: 'alignment_choice',
+						label: 'Alignment Choice',
+						inlineHidden: true,
+						value: 'start',
+						options: [
+							{ value: 'start', label: 'Align Start' },
+							{ value: 'center', label: 'Align Center' },
+						],
+					},
+					{
+						kind: 'control',
+						type: 'checkboxes',
+						name: 'feature_flags',
+						label: 'Feature Flags',
+						inlineHidden: true,
+						multiple: true,
+						value: [],
+						options: [
+							{ value: 'lazy', label: 'Lazy Load' },
+							{ value: 'prefetch', label: 'Prefetch' },
+						],
+					},
+					{
+						kind: 'control',
+						type: 'multiselect',
+						name: 'tag_multi',
+						label: 'Tag Filter',
+						inlineHidden: true,
+						multiple: true,
+						value: [],
+						options: [
+							{ value: 'news', label: 'News Tag' },
+							{ value: 'guide', label: 'Guide Tag' },
+						],
+					},
+					{
+						kind: 'control',
+						type: 'asmselect',
+						name: 'ordered_items',
+						label: 'Ordered Items',
+						inlineHidden: true,
+						multiple: true,
+						value: [],
+						options: [
+							{ value: 'slot_a', label: 'Slot Alpha' },
+							{ value: 'slot_b', label: 'Slot Beta' },
+						],
+					},
+					{
+						kind: 'control',
+						type: 'datetime',
+						name: 'publish_date',
+						label: 'Publish Date',
+						inlineHidden: true,
+						value: '',
+					},
+					{
+						kind: 'control',
+						type: 'range',
+						name: 'opacity_pct',
+						label: 'Opacity %',
+						inlineHidden: true,
+						min: 0,
+						max: 100,
+						step: 5,
+						value: '50',
+					},
+					{
+						kind: 'control',
+						type: 'rating',
+						name: 'star_score',
+						label: 'Star Rating',
+						inlineHidden: true,
+						maxStars: 5,
+						value: 0,
+					},
+					{
+						kind: 'control',
+						type: 'text',
+						name: 'seo_subtitle',
+						label: 'SEO Subtitle',
+						inlineHidden: true,
+						useLanguages: true,
+						value: '',
+						languages: [
+							{ id: 1010, name: 'default', title: 'EN', isDefault: true, editable: true, inputName: 'seo_subtitle', value: '' },
+							{ id: 1020, name: 'tr', title: 'TR', isDefault: false, editable: true, inputName: 'seo_subtitle__1020', value: '' },
+						],
+					},
+				],
+			};
+
+			const rt = (window as any).ReactWorkspaceRuntime;
+			await rt.ensureFieldsLoaded();
+			const rootMount = document.createElement('div');
+			host.appendChild(rootMount);
+			rt.ReactDOMClient.createRoot(rootMount).render(
+				rt.React.createElement(rt.Fields.SchemaForm, {
+					schema,
+					csrf: rt.getCsrfToken(),
+					onSubmit: () => {
+						(window as any).__inlinePopoverSubmits += 1;
+					},
+				})
+			);
+
+			const mountCheck = window.setInterval(() => {
+				const form = host.querySelector('form[data-rw-schema-form]') as HTMLFormElement | null;
+				if (!form) {
+					return;
+				}
+				window.clearInterval(mountCheck);
+
+				// Also append a 2-level nested SchemaForm (Row fragment -> Card fragment) inside the root <form>
+				const rowDiv = document.createElement('div');
+				rowDiv.id = 'e2e-nested-row';
+				const rowIsland = document.createElement('div');
+				rowIsland.setAttribute('data-inertia-island', 'ReactWorkspace/SchemaForm');
+				rowIsland.setAttribute('data-react-island', 'ReactWorkspace/SchemaForm');
+				rowIsland.setAttribute(
+					'data-props',
+					JSON.stringify({
+						scopePrefix: 'row1',
+						schema: {
+							id: 'row1_frag',
+							name: 'row1_frag',
+							isFragment: true,
+							fields: [
+								{ kind: 'control', type: 'text', name: 'row1_gap', label: 'Row Gap', value: 'md' },
+							],
+						},
+					})
+				);
+				rowDiv.appendChild(rowIsland);
+				form.appendChild(rowDiv);
+				rt.mountIslands(rowDiv);
+
+				window.setTimeout(() => {
+					const rowFrag = rowDiv.querySelector('[data-rw-schema-fragment]');
+					if (!rowFrag) {
+						return;
+					}
+					const cardDiv = document.createElement('div');
+					cardDiv.id = 'e2e-nested-card';
+					const cardIsland = document.createElement('div');
+					cardIsland.setAttribute('data-inertia-island', 'ReactWorkspace/SchemaForm');
+					cardIsland.setAttribute('data-react-island', 'ReactWorkspace/SchemaForm');
+					cardIsland.setAttribute(
+						'data-props',
+						JSON.stringify({
+							scopePrefix: 'crd1',
+							schema: {
+								id: 'crd1_frag',
+								name: 'crd1_frag',
+								isFragment: true,
+								fields: [
+									{
+										kind: 'control',
+										type: 'select',
+										name: 'crd1_media_kind',
+										label: 'Card Media',
+										value: 'image',
+										inlineSettings: ['crd1_nested_align', 'crd1_nested_width'],
+										options: [{ value: 'image', label: 'Image' }],
+									},
+									{
+										kind: 'control',
+										type: 'select',
+										name: 'crd1_nested_align',
+										label: 'Nested Align',
+										inlineHidden: true,
+										value: 'top',
+										options: [
+											{ value: 'top', label: 'Top' },
+											{ value: 'left', label: 'Left' },
+										],
+									},
+									{
+										kind: 'control',
+										type: 'select',
+										name: 'crd1_nested_width',
+										label: 'Nested Width',
+										inlineHidden: true,
+										value: '2/5',
+										enableIf: 'crd1_nested_align=left',
+										options: [
+											{ value: '2/5', label: 'Balanced' },
+											{ value: '1/2', label: 'Half' },
+										],
+									},
+								],
+							},
+						})
+					);
+					cardDiv.appendChild(cardIsland);
+					rowFrag.appendChild(cardDiv);
+					rt.mountIslands(cardDiv);
+				}, 50);
+			}, 30);
+		});
+
+		const host = page.locator('#e2e-inline-popover-host');
+		const mainTrigger = host.locator('[data-field-name="hero_variant"] [data-rw-inline-settings-trigger]').first();
+		await expect(mainTrigger).toBeVisible();
+		await expect(host.locator('#e2e-nested-card [data-rw-inline-settings-trigger]')).toBeVisible();
+
+		// Open inline settings popover
+		await mainTrigger.click();
+		const popover = page.locator('[data-rw-inline-settings-popover]').first();
+		await expect(popover).toBeVisible();
+
+		// 1. Verify requiredIf=false does NOT render '*' even though field.required=true
+		const altFieldInPop = popover.locator('[data-field-name="alt_caption"]');
+		await expect(altFieldInPop).toBeVisible();
+		await expect(altFieldInPop.locator('[data-rw-field-slot="label"] .text-destructive')).toHaveCount(0);
+
+		// 2. Verify showIf / hideIf initial state (hero_variant=standard -> split_ratio hidden, standard_note visible)
+		await expect(popover.locator('[data-field-name="split_ratio"]')).toHaveCount(0);
+		await expect(popover.locator('[data-field-name="standard_note"]')).toBeVisible();
+
+		// 3. Test enableIf: media_width initially disabled; changing media_align -> left unlocks it without reverting or stealing focus
+		const mediaAlignSelect = popover.locator('select[name="media_align"]');
+		const mediaWidthSelect = popover.locator('select[name="media_width"]');
+		await expect(mediaWidthSelect).toBeDisabled();
+		await mediaAlignSelect.focus();
+		await mediaAlignSelect.selectOption('left');
+		await page.waitForTimeout(150);
+		await expect(mediaAlignSelect).toHaveValue('left');
+		await expect(mediaWidthSelect).toBeEnabled();
+		await mediaWidthSelect.focus();
+		await mediaWidthSelect.selectOption('1/2');
+		await page.waitForTimeout(150);
+		await expect(mediaWidthSelect).toHaveValue('1/2');
+		expect(await page.evaluate(() => document.activeElement?.getAttribute('name'))).toBe('media_width');
+
+		// 4. Test disableIf: lock_style toggle disables locked_preset, then toggling back enables & selects beta
+		const lockedPresetSelect = popover.locator('select[name="locked_preset"]');
+		await expect(lockedPresetSelect).toBeEnabled();
+		await popover.locator('[data-field-name="lock_style"]').getByText('Yes', { exact: true }).click();
+		await expect(lockedPresetSelect).toBeDisabled();
+		await popover.locator('[data-field-name="lock_style"]').getByText('No', { exact: true }).click();
+		await expect(lockedPresetSelect).toBeEnabled();
+		await lockedPresetSelect.selectOption('beta');
+		await expect(lockedPresetSelect).toHaveValue('beta');
+
+		// 5. Drive all other controls inside popover
+		await popover.locator('[data-field-name="show_badge"] button[role="switch"]').click();
+		await popover.locator('[data-field-name="rounded_corners"]').getByText('On', { exact: true }).click();
+		await popover.locator('[data-field-name="alignment_choice"]').getByText('Align Center', { exact: true }).click();
+		await popover.locator('[data-field-name="feature_flags"]').getByText('Prefetch', { exact: true }).click();
+		await popover.locator('[data-field-name="tag_multi"]').getByRole('button', { name: 'Guide Tag' }).click();
+		await popover.locator('[data-field-name="ordered_items"] [data-rw-field-slot="input"] select').selectOption('slot_b');
+		await popover.locator('[data-field-name="publish_date"] input[type="text"]').fill('2026-12-25');
+		await popover.locator('[data-field-name="opacity_pct"] input[type="range"]').fill('80');
+		await popover.locator('[data-field-name="star_score"] button[aria-label="Rate 4 out of 5"]').click();
+
+		// 6. Test multi-language inline text field (default EN + secondary TR)
+		const seoSubInPop = popover.locator('[data-field-name="seo_subtitle"]');
+		await seoSubInPop.locator('input[type="text"]:not([type="hidden"])').first().fill('English Subtitle');
+		await seoSubInPop.locator('[data-rw-lang-tabs] button[role="tab"]', { hasText: 'TR' }).click();
+		await seoSubInPop.locator('input[name="seo_subtitle__1020"]').fill('Turkce Alt Baslik');
+		// Confirm EN wasn't clobbered when typing TR
+		await seoSubInPop.locator('[data-rw-lang-tabs] button[role="tab"]', { hasText: 'EN' }).click();
+		await expect(seoSubInPop.locator('input[name="seo_subtitle"]')).toHaveValue('English Subtitle');
+
+		// 7. Close popover temporarily to switch hero_variant -> split (showIf reveals split_ratio, hideIf hides standard_note)
+		await page.keyboard.press('Escape');
+		await expect(popover).toBeHidden();
+		await host.locator('select[name="hero_variant"]').selectOption('split');
+		await mainTrigger.click();
+		await expect(popover).toBeVisible();
+		await expect(popover.locator('[data-field-name="split_ratio"]')).toBeVisible();
+		await expect(popover.locator('[data-field-name="standard_note"]')).toHaveCount(0);
+		await popover.locator('select[name="split_ratio"]').selectOption('60-40');
+		await expect(popover.locator('select[name="split_ratio"]')).toHaveValue('60-40');
+
+		// 8. Test requiredIf validation toggling:
+		// First submit with require_alt=0 -> valid submit succeeds even though alt_caption is empty
+		await page.keyboard.press('Escape');
+		await host.getByRole('button', { name: 'Validate Popover Settings' }).click();
+		expect(await page.evaluate(() => (window as any).__inlinePopoverSubmits)).toBe(1);
+
+		// Toggle require_alt=1 -> '*' appears; submitting with empty alt_caption fails validation
+		await mainTrigger.click();
+		await expect(popover).toBeVisible();
+		await popover.locator('[data-field-name="require_alt"]').getByText('Yes', { exact: true }).click();
+		await expect(popover.locator('[data-field-name="alt_caption"] [data-rw-field-slot="label"] .text-destructive')).toHaveCount(1);
+		await page.keyboard.press('Escape');
+		await host.getByRole('button', { name: 'Validate Popover Settings' }).click();
+		expect(await page.evaluate(() => (window as any).__inlinePopoverSubmits)).toBe(1);
+
+		// Fill alt_caption inside popover and verify submit now passes + hidden FormData mirrors match every control
+		await mainTrigger.click();
+		await expect(popover).toBeVisible();
+		await popover.locator('input[name="alt_caption"]').fill('Verified Hero Caption');
+		await page.keyboard.press('Escape');
+		await host.getByRole('button', { name: 'Validate Popover Settings' }).click();
+		expect(await page.evaluate(() => (window as any).__inlinePopoverSubmits)).toBe(2);
+
+		const formDataSnapshot = await page.evaluate(() => {
+			const form = document.querySelector('#e2e-inline-popover-host form[data-rw-schema-form]') as HTMLFormElement;
+			const fd = new FormData(form);
+			return {
+				hero_variant: fd.get('hero_variant'),
+				media_align: fd.get('media_align'),
+				media_width: fd.get('media_width'),
+				split_ratio: fd.get('split_ratio'),
+				locked_preset: fd.get('locked_preset'),
+				show_badge: fd.get('show_badge'),
+				rounded_corners: fd.get('rounded_corners'),
+				alignment_choice: fd.get('alignment_choice'),
+				feature_flags: fd.getAll('feature_flags[]'),
+				tag_multi: fd.getAll('tag_multi[]'),
+				ordered_items: fd.getAll('ordered_items[]'),
+				publish_date: fd.get('publish_date'),
+				opacity_pct: fd.get('opacity_pct'),
+				star_score: fd.get('star_score'),
+				seo_subtitle: fd.get('seo_subtitle'),
+				seo_subtitle_tr: fd.get('seo_subtitle__1020'),
+				alt_caption: fd.get('alt_caption'),
+			};
+		});
+		expect(formDataSnapshot).toEqual({
+			hero_variant: 'split',
+			media_align: 'left',
+			media_width: '1/2',
+			split_ratio: '60-40',
+			locked_preset: 'beta',
+			show_badge: '1',
+			rounded_corners: '1',
+			alignment_choice: 'center',
+			feature_flags: ['prefetch'],
+			tag_multi: ['guide'],
+			ordered_items: ['slot_b'],
+			publish_date: '2026-12-25',
+			opacity_pct: '80',
+			star_score: '4',
+			seo_subtitle: 'English Subtitle',
+			seo_subtitle_tr: 'Turkce Alt Baslik',
+			alt_caption: 'Verified Hero Caption',
+		});
+
+		// 9. Verify 2-level nested SchemaForm (root -> row1 -> crd1) popover select + enableIf without reset
+		const nestedTrigger = host.locator('#e2e-nested-card [data-rw-inline-settings-trigger]').first();
+		await nestedTrigger.click();
+		const nestedPopover = page.locator('[data-rw-inline-settings-popover]').first();
+		await expect(nestedPopover).toBeVisible();
+		const nestedAlign = nestedPopover.locator('select[name="crd1_nested_align"]');
+		const nestedWidth = nestedPopover.locator('select[name="crd1_nested_width"]');
+		await expect(nestedWidth).toBeDisabled();
+		await nestedAlign.selectOption('left');
+		await page.waitForTimeout(150);
+		await expect(nestedAlign).toHaveValue('left');
+		await expect(nestedWidth).toBeEnabled();
+		await nestedWidth.selectOption('1/2');
+		await page.waitForTimeout(150);
+		await expect(nestedWidth).toHaveValue('1/2');
+		await page.keyboard.press('Escape');
 
 		tracker.assertNoErrors();
 	});

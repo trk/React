@@ -237,6 +237,10 @@ test('modular dist bundles exist within strict size budgets and isolate CSS/JS p
 	$tiptapCanvasFile = $moduleDir . '/dist/TiptapCanvas.js';
 	$tiptapBlocksFile = $moduleDir . '/dist/TiptapBlocks.js';
 	$tiptapDialogsFile = $moduleDir . '/dist/TiptapDialogs.js';
+	$gridFile = $moduleDir . '/dist/ReactGrid.js';
+	$dndFile = $moduleDir . '/dist/ReactDnd.js';
+	$calendarFile = $moduleDir . '/dist/ReactCalendar.js';
+	$calendarCssFile = $moduleDir . '/dist/ReactCalendar.css';
 	$legacyMonolithTiptap = $moduleDir . '/dist/InputfieldTiptap.js';
 	$sharedChunks = glob($moduleDir . '/dist/ReactInertia-*.js') ?: [];
 	$styleJsLeftovers = glob($moduleDir . '/dist/*.style.js') ?: [];
@@ -268,12 +272,21 @@ test('modular dist bundles exist within strict size budgets and isolate CSS/JS p
 		->and(is_file($tiptapCanvasFile))->toBeTrue()
 		->and(is_file($tiptapBlocksFile))->toBeTrue()
 		->and(is_file($tiptapDialogsFile))->toBeTrue()
-		->and((int) filesize($jsFile))->toBeLessThan(420_000)
+		->and(is_file($gridFile))->toBeTrue()
+		->and(is_file($dndFile))->toBeTrue()
+		->and(is_file($calendarFile))->toBeTrue()
+		->and(is_file($calendarCssFile))->toBeTrue()
+		->and((int) filesize($jsFile))->toBeLessThan(700_000)
 		->and((int) filesize($schemaFormFile))->toBeLessThan(200_000)
-		->and((int) filesize($tiptapCoreFile))->toBeLessThan(560_000);
+		->and((int) filesize($tiptapCoreFile))->toBeLessThan(560_000)
+		->and((int) filesize($gridFile))->toBeLessThan(160_000)
+		->and((int) filesize($dndFile))->toBeLessThan(120_000)
+		->and((int) filesize($calendarFile))->toBeLessThan(160_000)
+		->and((int) filesize($calendarCssFile))->toBeLessThan(12_000);
 
 	$cssContents = (string) file_get_contents($cssFile);
 	$mediaCssContents = (string) file_get_contents($mediaCssFile);
+	$calendarCssContents = (string) file_get_contents($calendarCssFile);
 	$baseLayerPos = strpos($cssContents, '@layer base{');
 	$mainColorPos = strpos($cssContents, '--pw-main-color:#eb1d61');
 	$draggingRulePos = strpos($cssContents, 'html[data-rw-dragging]');
@@ -298,6 +311,9 @@ test('modular dist bundles exist within strict size budgets and isolate CSS/JS p
 		->and($cssContents)->not->toContain('data-rw-media-card')
 		->and($cssContents)->not->toContain('data-rw-media-row')
 		->and($cssContents)->not->toContain('data-rw-tiptap-dialog')
+		->and($cssContents)->not->toContain('data-rw-calendar')
+		->and($calendarCssContents)->toContain('data-rw-calendar')
+		->and($calendarCssContents)->toContain('rdp-day_button')
 		->and($mediaCssContents)->toContain('data-rw-inspector-sheet')
 		->and($mediaCssContents)->toContain('data-rw-crop-stage')
 		->and($mediaCssContents)->toContain('data-rw-media-card')
@@ -327,7 +343,22 @@ test('modular dist bundles exist within strict size budgets and isolate CSS/JS p
 	expect($jsContents)->toContain('ReactWorkspaceRuntime')
 		->and($jsContents)->toContain('var(--button-bg)')
 		->and($jsContents)->toContain('var(--radius-button)')
-		->and($layoutContents)->toContain('set_theme_mode')
+		->and($jsContents)->toContain('set_theme_mode')
+		->and($jsContents)->toContain('set_theme_preset')
+		->and($jsContents)->toContain('PortalRoot')
+		->and($jsContents)->toContain('fetchGatewayJson')
+		->and($jsContents)->toContain('useTheme')
+		->and($jsContents)->toContain('useEditPresence')
+		->and($jsContents)->toContain('evaluateShowIfCondition')
+		->and($jsContents)->toContain('navigateTablistByKey')
+		->and($jsContents)->not->toContain('PresenceHookFiberBridge')
+		->and($jsContents)->not->toContain('new Function')
+		->and($layoutContents)->toContain('data-rw-user-menu-trigger')
+		->and($layoutContents)->toContain('data-rw-theme-mode-option')
+		->and($layoutContents)->toContain('data-rw-theme-preset-option')
+		->and($layoutContents)->toContain('data-rw-shortcuts-dialog')
+		->and($layoutContents)->toContain('useKeyboardShortcuts')
+		->and($layoutContents)->toContain('useTheme')
 		->and($jsContents)->toContain('ReactLayout.js')
 		->and($jsContents)->toContain('ReactViewports.js')
 		->and($jsContents)->toContain('MarkupReactTable.js')
@@ -344,6 +375,13 @@ test('modular dist bundles exist within strict size budgets and isolate CSS/JS p
 		->and($jsContents)->toContain('InputfieldReactRelation.js')
 		->and($jsContents)->toContain('TiptapCore.js')
 		->and($jsContents)->toContain('TiptapCore.css')
+		->and($jsContents)->toContain('ReactGrid.js')
+		->and($jsContents)->toContain('ReactDnd.js')
+		->and($jsContents)->toContain('ReactCalendar.js')
+		->and($jsContents)->toContain('ReactCalendar.css')
+		->and($jsContents)->not->toContain('useVirtualizer')
+		->and($jsContents)->not->toContain('DndContext')
+		->and($jsContents)->not->toContain('DayPicker')
 		->and($jsContents)->not->toContain('TiptapEditor.js')
 		->and($jsContents)->not->toContain('TiptapCanvas.js')
 		->and($jsContents)->not->toContain('TiptapBlocks.js')
@@ -889,10 +927,18 @@ it('implements ReactReorderProvider on PagesDataProvider and exposes shared drag
 
 	$cssPath = dirname(__DIR__, 2) . '/resources/css/entries/ReactInertia.css';
 	$cssSrc = (string) file_get_contents($cssPath);
+	$deltaCssPath = dirname(__DIR__, 2) . '/resources/css/module-delta.css';
+	$deltaCssSrc = (string) file_get_contents($deltaCssPath);
+	$distCssPath = dirname(__DIR__, 2) . '/dist/ReactInertia.css';
+	$distCss = (string) file_get_contents($distCssPath);
 	expect($cssSrc)->toContain('[data-rw-sortable-handle]')
 		->and($cssSrc)->toContain('touch-action: none;')
 		->and($cssSrc)->toContain('-webkit-user-select: none;')
-		->and($cssSrc)->toContain('[data-drop="vertical"]::before');
+		->and($cssSrc)->toContain('[data-drop="vertical"]::before')
+		->and($cssSrc)->not->toContain('@source "../../../../*')
+		->and(is_file($deltaCssPath))->toBeTrue()
+		->and($deltaCssSrc)->toContain('@tailwind utilities source(none);')
+		->and($distCss)->toContain('@layer utilities.md-longhand');
 
 	/** @var \ProcessWire\MarkupReactTab $tabMod */
 	$tabMod = wire()->modules->get('MarkupReactTab');
@@ -932,14 +978,14 @@ it('implements ReactReorderProvider on PagesDataProvider and exposes shared drag
 		expect($probeHost->inertiaFullPageAdmin())->toBeFalse();
 		$input->get->remove('download_token');
 
-		$input->post->set('_we_modal', '1');
+		$input->post->set('_rw_modal', '1');
 		expect($probeHost->inertiaFullPageAdmin())->toBeFalse();
-		$input->post->remove('_we_modal');
+		$input->post->remove('_rw_modal');
 	} finally {
 		$input->setUrlSegment(1, (string) $origSeg1);
 		$input->get->remove('export');
 		$input->get->remove('download_token');
-		$input->post->remove('_we_modal');
+		$input->post->remove('_rw_modal');
 	}
 });
 

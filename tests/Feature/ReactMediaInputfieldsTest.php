@@ -9,6 +9,7 @@ use ProcessWire\InputfieldImage;
 use ProcessWire\InputfieldReactFile;
 use ProcessWire\InputfieldReactImage;
 use ProcessWire\InputfieldSelect;
+use ProcessWire\InputfieldWrapper;
 use ProcessWire\Language;
 use ProcessWire\Page;
 use ProcessWire\Pageimage;
@@ -17,6 +18,7 @@ use ProcessWire\React;
 use ProcessWire\Template;
 use ProcessWire\User;
 use ProcessWire\WireInputData;
+use Totoglu\React\Form\FormSchemaSerializer;
 use Totoglu\React\Media\MediaGateway;
 use function ProcessWire\bootReactForTesting;
 use function ProcessWire\wire;
@@ -1138,4 +1140,98 @@ test('MediaGateway enforces field-level RBAC without unscoped editable bypass an
 			wire('roles')->delete($editorRole);
 		}
 	}
+});
+
+test('FormSchemaSerializer preserves populated media filename arrays in top-level values even when useLanguages is active', function (): void {
+	$suffix = substr(bin2hex(random_bytes(4)), 0, 8);
+	$tmpDir = sys_get_temp_dir() . '/rw_media_values_' . $suffix;
+	mkdir($tmpDir, 0777, true);
+	$this->cleanupTempDirs[] = $tmpDir;
+
+	$seedPng = createRwTestPngFile($tmpDir . '/fleet-hero.png', 320, 200);
+
+	$imgField = new Field();
+	wire($imgField);
+	$imgField->type = wire('modules')->get('FieldtypeImage');
+	$imgField->name = 'rw_val_img_' . $suffix;
+	$imgField->set('extensions', 'jpg jpeg png webp');
+	$imgField->set('maxFiles', 1);
+	$imgField->set('descriptionRows', 1);
+	$imgField->set('inputfieldClass', 'InputfieldReactImage');
+	wire('fields')->save($imgField);
+	$this->cleanupFields[] = $imgField;
+
+	$fg = new Fieldgroup();
+	$fg->name = 'rw_val_tpl_' . $suffix;
+	$fg->add('title');
+	$fg->add($imgField);
+	wire('fieldgroups')->save($fg);
+	$this->cleanupFieldgroups[] = $fg;
+
+	$tpl = new Template();
+	$tpl->name = $fg->name;
+	$tpl->fieldgroup = $fg;
+	wire('templates')->save($tpl);
+	$this->cleanupTemplates[] = $tpl;
+
+	$page = new Page();
+	$page->template = $tpl;
+	$page->parent = wire('pages')->get(1);
+	$page->name = 'rw-val-page-' . $suffix;
+	$page->title = 'Media Values Preservation';
+	wire('pages')->save($page);
+	$this->cleanupPages[] = $page;
+
+	$page->of(false);
+	$page->getUnformatted($imgField->name)->add($seedPng);
+	$page->save($imgField->name);
+
+	$reloaded = wire('pages')->get($page->id);
+	$reloaded->of(false);
+	$imgInputfield = $imgField->getInputfield($reloaded);
+	expect($imgInputfield)->toBeInstanceOf(InputfieldReactImage::class);
+	$imgInputfield->val($reloaded->getUnformatted($imgField->name));
+
+	$wrapper = new InputfieldWrapper();
+	wire($wrapper);
+	$wrapper->add($imgInputfield);
+
+	$hoverInputfield = new InputfieldSelect();
+	wire($hoverInputfield);
+	$hoverInputfield->name = 'rw_val_fit_' . $suffix;
+	$hoverInputfield->label = 'Media Fit';
+	$hoverInputfield->enableIf = "{$imgField->name}!=0|";
+	$hoverInputfield->addOption('cover', 'Cover');
+	$wrapper->add($hoverInputfield);
+
+	$serializer = new FormSchemaSerializer();
+	wire($serializer);
+	$schema = $serializer->serialize($wrapper);
+
+	expect($schema['values'][$imgField->name] ?? null)->toBeArray()
+		->and($schema['values'][$imgField->name])->toBe(['fleet-hero.png'])
+		->and($schema['fields'][0]['value'] ?? null)->toBe(['fleet-hero.png']);
+
+	$declFromFiles = $serializer->serializeDefinitions([
+		[
+			'name' => 'hero_image',
+			'type' => 'image',
+			'label' => 'Hero Image',
+			'useLanguages' => true,
+			'files' => [
+				['name' => 'modified-fleet-01.jpg'],
+			],
+		],
+		[
+			'name' => 'hover_image',
+			'type' => 'image',
+			'label' => 'Hover Image',
+			'useLanguages' => true,
+			'enableIf' => 'hero_image!=0|',
+			'value' => [],
+		],
+	]);
+
+	expect($declFromFiles['values']['hero_image'] ?? null)->toBe(['modified-fleet-01.jpg'])
+		->and($declFromFiles['values']['hover_image'] ?? null)->toBe([]);
 });

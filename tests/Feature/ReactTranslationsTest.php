@@ -172,7 +172,7 @@ test('core and InputfieldTiptap catalogs flatten cleanly and are discoverable by
 		$translator = new LanguageTranslator($defaultLanguage);
 		wire($translator);
 
-		$workspaceFile = dirname(__DIR__, 2) . '/React.module.php';
+		$workspaceFile = dirname(__DIR__, 2) . '/src/I18n/TranslationCatalogService.php';
 		$tiptapFile = dirname(__DIR__, 2) . '/InputfieldTiptap.module.php';
 
 		$workspaceParser = new LanguageParser($translator, $workspaceFile);
@@ -252,37 +252,32 @@ test('ProcessReactWorkspace ships synchronized en, tr, de, fr, es, and ru Langua
 		}
 	}
 
-	// Verify runtime resolution across tr, de, fr, es, ru
+	// Verify pure ProcessWire LanguageTranslator resolution (no runtime CSV file fallback)
+	$coreCatalog = $workspace->resolveModuleTranslations($workspace);
+	expect($coreCatalog)->toHaveKey('common.selectOption')
+		->and($coreCatalog)->toHaveKey('shell.colorScheme')
+		->and($coreCatalog)->toHaveKey('shell.themeUseSiteDefault')
+		->and($coreCatalog)->toHaveKey('grid.dataGridRegion')
+		->and($coreCatalog)->toHaveKey('calendar.selectDate')
+		->and($coreCatalog)->toHaveKey('dnd.dragCancelled')
+		->and($coreCatalog)->toHaveKey('shortcuts.title')
+		->and($coreCatalog)->toHaveKey('shortcuts.saveAndExit')
+		->and($coreCatalog)->toHaveKey('shortcuts.focusSearch');
+
 	$origUserLang = wire('user')->get('language');
-	$expectedSaveByLocale = [
-		'tr' => 'Kaydet',
-		'de' => 'Speichern',
-		'fr' => 'Enregistrer',
-		'es' => 'Guardar',
-		'ru' => 'Сохранить',
-	];
-	$expectedBoldByLocale = [
-		'tr' => 'Kalın',
-		'de' => 'Fett',
-		'fr' => 'Gras',
-		'es' => 'Negrita',
-		'ru' => 'Полужирный',
-	];
-
 	try {
-		foreach ($expectedSaveByLocale as $locale => $expectedSave) {
-			$fakeLang = new Language();
-			wire($fakeLang);
-			$fakeLang->id = 990000 + crc32($locale) % 1000;
-			$fakeLang->name = $locale;
-			wire('user')->set('language', $fakeLang);
+		$fakeLang = new Language();
+		wire($fakeLang);
+		$fakeLang->id = 990123;
+		$fakeLang->name = 'fr';
+		wire('user')->set('language', $fakeLang);
 
-			$coreLocalized = $workspace->resolveModuleTranslations($workspace);
-			$tiptapLocalized = $workspace->resolveModuleTranslations($tiptap);
+		$coreLocalized = $workspace->resolveModuleTranslations($workspace);
+		$tiptapLocalized = $workspace->resolveModuleTranslations($tiptap);
 
-			expect($coreLocalized['common.save'])->toBe($expectedSave)
-				->and($tiptapLocalized['tools.bold'])->toBe($expectedBoldByLocale[$locale]);
-		}
+		// Without installed ProcessWire LanguageTranslator JSON files for $fakeLang, source strings remain untranslated
+		expect($coreLocalized['common.save'])->toBe('Save')
+			->and($tiptapLocalized['tools.bold'])->toBe('Bold');
 	} finally {
 		if ($origUserLang !== null) {
 			wire('user')->set('language', $origUserLang);

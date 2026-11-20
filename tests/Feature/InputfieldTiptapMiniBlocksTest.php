@@ -531,13 +531,13 @@ test('InputfieldTiptap enforces isEmpty(), Page-field data-maxlength, purifier f
 });
 
 test('FormSchemaSerializer and ScalarFieldDataProvider handle InputfieldTiptap dynamic readOnly, aliases, and markup detection', function (): void {
-	// 1. FormSchemaSerializer respects _weDynamicReadOnly on InputfieldTiptap
+	// 1. FormSchemaSerializer respects _rwDynamicReadOnly on InputfieldTiptap
 	/** @var \ProcessWire\InputfieldTiptap $tiptap */
 	$tiptap = wire('modules')->get('InputfieldTiptap');
 	$tiptap->attr('name', 'dynamic_prose');
 	$tiptap->attr('disabled', 'disabled');
 	$tiptap->attr('readonly', 'readonly');
-	$tiptap->set('_weDynamicReadOnly', true);
+	$tiptap->set('_rwDynamicReadOnly', true);
 
 	$wrapper = new \ProcessWire\InputfieldWrapper();
 	wire($wrapper);

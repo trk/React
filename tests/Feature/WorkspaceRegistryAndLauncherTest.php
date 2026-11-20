@@ -6,6 +6,7 @@ use ProcessWire\HookEvent;
 use ProcessWire\ProcessReactWorkspace;
 use ProcessWire\React;
 use ProcessWire\User;
+use Totoglu\React\Icon\IconManager;
 use Totoglu\React\Inertia\ProcessReact;
 use Totoglu\React\Workspace\WorkspaceDefinition;
 use Totoglu\React\Workspace\WorkspaceLauncherProcess;
@@ -34,6 +35,63 @@ if (!class_exists('RwLauncherFixture', false)) {
 					'title' => 'Workspace',
 				],
 			];
+		}
+	}
+}
+
+if (!class_exists('RwNavDemoProcessFixture', false)) {
+	class RwNavDemoProcessFixture extends ProcessReact
+	{
+		public static function getModuleInfo(): array
+		{
+			return [
+				'title' => 'Nav Demo',
+				'version' => 1,
+				'useNavJSON' => true,
+			];
+		}
+
+		public function ___executeNavJSON(array $options = []): string|array
+		{
+			IconManager::registerAdminIcons(['layout-dashboard', 'adjustments-horizontal', 'database', 'circle-plus']);
+			$items = [
+				['url' => '', 'label' => 'Overview', 'icon' => 'layout-dashboard', 'separator' => true],
+				['url' => 'rules/', 'label' => 'Rules &amp; Defaults', 'badge' => '4 &amp; 2', 'icon' => 'sliders', 'separator' => true],
+				['url' => 'custom/', 'label' => 'Custom', 'icon' => 'alien-unregistered-xyz', 'fallbackIcon' => 'database', 'dynamicIcon' => true],
+			];
+
+			return $this->buildAdminNavJSON($items, array_merge($options, [
+				'add' => 'edit/',
+				'addLabel' => 'New &amp; Item',
+				'addIcon' => 'circle-plus',
+			]));
+		}
+	}
+}
+
+if (!class_exists('RwRawNavDemoProcessFixture', false)) {
+	class RwRawNavDemoProcessFixture extends ProcessReact
+	{
+		public static function getModuleInfo(): array
+		{
+			return [
+				'title' => 'Raw Nav Demo',
+				'version' => 1,
+				'useNavJSON' => true,
+			];
+		}
+
+		public function ___executeNavJSON(array $options = []): string|array
+		{
+			$options['items'] = [
+				['id' => '', 'name' => 'Overview'],
+				['id' => './', 'name' => 'Root'],
+				['id' => 'sub/', 'name' => 'Sub'],
+			];
+			$options['edit'] = '{id}';
+			$options['sort'] = false;
+
+			return parent::___executeNavJSON($options);
 		}
 	}
 }
@@ -1101,7 +1159,7 @@ test('AdminThemeUikit Konkat color scheme CSS strips unclosed comments, applies 
 			'defaultCustomCss' => ":root { --pw-notes-background: #fef9c3; } </style><script>alert(1)</script>",
 		]));
 
-		$css = $workspace->resolveAdminColorSchemeCss();
+		$css = $workspace->theme()->resolveAdminColorSchemeCss();
 
 		// 1. No unclosed CSS comments may swallow the appended --pw-main-color override
 		expect(substr_count($css, '/*'))->toBe(substr_count($css, '*/'))
@@ -1302,6 +1360,39 @@ test('ProcessReact executes Setup > Module inline via EmbeddedAdminPageResponse 
 		// 4. When ProcessReactWorkspace is uninstalled, even ?ws=1 resolves cleanly to 'admin' mode
 		$react->setWorkspaceHubEnabled(false);
 		expect($react->resolveShellMode($demoProcess))->toBe('admin');
+
+		// 5. ProcessReact::___executeNavJSON() normalizes empty / './' URLs and buildAdminNavJSON() emits valid vector icons, separators, and entity-safe labels
+		$navTestProcess = new RwNavDemoProcessFixture();
+		wire($navTestProcess);
+
+		$navData = $navTestProcess->executeNavJSON(['getArray' => true]);
+		expect($navData)->toBeArray()
+			->and($navData['url'] ?? '')->toStartWith('/')
+			->and($navData['add']['url'] ?? '')->toBe('edit/')
+			->and($navData['add']['label'] ?? '')->toBe('New &amp; Item')
+			->and($navData['add']['icon'] ?? '')->toBe('rwv--circle-plus')
+			->and($navData['list'] ?? [])->toHaveCount(3)
+			->and($navData['list'][0]['url'] ?? '')->toStartWith('/')
+			->and($navData['list'][0]['className'] ?? '')->toBe('')
+			->and($navData['list'][0]['icon'] ?? '')->toBe('rwv--layout-dashboard')
+			->and($navData['list'][1]['url'] ?? '')->toBe('rules/')
+			->and($navData['list'][1]['label'] ?? '')->toBe('Rules &amp; Defaults <small>4 &amp; 2</small>')
+			->and($navData['list'][1]['className'] ?? '')->toBe('separator')
+			->and($navData['list'][1]['icon'] ?? '')->toBe('rwv--adjustments-horizontal')
+			->and($navData['list'][2]['icon'] ?? '')->toBe('rwv--database');
+
+		$navJsonStr = $navTestProcess->executeNavJSON();
+		expect($navJsonStr)->toBeString();
+		$decodedNav = json_decode((string) $navJsonStr, true, 16, JSON_THROW_ON_ERROR);
+		expect($decodedNav['list'][0]['url'] ?? '')->toStartWith('/');
+
+		// Direct parent ProcessReact::___executeNavJSON() normalization of empty and './' items
+		$rawNormalizeProc = new RwRawNavDemoProcessFixture();
+		wire($rawNormalizeProc);
+		$rawNav = $rawNormalizeProc->executeNavJSON(['getArray' => true]);
+		expect($rawNav['list'][0]['url'] ?? '')->toStartWith('/')
+			->and($rawNav['list'][1]['url'] ?? '')->toStartWith('/')
+			->and($rawNav['list'][2]['url'] ?? '')->toBe('sub/');
 	} finally {
 		$react->setWorkspaceHubEnabled(null);
 		if ($prevWsGet === null) {

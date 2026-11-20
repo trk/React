@@ -255,3 +255,133 @@ test('Page lifecycle with InputfieldReactLink, PageLinkMediaHostAdapter file iso
 	$reloaded->of(true);
 	expect($reloaded->get($fieldName)['href'])->toBe('#features');
 });
+
+test('InputfieldReactLink enforces 7 granular feature flags, ariaLabel storage, and FormSchemaSerializer linkConfig', function (): void {
+	$suffix = substr(bin2hex(random_bytes(4)), 0, 8);
+	$fieldName = 'rw_link_flags_' . $suffix;
+
+	$field = new Field();
+	$field->type = wire()->modules->get('FieldtypeText');
+	$field->name = $fieldName;
+	$field->label = 'CTA Link';
+	$field->set('inputfieldClass', 'InputfieldReactLink');
+	$field->set('enableLabel', 0);
+	$field->set('enableAriaLabel', 1);
+	$field->set('enableTarget', 1);
+	$field->set('enableRel', 0);
+	$field->set('enableAnchor', 1);
+	$field->set('enableQuery', '');
+	wire()->fields->save($field);
+	$this->createdFields[] = $field;
+
+	$flags = InputfieldReactLink::normalizeFeatureFlags($field->getArray());
+	expect($flags)->toBe([
+		'enableLabel' => false,
+		'enableAriaLabel' => true,
+		'enableTarget' => true,
+		'enableRel' => false,
+		'enableAnchor' => true,
+		'enableQuery' => false,
+	]);
+
+	$fg = new Fieldgroup();
+	$fg->name = 'rw_link_flags_tpl_' . $suffix;
+	$fg->add(wire()->fields->get('title'));
+	$fg->add($field);
+	wire()->fieldgroups->save($fg);
+	$this->createdFieldgroups[] = $fg;
+
+	$tpl = new Template();
+	$tpl->name = 'rw_link_flags_tpl_' . $suffix;
+	$tpl->fieldgroup = $fg;
+	wire()->templates->save($tpl);
+	$this->createdTemplates[] = $tpl;
+
+	$page = wire()->pages->new([
+		'template' => $tpl,
+		'parent' => wire()->pages->get(1),
+		'title' => 'Link Flags ' . $suffix,
+	]);
+	$this->createdPages[] = $page;
+
+	// Serialize Inputfield through FormSchemaSerializer and verify canonical 6 flags (zero enableTitle / enableAttributes) + languages
+	$form = new InputfieldWrapper();
+	wire($form);
+	$inputfield = $field->getInputfield($page);
+	expect($inputfield)->toBeInstanceOf(InputfieldReactLink::class);
+	$form->add($inputfield);
+
+	$serializer = new FormSchemaSerializer();
+	wire($serializer);
+	$schema = $serializer->serialize($form);
+	$serializedLink = $schema['fields'][0] ?? null;
+	$trLang = wire()->languages?->get('tr');
+	expect($serializedLink)->toBeArray()
+		->and($serializedLink['linkConfig'])->toHaveKeys([
+			'enableLabel',
+			'enableAriaLabel',
+			'enableTarget',
+			'enableRel',
+			'enableAnchor',
+			'enableQuery',
+		])
+		->and($serializedLink['linkConfig'])->not->toHaveKey('enableTitle')
+		->and($serializedLink['linkConfig'])->not->toHaveKey('enableAttributes')
+		->and($serializedLink['linkConfig']['enableLabel'])->toBeFalse()
+		->and($serializedLink['linkConfig']['enableAriaLabel'])->toBeTrue()
+		->and($serializedLink['linkConfig']['enableTarget'])->toBeTrue()
+		->and($serializedLink['linkConfig']['enableRel'])->toBeFalse()
+		->and($serializedLink['linkConfig']['enableAnchor'])->toBeTrue()
+		->and($serializedLink['linkConfig']['enableQuery'])->toBeFalse();
+
+	if ($trLang instanceof Language && $trLang->id > 0) {
+		expect(count($serializedLink['linkConfig']['languages'] ?? []))->toBeGreaterThanOrEqual(2);
+	}
+
+	// Submit disabled properties through processInput -> disabled flags strip label + labels & retain localized ariaLabels
+	$trLangKey = ($trLang instanceof Language && $trLang->id > 0) ? (string) $trLang->id : '1025';
+	$rawPayload = json_encode([
+		'type' => 'url',
+		'url' => 'https://example.com/docs',
+		'label' => 'Should Be Stripped',
+		'labels' => ['default' => 'Should Be Stripped', $trLangKey => 'Soyulmalı'],
+		'ariaLabel' => 'Open documentation in new tab',
+		'ariaLabels' => ['default' => 'Open documentation in new tab', $trLangKey => 'Belgeleri yeni sekmede aç'],
+		'target' => '_blank',
+		'rel' => 'sponsored',
+		'anchor' => '#install',
+		'query' => '?utm_source=test',
+	], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+	$inputArr = [$fieldName => $rawPayload];
+	$input = new WireInputData($inputArr);
+	$inputfield->processInput($input);
+	$savedNorm = InputfieldReactLink::normalizeValue($inputfield->val());
+	expect($savedNorm['label'])->toBe('')
+		->and(array_key_exists('labels', $savedNorm))->toBeFalse()
+		->and($savedNorm['ariaLabel'])->toBe('Open documentation in new tab')
+		->and($savedNorm['ariaLabels'][$trLangKey] ?? null)->toBe('Belgeleri yeni sekmede aç')
+		->and($savedNorm['target'])->toBe('_blank')
+		->and($savedNorm['rel'])->toBe('')
+		->and($savedNorm['anchor'])->toBe('install')
+		->and($savedNorm['query'])->toBe('');
+
+	// Resolve with owner Page + Field applies the same flag guards & formats localized ariaLabel safely
+	$page->of(false);
+	$page->set($fieldName, $rawPayload);
+	wire()->pages->save($page);
+	$resolved = InputfieldReactLink::resolveValue($page->getUnformatted($fieldName), $page, $field);
+	expect($resolved['customLabel'])->toBe('')
+		->and($resolved['label'])->toBe('https://example.com/docs#install')
+		->and($resolved['ariaLabel'])->toBe('Open documentation in new tab')
+		->and(array_key_exists('title', $resolved))->toBeFalse()
+		->and($resolved['target'])->toBe('_blank')
+		->and($resolved['rel'])->toBe('noopener noreferrer')
+		->and($resolved['href'])->toBe('https://example.com/docs#install');
+
+	if ($trLang instanceof Language && $trLang->id > 0) {
+		$resolvedTr = InputfieldReactLink::resolveValue($page->getUnformatted($fieldName), $page, $field, $trLang);
+		expect($resolvedTr['ariaLabel'])->toBe('Belgeleri yeni sekmede aç')
+			->and($resolvedTr['customLabel'])->toBe('');
+	}
+});

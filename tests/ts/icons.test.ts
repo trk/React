@@ -23,14 +23,14 @@ describe('Centralized Vector Icon Utilities & Customization Model', () => {
 	it('cleans icon class prefixes and formats human-friendly labels without raw slugs', () => {
 		expect(cleanIconIdentifier('fa-sparkles')).toBe('sparkles');
 		expect(cleanIconIdentifier('fas fa-compass')).toBe('compass');
-		expect(cleanIconIdentifier('lucide--layout-dashboard')).toBe('layout-dashboard');
-		expect(cleanIconIdentifier('lucide--brand-whatsapp')).toBe('brand-whatsapp');
+		expect(cleanIconIdentifier('rwv--layout-dashboard')).toBe('layout-dashboard');
+		expect(cleanIconIdentifier('rwv--brand-whatsapp')).toBe('brand-whatsapp');
 		expect(cleanIconIdentifier('ti ti-arrow-right')).toBe('arrow-right');
-		expect(cleanIconIdentifier('fa-lucide--lucreplaced-bed')).toBe('fa-bed');
-		expect(cleanIconIdentifier('lucide--so' + 'lucreplaced-bed')).toBe('sofa-bed');
+		expect(cleanIconIdentifier('fa-rwv--rwvreplaced-bed')).toBe('fa-bed');
+		expect(cleanIconIdentifier('rwv--so' + 'rwvreplaced-bed')).toBe('sofa-bed');
 		expect(cleanIconIdentifier('uk-icon-anchor')).toBe('anchor');
 		expect(cleanIconIdentifier('LayoutDashboard')).toBe('layout-dashboard');
-		expect(normalizeIconName('lucide--sparkles')).toBe('sparkles');
+		expect(normalizeIconName('rwv--sparkles')).toBe('sparkles');
 
 		expect(formatIconLabel('brand-whatsapp')).toBe('WhatsApp');
 		expect(formatIconLabel('brand-github')).toBe('GitHub');
@@ -48,7 +48,7 @@ describe('Centralized Vector Icon Utilities & Customization Model', () => {
 		expect(scalarFilled.name).toBe('heart');
 		expect(scalarFilled.variant).toBe('filled');
 
-		const dashFilled = normalizeIconValue('lucide--star-filled');
+		const dashFilled = normalizeIconValue('rwv--star-filled');
 		expect(dashFilled.name).toBe('star');
 		expect(dashFilled.variant).toBe('filled');
 	});
@@ -95,7 +95,7 @@ describe('Centralized Vector Icon Utilities & Customization Model', () => {
 		});
 
 		expect(serializeIconValueForInput(val, off, 'none')).toBe('sparkles-filled');
-		expect(serializeIconValueForInput(val, off, 'lucide')).toBe('lucide--sparkles-filled');
+		expect(serializeIconValueForInput(val, off, 'vector')).toBe('rwv--sparkles-filled');
 
 		const partial = resolveIconCustomizationFlags({
 			allowCustomization: true,

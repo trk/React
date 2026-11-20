@@ -41,15 +41,66 @@ test.describe('ProcessReactWorkspace Launcher, Cross-Panel SPA Navigation & Stan
 		);
 		expect(criticalOrSerious).toEqual([]);
 
-		// Verify theme switcher cycles dark mode on <html> without page reload
-		const themeButton = page.locator('header button[title^="Theme mode:"]');
-		await expect(themeButton).toBeVisible();
-		const initialTitle = (await themeButton.getAttribute('title')) || '';
-		await themeButton.click();
-		await expect(themeButton).not.toHaveAttribute('title', initialTitle);
-		// Cycle back so subsequent tests start in original theme
-		await themeButton.click();
-		await themeButton.click();
+		// Verify unified Account Menu dropdown: Theme (Light/Dark/System + Color Schemes), links, and per-user persistence
+		const userMenuTrigger = page.locator('[data-rw-user-menu-trigger]');
+		await expect(userMenuTrigger).toBeVisible();
+		const hadDarkInitially = await page.evaluate(() => document.documentElement.classList.contains('dark'));
+
+		await userMenuTrigger.click();
+		await expect(page.locator('[data-rw-theme-section]')).toBeVisible();
+		await expect(page.locator('[data-rw-user-view-site]')).toBeVisible();
+		await expect(page.locator('[data-rw-user-profile]')).toBeVisible();
+		await expect(page.locator('[data-rw-user-logout]')).toBeVisible();
+
+		const targetMode = hadDarkInitially ? 'light' : 'dark';
+		const modePrefResPromise = page.waitForResponse(
+			(res) => res.url().includes('/_react/workspace-prefs') && res.request().method() === 'POST'
+		);
+		await page.locator(`[data-rw-theme-mode-option="${targetMode}"]`).click();
+		expect((await modePrefResPromise).status()).toBe(200);
+		await expect(page.locator('html')).toHaveAttribute(
+			'class',
+			hadDarkInitially ? /^(?!.*\bdark\b).*$/ : /\bdark\b/
+		);
+
+		const presetPrefResPromise = page.waitForResponse(
+			(res) => res.url().includes('/_react/workspace-prefs') && res.request().method() === 'POST'
+		);
+		await page.locator('[data-rw-theme-preset-option="ocean"]').click();
+		expect((await presetPrefResPromise).status()).toBe(200);
+		await expect(page.locator('[data-rw-theme-preset-reset]')).toBeVisible();
+
+		// Reload and confirm per-user theme mode + color preset persisted across full navigation
+		await page.reload({ waitUntil: 'networkidle' });
+		await expect(page.locator('#app')).toBeVisible();
+		await expect(page.locator('html')).toHaveAttribute(
+			'class',
+			hadDarkInitially ? /^(?!.*\bdark\b).*$/ : /\bdark\b/
+		);
+
+		// Restore original theme mode & reset preset back to site default
+		await page.locator('[data-rw-user-menu-trigger]').click();
+		await expect(page.locator('[data-rw-theme-preset-reset]')).toBeVisible();
+		const resetPresetPromise = page.waitForResponse(
+			(res) => res.url().includes('/_react/workspace-prefs') && res.request().method() === 'POST'
+		);
+		await page.locator('[data-rw-theme-preset-reset]').click();
+		expect((await resetPresetPromise).status()).toBe(200);
+
+		const restoreModePromise = page.waitForResponse(
+			(res) => res.url().includes('/_react/workspace-prefs') && res.request().method() === 'POST'
+		);
+		await page.locator('[data-rw-theme-mode-option="system"]').click();
+		expect((await restoreModePromise).status()).toBe(200);
+		await page.keyboard.press('Escape');
+		await expect(page.locator('[data-rw-theme-section]')).toHaveCount(0);
+
+		// Verify Keyboard Shortcuts Help Dialog (?) opens and closes cleanly
+		await page.locator('h1').click();
+		await page.keyboard.press('?');
+		await expect(page.locator('[data-rw-shortcuts-dialog]')).toBeVisible();
+		await page.keyboard.press('Escape');
+		await expect(page.locator('[data-rw-shortcuts-dialog]')).toHaveCount(0);
 
 		// Verify responsive Mobile Drawer opens and closes at mobile viewport width
 		await page.setViewportSize({ width: 390, height: 844 });

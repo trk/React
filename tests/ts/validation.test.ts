@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { evaluateShowIfCondition, resolveFieldState } from '../../resources/ts/fields/shared';
+import {
+	evaluateCondition,
+	evaluateShowIfCondition,
+	lookupScopedFieldValue,
+	resolveFieldState,
+} from '../../resources/ts/fields/shared';
 import { validateFieldWithValibot, validateSchemaTree } from '../../resources/ts/fields/validation';
 import type { SchemaFieldDefinition, SchemaFormPayload } from '../../resources/ts/fields/types';
 
@@ -246,5 +251,74 @@ describe('SchemaForm Valibot Validation & Conditional Engine', () => {
 		expect(fullResult.failedBlockIds).toContain('block_parent');
 		expect(fullResult.failedBlockIds).not.toContain('block_hidden');
 		expect(reportedFailedIds).toEqual(expect.arrayContaining(['block_parent', 'block_child']));
+	});
+
+	it('distinguishes empty strings from missing keys via lookupScopedFieldValue and evaluates JSON link strings, localized maps, and boolean expressions', () => {
+		const emptyExplicit = lookupScopedFieldValue({ prefix_opt: '' }, 'opt', 'prefix');
+		const missingKey = lookupScopedFieldValue({}, 'opt', 'prefix');
+		expect(emptyExplicit).toEqual({ found: true, value: '' });
+		expect(missingKey).toEqual({ found: false, value: undefined });
+
+		const emptyLinkJson = JSON.stringify({ type: 'page', pageId: 0, url: '', entryId: '', file: '' });
+		const filledLinkJson = JSON.stringify({ type: 'url', pageId: 0, url: 'https://example.com' });
+		expect(evaluateCondition('cta', { cta: emptyLinkJson })).toBe(false);
+		expect(evaluateCondition('!cta', { cta: emptyLinkJson })).toBe(true);
+		expect(evaluateCondition('cta', { cta: filledLinkJson })).toBe(true);
+		expect(evaluateCondition('cta!=0|', { cta: emptyLinkJson })).toBe(false);
+		expect(evaluateCondition('cta!=0|', { cta: filledLinkJson })).toBe(true);
+
+		expect(evaluateCondition('caption', { caption: { default: '', tr: '' } })).toBe(false);
+		expect(evaluateCondition('caption', { caption: { default: '', tr: 'Merhaba' } })).toBe(true);
+
+		const values = {
+			media: { type: 'image', pageId: 0, url: '', file: 'hero.jpg' },
+			media_align: 'left',
+			locked: '0',
+			badge_mode: 'pill',
+		};
+		expect(
+			evaluateCondition("media && (media_align == 'left' || media_align == 'right')", values)
+		).toBe(true);
+		expect(
+			evaluateCondition("media && (media_align == 'left' || media_align == 'right')", {
+				...values,
+				media_align: 'top',
+			})
+		).toBe(false);
+		expect(evaluateCondition("!(locked == '1' || badge_mode == 'none')", values)).toBe(true);
+		expect(
+			evaluateCondition("!(locked == '1' || badge_mode == 'none')", { ...values, locked: '1' })
+		).toBe(false);
+
+		const stateField: SchemaFieldDefinition = {
+			kind: 'control',
+			type: 'text',
+			name: 'alt_caption',
+			label: 'Alt Caption',
+			required: true,
+			requiredIf: "badge_mode == 'pill'",
+			showIf: "media && media.type == 'image'",
+			hideIf: "media_align == 'hidden'",
+			enableIf: "media_align == 'left' || media_align == 'right'",
+			disableIf: "locked == '1'",
+		};
+
+		const unlockedRequired = resolveFieldState(stateField, values);
+		expect(unlockedRequired).toEqual({
+			visible: true,
+			enabled: true,
+			disabled: false,
+			required: true,
+		});
+
+		const notRequired = resolveFieldState(stateField, { ...values, badge_mode: 'none' });
+		expect(notRequired.visible).toBe(true);
+		expect(notRequired.enabled).toBe(true);
+		expect(notRequired.required).toBe(false);
+
+		const disabledClearsRequired = resolveFieldState(stateField, { ...values, locked: '1' });
+		expect(disabledClearsRequired.disabled).toBe(true);
+		expect(disabledClearsRequired.required).toBe(false);
+		expect(validateFieldWithValibot(stateField, '', { ...values, locked: '1' })).toBeNull();
 	});
 });

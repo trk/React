@@ -37,7 +37,7 @@ final class LayeringScanner
 
 	private const array EXCLUDED_DIRECTORIES = ['tests', 'vendor', 'node_modules', '.git'];
 
-	private const array SCANNED_EXTENSIONS = ['php', 'js', 'css', 'ts', 'tsx'];
+	private const array SCANNED_EXTENSIONS = ['php', 'js', 'mjs', 'css', 'ts', 'tsx'];
 
 	private const array CORE_WIRE_CLASSES = [
 		'Wire',
@@ -210,7 +210,7 @@ final class LayeringScanner
 				}
 			}
 
-			// 3. Check CSS / data-* / pw-w*- prefix leaks from disallowed modules
+			// 3. Check CSS / data-* / pw-w*- / _w*- prefix leaks from disallowed modules
 			if (preg_match_all('/(?:(?<=[.#])(?:pw-)?(w[a-z]-)|\b(?<=[.#\'"\s])pw-(w[a-z]-)|\bdata-(?:pw-)?(w[a-z]-))[a-z][a-z0-9-]*/', $contents, $prefMatches, PREG_OFFSET_CAPTURE) > 0) {
 				foreach ($prefMatches[0] as $idx => $fullMatch) {
 					$shortPrefix = $prefMatches[1][$idx][0] !== ''
@@ -220,6 +220,13 @@ final class LayeringScanner
 						continue;
 					}
 					self::recordOffset($violations, $path, 'prefix:' . $shortPrefix, $fullMatch[0], $fullMatch[1], $contents);
+				}
+			}
+
+			if (preg_match_all('/(?<![A-Za-z0-9])_(w[a-z])(?:_[a-z0-9_]+|[A-Z][A-Za-z0-9_]*)/', $contents, $underMatches, PREG_OFFSET_CAPTURE) > 0) {
+				foreach ($underMatches[0] as $idx => $fullMatch) {
+					$shortUnderscore = '_' . $underMatches[1][$idx][0];
+					self::recordOffset($violations, $path, 'underscore-prefix:' . $shortUnderscore, $fullMatch[0], $fullMatch[1], $contents);
 				}
 			}
 
@@ -342,4 +349,32 @@ test('keeps no stale entries in the known-violations allowlist', function (): vo
 	$stale = array_values(array_diff(LayeringScanner::KNOWN_VIOLATIONS, array_keys(LayeringScanner::violations())));
 
 	expect($stale)->toBe([], 'Fixed violations still allowlisted in ' . LayeringScanner::MODULE . " (delete them):\n" . implode("\n", $stale));
+});
+
+test('maintains strict brand neutrality across React source files and documentation', function (): void {
+	$brandRegex = '/\b(YOOtheme|SEOmatic|Retour|Verbb|Formie|Directus|Sulu|Statamic|Filament|Sanity|Strapi|WordPress|ACF|Laravel|Eloquent|Artisan|Blade|Lucide|Tabler|shadcn|reui|tweakcn|Figma|Iconify)\b/i';
+	$hits = [];
+
+	foreach (LayeringScanner::files() as $path => $contents) {
+		if ($path === 'vite.config.ts') {
+			continue;
+		}
+		if (preg_match($brandRegex, $contents, $m) === 1) {
+			$hits[] = $path . ': ' . $m[0];
+		}
+	}
+
+	$root = LayeringScanner::moduleRoot();
+	foreach (['README.md', 'API.md', 'AGENTS.md', '.agents/skills/pw-react/SKILL.md'] as $docFile) {
+		$docPath = $root . '/' . $docFile;
+		if (!is_file($docPath)) {
+			continue;
+		}
+		$docText = (string) file_get_contents($docPath);
+		if (preg_match($brandRegex, $docText, $m) === 1) {
+			$hits[] = $docFile . ': ' . $m[0];
+		}
+	}
+
+	expect($hits)->toBe([], "Banned third-party brand references in React:\n" . implode("\n", $hits));
 });

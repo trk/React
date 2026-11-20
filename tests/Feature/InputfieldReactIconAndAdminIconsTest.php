@@ -42,9 +42,9 @@ test('IconManager loads 5,400+ outline and 1,000+ filled vector icons, serves pa
 		->and(IconManager::resolveCanonicalName('fa-gear'))->toBe('settings')
 		->and(IconManager::resolveCanonicalName('fa-bars'))->toBe('menu-2')
 		->and(IconManager::resolveCanonicalName('fa-puzzle-piece'))->toBe('puzzle')
-		->and(IconManager::resolveCanonicalName('lucide--layout-dashboard'))->toBe('layout-dashboard')
+		->and(IconManager::resolveCanonicalName('rwv--layout-dashboard'))->toBe('layout-dashboard')
 		->and(IconManager::formatLabel('brand-whatsapp'))->toBe('WhatsApp')
-		->and(IconManager::sanitizeAdminIconClass('lucide--sofa-bed'))->toBe('lucide--solucreplaced-bed')
+		->and(IconManager::sanitizeAdminIconClass('rwv--sofa-bed'))->toBe('rwv--sorwvreplaced-bed')
 		->and(IconManager::resolveCanonicalName('nonexistent-xyz-icon-999'))->toBe('');
 
 	// Paginated /_react/icons query & hydration gateway
@@ -335,20 +335,20 @@ test('Admin icon hooks inject brand-neutral Vector Icon picker on ProcessTemplat
 	}
 
 	try {
-		// 1. Verify ProcessTemplate::buildEditForm & ProcessField::buildEditForm use brand-neutral `Vector Icon` label and `showIf="lucideIcon=''"`
+		// 1. Verify ProcessTemplate::buildEditForm & ProcessField::buildEditForm use brand-neutral `Vector Icon` label and `showIf="vectorIcon=''"`
 		$input->get->set('id', (int) $tpl->id);
 		/** @var ProcessTemplate $procTemplate */
 		$procTemplate = $modules->getModule('ProcessTemplate', ['noPermissionCheck' => true]);
 		/** @var InputfieldWrapper $tplForm */
 		$tplForm = $procTemplate->__call('buildEditForm', [$tpl]);
 		$coreTplIconField = $tplForm->getChildByName('pageLabelIcon');
-		$lucideTplField = $tplForm->getChildByName('lucideIcon');
+		$vectorTplField = $tplForm->getChildByName('vectorIcon');
 		expect($coreTplIconField)->toBeInstanceOf(InputfieldIcon::class)
-			->and($coreTplIconField?->showIf)->toBe("lucideIcon=''")
-			->and($lucideTplField)->toBeInstanceOf(InputfieldReactIcon::class)
-			->and($lucideTplField?->label)->toBe('Vector Icon')
-			->and((string) $lucideTplField?->description)->not->toContain('Lucide')
-			->and((string) $lucideTplField?->description)->not->toContain('Tabler');
+			->and($coreTplIconField?->showIf)->toBe("vectorIcon=''")
+			->and($vectorTplField)->toBeInstanceOf(InputfieldReactIcon::class)
+			->and($vectorTplField?->label)->toBe('Vector Icon')
+			->and((string) $vectorTplField?->description)->not->toContain('Lucide')
+			->and((string) $vectorTplField?->description)->not->toContain('Tabler');
 
 		$input->get->set('id', (int) $field->id);
 		/** @var ProcessField $procField */
@@ -356,42 +356,51 @@ test('Admin icon hooks inject brand-neutral Vector Icon picker on ProcessTemplat
 		/** @var InputfieldWrapper $fieldForm */
 		$fieldForm = $procField->__call('buildEditForm', []);
 		$coreFieldIcon = $fieldForm->getChildByName('icon');
-		$lucideFieldInput = $fieldForm->getChildByName('lucideIcon');
+		$vectorFieldInput = $fieldForm->getChildByName('vectorIcon');
 		expect($coreFieldIcon)->toBeInstanceOf(InputfieldIcon::class)
-			->and($coreFieldIcon?->showIf)->toBe("lucideIcon=''")
-			->and($lucideFieldInput)->toBeInstanceOf(InputfieldReactIcon::class)
-			->and($lucideFieldInput?->label)->toBe('Vector Icon');
+			->and($coreFieldIcon?->showIf)->toBe("vectorIcon=''")
+			->and($vectorFieldInput)->toBeInstanceOf(InputfieldReactIcon::class)
+			->and($vectorFieldInput?->label)->toBe('Vector Icon');
 
 		// 2. Save outline `sofa` on Template and filled `heart-filled` on Field
-		$tpl->set('lucideIcon', 'sofa');
+		$tpl->set('vectorIcon', 'sofa');
 		$templates->save($tpl);
 
-		$field->set('lucideIcon', 'heart-filled');
+		$field->set('vectorIcon', 'heart-filled');
 		$fields->save($field);
 
-		expect($tpl->get('lucideIcon'))->toBe('lucide--sofa')
-			->and($tpl->getIcon(false))->toBe('lucide--sofa')
-			->and($field->get('lucideIcon'))->toBe('lucide--heart-filled')
-			->and($field->getIcon(false))->toBe('lucide--heart-filled');
+		expect($tpl->get('vectorIcon'))->toBe('rwv--sofa')
+			->and($tpl->getIcon(false))->toBe('rwv--sofa')
+			->and($field->get('vectorIcon'))->toBe('rwv--heart-filled')
+			->and($field->getIcon(false))->toBe('rwv--heart-filled');
 
 		$cssPath = $workspace->icons()->getAdminCssPath();
 		expect(is_file($cssPath))->toBeTrue()
 			->and($workspace->icons()->hasActiveAdminCss())->toBeTrue();
 		$css = (string) file_get_contents($cssPath);
-		expect($css)->toContain('.fa-lucide--sofa')
-			->and($css)->toContain('.fa-lucide--heart-filled')
+		expect($css)->toContain('.fa-rwv--sofa')
+			->and($css)->toContain('.fa-rwv--heart-filled')
+			->and($css)->toContain('.ui-menu .ui-menu-item a i[class*="fa-rwv--"]')
+			->and($css)->toContain('.uk-nav [class*="fa-rwvreplaced-"]')
 			->and($css)->toContain('rw-count:')
 			->and($css)->toContain('mask-image: url("data:image/svg+xml,');
 
-		// 3. Clearing `lucideIcon` restores clean blank icon state
-		$tpl->set('lucideIcon', '');
+		// Verify IconManager::isAdminIconRegistered() resolves canonical names and aliases accurately
+		IconManager::registerAdminIcons(['adjustments-horizontal', 'layout-dashboard']);
+		expect(IconManager::isAdminIconRegistered('adjustments-horizontal'))->toBeTrue()
+			->and(IconManager::isAdminIconRegistered('sliders'))->toBeTrue()
+			->and(IconManager::isAdminIconRegistered('rwv--layout-dashboard'))->toBeTrue()
+			->and(IconManager::isAdminIconRegistered('nonexistent-unregistered-xyz'))->toBeFalse();
+
+		// 3. Clearing `vectorIcon` restores clean blank icon state
+		$tpl->set('vectorIcon', '');
 		$templates->save($tpl);
-		$field->set('lucideIcon', '');
+		$field->set('vectorIcon', '');
 		$fields->save($field);
 
-		expect($tpl->get('lucideIcon'))->toBe('')
+		expect($tpl->get('vectorIcon'))->toBe('')
 			->and($tpl->getIcon(false))->toBe('')
-			->and($field->get('lucideIcon'))->toBe('')
+			->and($field->get('vectorIcon'))->toBe('')
 			->and($field->getIcon(false))->toBe('');
 	} finally {
 		if ($prevUser instanceof \ProcessWire\User) {
