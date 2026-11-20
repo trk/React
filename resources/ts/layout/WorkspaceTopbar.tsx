@@ -118,7 +118,7 @@ export function WorkspaceTopbar({
 					<a
 						href={sanitizeHref(workspace?.adminUrl) || '/processwire/'}
 						data-rw-admin-return
-						className="inline-flex h-8 items-center gap-1.5 rounded-md border border-masthead-border bg-input-surface px-2.5 text-xs font-medium text-masthead-foreground transition-colors hover:bg-muted hover:text-masthead-active shrink-0"
+						className="hidden lg:inline-flex h-8 items-center gap-1.5 rounded-md border border-masthead-border bg-input-surface px-2.5 text-xs font-medium text-masthead-foreground transition-colors hover:bg-muted hover:text-masthead-active shrink-0"
 						title={t('shell.returnToTarget', { target: returnLabel }, 'Return to {target}')}
 					>
 						<DynamicIcon name="arrow-left" className="size-3.5" />
