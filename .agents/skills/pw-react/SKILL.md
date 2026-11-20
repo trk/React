@@ -98,7 +98,7 @@ class ProcessInventory extends ProcessReact
 
 	public function ___execute(): string
 	{
-		$workspace = $this->react();
+		$react = $this->react();
 
 		return (string) $this->inertiaRender('Inventory/Index', [
 			'viewport' => $react->configureTable('pages:template=inventory-item, sort=-modified', [
@@ -139,11 +139,11 @@ declare(strict_types=1);
 
 namespace ProcessWire;
 
-$workspace = React::instance($this);
+$react = React::instance($this);
 
 // Native ProcessWire InputfieldWrapper -> SchemaForm JSON schema (with card surface & native Delete tab)
 $form = $this->wire()->modules->get('InputfieldForm');
-$schema = $workspace->serializeForm($form, [
+$schema = $react->serializeForm($form, [
 	'action' => './save/',
 	'dirtyGuard' => true,
 	'surface' => 'card',
@@ -211,14 +211,14 @@ React::instance($this)->notifyResourceSaved(
 
 ---
 
-## 4. Client Runtime, Design System, UX & Accessibility Standards
+## 4. Client Runtime, Typed SDK (`@pw/react/*`), Central Theme & UX Standards
 
-- **Runtime Global (`window.ReactWorkspaceRuntime`):** Exposes `UI` (`Button`, `Badge`, `Card`, `Dialog`, `Sheet`, `ConfirmDialog`, `Tabs`, `Input`, `Select`, `Switch`, `DropdownMenu`, `EmptyState`), `Layout` (`AppShell`), `Fields` (`SchemaForm` plus lazy per-control proxies backed by dedicated submodule bundles), `Viewports` (`DataViewport` plus lazy table/cards canvas loaders), generic runtime loaders (`loadRuntimeScript`, `loadRuntimeStyle`, `preloadRuntimeScript`, `ensureMediaStyleLoaded`), `Utils` (`cn`, `DynamicIcon`, `sanitizeHref`, `sanitizeSameOriginUrl`, `sanitizeAssetUrl`, `getCsrfToken`), and `i18n` (`t`, `useTranslations`). Shared media components live in `dist/ReactMedia.js` (`window.ReactMediaRuntime`) and `dist/ReactMedia.css`, loaded only on pages using media Inputfields or interactive media inspection; Tiptap addon resolution lives inside `dist/TiptapCore.js` via `window.ReactTiptapRuntime.ensureBundles()`.
-- **Semantic Tokens (`ReactInertia.css`):** Core stylesheet maps ProcessWire `--pw-*` variables into `--background`, `--foreground`, `--card`, `--primary`, `--primary-ink`, `--primary-foreground`, `--muted`, `--border`, `--destructive`, `--success`, and `--warning` with WCAG 2.1 AA contrast across light and dark themes, providing generic `[data-rw-prose-root]` / `[data-rw-table]` hooks while keeping media inspector/crop CSS in `ReactMedia.css` and Tiptap modal/editor CSS in `TiptapCore.css`.
+- **Typed SDK & Runtime Global (`@pw/react/*` / `window.ReactWorkspaceRuntime`):** Downstream extension modules compile with `defineWireModuleConfig(import.meta.dirname, { jsx: 'automatic', tailwind: true })` and import directly from typed subpaths: `@pw/react/core` (React hooks, Inertia router/`Link`, `DynamicIcon`, `cn`, `registerPages`/`registerIslands`), `@pw/react/ui` (`Button`, `Badge`, `Card`, `Dialog`, `Sheet`, `ConfirmDialog`, `Tabs`, `Input`, `Select`, `Switch`, `DropdownMenu`, `CliBox` with `wrap`, `EmptyState`, sortable/overlay helpers), `@pw/react/layout` (`AppShell`, unified account menu + theme/shortcut shell controls, `RecordHeader`, `EditPresenceBanner`), `@pw/react/viewports` (`DataViewport`, lazy `viewScripts`/`viewStyles` loading, `/`/`n`/`r` keyboard shortcuts), `@pw/react/fields` (`SchemaForm`, lazy field controls, `mod+s`/`mod+shift+s` shortcuts, condition helpers), `@pw/react/hooks` (`useTranslations`, `useTheme`, `useKeyboardShortcuts`, `KeyboardShortcutsProvider`, `useRegisteredKeyboardShortcuts`, `formatShortcutKeys`, `getCsrfToken`, gateway helpers), and optional `@pw/react/{dnd,grid,calendar,optional}` adapters. Shared media components live in `dist/ReactMedia.js` (`window.ReactMediaRuntime`) and `dist/ReactMedia.css`, loaded only on pages using media Inputfields or interactive media inspection; Tiptap addon resolution lives inside `dist/TiptapCore.js` via `window.ReactTiptapRuntime.ensureBundles()`.
+- **Semantic Tokens (`ReactInertia.css`), Delta CSS & Central Theme (`ThemeManager`):** `ReactInertia.css` maps ProcessWire `--pw-*` variables into semantic tokens (`--background`, `--foreground`, `--card`, `--primary`, `--primary-ink`, `--primary-foreground`, `--muted`, `--border`, `--destructive`, `--success`, `--warning`) with WCAG 2.1 AA contrast across light and dark modes, without scanning sibling modules. Site-wide theme defaults (`native`, `neutral`, `slate`, `ocean`, `emerald`, `violet`, `rose`, `amber`, or `custom`) live in `React` module config, while authenticated users can override both light/dark/system mode and color scheme preset (or reset to site default) in per-user `{user-id}.json` preferences via the unified account dropdown and `/_react/workspace-prefs` (`set_theme_mode` / `set_theme_preset`). Downstream modules import `site/modules/React/resources/css/module-delta.css` in their entry CSS so `resources/tailwind-layers.mjs` emits module-only delta utilities into ordered `@layer utilities.*` sub-layers.
 - **Zero Layout Shift & Rhythm:** Align side-by-side form controls (`width` / `columnWidth` / `colSpan`) to consistent input heights and spacing rhythm; render drawers, popovers, and inspector panels as overlays (`Sheet` / `Dialog`) so opening them never pushes form content downward.
 - **Actionable UX Copy & States:** Write jargon-free, user-oriented labels, `EmptyState` guidance, loading, saving/optimistic, and validation error messages that tell the user what to do next without leaking internal class or third-party library names.
-- **WCAG 2.1 AA & Keyboard Mastery:** Enforce at least `4.5:1` contrast on small text and active button/tab states, explicit `<label>` bindings on every form input, `aria-label` on every icon-only button, focus trap + focus restoration on modals/drawers, and `Escape` / keyboard navigation across interactive controls. Audit UI components with `impeccable detect --json` when available.
-- **Signed State & Translation Parity:** Sign client-roundtripped viewport/relation/media state envelopes with HMAC (`SignedTokenCodec`), reject `guest` users (`403`) on workspace endpoints, keep every frontend `t(...)` key backed by PHP `___translations()`, and synchronize multi-language `languages/*.csv` packs via `LanguagePorter::exportCsv` with intact `{placeholder}` / `%s` tokens.
+- **WCAG 2.1 AA & Keyboard Mastery:** Enforce at least `4.5:1` contrast on small text and active button/tab states, explicit `<label>` bindings on every form input, `aria-label` on every icon-only button, focus trap + focus restoration on modals/drawers, and consistent keyboard shortcuts (`Cmd/Ctrl+K` Quick Switcher, `?` / `Cmd/Ctrl+/` Keyboard Shortcuts Help, `Alt+1..9` tabs, `Alt+Left` back, `mod+s` / `mod+shift+s` form save, `/` / `n` / `r` viewports, `g w` / `g a` navigation chords, and `Escape`). Audit UI components with `impeccable detect --json` when available.
+- **Signed State & Native `LanguageTranslator` Parity:** Sign client-roundtripped viewport/relation/media state envelopes with HMAC (`SignedTokenCodec`), reject `guest` users (`403`) on workspace endpoints, declare module strings in `___translations()` resolved directly via ProcessWire's native `LanguageTranslator` (`Setup > Languages`, with zero runtime CSV file fallback), and keep `languages/{en,tr,de,fr,es,ru}.csv` `LanguagePorter` import packs synchronized with intact `{placeholder}` / `%s` tokens.
 
 ---
 

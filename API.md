@@ -32,6 +32,11 @@ Developer and AI agent reference for `ProcessWire\React`, the optional `ProcessW
 - `$react->media(): MediaGateway`
 - `$react->forms(): FormSchemaSerializer`
 - `$react->icons(): IconManager`
+- `$react->theme(): ThemeManager`
+- `$react->gateway(): ReactGatewayRouter`
+- `$react->i18n(): TranslationCatalogService`
+- `$react->hooks(): FieldIntegrationHooks`
+- `$react->tokenCodec(): SignedTokenCodec`
 
 ### Viewport, Form & Island Helpers
 - `$react->viewport(string $mode = 'table'): MarkupReactViewport`
@@ -62,25 +67,41 @@ Developer and AI agent reference for `ProcessWire\React`, the optional `ProcessW
 - `$react->resolveModuleAssetUrl(string $filename): array`
 - `$react->resolveInertiaScriptAssets(array $extraScripts = []): array`
 - `$react->resolveInertiaStyleAssets(array $extraStyles = []): array`
-- `$react->buildInertiaSharedContext(?Process $process = null, ?WorkspaceDefinition $activeWorkspace = null): array`
+- `$react->buildInertiaSharedContext(?Process $process = null, ?WorkspaceDefinition $activeWorkspace = null): array` — Includes user account menu fields (`user.{label,avatarUrl,avatarIcon,viewSiteUrl,profileUrl,logoutUrl}`), `userThemePreset`, `siteDefaultThemePreset`, and active shell metadata.
 - `$react->buildInertiaI18nSharedProps(?object $host = null): array`
-- `$react->buildInertiaRootViewData(string $title = 'Workspace', array $extraScripts = [], array $extraStyles = []): array`
-- `$react->resolveEffectiveThemeMode(?User $user = null): string`
-- `$react->resolveAdminColorSchemeCss(): string`
-- `$react->resolveAdminUseInputFocus(): bool`
+- `$react->buildInertiaRootViewData(string $title = 'Workspace', array $extraScripts = [], array $extraStyles = []): array` — Includes `themeMode`, `colorSchemeCss`, and the compiled central `themeCss`.
 - `$react->resolveActiveLocale(): string`
 - `$react->resolveModuleTranslations(object $source): array`
 - `React::flattenTranslationCatalog(array $entries, string $prefix = ''): array`
+
+### Central Theme (`Totoglu\React\Theme`)
+Site-wide default theme settings (`themePreset`, `themeCustomTokens`) live in `React` module config, while authenticated users can override both `themeMode` (`light` | `dark` | `system`) and `themePreset` (or reset back to the site default) in per-user `{user-id}.json` preferences (`WorkspacePreferenceStore`). Compiled tokens apply uniformly to standalone Workspaces (`views/admin.php` `<style id="rw-theme-tokens">`), embedded module panels, classic Inputfield islands, and portaled overlays (injected into `AdminTheme` head markup in `React::ready()` or inline fallback).
+- `ThemeManager::siteDefaultPreset(): ThemePreset` — Site-wide default configured in `React` module settings (`native`, `neutral`, `slate`, `ocean`, `emerald`, `violet`, `rose`, `amber`, or `custom`).
+- `ThemeManager::userPresetOverride(?User $user = null): ?ThemePreset` — Per-user preset override stored in `{user-id}.json` (`null` when inheriting site default).
+- `ThemeManager::activePreset(?User $user = null): ThemePreset` — Resolves per-user override first, then site default.
+- `ThemeManager::activeTokens(?User $user = null): array{light: array<string, string>, dark: array<string, string>}`
+- `ThemeManager::resolveThemeTokenCss(?User $user = null): string` — Scoped `light-dark()` + dark-only token stylesheet (empty for `native` or incomplete custom tokens).
+- `ThemeManager::compileTokens(array $tokens): string`
+- `ThemeManager::resolveEffectiveThemeMode(?User $user = null): string`
+- `ThemeManager::resolveAdminColorSchemeCss(): string`
+- `ThemeManager::resolveAdminUseInputFocus(): bool`
+- `ThemeTokenParser::parse(string $css): array` — Parses Tailwind CSS v4 theme variables (`:root { ... }`, `.dark { ... }`, `@media (prefers-color-scheme: dark) { :root { ... } }`) into an allowlist of color, radius, font, and shadow tokens (supporting dark-only tokens); rejects `url()`, `expression()`, `@import`, escapes, and markup-breaking characters.
+- `/_react/workspace-prefs` `action=set_theme_mode` (`themeMode`) — Available to any authenticated user; persists `themeMode` to `{user-id}.json` and syncs `$user->meta('adminDarkMode')`.
+- `/_react/workspace-prefs` `action=set_theme_preset` (`themePreset`) — Available to any authenticated user; persists a personal override in `{user-id}.json` (or clears override on `''` / `'default'`) and returns `userThemePreset`, `siteDefaultThemePreset`, `themePreset`, and `themeCss`.
+
+### Security & Markup Helpers
+- `Totoglu\React\Security\AccessGuard::isAuthenticated(User $user): bool` / `isAuthenticatedOrSuperuser(User $user): bool` — Canonical authentication checks used by all `/_react/*` gateways, registries, and per-user stores.
+- `Totoglu\React\Support\IslandMarkup::render(string $component, array $props, array $attributes = [], string $innerHtml = ''): string` — Canonical React island mount markup used by every Inputfield, viewport, tab container, and `renderIsland()`.
 
 ---
 
 ## 2. Inertia Base Classes & Translation Trait (`Totoglu\React\Inertia`)
 
-- **`ProcessReact`** (`abstract class ProcessReact extends Totoglu\Inertia\ProcessInertia implements Module`): Base class for dual-context admin `Process` modules (`Setup > <Module>` native `Process::execute` inside any active `AdminTheme` and `Admin > Workspace` full-screen hub mode from a single React component). Uses `InteractWithReact`.
-- **`InteractWithReact`** (trait composing `InteractWithInertia` + `InteractWithReactTranslations`): Runs initial `Setup > <Module>` requests (`shellMode === 'admin'`) natively through ProcessWire's `wire/core/admin.php` -> `Process::execute` lifecycle via `EmbeddedAdminPageResponse` (theme-agnostic across `AdminThemeUikit`, `AdminThemeDefault`, `AdminThemeReno`, and custom `AdminTheme` modules), while running `Admin > Workspace` (`?ws=1`, `shellMode === 'workspace'`) through `views/admin.php` and handling `X-Inertia` SPA transitions in both modes.
+- **`ProcessReact`** (`abstract class ProcessReact extends Totoglu\Inertia\ProcessInertia implements Module`): Base class for dual-context admin `Process` modules (`Setup > <Module>` native `Process::execute` inside any active `AdminTheme` and `Admin > Workspace` full-screen hub mode from a single React component). Uses `InteractWithReact` and overrides `___executeNavJSON(array $options = []): string|array` so empty/`./` root/Overview flyout item URLs always resolve to a clickable admin process root path.
+- **`InteractWithReact`** (trait composing `InteractWithInertia` + `InteractWithReactTranslations`): Runs initial `Setup > <Module>` requests (`shellMode === 'admin'`) natively through ProcessWire's `wire/core/admin.php` -> `Process::execute` lifecycle via `EmbeddedAdminPageResponse` (theme-agnostic across `AdminThemeUikit`, `AdminThemeDefault`, `AdminThemeReno`, and custom `AdminTheme` modules), while running `Admin > Workspace` (`?ws=1`, `shellMode === 'workspace'`) through `views/admin.php` and handling `X-Inertia` SPA transitions in both modes. Also provides `buildAdminNavJSON(array $items, array $options = []): string|array`, `resolveAdminNavIcon(string $icon, string $fallbackIcon = 'circle', bool $requireRegistered = false): string`, and `resolveAdminProcessRootUrl(): string` for consistent `Setup > <Module>` flyout navigation.
 - **`EmbeddedAdminPageResponse`** (`final class EmbeddedAdminPageResponse extends Totoglu\Inertia\PageResponse`): Inline `Process::execute` response adapter that enqueues ordered `ReactInertia.css/js` and module scripts into `$config->styles` / `$config->scripts`, injects `--pw-*` tokens via `AdminTheme::addExtraMarkup('head', ...)`, clears redundant classic breadcrumbs/headlines, and returns `<div id="app">` markup without overriding `AdminTheme` output.
 - **`InputfieldReact`** (`abstract class InputfieldReact extends Totoglu\Inertia\InputfieldInertia`): Base class for React Inputfields (`InputfieldReactKeyValue`, `InputfieldReactLink`, `InputfieldReactIcon`, `AbstractInputfieldReactRelation`). Uses `InteractWithReactTranslations` and merges `ReactInertia.css` + `ReactInertia.js` + `getModuleScriptAssets()`.
-- **`InteractWithReactTranslations`** (trait): Provides `translationNamespace(): string`, hookable `___translations(): array`, and `buildReactTranslationSharedProps(): array` emitting locale-scoped Inertia `OnceProp` catalogs (`rw_i18n:{locale}:{namespace}`) with automatic `<ModuleDir>/languages/{locale}.csv` fallback.
+- **`InteractWithReactTranslations`** (trait): Provides `translationNamespace(): string`, hookable `___translations(): array`, and `buildReactTranslationSharedProps(): array` emitting locale-scoped Inertia `OnceProp` catalogs (`rw_i18n:{locale}:{namespace}`) resolved strictly via ProcessWire's native `LanguageTranslator` (`languages/{locale}.csv` files serve as `LanguagePorter` import packs, with zero runtime CSV file fallback).
 
 ---
 
@@ -94,26 +115,27 @@ Loads `dist/vector-icons.json` (`5,491` outline + `1,054` filled = `6,545` vecto
 | `loadCatalog` | `public static function loadCatalog(): array` | Loads and caches `dist/vector-icons.json` once per PHP worker. |
 | `count` / `filledCount` / `totalVariantsCount` | `public function count(): int` | Returns outline family count (`5491`), filled count (`1054`), or combined count (`6545`). |
 | `getCategories` | `public function getCategories(): array` | Returns `list<array{id: string, label: string, count: int}>`. |
-| `resolveCanonicalName` | `public static function resolveCanonicalName(string $raw): string` | Resolves canonical names, `-filled` / `:filled` suffixes, `lucide--*` prefixes, and shorthand aliases (returns `''` if unknown). |
+| `resolveCanonicalName` | `public static function resolveCanonicalName(string $raw): string` | Resolves canonical names, `-filled` / `:filled` suffixes, `rwv--*` prefixes, and shorthand aliases (returns `''` if unknown). |
 | `hasIcon` | `public function hasIcon(string $raw): bool` | Checks whether a canonical or aliased icon exists in the catalog. |
 | `hasFilledVariant` | `public static function hasFilledVariant(string $raw): bool` | Checks whether the resolved canonical icon exposes a filled variant. |
 | `formatLabel` | `public static function formatLabel(string $raw): string` | Formats an icon identifier into a human-friendly label (e.g. `'brand-whatsapp'` -> `'WhatsApp'`). |
 | `queryCatalog` | `public function queryCatalog(string $query = '', string $category = 'all', string $style = 'all', int $offset = 0, int $limit = 96, bool $includeMeta = false): array` | Paginated search over names, aliases, and tags with category and style (`all` \| `outline` \| `filled`) filtering. |
 | `hydrateIcons` | `public function hydrateIcons(array $rawNames): array` | Returns up to 100 `CatalogEntry` definitions keyed by canonical icon name. |
 | `normalizeValue` | `public static function normalizeValue(mixed $raw): array` | Normalizes scalar string, JSON string, array, `\stdClass`, or `ReactIconValue` into `{ name, variant, size, color, strokeWidth, background, radius }`. |
-| `encodeForStorage` | `public static function encodeForStorage(mixed $raw, array $rawFlags = [], string $prefixMode = 'none'): string` | Encodes scalar (`sparkles`, `heart-filled`, `lucide--sparkles`) or JSON customization string according to field flags. |
+| `encodeForStorage` | `public static function encodeForStorage(mixed $raw, array $rawFlags = [], string $prefixMode = 'none'): string` | Encodes scalar (`sparkles`, `heart-filled`, `rwv--sparkles`) or JSON customization string according to field flags. |
 | `renderSvgMarkup` / `renderSvg` | `public static function renderSvgMarkup(mixed $raw, array $overrides = []): string` | Renders sanitized inline `<svg>` markup (`Outline` stroke or `Filled` fill). |
 | `renderHtmlMarkup` | `public static function renderHtmlMarkup(mixed $raw, array $overrides = []): string` | Renders inline `<svg>` or `<span class="rw-icon-badge">` HTML when `background` is set. |
 | `resolveValueObject` / `resolveValue` | `public function resolveValue(mixed $raw, array $overrides = []): ReactIconValue` | Returns a wired `ReactIconValue` object. |
-| `registerAdminIcons` | `public static function registerAdminIcons(array $icons): void` | Registers module/navigation `lucide--*` icons for inclusion in `LucideIcons.css`. |
+| `registerAdminIcons` | `public static function registerAdminIcons(array $icons): void` | Registers module/navigation `rwv--*` icons for inclusion in `VectorIcons.css`. |
+| `isAdminIconRegistered` | `public static function isAdminIconRegistered(string $raw): bool` | Checks whether a canonical or aliased vector icon is registered for `VectorIcons.css` emission. |
 | `isAdminVectorIcon` | `public static function isAdminVectorIcon(string $icon): bool` | Checks whether a `Field` or `Template` icon string belongs to the Admin vector icon system. |
-| `generateAdminCss` / `ensureAdminCss` | `public function generateAdminCss(): string` | Generates `site/assets/lucide-icons/LucideIcons.css` `mask-image` rules for Templates, Fields, Admin `page_icon` pages, and registered module icons. |
+| `generateAdminCss` / `ensureAdminCss` | `public function generateAdminCss(): string` | Generates `site/assets/vector-icons/VectorIcons.css` `mask-image` rules for Templates, Fields, Admin `page_icon` pages, and registered module icons. |
 
 ### `Totoglu\React\Icon\ReactIconValue` (`extends WireData implements \Stringable, \JsonSerializable`)
 Properties: `$set` (`'vector'` or `''`), `$name`, `$variant` (`'outline'|'filled'`), `$raw`, `$svg`, `$html`, `$size` (`12..96`), `$color`, `$strokeWidth` (`1.0..3.0`), `$background`, `$radius` (`'none'|'sm'|'md'|'lg'|'full'`), `$customized` (`bool`). Methods: `isEmpty(): bool`, `toArray(): array`, `__toString(): string`.
 
 ### `ProcessWire\InputfieldReactIcon` (`extends InputfieldReact`)
-Selectable on `FieldtypeText` (`INERTIA_IS_ICON_FIELD = true`). Configurable properties: `allowCustomization` (`bool`), `allowVariant` (`bool`), `allowSize` (`bool`), `allowColor` (`bool`), `allowStrokeWidth` (`bool`), `allowBackground` (`bool`), `previewSize` (`int`), `iconPrefixMode` (`'none'|'lucide'|'fa'`), `readOnly` (`bool`). Formats `$page->get($field)` into `ReactIconValue` when `$page->of(true)` while bypassing `TextformatterEntities` JSON corruption.
+Selectable on `FieldtypeText` (`INERTIA_IS_ICON_FIELD = true`). Configurable properties: `allowCustomization` (`bool`), `allowVariant` (`bool`), `allowSize` (`bool`), `allowColor` (`bool`), `allowStrokeWidth` (`bool`), `allowBackground` (`bool`), `previewSize` (`int`), `iconPrefixMode` (`'none'|'vector'|'fa'`), `readOnly` (`bool`). Formats `$page->get($field)` into `ReactIconValue` when `$page->of(true)` while bypassing `TextformatterEntities` JSON corruption.
 
 ---
 
@@ -127,8 +149,8 @@ Selectable on `FieldtypeText` (`INERTIA_IS_ICON_FIELD = true`). Configurable pro
 
 ## 5. Polymorphic Link Inputfield (`InputfieldReactLink` & `PageLinkMediaHostAdapter`)
 
-- **`ProcessWire\InputfieldReactLink`** (`extends InputfieldReact`, `INERTIA_IS_LINK_FIELD = true`): Supports target types `page`, `entry`, `url` (with `#anchor`), strict `tel` (`^\+?[0-9]+$`), `email`, and isolated multi-profile media targets (`file`, `image`, `video`, or custom `mediaProfiles` stored under `site/assets/files/{pageId}/links/{fieldName}/` via `PageLinkMediaHostAdapter`).
-- Static helpers: `InputfieldReactLink::isLinkField(?Field $field): bool`, `InputfieldReactLink::normalizeValue(mixed $value, string $defaultType = 'url'): array`, `InputfieldReactLink::resolveValue(mixed $value, ?Page $ownerPage = null, ?Field $field = null, ?Language $language = null): array`, `InputfieldReactLink::renderLinkMarkup(mixed $value, ?Page $page = null, ?Field $field = null, string $property = ''): string`.
+- **`ProcessWire\InputfieldReactLink`** (`extends InputfieldReact`, `INERTIA_IS_LINK_FIELD = true`): Supports target types `page`, `entry`, `url` (with `#anchor`), strict `tel` (`^\+?[0-9]+$`), `email`, and isolated multi-profile media targets (`file`, `image`, `video`, or custom `mediaProfiles` stored under `site/assets/files/{pageId}/links/{fieldName}/` via `PageLinkMediaHostAdapter`). Normalized link values include `label`, `ariaLabel`, optional multi-language `labels` / `ariaLabels` maps (rendered directly below the destination row once populated and resolved by active `Language`), `target`, `rel`, `anchor`, and `query`, governed by 6 granular config flags (`enableLabel`, `enableAriaLabel`, `enableTarget`, `enableRel`, `enableAnchor`, `enableQuery`).
+- Static helpers: `InputfieldReactLink::isLinkField(?Field $field): bool`, `InputfieldReactLink::normalizeFeatureFlags(array $config): array`, `InputfieldReactLink::applyConfigFlags(array $norm, array $config): array`, `InputfieldReactLink::normalizeValue(mixed $value, string $defaultType = 'url'): array`, `InputfieldReactLink::resolveValue(mixed $value, ?Page $ownerPage = null, ?Field $field = null, ?Language $language = null): array`, `InputfieldReactLink::renderLinkMarkup(mixed $value, ?Page $page = null, ?Field $field = null, string $property = ''): string`.
 
 ---
 
@@ -167,13 +189,15 @@ Selectable on `FieldtypeText` (`INERTIA_IS_ICON_FIELD = true`). Configurable pro
 
 ---
 
-## 10. Compiled Frontend Bundles (`dist/` & `window.ReactWorkspaceRuntime`)
+## 10. Compiled Frontend Bundles (`dist/`), Typed SDK (`@pw/react/*`) & Delta CSS
 
-- **`dist/ReactInertia.js` & `dist/ReactInertia.css`**: Core React 19 + Inertia v3 + Tailwind CSS v4 UI primitives (`UI`, `DynamicIcon`, `sanitizeHref`, `sanitizeSameOriginUrl`, `sanitizeAssetUrl`, `useTranslations`, `registerPages`, `registerIslands`, `mountIslands`, generic `loadRuntimeScript` / `loadRuntimeStyle` / `preloadRuntimeScript` / `ensureMediaStyleLoaded`, and non-clobbering lazy asset loaders) plus the generic `[data-rw-prose-root]` and `[data-rw-table]` CSS hooks. Kept `< 420 kB` and CSP-safe (zero `eval` / `new Function`), with zero companion-submodule UI, Tiptap addon logic, launcher hardcoding, or submodule CSS rules.
+- **`dist/ReactInertia.js` & `dist/ReactInertia.css`**: Core React 19 + Inertia v3 + Tailwind CSS v4 + `@base-ui/react` UI primitives (`UI`, `DynamicIcon`, `sanitizeHref`, `sanitizeSameOriginUrl`, `sanitizeAssetUrl`, `useTranslations`, `registerPages`, `registerIslands`, `mountIslands`, generic `loadRuntimeScript` / `loadRuntimeStyle` / `preloadRuntimeScript` / `ensureMediaStyleLoaded`, and non-clobbering lazy asset loaders) plus the generic `[data-rw-prose-root]` and `[data-rw-table]` CSS hooks. Compiled strictly from `React`'s own source without scanning sibling modules, kept CSP-safe (zero `eval` / `new Function`), and partitioned via `resources/tailwind-layers.mjs` into deterministic cascade sub-layers (`utilities.shorthand`, `utilities.axis`, `utilities.longhand`, `utilities.state`, `utilities.{sm,md,lg,xl,xxl}-*`, `utilities.container`, `utilities.media`).
+- **Typed Downstream SDK (`@pw/react/*`) & Delta Stylesheets (`resources/css/module-delta.css`):** Extension modules configure `defineWireModuleConfig(import.meta.dirname, { jsx: 'automatic', tailwind: true })` in `vite.config.ts` and import directly from `@pw/react/core`, `@pw/react/ui`, `@pw/react/layout`, `@pw/react/viewports`, `@pw/react/fields`, `@pw/react/hooks`, `@pw/react/dnd`, `@pw/react/grid`, `@pw/react/calendar`, and `@pw/react/optional` instead of duplicating `window.ReactWorkspaceRuntime` wrappers. Module stylesheets `@import` `site/modules/React/resources/css/module-delta.css` (preflight-free `@tailwind utilities source(none)`) partitioned into the exact same `@layer utilities.*` sub-layers so multiple independent stylesheets compose without cascade-order regressions.
 - **`dist/ReactLayout.js`**: Lazy workspace shell bundle (`AppShell`, `RecordHeader`, `useEditPresence`).
 - **`dist/ReactIcons.js` & `dist/vector-icons.json`**: Lightweight (`< 15 kB`) client icon gateway (`window.ProcessWireIcons`) backed by `/_react/icons` and build-time `dist/vector-icons.json`.
-- **`dist/ReactViewports.js`**, **`dist/MarkupReactTable.js`**, **`dist/MarkupReactCards.js`**: Shared viewport shell (`DataViewport`, toolbar, filters, saved views, pagination) paired with strictly separated mode canvas bundles (`DataTableCanvas` in `MarkupReactTable.js`, `DataCardsCanvas` in `MarkupReactCards.js`) loaded on demand when a viewport mode is active or switched.
-- **`dist/SchemaForm.js`**: Core `<SchemaForm />` engine, Valibot schema validation, lightweight standard HTML controls, and condition evaluator (`< 200 kB`); prefetches only the companion field bundles actually present in the schema.
+- **`dist/ReactViewports.js`**, **`dist/MarkupReactTable.js`**, **`dist/MarkupReactCards.js`**, **`dist/ReactGrid.js`**, **`dist/ReactDnd.js`**, **`dist/ReactCalendar.js` / `dist/ReactCalendar.css`**: Shared viewport shell (`DataViewport`, toolbar with `/` search / `n` new / `r` refresh shortcuts, filters, saved views, pagination) paired with strictly separated mode canvas bundles (`DataTableCanvas` in `MarkupReactTable.js`, `DataCardsCanvas` in `MarkupReactCards.js`, plus optional `@pw/react/{grid,dnd,calendar}` adapters) whose `viewScripts` and `viewStyles` are loaded lazily on demand.
+- **`dist/SchemaForm.js`**: Core `<SchemaForm />` engine, Valibot schema validation, lightweight standard HTML controls, `mod+s` / `mod+shift+s` save shortcuts, and condition evaluator (`< 200 kB`); prefetches only the companion field bundles actually present in the schema.
+- **Typed SDK Hooks & Shell Primitives (`@pw/react/hooks`, `@pw/react/layout`, `@pw/react/ui`)**: Exposes `useKeyboardShortcuts`, `KeyboardShortcutsProvider`, `useRegisteredKeyboardShortcuts`, `formatShortcutKeys`, `CliBox` (`wrap?: boolean`), unified account dropdown (`Theme`, `Keyboard shortcuts`, `View site`, `Profile`, `Logout`), and `KeyboardShortcutsDialog` (`?` / `Cmd/Ctrl+/`).
 - **Standalone Companion Control Bundles**:
   - `dist/MarkupReactTab.js` (`MarkupReactTab` WAI-ARIA tabs and lazy pane bodies)
   - `dist/InputfieldReactKeyValue.js` (`InputfieldReactKeyValue` key-value pair control)

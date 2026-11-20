@@ -1,10 +1,30 @@
 # React
 
-Shared **React 19 + Inertia.js v3 + Tailwind CSS v4** UI runtime, admin shell (`ProcessReact`), form & media inputfields, rich text editor, vector icon engine, interactive data viewports, and optional `ProcessReactWorkspace` (`Admin > Workspace`) hub for ProcessWire.
+Shared **React 19 + Inertia.js v3 + Tailwind CSS v4** UI runtime, dual-context admin shell (`ProcessReact`), dual-mode form & media controls, Tiptap v3 rich text editor (`InputfieldTiptap`), centralized vector icon engine (`IconManager`), interactive data viewports, typed TypeScript SDK (`@pw/react/*`), and optional `ProcessReactWorkspace` hub for ProcessWire 3.0.271+ and PHP 8.4+.
 
 ![React](https://raw.githubusercontent.com/trk/React/refs/heads/main/preview.jpg)
 
-`React` maps ProcessWire's `--pw-*` admin color scheme variables directly to semantic CSS design tokens (`--background`, `--foreground`, `--primary`, `--muted`, `--border`, `--ring`) and exposes a strictly modular client runtime (`ReactInertia.js` + `ReactInertia.css` core, plus per-submodule isolated bundles loaded only on pages where each companion module or field is active) shared across full-page admin workspaces, classic ProcessWire admin forms (`ProcessPageEdit`, `ProcessTemplate`, `ProcessField`, `ProcessModule`), and frontend Inertia islands — without adding an empty menu item to the ProcessWire admin bar unless the optional `ProcessReactWorkspace` hub module is explicitly installed.
+`React` maps ProcessWire's `--pw-*` admin color scheme variables onto semantic design tokens (`--background`, `--foreground`, `--primary`, `--muted`, `--border`, `--ring`) and compiles each companion module and adapter engine into self-contained `dist/` bundles loaded strictly on demand.
+
+> [!NOTE]
+> Installing `React` adds zero top-level admin menu items. An `Admin > Workspace` dashboard launcher appears only when you also install the optional [`ProcessReactWorkspace`](./ProcessReactWorkspace.module.php) module.
+
+---
+
+## Documentation
+
+Deep architectural guides, subsystem walkthroughs, and API references live in [`docs/`](./docs/README.md):
+
+| Context / What You Need | Target Document |
+|---|---|
+| **Documentation Index & Reading Map** | [docs/README.md](./docs/README.md) |
+| **System Architecture, Tech Stack, CI, Runtime Surface & ADRs** | [01 — Architecture & Technical Deep-Dive](./docs/01-architecture.md) |
+| **Admin Modules, Dual-Context Shell, Flyout Nav, Hub & Central Themes** | [02 — Workspaces, Dual-Context Shell & Themes](./docs/02-workspaces-and-admin-shell.md) |
+| **`SchemaForm`, Tabs, Key-Value, Links, Icons, Media Studio, Relations & Tiptap** | [03 — Inputfields, Forms & Rich Text (`InputfieldTiptap`)](./docs/03-inputfields-forms-and-tiptap.md) |
+| **`MarkupReactTable`, `MarkupReactCards`, Pluggable Modes & Capability Providers** | [04 — Viewports & Data Providers](./docs/04-viewports-and-data-providers.md) |
+| **19-Pass Vite Build, `@pw/react/*` SDK, Delta CSS Layers, i18n & Security** | [05 — Frontend Runtime, Typed SDK, i18n & Security](./docs/05-frontend-runtime-sdk-and-security.md) |
+| **Complete PHP & Asset Reference Dictionary** | [API.md](./API.md) |
+| **Internal Contributor Invariants & Boundaries** | [AGENTS.md](./AGENTS.md) |
 
 ---
 
@@ -25,32 +45,25 @@ php vendor/bin/wire module:install --name=React --json
 php vendor/bin/wire module:install --name=ProcessReactWorkspace --json
 ```
 
-Installing `React` registers the runtime and installs all 14 companion UI, `Inputfield`, and `Markup` modules (`ProcessReactWorkspace` remains optional):
+Installing `React` automatically installs all **14 companion modules** (`ProcessReactWorkspace` remains optional):
 
-| Module | Role |
+| Companion Modules | Role & Guide |
 |---|---|
-| `MarkupReactTable` | Interactive sortable, filterable, inline-editable data table viewport (`ReactWorkspace/Table`) |
-| `MarkupReactCards` | Interactive responsive card grid viewport (`ReactWorkspace/Cards`) |
-| `MarkupReactTab` | Accessible WAI-ARIA tab container and lazy tab pane fieldset (`line`, `segmented`, `vertical`) |
-| `InputfieldReactKeyValue` | Repeatable associative key-value pair Inputfield (`FieldtypeText` / `FieldtypeTextarea` & `<SchemaForm />`) |
-| `InputfieldReactLink` | Polymorphic destination & isolated media link Inputfield (`page`, `entry`, `url`, `email`, `tel`, `file`, `image`, `video`) |
-| `InputfieldReactIcon` | Searchable 6,500+ vector icon selector (`Outline` & `Filled`) with optional size, stroke, color, and badge appearance controls |
-| `InputfieldReactM2O` | Many-to-One single resource relational Inputfield (`page`, `template`, `field`, `user`, `role`, `permission`, `language`, `module`, or custom) |
-| `InputfieldReactM2M` | Many-to-Many multi-resource sortable relational Inputfield |
-| `InputfieldReactO2M` | One-to-Many reverse incoming relation panel with inline Quick Create, Link, and Unlink |
-| `InputfieldReactM2A` | Many-to-Any polymorphic `<resource>:<id>` relational Inputfield |
-| `InputfieldTiptap` | Full-width Tiptap v3 (`ProseMirror`) rich text editor Inputfield with native ProcessWire page/file/anchor link & `Pageimage` `-is` variation/crop/alignment modals, drag-and-drop upload, inline resize, editorial mini-blocks, HTML sanitization, and multi-language tabs |
-| `TextformatterTiptapMiniBlocks` | Output-formatting Textformatter rendering `[data-tiptap-block]` elements through `./site/templates/tiptap/{name}.php` when present |
-| `InputfieldReactFile` | AJAX drag-and-drop file upload, sorting, replacement, multi-language description, tag, and custom metadata Inputfield |
-| `InputfieldReactImage` | Image studio Inputfield with focal point + zoom, crop/rotate/flip, color palette extraction, multi-language alt text, and tags |
+| `MarkupReactTable`, `MarkupReactCards` | Sortable, filterable, inline-editable table and responsive card viewports ([04 — Viewports](./docs/04-viewports-and-data-providers.md)) |
+| `MarkupReactTab` | WAI-ARIA tab container (`line`, `segmented`, `vertical`) with `lazyLoad` and nested asset handling ([03 — Inputfields](./docs/03-inputfields-forms-and-tiptap.md#tabs-key-value--polymorphic-link-controls)) |
+| `InputfieldReactKeyValue`, `InputfieldReactLink` | Associative key-value editor and multi-target polymorphic link control with isolated link media ([03 — Inputfields](./docs/03-inputfields-forms-and-tiptap.md#tabs-key-value--polymorphic-link-controls)) |
+| `InputfieldReactIcon` | Searchable `6,545`-variant vector icon picker (`5,491` outline + `1,054` filled) and CSS `mask-image` admin icon engine ([03 — Vector Icons](./docs/03-inputfields-forms-and-tiptap.md#centralized-vector-icon-engine-inputfieldreacticon--iconmanager)) |
+| `InputfieldReactM2O`, `M2M`, `O2M`, `M2A` | Relational pickers backed by 8 core resource adapters and lazy custom adapters ([03 — Relations](./docs/03-inputfields-forms-and-tiptap.md#relational-pickers-m2o-m2m-o2m-m2a--_reactrelation)) |
+| `InputfieldTiptap`, `TextformatterTiptapMiniBlocks` | Tiptap v3 rich text editor (`core`/`editor`/`canvas`/`blocks`), native link/image dialogs, and flat mini-blocks ([03 — Tiptap](./docs/03-inputfields-forms-and-tiptap.md#rich-text-editor-inputfieldtiptap--textformattertiptapminiblocks)) |
+| `InputfieldReactFile`, `InputfieldReactImage` | Dropzone upload studio, focus/crop/rotate/flip editor, palette inspection, and multi-language alt/description metadata ([03 — Media Studio](./docs/03-inputfields-forms-and-tiptap.md#media-studio-inputfieldreactimage-inputfieldreactfile-mediagateway)) |
 
 ---
 
 ## Quick Start
 
-### 1. Building a Dual-Context Admin Module (`ProcessReact`)
+### 1. Build a Dual-Context Admin Module (`ProcessReact`)
 
-Extend `Totoglu\React\Inertia\ProcessReact` in your `Process` module. From a single React component, `ProcessReact` automatically executes inside ProcessWire's active `AdminTheme` (`wire/core/admin.php` -> `Process::execute` via `EmbeddedAdminPageResponse`) when accessed from `Setup > <Module>` (`shellMode === 'admin'`), and inside the full-screen Workspace shell (`views/admin.php`) when accessed from `Admin > Workspace` (`?ws=1`, `shellMode === 'workspace'`). Register its workspace card and optional dashboard widgets lazily via `React::deferModuleRegistration()`:
+Extend `Totoglu\React\Inertia\ProcessReact` so a single React component runs natively inside `AdminTheme` via `Setup > <Module>` and full-screen inside `Admin > Workspace` (`?ws=1`) when `ProcessReactWorkspace` is installed, with clickable flyout navigation via `buildAdminNavJSON()`. Register workspaces lazily via `React::deferModuleRegistration()` and navigation icons eagerly during `init()` ([02 — Workspaces & Admin Shell](./docs/02-workspaces-and-admin-shell.md)).
 
 ```php
 <?php
@@ -59,6 +72,7 @@ declare(strict_types=1);
 
 namespace ProcessWire;
 
+use Totoglu\React\Icon\IconManager;
 use Totoglu\React\Inertia\ProcessReact;
 
 class ProcessCatalog extends ProcessReact
@@ -66,6 +80,8 @@ class ProcessCatalog extends ProcessReact
 	public function init(): void
 	{
 		parent::init();
+
+		IconManager::registerAdminIcons(['layout-dashboard', 'shopping-bag']);
 
 		React::deferModuleRegistration(
 			$this,
@@ -77,43 +93,26 @@ class ProcessCatalog extends ProcessReact
 					'icon' => 'shopping-bag',
 					'process' => 'ProcessCatalog',
 					'component' => 'Catalog/Workspace',
-					'category' => $this->_('Commerce'),
-					'order' => 20,
 					'permission' => 'catalog-view',
-					'statsCallback' => function (): array {
-						$pages = $this->wire()->pages;
-						return [
-							[
-								'label' => $this->_('Products'),
-								'value' => (string) $pages->count('template=product'),
-								'tone' => 'primary',
-							],
-						];
-					},
-				]);
-			},
-			function (React $react): void {
-				$react->widgets()->register([
-					'id' => 'catalog-overview',
-					'workspaceId' => 'catalog',
-					'title' => $this->_('Catalog Overview'),
-					'icon' => 'shopping-bag',
-					'size' => 'md',
-					'dataCallback' => function (): array {
-						$pages = $this->wire()->pages;
-						return [
-							'metrics' => [
-								[
-									'label' => $this->_('Products'),
-									'value' => (string) $pages->count('template=product'),
-									'tone' => 'primary',
-								],
-							],
-						];
-					},
 				]);
 			}
 		);
+	}
+
+	/**
+	 * @param array<string, mixed> $options
+	 * @return string|array<string, mixed>
+	 */
+	public function ___executeNavJSON(array $options = []): string|array
+	{
+		if (!$this->wire()->user->hasPermission('catalog-view')) {
+			throw new WirePermissionException($this->_('Access denied.'));
+		}
+
+		return $this->buildAdminNavJSON([
+			['url' => '', 'label' => $this->_('Overview'), 'icon' => 'layout-dashboard'],
+			['url' => 'products/', 'label' => $this->_('Products'), 'icon' => 'shopping-bag', 'separator' => true],
+		], $options);
 	}
 
 	public function ___execute(): string
@@ -137,7 +136,9 @@ class ProcessCatalog extends ProcessReact
 }
 ```
 
-### 2. Rendering Interactive Data Viewports as Standalone Islands
+### 2. Render Standalone Interactive Viewports
+
+Render `MarkupReactTable` or `MarkupReactCards` inside any classic ProcessWire admin screen or frontend template ([04 — Viewports & Data Providers](./docs/04-viewports-and-data-providers.md)):
 
 ```php
 <?php
@@ -157,15 +158,11 @@ echo $react->renderTable('pages:template=basic-page, limit=20', [
 		'status' => $this->_('Status'),
 	],
 ]);
-
-echo $react->renderCards('pages:template=basic-page, limit=12', [
-	'title' => $this->_('Page Directory'),
-]);
 ```
 
-### 3. Rendering Vector Icons & Reading Formatted `InputfieldReactIcon` Values
+### 3. Render Vector Icons (`InputfieldReactIcon` & `IconManager`)
 
-Attach `InputfieldReactIcon` to any `FieldtypeText` field under `Setup > Fields > Details > Inputfield Type > React Icon`:
+Attach `InputfieldReactIcon` to any `FieldtypeText` field or invoke `IconManager` directly ([03 — Vector Icons](./docs/03-inputfields-forms-and-tiptap.md#centralized-vector-icon-engine-inputfieldreacticon--iconmanager)):
 
 ```php
 <?php
@@ -177,12 +174,10 @@ namespace ProcessWire;
 /** @var Page $page */
 $icon = $page->hero_icon; // ReactIconValue when $page->of(true)
 if (!$icon->isEmpty()) {
-	echo $icon; // Inline <svg> or styled <span class="rw-icon-badge">
+	echo $icon;
 }
 
-// Or render any icon directly via IconManager:
-$icons = React::instance()->icons();
-echo $icons->renderSvg('sparkles', [
+echo React::instance($this)->icons()->renderSvg('sparkles', [
 	'variant' => 'filled',
 	'size' => 24,
 	'color' => '#0d9488',
@@ -193,100 +188,63 @@ echo $icons->renderSvg('sparkles', [
 
 ## Configuration
 
-Configure global settings under `Modules > Configure > React`:
+Configure site-wide defaults under **Modules > Configure > React** ([`React::getModuleConfigInputfields()`](./React.module.php#L1771-L1882)):
 
 | Setting | Type | Default | Description |
 |---|---|---|---|
-| `defaultTheme` | `string` | `'system'` | Fallback theme mode (`'system'`, `'light'`, `'dark'`) when not overridden by `AdminThemeUikit` or user preferences. |
-| `enableKeyboardShortcuts` | `bool` | `true` | Enables `Cmd/Ctrl+K` command palette and keyboard navigation shortcuts across workspaces. |
-| `adminReturnLabel` | `string` | `'Panel'` | Localized label displayed on the top-left button returning from a Workspace to the classic ProcessWire Admin. |
-| `useReactMediaFields` | `bool` | `false` | Automatically upgrades standard `InputfieldImage` and `InputfieldFile` fields on Pages (including Repeaters) to `InputfieldReactImage` and `InputfieldReactFile`. |
-| `enableAdminVectorIcons` | `bool` | `true` | Injects a non-destructive `Vector Icon` selector below ProcessWire's native Icon field on `Setup > Templates` and `Setup > Fields` (plus `page_icon` support), rendering assigned icons via CSS `mask-image`. |
-| `adminIconPreviewSize` | `int` | `28` | Preview icon size in pixels (`16`–`64`) on `Edit Template` and `Edit Field` screens. |
+| `defaultTheme` | `string` | `'system'` | Fallback mode (`'system'`, `'light'`, `'dark'`). |
+| `themePreset` | `string` | `'native'` | Central preset across workspaces, panels, overlays, and controls (`native`, `neutral`, `slate`, `ocean`, `emerald`, `violet`, `rose`, `amber`, `custom`). |
+| `themeCustomTokens` | `string` | `''` | Sanitized Tailwind CSS v4 `:root` / `.dark` variables used when `themePreset` is `custom` (requires `--background`, `--foreground`, `--primary`, `--primary-foreground`). |
+| `enableKeyboardShortcuts` | `bool` | `true` | Enables `Cmd/Ctrl+K` command palette, `?` help dialog, form save shortcuts, and viewport hotkeys. |
+| `adminReturnLabel` | `string` | `'Panel'` | Localized top-left return label in Workspace mode (supports multi-language values). |
+| `useReactMediaFields` | `bool` | `false` | Upgrades standard `InputfieldImage` / `InputfieldFile` fields on Pages (including Repeaters) to `InputfieldReactImage` / `InputfieldReactFile`. |
+| `enableAdminVectorIcons` | `bool` | `true` | Injects the `Vector Icon` picker on Templates/Fields and generates `site/assets/vector-icons/VectorIcons.css`. |
+| `adminIconPreviewSize` | `int` | `28` | Preview size in pixels (`16`–`64`) on `Edit Template` and `Edit Field`. |
+
+> [!TIP]
+> Authenticated users can choose personal theme modes and color presets from the Workspace account menu (persisted to `site/assets/cache/React/workspaces/{user-id}.json`). See [02 — Theme Engine](./docs/02-workspaces-and-admin-shell.md#centralized-theme-engine-thememanager).
 
 ---
 
-## Hooks & Events
+## Hooks & Extension Seams
 
-All discovery registries fire only on demand when first accessed:
+All discovery hooks execute lazily on first registry access (`React::deferModuleRegistration`, `deferProviderRegistration`, `deferRelationRegistration`, `deferMediaHostRegistration` in [`React.module.php`](./React.module.php#L558,L942,L1234,L1314)):
 
-```php
-<?php
-
-declare(strict_types=1);
-
-namespace ProcessWire;
-
-use Totoglu\React\Media\MediaGateway;
-use Totoglu\React\Relation\RelationResourceRegistry;
-
-// Register a custom relational resource adapter lazily
-React::deferRelationRegistration(
-	$this,
-	function (RelationResourceRegistry $relations): void {
-		$relations->register(new CustomProductResourceAdapter());
-	}
-);
-
-// Register a custom entity media host adapter lazily
-React::deferMediaHostRegistration(
-	$this,
-	function (MediaGateway $mediaGateway): void {
-		$mediaGateway->registerHostAdapter(new CustomEntityMediaHostAdapter());
-	}
-);
-
-// Register custom editorial mini-blocks for InputfieldTiptap
-$wire->addHookAfter('InputfieldTiptap::registerMiniBlocks', function (HookEvent $event): void {
-	$blocks = is_array($event->return) ? $event->return : [];
-	$blocks['metric_card'] = [
-		'label' => 'Metric Card',
-		'icon' => 'chart-bar',
-		'editableBody' => false,
-		'fields' => [
-			'value' => ['type' => 'text', 'label' => 'Metric Value', 'required' => true],
-			'caption' => ['type' => 'text', 'label' => 'Caption'],
-		],
-	];
-	$event->return = $blocks;
-});
-```
-
-Hookable methods on `React`:
-- `___initWorkspaceRegistry(WorkspaceRegistry $registry): void`
-- `___registerWorkspaces(WorkspaceRegistry $registry): void`
-- `___getWorkspaceDefinitions(): array`
-- `___initWidgetRegistry(WorkspaceWidgetRegistry $registry): void`
-- `___registerWidgets(WorkspaceWidgetRegistry $registry): void`
-- `___getWidgetDefinitions(): array`
-- `___initProviderRegistry(ProviderRegistry $registry): void`
-- `___registerProviders(ProviderRegistry $registry): void`
-- `___initRelationRegistry(RelationResourceRegistry $registry): void`
-- `___registerRelationResources(RelationResourceRegistry $registry): void`
-- `___registerMediaHosts(MediaGateway $mediaGateway): void`
-- `___translations(): array`
+- **Hookable `React` Methods:** `___initWorkspaceRegistry()`, `___registerWorkspaces()`, `___getWorkspaceDefinitions()`, `___initWidgetRegistry()`, `___registerWidgets()`, `___getWidgetDefinitions()`, `___initProviderRegistry()`, `___registerProviders()`, `___initRelationRegistry()`, `___registerRelationResources()`, `___registerMediaHosts()`, `___translations()`.
+- **Editorial Mini-Block Hook:** `InputfieldTiptap::registerMiniBlocks` for adding custom flat `[data-tiptap-block]` types rendered via `./site/templates/tiptap/{name}.php`.
+- **Full Signature Dictionary:** See [API.md](./API.md) and chapters [`02`](./docs/02-workspaces-and-admin-shell.md)–[`04`](./docs/04-viewports-and-data-providers.md).
 
 ---
 
 ## Internal Endpoints & Multi-Language Packs
 
-`React` registers seven URL hooks and ships synchronized `en, tr, de, fr, es, ru` CSV translation packs (`languages/*.csv`) delivered via locale-scoped Inertia `OnceProp` keys:
+`React` registers seven URL hooks ([`React.module.php`](./React.module.php#L333-L339)) and delivers native ProcessWire `LanguageTranslator` catalogs via locale-scoped Inertia `OnceProp` keys (`languages/{en,tr,de,fr,es,ru}.csv`):
 
 | Endpoint | Purpose |
 |---|---|
-| `/_react/viewport` | HMAC-signed viewport query, sorting, filtering, view preferences, inline/quick editing, bulk actions, and exports |
-| `/_react/workspace-prefs` | Per-user Workspace Dashboard favorites, Bento widget spans (`1..12`), layout JSON import/export, and theme mode |
-| `/_react/presence` | Concurrent co-editor heartbeats and stale-form remote-save notifications |
-| `/_react/relation` | HMAC-signed relational search, hierarchical tree loading, hydration, and `O2M` link/unlink/quick-create mutations |
-| `/_react/media` | HMAC-signed multipart file/image upload, replacement, crop/rotate/flip transforms, and palette inspection |
-| `/_react/tiptap` | HMAC-signed rich-text page/file/anchor link lookup and `Pageimage` variation/crop/upload gateway |
-| `/_react/icons` | Read-only `GET` paginated vector icon catalog search (`action=query`) and microtask batch SVG hydration (`action=hydrate`) |
+| `/_react/viewport` | Signed table/cards/calendar queries, inline/quick edits, bulk actions, saved views, and exports |
+| `/_react/workspace-prefs` | Per-user Workspace favorites, Bento grid layout JSON import/export, `themeMode`, and `themePreset` |
+| `/_react/presence` | Concurrent co-editor heartbeats (`15s`) and remote-save staleness alerts |
+| `/_react/relation` | Signed relational search, tree loading, hydration, and `O2M` link/unlink/quick-create actions |
+| `/_react/media` | Signed multipart file/image uploads, replacement, crop/rotate/flip transforms, and palette inspection |
+| `/_react/tiptap` | Signed page/file/anchor lookup and `-is` `Pageimage` variation/upload gateway |
+| `/_react/icons` | Read-only `GET` paginated catalog search (`action=query`) and microtask hydration (`action=hydrate`) |
 
 ---
 
-## Security & Permissions
+## Security & Verification
 
-- **Workspace RBAC (`React::checkAccess`):** Guest users are always denied (`403`). Non-superusers gain access to `/processwire/workspace/` only when they hold permission for at least one registered workspace (`WorkspaceRegistry::canAccess()`).
-- **Tamper-Proof Signed Envelopes (`SignedTokenCodec`):** Viewport (`stateToken`), relation (`relationToken`), and media (`mediaToken`) tokens are signed with **HMAC-SHA256** derived from `$config->userAuthSalt`, bound to the authenticated `$user->id` (`uid`), and expire after 24 hours (`iat` TTL). Cross-endpoint token replay is cryptographically rejected via distinct domain prefixes.
-- **CSRF Enforcement:** Every state-changing request across `/_react/viewport`, `/_react/workspace-prefs`, `/_react/presence`, `/_react/relation`, and `/_react/media` validates ProcessWire's `$session->CSRF` token (`X-CSRF-TOKEN`, `X-XSRF-TOKEN`, or form token).
-- **Content, SVG & Media Sanitization:** `InputfieldTiptap` enforces `MarkupHTMLPurifier` with a deterministic DOM allowlist fallback stripping scripts, `svg`/`math` payloads, event handlers, and unsafe protocols; `MediaGateway` blocks active SVG uploads by default and enforces field-level `editable()` RBAC and `maxFiles` bounds; `IconManager` restricts inline SVG primitives to geometry tags (`path`, `rect`, `circle`, `ellipse`, `line`, `polyline`, `polygon`) and strict `#hex` / `var(--*)` color patterns.
+> [!IMPORTANT]
+> State-changing `/_react/*` requests enforce authenticated users (`AccessGuard`), `$session->CSRF` validation (`X-CSRF-TOKEN` / `X-XSRF-TOKEN` / payload token), `POST` method checks, demo-mode guards, `2 MiB` / depth-`64` JSON limits, and HMAC-SHA256 tokens bound to `$user->id` (`uid`), `$config->userAuthSalt`, domain `typ`, and 24-hour `iat` TTL (`SignedTokenCodec`). See [05 — Security Architecture](./docs/05-frontend-runtime-sdk-and-security.md#security-architecture).
+
+Run verification checks sequentially against the workspace root (details and CI gates in [01 — Architecture](./docs/01-architecture.md#commands--verification-inventory)):
+
+```bash
+composer --working-dir=site/modules/React validate --strict --no-check-publish --no-check-version
+./vendor/bin/phpstan analyse -c site/modules/React/phpstan.neon --no-progress --memory-limit=1G
+npm --prefix site/modules/React run build
+npm --prefix site/modules/React run test:unit
+php vendor/bin/wire test site/modules/React/tests --json
+php vendor/bin/wire test:e2e --module=React --json
+php vendor/bin/wire boost:validate --module=React --strict --json
+```
