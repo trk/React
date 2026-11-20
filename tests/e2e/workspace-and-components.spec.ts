@@ -102,15 +102,18 @@ test.describe('ProcessReactWorkspace Launcher, Cross-Panel SPA Navigation & Stan
 		await page.keyboard.press('Escape');
 		await expect(page.locator('[data-rw-shortcuts-dialog]')).toHaveCount(0);
 
-		// Verify responsive Mobile Drawer opens and closes at mobile viewport width
+		// Verify responsive Mobile Drawer opens and closes at mobile viewport width, while topbar admin return stays hidden (< lg)
 		await page.setViewportSize({ width: 390, height: 844 });
+		await expect(page.locator('[data-rw-admin-return]')).toBeHidden();
 		const mobileTrigger = page.locator('[data-rw-mobile-menu-trigger]');
 		if (await mobileTrigger.isVisible()) {
 			await mobileTrigger.click();
 			await expect(page.locator('[data-rw-mobile-drawer]')).toBeVisible();
+			await expect(page.locator('[data-rw-mobile-drawer] a[href]').first()).toBeVisible();
 			await page.keyboard.press('Escape');
 		}
 		await page.setViewportSize({ width: 1280, height: 720 });
+		await expect(page.locator('[data-rw-admin-return]')).toBeVisible();
 
 		// Verify Command Palette (⌘K) opens and closes cleanly
 		await page.locator('[data-rw-command-trigger]').click();
