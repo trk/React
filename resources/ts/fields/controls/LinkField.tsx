@@ -1475,7 +1475,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 										disabled={isDisabled}
 										value={searchQuery}
 										placeholder={props.placeholder || TYPE_PLACEHOLDERS[current.type] || 'Search...'}
-										className="uk-form-blank h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none disabled:cursor-not-allowed"
+										className="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none disabled:cursor-not-allowed"
 										onFocus={() => {
 											if (!isDisabled) {
 												setSearchOpen(true);
@@ -1583,7 +1583,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 										TYPE_PLACEHOLDERS[current.type] ||
 										'https://...'
 									}
-									className="uk-form-blank h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none disabled:cursor-not-allowed"
+									className="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none disabled:cursor-not-allowed"
 									onChange={(e) => {
 										const raw = e.target.value;
 										if (current.type === 'tel') {

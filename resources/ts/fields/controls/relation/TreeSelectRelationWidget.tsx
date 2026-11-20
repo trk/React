@@ -275,7 +275,7 @@ export function TreeSelectRelationWidget({
 								aria-label={t('link.searchPages', 'Search pages')}
 								placeholder={t('relation.searchPagesHierarchy', 'Search pages or browse hierarchy below...')}
 								data-rw-bare-input=""
-								className="uk-form-blank h-6 w-full border-0 bg-transparent p-0 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none"
+								className="h-6 w-full border-0 bg-transparent p-0 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none"
 							/>
 						</div>
 						<div className="max-h-72 overflow-y-auto p-1.5">

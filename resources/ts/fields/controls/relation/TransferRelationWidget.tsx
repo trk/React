@@ -85,7 +85,7 @@ export function TransferRelationWidget({
 						aria-label={t('relation.filterAvailableItems', 'Filter available items')}
 						placeholder={t('relation.filterAvailablePlaceholder', 'Filter available...')}
 						data-rw-bare-input=""
-						className="uk-form-blank h-6 w-full border-0 bg-transparent p-0 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none"
+						className="h-6 w-full border-0 bg-transparent p-0 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none"
 					/>
 				</div>
 				<div className="h-52 divide-y divide-border/50 overflow-y-auto">
@@ -136,7 +136,7 @@ export function TransferRelationWidget({
 						aria-label={t('relation.filterSelectedItems', 'Filter selected items')}
 						placeholder={t('relation.filterSelectedPlaceholder', 'Filter selected...')}
 						data-rw-bare-input=""
-						className="uk-form-blank h-6 w-full border-0 bg-transparent p-0 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none"
+						className="h-6 w-full border-0 bg-transparent p-0 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none"
 					/>
 				</div>
 				<div className="h-52 divide-y divide-border/50 overflow-y-auto">
