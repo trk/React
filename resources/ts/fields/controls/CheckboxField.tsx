@@ -1,16 +1,21 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Switch } from '../../ui';
 import { dispatchDomChange } from '../shared';
 import type { ReactInputfieldProps } from '../types';
 
 export function CheckboxField(props: ReactInputfieldProps): React.ReactElement {
 	const checkedVal = props.checkedValue || '1';
-	const [isChecked, setIsChecked] = useState<boolean>(() => Boolean(props.checked));
+	const incomingChecked = Boolean(props.checked);
+	const [prevPropChecked, setPrevPropChecked] = useState<boolean>(incomingChecked);
+	const [isChecked, setIsChecked] = useState<boolean>(incomingChecked);
 	const inputRef = useRef<HTMLInputElement | null>(null);
 
-	useEffect(() => {
-		setIsChecked(Boolean(props.checked));
-	}, [props.checked]);
+	if (incomingChecked !== prevPropChecked) {
+		setPrevPropChecked(incomingChecked);
+		if (incomingChecked !== isChecked) {
+			setIsChecked(incomingChecked);
+		}
+	}
 
 	const toggleChecked = (next: boolean) => {
 		if (props.readOnly || props.disabled) {

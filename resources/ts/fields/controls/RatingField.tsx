@@ -1,17 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { cn, DynamicIcon } from '../../lib/utils';
 import { Badge } from '../../ui';
 import type { ReactInputfieldProps } from '../types';
 
 export function RatingField(props: ReactInputfieldProps): React.ReactElement {
 	const maxStars = Math.max(3, Math.min(10, Number(props.maxStars || props.max || 5)));
-	const initialRating = Number(props.value) || 0;
-	const [rating, setRating] = useState<number>(initialRating);
+	const incomingRating = Number(props.value) || 0;
+	const [prevPropRating, setPrevPropRating] = useState<number>(incomingRating);
+	const [rating, setRating] = useState<number>(incomingRating);
 	const [hoverRating, setHoverRating] = useState<number>(0);
 
-	useEffect(() => {
-		setRating(Number(props.value) || 0);
-	}, [props.value]);
+	if (incomingRating !== prevPropRating) {
+		setPrevPropRating(incomingRating);
+		if (rating !== incomingRating) {
+			setRating(incomingRating);
+		}
+	}
 
 	const selectStar = (star: number) => {
 		if (props.readOnly || props.disabled) {

@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import {
 	badgeRadiusCssValue,
 	clampIconSize,
@@ -27,7 +26,7 @@ import {
 } from '../../icons/iconTypes';
 import { useTranslations } from '../../lib/i18n';
 import { cn, CORE_UI_ICON_NODES, DynamicIcon, subscribeIconCatalog } from '../../lib/utils';
-import { Badge, Button, Input } from '../../ui';
+import { Badge, Button, Input, PortalRoot } from '../../ui';
 import { dispatchDomChange } from '../shared';
 import type { IconFieldConfig, ReactInputfieldProps } from '../types';
 
@@ -193,7 +192,7 @@ export function IconFieldControl(rawProps: IconFieldStandaloneProps): React.Reac
 		allowStrokeWidth: unwrapped.allowStrokeWidth as boolean | undefined,
 		allowBackground: unwrapped.allowBackground as boolean | undefined,
 		previewSize: typeof unwrapped.previewSize === 'number' ? unwrapped.previewSize : undefined,
-		prefixMode: unwrapped.iconPrefixMode as 'none' | 'lucide' | 'fa' | undefined,
+		prefixMode: unwrapped.iconPrefixMode as 'none' | 'vector' | 'fa' | undefined,
 		endpoint: typeof unwrapped.endpoint === 'string' ? unwrapped.endpoint : undefined,
 		totalIcons: typeof unwrapped.totalIcons === 'number' ? unwrapped.totalIcons : undefined,
 	};
@@ -270,7 +269,7 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 		() => resolveIconCustomizationFlags(props.iconConfig),
 		[props.iconConfig]
 	);
-	const prefixMode: 'none' | 'lucide' | 'fa' = props.iconConfig?.prefixMode ?? 'none';
+	const prefixMode: 'none' | 'vector' | 'fa' = props.iconConfig?.prefixMode ?? 'none';
 	const previewSize = clampIconSize(props.iconConfig?.previewSize, 20);
 	const endpoint = props.iconConfig?.endpoint;
 	const configuredTotalIcons = props.iconConfig?.totalIcons ?? 0;
@@ -781,11 +780,11 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 				</div>
 			</div>
 
-			{isOpen && typeof document !== 'undefined'
-				? createPortal(
-						<div
-							ref={popoverRef}
-							id={dialogId}
+			{isOpen ? (
+				<PortalRoot anchor={rootRef.current} ssrFallback={false}>
+					<div
+						ref={popoverRef}
+						id={dialogId}
 							role="dialog"
 							aria-label={t('icon.pickerTitle', 'Icons')}
 							data-rw-icon-popover="true"
@@ -1327,10 +1326,9 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 									</div>
 								</div>
 							)}
-						</div>,
-						(rootRef.current?.closest('dialog') as HTMLElement | null) ?? document.body
-					)
-				: null}
+						</div>
+				</PortalRoot>
+			) : null}
 		</div>
 	);
 }

@@ -1,15 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Select } from '../../ui';
 import type { ReactInputfieldProps } from '../types';
 
 export function SelectField(props: ReactInputfieldProps): React.ReactElement {
-	const initialVal = Array.isArray(props.value) ? (props.value[0] ?? '') : String(props.value ?? '');
-	const [selectedValue, setSelectedValue] = useState<string>(initialVal);
+	const incomingVal = Array.isArray(props.value) ? (props.value[0] ?? '') : String(props.value ?? '');
+	const [prevPropVal, setPrevPropVal] = useState<string>(incomingVal);
+	const [selectedValue, setSelectedValue] = useState<string>(incomingVal);
 
-	useEffect(() => {
-		const next = Array.isArray(props.value) ? (props.value[0] ?? '') : String(props.value ?? '');
-		setSelectedValue(next);
-	}, [props.value]);
+	if (incomingVal !== prevPropVal) {
+		setPrevPropVal(incomingVal);
+		if (incomingVal !== selectedValue) {
+			setSelectedValue(incomingVal);
+		}
+	}
 
 	const options = props.options ?? [];
 	const hasError = Boolean(props.error && props.error.trim() !== '');

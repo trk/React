@@ -7,7 +7,8 @@ import type { TiptapMiniBlockDefinition, TiptapTranslateFn } from '../core/tipta
 import { insertMiniBlock, MiniBlockIcon } from './MiniBlockExtensions';
 
 const runtime = getReactWorkspaceRuntime();
-const { React, ReactDOM } = runtime;
+const { React, Portal } = runtime;
+const { PortalRoot } = Portal;
 const { useEffect, useMemo, useRef, useState } = React;
 
 /* ============================================================================
@@ -207,9 +208,11 @@ export function ToolbarInsertBlockMenu({
 				<span className="hidden sm:inline text-[11px]">{t('tools.blockShort', 'Block')}</span>
 			</button>
 
-			{dropdownNode && typeof document !== 'undefined' && ReactDOM?.createPortal
-				? ReactDOM.createPortal(dropdownNode, document.body)
-				: dropdownNode}
+			{dropdownNode ? (
+				<PortalRoot anchor={triggerRef.current} ssrFallback={false}>
+					{dropdownNode}
+				</PortalRoot>
+			) : null}
 		</>
 	);
 }

@@ -1,7 +1,7 @@
 /**
  * Canonical FontAwesome 4/6 and shorthand icon alias map.
  *
- * Ensures `fa-*`, `icon-*`, `lucide--*`, and common shorthand identifiers resolve
+ * Ensures `fa-*`, `icon-*`, `rwv--*`, and common shorthand identifiers resolve
  * deterministically to exact canonical vector icon names.
  */
 export const ICON_ALIASES: Record<string, string> = {

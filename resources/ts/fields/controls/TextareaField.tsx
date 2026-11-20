@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { cn } from '../../lib/utils';
 import { Badge, Button, Textarea } from '../../ui';
 import {
@@ -30,7 +30,15 @@ function coerceTextareaScalar(raw: unknown): string {
 export function TextareaField(props: ReactInputfieldProps): React.ReactElement {
 	const hasLanguages = Array.isArray(props.languages) && props.languages.length > 1;
 	const defaultScalar = coerceTextareaScalar(props.value);
+	const languagesSignature = useMemo(() => {
+		if (!props.languages || props.languages.length === 0) {
+			return '';
+		}
+		return props.languages.map((lang) => `${lang.id}:${String(lang.value ?? '')}`).join('\u0000');
+	}, [props.languages]);
 
+	const [prevPropScalar, setPrevPropScalar] = useState<string>(defaultScalar);
+	const [prevLangSignature, setPrevLangSignature] = useState<string>(languagesSignature);
 	const [scalarValue, setScalarValue] = useState<string>(defaultScalar);
 	const [langValues, setLangValues] = useState<Record<number, string>>(() => {
 		const map: Record<number, string> = {};
@@ -41,6 +49,31 @@ export function TextareaField(props: ReactInputfieldProps): React.ReactElement {
 		}
 		return map;
 	});
+
+	if (defaultScalar !== prevPropScalar) {
+		setPrevPropScalar(defaultScalar);
+		if (scalarValue !== defaultScalar) {
+			setScalarValue(defaultScalar);
+		}
+	}
+	if (languagesSignature !== prevLangSignature) {
+		setPrevLangSignature(languagesSignature);
+		if (props.languages && props.languages.length > 0) {
+			const nextLangMap: Record<number, string> = { ...langValues };
+			let langChanged = false;
+			for (const lang of props.languages) {
+				const incoming = String(lang.value ?? '');
+				if (nextLangMap[lang.id] !== incoming) {
+					nextLangMap[lang.id] = incoming;
+					langChanged = true;
+				}
+			}
+			if (langChanged) {
+				setLangValues(nextLangMap);
+			}
+		}
+	}
+
 	const [internalLangId, setInternalLangId] = useState<number>(() =>
 		readInitialSyncedLanguageId(props.languages)
 	);
@@ -53,40 +86,6 @@ export function TextareaField(props: ReactInputfieldProps): React.ReactElement {
 		setInternalLangId(nextId);
 		props.onSelectLanguage?.(nextId);
 	};
-
-	const languagesRef = useRef(props.languages);
-	languagesRef.current = props.languages;
-
-	const languagesSignature = useMemo(() => {
-		if (!props.languages || props.languages.length === 0) {
-			return '';
-		}
-		return props.languages.map((lang) => `${lang.id}:${String(lang.value ?? '')}`).join('\u0000');
-	}, [props.languages]);
-
-	useEffect(() => {
-		const nextScalar = coerceTextareaScalar(props.value);
-		setScalarValue(nextScalar);
-	}, [props.value]);
-
-	useEffect(() => {
-		const currentLangs = languagesRef.current;
-		if (!currentLangs || currentLangs.length === 0) {
-			return;
-		}
-		setLangValues((prev) => {
-			let changed = false;
-			const next: Record<number, string> = { ...prev };
-			for (const lang of currentLangs) {
-				const incoming = String(lang.value ?? '');
-				if (next[lang.id] !== incoming) {
-					next[lang.id] = incoming;
-					changed = true;
-				}
-			}
-			return changed ? next : prev;
-		});
-	}, [languagesSignature]);
 
 	const activeValue = hasLanguages ? (langValues[activeLangId] ?? '') : scalarValue;
 	const currentLength = Array.from(activeValue).length;

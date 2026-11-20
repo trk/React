@@ -1,27 +1,25 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { cn } from '../../lib/utils';
 import { flattenOptions } from '../shared';
 import type { ReactInputfieldProps } from '../types';
 
 export function CheckboxesField(props: ReactInputfieldProps): React.ReactElement {
 	const options = useMemo(() => flattenOptions(props.options), [props.options]);
-	const [selectedValues, setSelectedValues] = useState<string[]>(() =>
-		Array.isArray(props.value)
-			? props.value.map(String)
-			: props.value
-				? [String(props.value)]
-				: []
-	);
+	const incomingValues = Array.isArray(props.value)
+		? props.value.map(String)
+		: props.value
+			? [String(props.value)]
+			: [];
+	const incomingSig = incomingValues.join('\u0000');
+	const [prevIncomingSig, setPrevIncomingSig] = useState<string>(incomingSig);
+	const [selectedValues, setSelectedValues] = useState<string[]>(incomingValues);
 
-	useEffect(() => {
-		setSelectedValues(
-			Array.isArray(props.value)
-				? props.value.map(String)
-				: props.value
-					? [String(props.value)]
-					: []
-		);
-	}, [props.value]);
+	if (incomingSig !== prevIncomingSig) {
+		setPrevIncomingSig(incomingSig);
+		if (selectedValues.join('\u0000') !== incomingSig) {
+			setSelectedValues(incomingValues);
+		}
+	}
 
 	const selectedSet = useMemo(() => new Set(selectedValues), [selectedValues]);
 	const cols = props.optionColumns ?? 0;

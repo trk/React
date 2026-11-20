@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { fetchGatewayJson } from '../../hooks';
 import { useTranslations } from '../../lib/i18n';
-import { cn, DynamicIcon, sanitizeHref, sanitizeSameOriginUrl } from '../../lib/utils';
-import { Badge, Input, Select } from '../../ui';
+import { cn, DynamicIcon, sanitizeHref } from '../../lib/utils';
+import { Badge, Input, PortalRoot, Select } from '../../ui';
 import {
 	extractClipboardFiles,
 	formatFocusPoint,
@@ -13,13 +13,25 @@ import {
 	type StudioMediaItem,
 } from '../mediaUtils';
 import {
+	applyLinkSettingPatches,
+	buildLinkInlineSettingFields,
 	dispatchDomChange,
 	FieldStatusRow,
+	formatInlineSettingSummaryChip,
 	formatMediaBytes,
+	getLocalizedLinkText,
+	getNeutralSettingValue,
+	inlineSettingValuesEqual,
+	isCompactPopoverField,
 	isLinkFieldValueEmpty,
-	isLinkValueObject,
+	LanguageTabsBar,
+	normalizeLinkConfigFlags,
+	normalizeLinkFieldValue,
 	readInitialSyncedLanguageId,
+	sanitizePhoneInput,
+	setLocalizedLinkText,
 } from '../shared';
+export { normalizeLinkFieldValue, sanitizePhoneInput };
 import type {
 	InputfieldLanguageItem,
 	InputfieldMediaItem,
@@ -97,162 +109,11 @@ const DEFAULT_MEDIA_PROFILES: Record<string, Omit<LinkMediaProfile, 'mediaToken'
 	},
 };
 
-export function sanitizePhoneInput(raw: string, stripDanglingPlus = false): string {
-	const stripped = raw.replace(/^tel:/i, '').trim();
-	if (stripped === '') {
-		return '';
-	}
-	const hasLeadingPlus = stripped.startsWith('+');
-	const digitsOnly = stripped.replace(/[^0-9]+/g, '');
-	if (digitsOnly === '') {
-		return !stripDanglingPlus && hasLeadingPlus ? '+' : '';
-	}
-	return (hasLeadingPlus ? '+' : '') + digitsOnly;
-}
-
-function createEmptyLinkValue(defaultType = 'url'): LinkFieldValue {
-	return {
-		type: defaultType === 'anchor' ? 'url' : defaultType,
-		pageId: 0,
-		entryType: '',
-		entryId: '',
-		url: '',
-		file: '',
-		query: '',
-		anchor: '',
-		label: '',
-		title: '',
-		target: '_self',
-		rel: '',
-	};
-}
-
-export function normalizeLinkFieldValue(raw: unknown, defaultType = 'url'): LinkFieldValue {
-	const safeDefault = defaultType === 'anchor' ? 'url' : defaultType;
-	const empty = createEmptyLinkValue(safeDefault);
-	if (raw === null || raw === undefined) {
-		return empty;
-	}
-	if (typeof raw === 'string') {
-		const trimmed = raw.trim();
-		if (trimmed === '') {
-			return empty;
-		}
-		if (trimmed.startsWith('{')) {
-			try {
-				const decoded = JSON.parse(trimmed);
-				if (isLinkValueObject(decoded)) {
-					return normalizeLinkFieldValue(decoded, safeDefault);
-				}
-			} catch {
-				// Fall through to plain string parsing
-			}
-		}
-		if (/^mailto:/i.test(trimmed)) {
-			return { ...empty, type: 'email', url: trimmed.slice(7).trim() };
-		}
-		if (/^tel:/i.test(trimmed)) {
-			return { ...empty, type: 'tel', url: sanitizePhoneInput(trimmed.slice(4), true) };
-		}
-		return { ...empty, type: 'url', url: trimmed };
-	}
-	if (typeof raw !== 'object' || Array.isArray(raw)) {
-		return empty;
-	}
-	const rec = raw as Record<string, unknown>;
-	let rawType =
-		typeof rec.type === 'string' && rec.type.trim() !== ''
-			? rec.type.trim().toLowerCase()
-			: safeDefault;
-	let urlVal =
-		rec.url !== undefined && rec.url !== null
-			? String(rec.url).trim()
-			: rec.href !== undefined && rec.href !== null
-				? String(rec.href).trim()
-				: '';
-	let anchorVal =
-		rec.anchor !== undefined && rec.anchor !== null
-			? String(rec.anchor).trim().replace(/^#+/, '')
-			: '';
-
-	if (rawType === 'anchor') {
-		rawType = 'url';
-		if (urlVal === '' && anchorVal !== '') {
-			urlVal = `#${anchorVal}`;
-			anchorVal = '';
-		}
-	} else if (rawType === 'tel') {
-		urlVal = sanitizePhoneInput(urlVal, true);
-	} else if (rawType === 'email') {
-		urlVal = urlVal.replace(/^mailto:/i, '').trim();
-	}
-
-	const rawTarget = typeof rec.target === 'string' ? rec.target.trim() : '_self';
-	const out: LinkFieldValue = {
-		type: rawType,
-		pageId: Number.isFinite(Number(rec.pageId ?? rec.page_id))
-			? Math.max(0, Math.trunc(Number(rec.pageId ?? rec.page_id)))
-			: 0,
-		entryType:
-			typeof (rec.entryType ?? rec.entry_type) === 'string'
-				? String(rec.entryType ?? rec.entry_type).trim()
-				: '',
-		entryId:
-			rec.entryId !== undefined && rec.entryId !== null
-				? String(rec.entryId).trim()
-				: rec.entry_id !== undefined && rec.entry_id !== null
-					? String(rec.entry_id).trim()
-					: '',
-		url: urlVal,
-		file: rec.file !== undefined && rec.file !== null ? String(rec.file).trim() : '',
-		query:
-			rec.query !== undefined && rec.query !== null
-				? String(rec.query).trim().replace(/^\?+/, '')
-				: '',
-		anchor: anchorVal,
-		label: rec.label !== undefined && rec.label !== null ? String(rec.label) : '',
-		title: rec.title !== undefined && rec.title !== null ? String(rec.title) : '',
-		target: rawTarget === '_blank' ? '_blank' : '_self',
-		rel: rec.rel !== undefined && rec.rel !== null ? String(rec.rel) : '',
-	};
-	if (typeof rec.alt === 'string' && rec.alt.trim() !== '') {
-		out.alt = rec.alt.trim();
-	}
-	if (rec.descriptions && typeof rec.descriptions === 'object' && !Array.isArray(rec.descriptions)) {
-		const descs: Record<string, string> = {};
-		for (const [k, v] of Object.entries(rec.descriptions as Record<string, unknown>)) {
-			if (typeof v === 'string' && v.trim() !== '') {
-				descs[k] = v;
-			}
-		}
-		if (Object.keys(descs).length > 0) {
-			out.descriptions = descs;
-			if (!out.alt && descs.default) {
-				out.alt = descs.default.trim();
-			}
-		}
-	}
-	if (typeof rec.focus === 'string' && rec.focus.trim() !== '') {
-		out.focus = rec.focus.trim();
-	} else if (rec.focus && typeof rec.focus === 'object' && !Array.isArray(rec.focus)) {
-		const fObj = rec.focus as Record<string, unknown>;
-		const top = Number(fObj.top);
-		const left = Number(fObj.left);
-		const zoom = Number(fObj.zoom ?? 0);
-		if (Number.isFinite(top) && Number.isFinite(left) && (top !== 50 || left !== 50 || zoom !== 0)) {
-			out.focus = formatFocusPoint({ top, left, zoom: Number.isFinite(zoom) ? zoom : 0 });
-		}
-	}
-	if (typeof rec.tags === 'string' && rec.tags.trim() !== '') {
-		out.tags = rec.tags.trim();
-	}
-	return out;
-}
-
 interface FloatingPosition {
 	top: number;
 	left: number;
 	width: number;
+	maxHeight: number;
 	placement: 'bottom' | 'top';
 }
 
@@ -263,7 +124,7 @@ function computeFloatingPosition(
 	alignRight = false
 ): FloatingPosition {
 	if (!anchorEl || typeof window === 'undefined') {
-		return { top: 0, left: 0, width: panelWidth, placement: 'bottom' };
+		return { top: 0, left: 0, width: panelWidth, maxHeight: 440, placement: 'bottom' };
 	}
 	const rect = anchorEl.getBoundingClientRect();
 	const gap = 6;
@@ -273,6 +134,8 @@ function computeFloatingPosition(
 	const spaceBelow = vh - rect.bottom - margin;
 	const spaceAbove = rect.top - margin;
 	const flipTop = spaceBelow < estimatedHeight + gap && spaceAbove > spaceBelow;
+	const availableSpace = Math.max(200, (flipTop ? spaceAbove : spaceBelow) - gap);
+	const maxHeight = Math.min(540, vh - margin * 2, availableSpace);
 	const width = Math.min(panelWidth, Math.max(220, vw - margin * 2));
 	const rawLeft = alignRight ? rect.right - width : rect.left;
 	const left = Math.max(margin, Math.min(rawLeft, vw - width - margin));
@@ -281,6 +144,7 @@ function computeFloatingPosition(
 		top,
 		left,
 		width,
+		maxHeight,
 		placement: flipTop ? 'top' : 'bottom',
 	};
 }
@@ -335,6 +199,8 @@ export function LinkFieldControl(rawProps: LinkFieldStandaloneProps): React.Reac
 			controlType="link"
 			id={inputId}
 			name={inputName}
+			label={typeof unwrapped.label === 'string' ? unwrapped.label : undefined}
+			inlineOptionsInHeader={Boolean(unwrapped.inlineOptionsInHeader)}
 			scopePrefix={typeof unwrapped.scopePrefix === 'string' ? unwrapped.scopePrefix : undefined}
 			value={unwrapped.value}
 			placeholder={unwrapped.placeholder}
@@ -345,6 +211,8 @@ export function LinkFieldControl(rawProps: LinkFieldStandaloneProps): React.Reac
 			errorId={typeof unwrapped.errorId === 'string' ? unwrapped.errorId : undefined}
 			describedBy={typeof unwrapped.describedBy === 'string' ? unwrapped.describedBy : undefined}
 			languages={Array.isArray(unwrapped.languages) ? unwrapped.languages : undefined}
+			activeLangId={typeof unwrapped.activeLangId === 'number' ? unwrapped.activeLangId : undefined}
+			onSelectLanguage={typeof unwrapped.onSelectLanguage === 'function' ? unwrapped.onSelectLanguage : undefined}
 			linkConfig={unwrapped.linkConfig}
 			onValueChange={(fieldName, nextVal) => {
 				unwrapped.onValueChange?.(fieldName, nextVal);
@@ -411,13 +279,11 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 		const mappedDefault = rawDefault === 'anchor' ? 'url' : rawDefault;
 		const defaultType = types.includes(mappedDefault) ? mappedDefault : fallbackType;
 
+		const featureFlags = normalizeLinkConfigFlags(raw);
 		return {
 			types,
 			defaultType,
-			enableLabel: raw?.enableLabel !== false,
-			enableAnchor: raw?.enableAnchor !== false,
-			enableQuery: raw?.enableQuery !== false,
-			enableAttributes: raw?.enableAttributes !== false,
+			...featureFlags,
 			relationEndpoint: raw?.relationEndpoint || '/_react/relation',
 			relationTokens: raw?.relationTokens || {},
 			selectedTarget: raw?.selectedTarget ?? null,
@@ -457,7 +323,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 			}
 			setCurrent((prev) => {
 				const next: LinkFieldValue = { ...prev, ...patch };
-				if (next.target === '_blank' && !next.rel.trim()) {
+				if (next.target === '_blank' && cfg.enableRel && !next.rel.trim()) {
 					next.rel = 'noopener noreferrer';
 				}
 				props.onValueChange?.(props.name, next);
@@ -467,7 +333,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 				return next;
 			});
 		},
-		[isDisabled, props]
+		[cfg.enableRel, isDisabled, props]
 	);
 
 	// Cache hydrated relation items keyed by `${type}:${id}`
@@ -522,32 +388,25 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 
 	// Hydrate selected relation item if missing from cache
 	useEffect(() => {
-		if (!isRelationType || !activeRelationId || selectedItem || typeof window === 'undefined') {
-			return;
-		}
-		const safeRelEndpoint = sanitizeSameOriginUrl(cfg.relationEndpoint);
-		if (!safeRelEndpoint) {
+		if (!isRelationType || !activeRelationId || selectedItem || typeof window === 'undefined' || !cfg.relationEndpoint) {
 			return;
 		}
 		const controller = new AbortController();
-		void fetch(safeRelEndpoint, {
+		void fetchGatewayJson<{ items?: RelationItemData[] }>(cfg.relationEndpoint, {
 			method: 'POST',
-			headers: {
-				Accept: 'application/json',
-				'Content-Type': 'application/json',
-				'X-Requested-With': 'XMLHttpRequest',
-			},
-			credentials: 'same-origin',
-			body: JSON.stringify({
+			payload: {
 				relationToken: activeRelationToken,
 				action: 'hydrate',
 				values: [activeRelationId],
-			}),
+			},
 			signal: controller.signal,
 		})
-			.then((r) => r.json())
-			.then((json) => {
-				if (Array.isArray(json?.items) && json.items[0]) {
+			.then((res) => {
+				if (!res.ok || !res.data) {
+					return;
+				}
+				const json = res.data;
+				if (Array.isArray(json.items) && json.items[0]) {
 					const item = json.items[0] as RelationItemData;
 					setTargetCache((prev) => ({
 						...prev,
@@ -673,6 +532,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 		top: 0,
 		left: 0,
 		width: 340,
+		maxHeight: 280,
 		placement: 'bottom',
 	});
 
@@ -686,37 +546,27 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 	}, []);
 
 	useEffect(() => {
-		if (!searchOpen || !isRelationType) {
+		if (!searchOpen || !isRelationType || !cfg.relationEndpoint) {
 			return;
 		}
-		const safeRelEndpoint = sanitizeSameOriginUrl(cfg.relationEndpoint);
-		if (!safeRelEndpoint) {
-			return;
-		}
+		const relEndpoint = cfg.relationEndpoint;
 		refreshSearchPos();
 		const controller = new AbortController();
 		const timer = window.setTimeout(() => {
 			setSearchLoading(true);
-			void fetch(safeRelEndpoint, {
+			void fetchGatewayJson<{ items?: RelationItemData[] }>(relEndpoint, {
 				method: 'POST',
-				headers: {
-					Accept: 'application/json',
-					'Content-Type': 'application/json',
-					'X-Requested-With': 'XMLHttpRequest',
-				},
-				credentials: 'same-origin',
-				body: JSON.stringify({
+				payload: {
 					relationToken: activeRelationToken,
 					action: 'search',
 					q: searchQuery,
 					page: 1,
 					limit: 25,
-				}),
+				},
 				signal: controller.signal,
 			})
-				.then((r) => r.json())
-				.then((json) => {
-					const items = Array.isArray(json?.items) ? (json.items as RelationItemData[]) : [];
+				.then((res) => {
+					const items = res.ok && Array.isArray(res.data?.items) ? (res.data.items as RelationItemData[]) : [];
 					setSearchResults(items);
 					setHighlightedIdx(0);
 				})
@@ -789,37 +639,79 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 		[current.type, commit]
 	);
 
-	// Secondary options disclosure popover (`target`, `anchor`, `query`, `title`, `rel`)
-	const hasSecondaryOptions = cfg.enableAnchor || cfg.enableQuery || cfg.enableAttributes;
+	// Unified inline settings state for standalone InputfieldReactLink outside SchemaForm
+	const inlineOptionsInHeader = Boolean(props.inlineOptionsInHeader);
+	const optionsMeta = useMemo(
+		() => buildLinkInlineSettingFields(cfg, current, isDisabled),
+		[cfg, current, isDisabled]
+	);
+	const hasSecondaryOptions = !inlineOptionsInHeader && optionsMeta.fields.length > 0;
 	const [optionsOpen, setOptionsOpen] = useState(false);
 	const optionsBtnRef = useRef<HTMLButtonElement | null>(null);
 	const optionsPanelRef = useRef<HTMLDivElement | null>(null);
 	const optionsPanelId = useId();
+	const optionsHeadingId = useId();
+	const optionsCompactCount = useMemo(
+		() => optionsMeta.fields.filter((bf) => isCompactPopoverField(bf)).length,
+		[optionsMeta.fields]
+	);
+	const useTwoColOptions = optionsMeta.fields.length >= 4 && optionsCompactCount >= 2;
 	const [optionsPos, setOptionsPos] = useState<FloatingPosition>({
 		top: 0,
 		left: 0,
-		width: 320,
+		width: 336,
+		maxHeight: 440,
 		placement: 'bottom',
 	});
 
 	const refreshOptionsPos = useCallback(() => {
-		setOptionsPos(computeFloatingPosition(optionsBtnRef.current, 320, 310, true));
-	}, []);
+		const rowUnits = useTwoColOptions
+			? optionsMeta.fields.reduce((acc, bf) => acc + (isCompactPopoverField(bf) ? 0.5 : 1), 0)
+			: optionsMeta.fields.length;
+		const chromeHeight = optionsMeta.isTargetEmpty ? 104 : 68;
+		const estHeight = Math.min(540, Math.ceil(rowUnits) * 68 + chromeHeight);
+		const nextPos = computeFloatingPosition(optionsBtnRef.current, useTwoColOptions ? 448 : 336, estHeight, true);
+		setOptionsPos((prev) =>
+			prev.top === nextPos.top &&
+			prev.left === nextPos.left &&
+			prev.width === nextPos.width &&
+			prev.maxHeight === nextPos.maxHeight &&
+			prev.placement === nextPos.placement
+				? prev
+				: nextPos
+		);
+	}, [optionsMeta.fields, optionsMeta.isTargetEmpty, useTwoColOptions]);
+
+	const refreshOptionsPosRef = useRef(refreshOptionsPos);
+	refreshOptionsPosRef.current = refreshOptionsPos;
 
 	useEffect(() => {
-		if (!optionsOpen) {
+		if (!optionsOpen || !hasSecondaryOptions) {
 			return;
 		}
-		refreshOptionsPos();
+		refreshOptionsPosRef.current();
+		const focusRaf = window.requestAnimationFrame(() => {
+			const panel = optionsPanelRef.current;
+			if (!panel || panel.contains(document.activeElement)) {
+				return;
+			}
+			const firstControl = panel.querySelector<HTMLElement>(
+				'[data-rw-inline-settings-body] input:not([disabled]):not([type="hidden"]), [data-rw-inline-settings-body] select:not([disabled]), [data-rw-inline-settings-body] textarea:not([disabled]), [data-rw-inline-settings-body] button:not([disabled])'
+			);
+			(firstControl ?? panel).focus({ preventScroll: true });
+		});
 		const handlePointerDown = (e: MouseEvent) => {
 			const target = e.target as Node | null;
-			if (
-				target &&
-				!optionsBtnRef.current?.contains(target) &&
-				!optionsPanelRef.current?.contains(target)
-			) {
-				setOptionsOpen(false);
+			if (!target) {
+				return;
 			}
+			if (optionsBtnRef.current?.contains(target) || optionsPanelRef.current?.contains(target)) {
+				return;
+			}
+			if (target instanceof Element && target.closest('[data-rw-portal-overlay]')) {
+				return;
+			}
+			setOptionsOpen(false);
 		};
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (e.key === 'Escape') {
@@ -828,48 +720,54 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 				optionsBtnRef.current?.focus();
 			}
 		};
-		const handleReposition = () => refreshOptionsPos();
+		const handleReposition = (e: Event) => {
+			if (e.type === 'scroll' && e.target instanceof Node && optionsPanelRef.current?.contains(e.target)) {
+				return;
+			}
+			refreshOptionsPosRef.current();
+		};
 		document.addEventListener('mousedown', handlePointerDown);
 		document.addEventListener('keydown', handleKeyDown);
 		window.addEventListener('resize', handleReposition);
 		window.addEventListener('scroll', handleReposition, true);
 		return () => {
+			window.cancelAnimationFrame(focusRaf);
 			document.removeEventListener('mousedown', handlePointerDown);
 			document.removeEventListener('keydown', handleKeyDown);
 			window.removeEventListener('resize', handleReposition);
 			window.removeEventListener('scroll', handleReposition, true);
 		};
-	}, [optionsOpen, refreshOptionsPos]);
+	}, [optionsOpen, hasSecondaryOptions]);
 
-	const isHashOnlyUrl = current.type === 'url' && current.url.trim().startsWith('#');
-	const canHaveAnchorFragment =
-		cfg.enableAnchor &&
-		current.type !== 'tel' &&
-		current.type !== 'email' &&
-		!isHashOnlyUrl;
-	const canHaveQueryParams =
-		cfg.enableQuery &&
-		(current.type === 'page' || current.type === 'entry' || (current.type === 'url' && !isHashOnlyUrl));
+	useEffect(() => {
+		if (optionsOpen && hasSecondaryOptions) {
+			refreshOptionsPosRef.current();
+		}
+	}, [optionsOpen, hasSecondaryOptions, optionsMeta.fields.length, optionsMeta.isTargetEmpty, useTwoColOptions]);
 
-	const selectedOptionParams = useMemo(() => {
-		const params: Array<{ key: string; label: string }> = [];
-		if (current.target === '_blank') {
-			params.push({ key: 'target', label: t('link.newTabBadge', 'New tab') });
+	const allOptionChips = useMemo(() => {
+		const chips: string[] = [];
+		for (const bf of optionsMeta.fields) {
+			const chip = formatInlineSettingSummaryChip(bf, optionsMeta.values[bf.name]);
+			if (chip) {
+				chips.push(chip);
+			}
 		}
-		if (canHaveAnchorFragment && current.anchor) {
-			params.push({ key: 'anchor', label: `#${current.anchor}` });
+		return chips;
+	}, [optionsMeta]);
+
+	const optionSummaryChips = allOptionChips.slice(0, 3);
+	const optionOverflowCount = Math.max(0, allOptionChips.length - optionSummaryChips.length);
+
+	const modifiedOptionCount = useMemo(() => {
+		let count = 0;
+		for (const bf of optionsMeta.fields) {
+			if (!inlineSettingValuesEqual(optionsMeta.values[bf.name], getNeutralSettingValue(bf))) {
+				count += 1;
+			}
 		}
-		if (canHaveQueryParams && current.query) {
-			params.push({ key: 'query', label: `?${current.query}` });
-		}
-		if (cfg.enableAttributes && current.title) {
-			params.push({ key: 'title', label: `${t('link.titleBadge', 'title')}: ${current.title}` });
-		}
-		if (cfg.enableAttributes && current.rel && current.rel !== 'noopener noreferrer') {
-			params.push({ key: 'rel', label: `rel=${current.rel}` });
-		}
-		return params;
-	}, [current, canHaveAnchorFragment, canHaveQueryParams, cfg.enableAttributes, t]);
+		return count;
+	}, [optionsMeta]);
 
 	const effectiveError = inlineError || (props.error && props.error.trim() !== '' ? props.error : null);
 	const effectiveErrorId = props.errorId || errorId;
@@ -928,6 +826,30 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 			return '';
 		}
 		const cleanCopy: Record<string, unknown> = { ...current };
+		const cleanTextMap = (mapKey: 'labels' | 'ariaLabels') => {
+			const rawMap = cleanCopy[mapKey];
+			if (!rawMap || typeof rawMap !== 'object' || Array.isArray(rawMap)) {
+				delete cleanCopy[mapKey];
+				return;
+			}
+			const nextMap: Record<string, string> = {};
+			let hasNonDefault = false;
+			for (const [k, v] of Object.entries(rawMap as Record<string, unknown>)) {
+				if (typeof v === 'string' && v.trim() !== '') {
+					nextMap[k] = v.trim();
+					if (k !== 'default') {
+						hasNonDefault = true;
+					}
+				}
+			}
+			if (hasNonDefault) {
+				cleanCopy[mapKey] = nextMap;
+			} else {
+				delete cleanCopy[mapKey];
+			}
+		};
+		cleanTextMap('labels');
+		cleanTextMap('ariaLabels');
 		if (!cleanCopy.alt) delete cleanCopy.alt;
 		if (
 			!cleanCopy.descriptions ||
@@ -943,8 +865,16 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 	const [inspectorTab, setInspectorTab] = useState<'details' | 'focus' | 'studio' | null>(null);
 	const [, setMediaRuntimeTick] = useState(0);
 	const [activeLangId, setActiveLangId] = useState<number>(() =>
-		readInitialSyncedLanguageId(cfg.languages)
+		props.activeLangId && props.activeLangId > 0
+			? props.activeLangId
+			: readInitialSyncedLanguageId(cfg.languages)
 	);
+
+	useEffect(() => {
+		if (typeof props.activeLangId === 'number' && props.activeLangId > 0) {
+			setActiveLangId(props.activeLangId);
+		}
+	}, [props.activeLangId]);
 
 	const MediaInspectorSheet =
 		typeof window !== 'undefined'
@@ -1118,6 +1048,41 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 		return t('link.chooseFile', 'Choose file');
 	}, [activeMediaProfile, t]);
 
+	const showTextSubRow =
+		!optionsMeta.isTargetEmpty && (optionsMeta.flags.enableLabel || optionsMeta.flags.enableAriaLabel);
+	const hasMultiLang = Array.isArray(cfg.languages) && cfg.languages.length > 1;
+	const activeLang = hasMultiLang
+		? (cfg.languages!.find((l) => l.id === activeLangId) ??
+			cfg.languages!.find((l) => l.isDefault) ??
+			cfg.languages![0])
+		: undefined;
+	const isActiveLangEditable = activeLang ? activeLang.editable !== false : true;
+	const langPresenceValues = useMemo(() => {
+		const out: Record<number, string> = {};
+		const langs = cfg.languages;
+		if (!Array.isArray(langs) || langs.length < 2) {
+			return out;
+		}
+		for (const lang of langs) {
+			const lblVal = optionsMeta.flags.enableLabel
+				? getLocalizedLinkText(current.label, current.labels, lang).trim()
+				: '';
+			const ariaVal = optionsMeta.flags.enableAriaLabel
+				? getLocalizedLinkText(current.ariaLabel, current.ariaLabels, lang).trim()
+				: '';
+			out[lang.id] = lblVal || ariaVal;
+		}
+		return out;
+	}, [
+		cfg.languages,
+		current.label,
+		current.labels,
+		current.ariaLabel,
+		current.ariaLabels,
+		optionsMeta.flags.enableLabel,
+		optionsMeta.flags.enableAriaLabel,
+	]);
+
 	return (
 		<div ref={rootRef} className="space-y-1.5" data-rw-control="link">
 			{props.name && !isDisabled ? (
@@ -1158,12 +1123,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 					</div>
 				) : null}
 
-				<div
-					className={cn(
-						'grid min-w-0 flex-1 grid-cols-1 gap-1.5',
-						cfg.enableLabel && 'sm:grid-cols-2'
-					)}
-				>
+				<div className="grid min-w-0 flex-1 grid-cols-1 gap-1.5">
 					{/* Primary target slot (`h-9` uniform height across all link & media modes) */}
 					<div ref={searchWrapRef} className="relative min-w-0">
 						{activeMediaProfile ? (
@@ -1573,7 +1533,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 							>
 								<DynamicIcon
 									name={
-										isHashOnlyUrl
+										current.type === 'url' && current.url.trim().startsWith('#')
 											? 'hash'
 											: TYPE_ICONS[current.type] || 'link-2'
 									}
@@ -1664,31 +1624,9 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 							</div>
 						)}
 					</div>
-
-					{/* Optional inline label input (`h-9` & `text-xs` matching target slot) */}
-					{cfg.enableLabel ? (
-						<div className="min-w-0">
-							<Input
-								id={`${props.id}_label`}
-								type="text"
-								aria-label={t('link.labelInput', 'Link label')}
-								disabled={isDisabled}
-								value={current.label}
-								className="h-9 text-xs"
-								placeholder={
-									selectedItem?.label
-										? `Label (${selectedItem.label})`
-										: activeMediaMeta?.name
-											? `Label (${activeMediaMeta.name})`
-											: t('link.labelPlaceholder', 'Link label (optional)')
-								}
-								onChange={(e) => commit({ label: e.target.value })}
-							/>
-						</div>
-					) : null}
 				</div>
 
-				{/* On-demand link options disclosure trigger */}
+				{/* Standalone inline settings trigger when rendered outside SchemaForm */}
 				{hasSecondaryOptions ? (
 					<button
 						ref={optionsBtnRef}
@@ -1696,51 +1634,137 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 						disabled={isDisabled}
 						aria-expanded={optionsOpen}
 						aria-controls={optionsPanelId}
-						aria-label={t('link.optionsButton', 'Link options')}
+						aria-haspopup="dialog"
+						aria-label={t(
+							'form.openFieldSettings',
+							{ field: props.label || props.name || 'Link' },
+							'{field} settings'
+						)}
+						data-rw-inline-settings-trigger=""
 						onClick={() => setOptionsOpen((prev) => !prev)}
 						className={cn(
-							'relative inline-flex size-9 shrink-0 items-center justify-center rounded-md border text-xs font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
-							optionsOpen || selectedOptionParams.length > 0
-								? 'border-primary/45 bg-primary/8 text-foreground'
-								: 'border-input bg-input-surface text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+							'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border px-2 text-xs font-medium transition-colors cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+							optionsOpen
+								? 'border-primary/60 bg-primary/12 text-foreground'
+								: 'border-input bg-input-surface text-foreground/85 hover:bg-muted hover:text-foreground'
 						)}
 					>
-						<DynamicIcon name="sliders-horizontal" className="size-3.5 shrink-0" />
-						{selectedOptionParams.length > 0 ? (
-							<span
-								aria-hidden="true"
-								className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-primary"
-							/>
+						{optionSummaryChips.length > 0 ? (
+							<span className="hidden max-w-44 truncate font-mono text-[10px] leading-none tracking-tight text-foreground sm:inline">
+								{optionSummaryChips.join(' · ')}
+							</span>
 						) : null}
+						{optionOverflowCount > 0 ? (
+							<span
+								data-rw-inline-settings-overflow=""
+								className="hidden rounded border border-border/70 bg-background/80 px-1 py-0.5 font-mono text-[10px] leading-none text-foreground/85 sm:inline"
+							>
+								+{optionOverflowCount}
+							</span>
+						) : null}
+						<DynamicIcon name="sliders-horizontal" className="size-3.5 shrink-0" />
 					</button>
 				) : null}
 			</div>
 
-			<FieldStatusRow error={effectiveError} errorId={effectiveErrorId} />
-
-			{selectedOptionParams.length > 0 ? (
+			{showTextSubRow ? (
 				<div
-					data-rw-field-slot="selected"
-					className="flex flex-wrap items-center gap-1"
+					data-rw-link-texts=""
+					className="mt-2 rounded-md border border-border/70 bg-muted/20 p-2.5 space-y-2"
 				>
-					{selectedOptionParams.map((param) => (
-						<Badge
-							key={param.key}
-							variant="secondary"
-							className="max-w-full truncate px-1.5 py-0 font-mono text-[10px] font-normal"
-						>
-							{param.label}
-						</Badge>
-					))}
+					{hasMultiLang ? (
+						<LanguageTabsBar
+							languages={cfg.languages!}
+							activeLangId={activeLang?.id ?? activeLangId}
+							values={langPresenceValues}
+							onSelect={(nextLangId) => {
+								setActiveLangId(nextLangId);
+								props.onSelectLanguage?.(nextLangId);
+							}}
+							ariaLabel={t('form.language', 'Language')}
+							className="pb-1.5"
+						/>
+					) : null}
+					<div
+						className={cn(
+							'grid gap-2.5',
+							optionsMeta.flags.enableLabel && optionsMeta.flags.enableAriaLabel
+								? 'grid-cols-1 sm:grid-cols-2'
+								: 'grid-cols-1'
+						)}
+					>
+						{optionsMeta.flags.enableLabel ? (
+							<div className="space-y-1 min-w-0">
+								<label
+									htmlFor={`${props.id}__label`}
+									className="block text-[11px] font-medium text-muted-foreground"
+								>
+									{t('link.labelInput', 'Link label')}
+								</label>
+								<Input
+									id={`${props.id}__label`}
+									data-rw-link-text-input="label"
+									type="text"
+									disabled={isDisabled || !isActiveLangEditable}
+									readOnly={Boolean(props.readOnly)}
+									className="h-8 text-xs"
+									placeholder={t('link.labelPlaceholder', 'Link label (optional)')}
+									value={getLocalizedLinkText(current.label, current.labels, activeLang)}
+									onChange={(e) => {
+										const next = setLocalizedLinkText(
+											current.label,
+											current.labels,
+											activeLang,
+											e.target.value,
+											hasMultiLang
+										);
+										commit({ label: next.value, labels: next.map });
+									}}
+								/>
+							</div>
+						) : null}
+						{optionsMeta.flags.enableAriaLabel ? (
+							<div className="space-y-1 min-w-0">
+								<label
+									htmlFor={`${props.id}__ariaLabel`}
+									className="block text-[11px] font-medium text-muted-foreground"
+								>
+									{t('link.ariaLabelAttribute', 'ARIA Label')}
+								</label>
+								<Input
+									id={`${props.id}__ariaLabel`}
+									data-rw-link-text-input="ariaLabel"
+									type="text"
+									disabled={isDisabled || !isActiveLangEditable}
+									readOnly={Boolean(props.readOnly)}
+									className="h-8 text-xs"
+									placeholder={t('link.ariaLabelPlaceholder', 'Screen reader label (optional)')}
+									value={getLocalizedLinkText(current.ariaLabel, current.ariaLabels, activeLang)}
+									onChange={(e) => {
+										const next = setLocalizedLinkText(
+											current.ariaLabel,
+											current.ariaLabels,
+											activeLang,
+											e.target.value,
+											hasMultiLang
+										);
+										commit({ ariaLabel: next.value, ariaLabels: next.map });
+									}}
+								/>
+							</div>
+						) : null}
+					</div>
 				</div>
 			) : null}
 
+			<FieldStatusRow error={effectiveError} errorId={effectiveErrorId} />
+
 			{/* Portaled relation search listbox */}
-			{searchOpen && isRelationType && typeof document !== 'undefined'
-				? createPortal(
-						<div
-							ref={searchPanelRef}
-							id={listboxId}
+			{searchOpen && isRelationType ? (
+				<PortalRoot anchor={searchWrapRef.current} ssrFallback={false}>
+					<div
+						ref={searchPanelRef}
+						id={listboxId}
 							role="listbox"
 							data-rw-portal-overlay=""
 							style={{
@@ -1802,157 +1826,197 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 									);
 								})
 							)}
-						</div>,
-						document.body
-					)
-				: null}
+							</div>
+				</PortalRoot>
+			) : null}
 
-			{/* Portaled viewport-aware link options disclosure panel */}
-			{optionsOpen && hasSecondaryOptions && typeof document !== 'undefined'
-				? createPortal(
-						<div
-							ref={optionsPanelRef}
+			{/* Standalone unified inline settings popover when outside SchemaForm */}
+			{optionsOpen && hasSecondaryOptions ? (
+				<PortalRoot anchor={optionsBtnRef.current} ssrFallback={false}>
+					<div
+						ref={optionsPanelRef}
 							id={optionsPanelId}
+							role="dialog"
+							aria-modal="false"
+							aria-labelledby={optionsHeadingId}
+							tabIndex={-1}
 							data-rw-portal-overlay=""
+							data-rw-inline-settings-popover=""
+							data-placement={optionsPos.placement}
+							data-layout={useTwoColOptions && optionsPos.width >= 400 ? 'two-col' : 'single-col'}
 							style={{
 								position: 'fixed',
 								top: optionsPos.top,
 								left: optionsPos.left,
 								width: optionsPos.width,
+								maxHeight: optionsPos.maxHeight,
 								transform: optionsPos.placement === 'top' ? 'translateY(-100%)' : undefined,
-								zIndex: 9999,
+								zIndex: 9998,
 							}}
-							className="space-y-3 rounded-xl border border-border bg-popover p-3.5 text-popover-foreground shadow-lg"
+							className="flex flex-col overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground focus:outline-none"
 						>
-							<div className="flex items-center justify-between border-b border-border pb-2">
-								<span className="text-xs font-semibold text-foreground">
-									{t('link.optionsHeading', 'Link Options')}
-								</span>
-								<button
-									type="button"
-									onClick={() => {
-										setOptionsOpen(false);
-										optionsBtnRef.current?.focus();
-									}}
-									aria-label={t('link.closeOptions', 'Close link options')}
-									className="inline-flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
-								>
-									<DynamicIcon name="x" className="size-3.5" />
-								</button>
+							<div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3.5 py-2.5">
+								<div className="flex min-w-0 items-center gap-1.5">
+									<DynamicIcon
+										name="sliders-horizontal"
+										className="size-3.5 shrink-0 text-muted-foreground"
+										aria-hidden="true"
+									/>
+									<span id={optionsHeadingId} className="truncate text-xs font-semibold text-foreground">
+										{t(
+											'form.fieldSettingsTitle',
+											{ field: props.label || props.name || 'Link' },
+											'{field} Settings'
+										)}
+									</span>
+									{modifiedOptionCount > 0 ? (
+										<span
+											data-rw-inline-settings-count=""
+											title={t(
+												'form.activeSettingsCount',
+												{ count: modifiedOptionCount },
+												'{count} customized'
+											)}
+											className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary/15 px-1.5 font-mono text-[10px] font-semibold tabular-nums text-primary"
+										>
+											{modifiedOptionCount}
+										</span>
+									) : null}
+								</div>
+								<div className="flex shrink-0 items-center gap-1">
+									{modifiedOptionCount > 0 && !isDisabled && !optionsMeta.isTargetEmpty ? (
+										<button
+											type="button"
+											onClick={() => {
+												const resetPatch: Record<string, unknown> = {};
+												for (const bf of optionsMeta.fields) {
+													resetPatch[bf.name] = getNeutralSettingValue(bf);
+												}
+												commit(applyLinkSettingPatches(current, resetPatch, cfg));
+											}}
+											data-rw-inline-settings-reset=""
+											className="inline-flex h-6 items-center gap-1 rounded px-1.5 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+										>
+											<DynamicIcon name="rotate-ccw" className="size-3 shrink-0" aria-hidden="true" />
+											<span>{t('common.reset', 'Reset')}</span>
+										</button>
+									) : null}
+									<button
+										type="button"
+										onClick={() => {
+											setOptionsOpen(false);
+											optionsBtnRef.current?.focus();
+										}}
+										aria-label={t('form.closeFieldSettings', 'Close field settings')}
+										className="inline-flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+									>
+										<DynamicIcon name="x" className="size-3.5" aria-hidden="true" />
+									</button>
+								</div>
 							</div>
 
-							{cfg.enableAttributes ? (
-								<div className="space-y-1">
-									<label
-										htmlFor={`${optionsPanelId}_target`}
-										className="block text-[11px] font-medium text-muted-foreground"
-									>
-										{t('link.openTarget', 'Open Target')}
-									</label>
-									<Select
-										id={`${optionsPanelId}_target`}
-										value={current.target}
-										disabled={isDisabled}
-										className="h-8 text-xs"
-										onChange={(e) => commit({ target: e.target.value })}
-									>
-										<option value="_self">{t('link.targetSelf', 'Same tab (_self)')}</option>
-										<option value="_blank">{t('link.targetBlank', 'New tab (_blank)')}</option>
-									</Select>
+							{optionsMeta.isTargetEmpty ? (
+								<div
+									role="status"
+									data-rw-inline-settings-locked=""
+									className="flex shrink-0 items-center gap-2 border-b border-border/80 bg-muted/45 px-3.5 py-2 text-[11px] leading-snug text-foreground/85"
+								>
+									<DynamicIcon name="lock" className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+									<span>
+										{t(
+											'form.inlineSettingsLocked',
+											{ field: props.label || props.name || 'Link' },
+											'Controls unlock once "{field}" has a value.'
+										)}
+									</span>
 								</div>
 							) : null}
 
-							{canHaveAnchorFragment ? (
-								<div className="space-y-1">
-									<label
-										htmlFor={`${optionsPanelId}_anchor`}
-										className="block text-[11px] font-medium text-muted-foreground"
-									>
-										{t('link.anchorFragment', 'Anchor Fragment (#)')}
-									</label>
-									<Input
-										id={`${optionsPanelId}_anchor`}
-										type="text"
-										autoCorrect="off"
-										autoCapitalize="none"
-										spellCheck={false}
-										disabled={isDisabled}
-										value={current.anchor}
-										className="h-8 text-xs"
-										placeholder="section-id"
-										onChange={(e) => commit({ anchor: e.target.value.replace(/^#+/, '') })}
-									/>
-								</div>
-							) : null}
-
-							{canHaveQueryParams ? (
-								<div className="space-y-1">
-									<label
-										htmlFor={`${optionsPanelId}_query`}
-										className="block text-[11px] font-medium text-muted-foreground"
-									>
-										{t('link.queryParams', 'Query Parameters (?)')}
-									</label>
-									<Input
-										id={`${optionsPanelId}_query`}
-										type="text"
-										autoCorrect="off"
-										autoCapitalize="none"
-										spellCheck={false}
-										disabled={isDisabled}
-										value={current.query}
-										className="h-8 text-xs"
-										placeholder="utm_source=hero&ref=cta"
-										onChange={(e) => commit({ query: e.target.value.replace(/^\?+/, '') })}
-									/>
-								</div>
-							) : null}
-
-							{cfg.enableAttributes ? (
-								<>
-									<div className="space-y-1">
-										<label
-											htmlFor={`${optionsPanelId}_title`}
-											className="block text-[11px] font-medium text-muted-foreground"
+							<div
+								data-rw-inline-settings-body=""
+								className={cn(
+									'flex-1 min-h-0 overflow-y-auto p-3.5',
+									useTwoColOptions && optionsPos.width >= 400
+										? 'grid grid-cols-2 gap-x-3 gap-y-2.5 items-start'
+										: 'space-y-2.5'
+								)}
+							>
+								{optionsMeta.fields.map((bf) => {
+									const shortKey = bf.name.replace('__rw_link_opt__', '');
+									const isTwoColActive = useTwoColOptions && optionsPos.width >= 400;
+									const isFullWidth = isTwoColActive && !isCompactPopoverField(bf);
+									const fieldInputId = `${optionsPanelId}_${shortKey}`;
+									const isTechField =
+										shortKey === 'rel' || shortKey === 'anchor' || shortKey === 'query';
+									const fieldVal = String(optionsMeta.values[bf.name] ?? '');
+									const fieldLocked = Boolean(isDisabled || bf.disabled);
+									const selectOpts = Array.isArray(bf.options) ? bf.options : [];
+									return (
+										<div
+											key={bf.name}
+											data-field-name={bf.name}
+											className={cn('space-y-1.5 min-w-0', isFullWidth && 'col-span-2')}
 										>
-											{t('link.titleAttribute', 'Title Attribute')}
-										</label>
-										<Input
-											id={`${optionsPanelId}_title`}
-											type="text"
-											disabled={isDisabled}
-											value={current.title}
-											className="h-8 text-xs"
-											placeholder={t('link.titlePlaceholder', 'Accessible link title (optional)')}
-											onChange={(e) => commit({ title: e.target.value })}
-										/>
-									</div>
-									<div className="space-y-1">
-										<label
-											htmlFor={`${optionsPanelId}_rel`}
-											className="block text-[11px] font-medium text-muted-foreground"
-										>
-											{t('link.relAttribute', 'Rel Attribute')}
-										</label>
-										<Input
-											id={`${optionsPanelId}_rel`}
-											type="text"
-											autoCorrect="off"
-											autoCapitalize="none"
-											spellCheck={false}
-											disabled={isDisabled}
-											value={current.rel}
-											className="h-8 text-xs"
-											placeholder={current.target === '_blank' ? 'noopener noreferrer' : 'nofollow sponsored'}
-											onChange={(e) => commit({ rel: e.target.value })}
-										/>
-									</div>
-								</>
-							) : null}
-						</div>,
-						document.body
-					)
-				: null}
+											<label
+												htmlFor={fieldInputId}
+												data-rw-field-slot="label"
+												className="block text-xs font-semibold tracking-tight text-foreground"
+											>
+												{bf.label}
+											</label>
+											<div data-rw-field-slot="input">
+												{bf.type === 'select' ? (
+													<Select
+														id={fieldInputId}
+														value={fieldVal || '_self'}
+														disabled={fieldLocked}
+														className="h-8 text-xs"
+														onChange={(e) =>
+															commit(
+																applyLinkSettingPatches(
+																	current,
+																	{ [bf.name]: e.target.value },
+																	cfg
+																)
+															)
+														}
+													>
+														{selectOpts.map((opt) => (
+															<option key={String(opt.value)} value={String(opt.value)}>
+																{opt.label}
+															</option>
+														))}
+													</Select>
+												) : (
+													<Input
+														id={fieldInputId}
+														type="text"
+														autoCorrect={isTechField ? 'off' : undefined}
+														autoCapitalize={isTechField ? 'none' : undefined}
+														spellCheck={isTechField ? false : undefined}
+														disabled={fieldLocked}
+														value={fieldVal}
+														className="h-8 text-xs"
+														placeholder={bf.placeholder}
+														onChange={(e) =>
+															commit(
+																applyLinkSettingPatches(
+																	current,
+																	{ [bf.name]: e.target.value },
+																	cfg
+																)
+															)
+														}
+													/>
+												)}
+											</div>
+										</div>
+									);
+								})}
+							</div>
+						</div>
+				</PortalRoot>
+			) : null}
 
 			{activeMediaProfile && studioMediaItem && inspectorTab !== null && MediaInspectorSheet ? (
 				<MediaInspectorSheet

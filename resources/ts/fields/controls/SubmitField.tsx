@@ -1,8 +1,7 @@
 import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { t } from '../../lib/i18n';
 import { cn, DynamicIcon, sanitizeHref } from '../../lib/utils';
-import { Button } from '../../ui';
+import { Button, PortalRoot } from '../../ui';
 import type { InputfieldSubmitDropdownItem, ReactInputfieldProps } from '../types';
 
 export function SubmitField(props: ReactInputfieldProps): React.ReactElement {
@@ -195,55 +194,54 @@ export function SubmitField(props: ReactInputfieldProps): React.ReactElement {
 				) : null}
 			</div>
 
-			{hasDropdown && menuOpen && typeof document !== 'undefined'
-				? createPortal(
-						<div
-							id={menuId}
-							ref={menuRef}
-							role="menu"
-							aria-orientation="vertical"
-							aria-label={t('form.moreSubmitActions', 'More submit actions')}
-							style={{ position: 'fixed', top: `${coords.top}px`, left: `${coords.left}px` }}
-							onKeyDown={(e) => {
-								const items = Array.from(
-									menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []
-								);
-								if (items.length === 0) {
-									return;
-								}
-								const cur = items.indexOf(document.activeElement as HTMLElement);
-								if (e.key === 'ArrowDown') {
-									e.preventDefault();
-									items[(cur + 1) % items.length]?.focus({ preventScroll: true });
-								} else if (e.key === 'ArrowUp') {
-									e.preventDefault();
-									items[(cur - 1 + items.length) % items.length]?.focus({ preventScroll: true });
-								} else if (e.key === 'Home') {
-									e.preventDefault();
-									items[0]?.focus({ preventScroll: true });
-								} else if (e.key === 'End') {
-									e.preventDefault();
-									items[items.length - 1]?.focus({ preventScroll: true });
-								}
-							}}
-							className="z-50 min-w-[200px] rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg"
-						>
-							{dropdownItems.map((item, idx) => (
-								<button
-									key={`${item.value}_${idx}`}
-									type="button"
-									role="menuitem"
-									onClick={() => triggerDropdownAction(item)}
-									className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-popover-foreground hover:bg-muted focus:bg-muted focus:outline-none cursor-pointer"
-								>
-									{item.icon ? <DynamicIcon name={item.icon} className="size-3.5 text-muted-foreground" aria-hidden="true" /> : null}
-									<span>{item.label}</span>
-								</button>
-							))}
-						</div>,
-						document.body
-					)
-				: null}
+			{hasDropdown && menuOpen ? (
+				<PortalRoot anchor={triggerRef.current} ssrFallback={false}>
+					<div
+						id={menuId}
+						ref={menuRef}
+						role="menu"
+						aria-orientation="vertical"
+						aria-label={t('form.moreSubmitActions', 'More submit actions')}
+						style={{ position: 'fixed', top: `${coords.top}px`, left: `${coords.left}px` }}
+						onKeyDown={(e) => {
+							const items = Array.from(
+								menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []
+							);
+							if (items.length === 0) {
+								return;
+							}
+							const cur = items.indexOf(document.activeElement as HTMLElement);
+							if (e.key === 'ArrowDown') {
+								e.preventDefault();
+								items[(cur + 1) % items.length]?.focus({ preventScroll: true });
+							} else if (e.key === 'ArrowUp') {
+								e.preventDefault();
+								items[(cur - 1 + items.length) % items.length]?.focus({ preventScroll: true });
+							} else if (e.key === 'Home') {
+								e.preventDefault();
+								items[0]?.focus({ preventScroll: true });
+							} else if (e.key === 'End') {
+								e.preventDefault();
+								items[items.length - 1]?.focus({ preventScroll: true });
+							}
+						}}
+						className="z-50 min-w-[200px] rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg"
+					>
+						{dropdownItems.map((item, idx) => (
+							<button
+								key={`${item.value}_${idx}`}
+								type="button"
+								role="menuitem"
+								onClick={() => triggerDropdownAction(item)}
+								className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-popover-foreground hover:bg-muted focus:bg-muted focus:outline-none cursor-pointer"
+							>
+								{item.icon ? <DynamicIcon name={item.icon} className="size-3.5 text-muted-foreground" aria-hidden="true" /> : null}
+								<span>{item.label}</span>
+							</button>
+						))}
+					</div>
+				</PortalRoot>
+			) : null}
 		</div>
 	);
 }

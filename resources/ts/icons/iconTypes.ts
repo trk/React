@@ -164,9 +164,9 @@ export function cleanIconIdentifier(raw?: string | null): string {
 	}
 	return String(raw)
 		.trim()
-		.replace(/lucreplaced-/gi, 'fa-')
+		.replace(/rwvreplaced-/gi, 'fa-')
 		.replace(
-			/^(?:fa-lucide--|lucide--|fa-solid\s+fa-|fa-regular\s+fa-|fa-brands\s+fa-|fas\s+fa-|far\s+fa-|fab\s+fa-|ti\s+ti-|ti-|fa-|icon-|uk-icon-)/i,
+			/^(?:fa-rwv--|rwv--|fa-solid\s+fa-|fa-regular\s+fa-|fa-brands\s+fa-|fas\s+fa-|far\s+fa-|fab\s+fa-|ti\s+ti-|ti-|fa-|icon-|uk-icon-)/i,
 			''
 		)
 		.replace(/([a-z0-9])([A-Z])/g, '$1-$2')
@@ -329,15 +329,15 @@ export function normalizeIconValue(raw: unknown): NormalizedIconValue {
 export function serializeIconValueForInput(
 	val: NormalizedIconValue,
 	flags: IconCustomizationFlags,
-	prefixMode: 'none' | 'lucide' | 'fa' = 'none'
+	prefixMode: 'none' | 'vector' | 'fa' = 'none'
 ): string {
 	if (!val.name) {
 		return '';
 	}
 	if (!flags.allowCustomization) {
 		const scalarName = val.variant === 'filled' ? `${val.name}-filled` : val.name;
-		if (prefixMode === 'lucide') {
-			return scalarName.startsWith('lucide--') ? scalarName : `lucide--${scalarName}`;
+		if (prefixMode === 'vector') {
+			return scalarName.startsWith('rwv--') ? scalarName : `rwv--${scalarName}`;
 		}
 		if (prefixMode === 'fa') {
 			return scalarName.startsWith('fa-') ? scalarName : `fa-${scalarName}`;

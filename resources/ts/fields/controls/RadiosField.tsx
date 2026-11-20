@@ -1,17 +1,22 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { cn } from '../../lib/utils';
 import { flattenOptions } from '../shared';
 import type { ReactInputfieldProps } from '../types';
 
 export function RadiosField(props: ReactInputfieldProps): React.ReactElement {
 	const options = useMemo(() => flattenOptions(props.options), [props.options]);
-	const initialVal = Array.isArray(props.value) ? (props.value[0] ?? '') : String(props.value ?? '');
-	const [selectedValue, setSelectedValue] = useState<string>(initialVal);
+	const incomingVal = Array.isArray(props.value) ? (props.value[0] ?? '') : String(props.value ?? '');
+	const [prevPropVal, setPrevPropVal] = useState<string>(incomingVal);
+	const [selectedValue, setSelectedValue] = useState<string>(incomingVal);
 
-	useEffect(() => {
-		const next = Array.isArray(props.value) ? (props.value[0] ?? '') : String(props.value ?? '');
-		setSelectedValue(next);
-	}, [props.value]);
+	if (incomingVal !== prevPropVal) {
+		setPrevPropVal(incomingVal);
+		if (incomingVal !== selectedValue) {
+			setSelectedValue(incomingVal);
+		}
+	}
+
+	const radioGroupName = props.inlinePortal ? `${props.name}__inline` : props.name;
 
 	const cols = props.optionColumns ?? 0;
 
@@ -52,7 +57,7 @@ export function RadiosField(props: ReactInputfieldProps): React.ReactElement {
 						<input
 							type="radio"
 							id={radioId}
-							name={props.name}
+							name={radioGroupName}
 							value={opt.value}
 							checked={isSelected}
 							disabled={props.disabled || opt.disabled}

@@ -1,28 +1,26 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { cn, DynamicIcon } from '../../lib/utils';
 import { dispatchDomChange, flattenOptions } from '../shared';
 import type { ReactInputfieldProps } from '../types';
 
 export function MultiSelectField(props: ReactInputfieldProps): React.ReactElement {
 	const options = useMemo(() => flattenOptions(props.options).filter((o) => o.value !== ''), [props.options]);
-	const [selectedValues, setSelectedValues] = useState<string[]>(() =>
-		Array.isArray(props.value)
-			? props.value.map(String).filter(Boolean)
-			: props.value
-				? [String(props.value)]
-				: []
-	);
+	const incomingValues = Array.isArray(props.value)
+		? props.value.map(String).filter(Boolean)
+		: props.value
+			? [String(props.value)]
+			: [];
+	const incomingSig = incomingValues.join('\u0000');
+	const [prevIncomingSig, setPrevIncomingSig] = useState<string>(incomingSig);
+	const [selectedValues, setSelectedValues] = useState<string[]>(incomingValues);
 	const selectRef = useRef<HTMLSelectElement | null>(null);
 
-	useEffect(() => {
-		setSelectedValues(
-			Array.isArray(props.value)
-				? props.value.map(String).filter(Boolean)
-				: props.value
-					? [String(props.value)]
-					: []
-		);
-	}, [props.value]);
+	if (incomingSig !== prevIncomingSig) {
+		setPrevIncomingSig(incomingSig);
+		if (selectedValues.join('\u0000') !== incomingSig) {
+			setSelectedValues(incomingValues);
+		}
+	}
 
 	const selectedSet = useMemo(() => new Set(selectedValues), [selectedValues]);
 	const arrayName = props.name.endsWith('[]') ? props.name : `${props.name}[]`;

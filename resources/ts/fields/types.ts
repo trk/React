@@ -205,9 +205,11 @@ export interface LinkFieldValue {
 	query: string;
 	anchor: string;
 	label: string;
-	title: string;
+	ariaLabel: string;
 	target: string;
 	rel: string;
+	labels?: Record<string, string>;
+	ariaLabels?: Record<string, string>;
 	alt?: string;
 	descriptions?: Record<string, string>;
 	focus?: string;
@@ -241,9 +243,11 @@ export interface LinkFieldConfig {
 	types: string[];
 	defaultType: string;
 	enableLabel: boolean;
+	enableAriaLabel: boolean;
+	enableTarget: boolean;
+	enableRel: boolean;
 	enableAnchor: boolean;
 	enableQuery: boolean;
-	enableAttributes: boolean;
 	relationEndpoint: string;
 	relationTokens: Record<string, string>;
 	selectedTarget?: RelationItemData | Record<string, unknown> | null;
@@ -263,7 +267,7 @@ export interface IconFieldConfig {
 	allowStrokeWidth?: boolean;
 	allowBackground?: boolean;
 	previewSize?: number;
-	prefixMode?: 'none' | 'lucide' | 'fa';
+	prefixMode?: 'none' | 'vector' | 'fa';
 	endpoint?: string;
 	totalIcons?: number;
 }
@@ -396,6 +400,8 @@ export interface ReactInputfieldProps {
 		preservedMiniBlocks?: string[];
 	};
 	linkConfig?: LinkFieldConfig;
+	inlineOptionsInHeader?: boolean;
+	inlinePortal?: boolean;
 	iconConfig?: IconFieldConfig;
 	formId?: string;
 	error?: string;
@@ -619,7 +625,7 @@ export interface SchemaFieldDefinition {
 	allowStrokeWidth?: boolean;
 	allowBackground?: boolean;
 	previewSize?: number;
-	iconPrefixMode?: 'none' | 'lucide' | 'fa';
+	iconPrefixMode?: 'none' | 'vector' | 'fa';
 	inlineSettings?: string[];
 	inlineHidden?: boolean;
 }

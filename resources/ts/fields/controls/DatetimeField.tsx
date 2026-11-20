@@ -5,17 +5,69 @@ import { Button, Input } from '../../ui';
 import { dispatchDomChange } from '../shared';
 import type { ReactInputfieldProps } from '../types';
 
+function resolveDatetimeParts(
+	rawVal: unknown,
+	dt: ReactInputfieldProps['datetime'],
+	htmlType: string
+): { text: string; date: string; time: string } {
+	if (rawVal === undefined) {
+		return {
+			text: dt?.formattedValue ?? '',
+			date: dt?.dateValue ?? '',
+			time: dt?.timeValue ?? '',
+		};
+	}
+	const rawStr = rawVal === null ? '' : String(rawVal);
+	const trimmed = rawStr.trim();
+	if (trimmed === '') {
+		return { text: '', date: '', time: '' };
+	}
+	if (htmlType === 'time') {
+		return { text: rawStr, date: dt?.dateValue ?? '', time: trimmed };
+	}
+	const dtMatch = trimmed.match(/^(\d{4}-\d{2}-\d{2})[T\s](\d{2}:\d{2}(?::\d{2})?)/);
+	if (dtMatch) {
+		return { text: rawStr, date: dtMatch[1] ?? '', time: dtMatch[2] ?? '' };
+	}
+	const dateMatch = trimmed.match(/^(\d{4}-\d{2}-\d{2})$/);
+	if (dateMatch) {
+		return { text: rawStr, date: dateMatch[1] ?? '', time: '' };
+	}
+	return {
+		text: rawStr,
+		date: dt?.dateValue ?? trimmed,
+		time: dt?.timeValue ?? '',
+	};
+}
+
 export function DatetimeField(props: ReactInputfieldProps): React.ReactElement {
 	const dt = props.datetime;
 	const mode = dt?.mode || 'text';
 	const htmlType = dt?.htmlType || 'date';
 
-	const [textValue, setTextValue] = useState<string>(
-		dt?.formattedValue ?? (typeof props.value === 'string' ? props.value : '')
-	);
-	const [datePart, setDatePart] = useState<string>(dt?.dateValue ?? '');
-	const [timePart, setTimePart] = useState<string>(dt?.timeValue ?? '');
+	const resolvedParts = resolveDatetimeParts(props.value, dt, htmlType);
+	const incomingSig =
+		props.value !== undefined
+			? `${resolvedParts.text}\u0000${resolvedParts.date}\u0000${resolvedParts.time}`
+			: `${dt?.formattedValue ?? ''}\u0000${dt?.dateValue ?? ''}\u0000${dt?.timeValue ?? ''}`;
+	const [prevIncomingSig, setPrevIncomingSig] = useState<string>(incomingSig);
+	const [textValue, setTextValue] = useState<string>(resolvedParts.text);
+	const [datePart, setDatePart] = useState<string>(resolvedParts.date);
+	const [timePart, setTimePart] = useState<string>(resolvedParts.time);
 	const inputRef = useRef<HTMLInputElement | null>(null);
+
+	if (incomingSig !== prevIncomingSig) {
+		setPrevIncomingSig(incomingSig);
+		if (textValue !== resolvedParts.text) {
+			setTextValue(resolvedParts.text);
+		}
+		if (datePart !== resolvedParts.date) {
+			setDatePart(resolvedParts.date);
+		}
+		if (timePart !== resolvedParts.time) {
+			setTimePart(resolvedParts.time);
+		}
+	}
 
 	const setTodayNow = () => {
 		if (props.readOnly || props.disabled) {

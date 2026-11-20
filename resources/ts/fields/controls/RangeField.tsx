@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
 	ColumnSpanSlider,
 	clampColSpan,
@@ -37,11 +37,16 @@ export function RangeField(props: ReactInputfieldProps): React.ReactElement {
 				? clampColSpan(strictPercentToSpan(raw, maxCols), maxCols, minCols, maxCols)
 				: clampColSpan(raw, maxCols, minCols, maxCols);
 
-		const [span, setSpan] = useState<number>(() => resolveSpan(props.value));
+		const incomingSpan = resolveSpan(props.value);
+		const [prevPropSpan, setPrevPropSpan] = useState<number>(incomingSpan);
+		const [span, setSpan] = useState<number>(incomingSpan);
 
-		useEffect(() => {
-			setSpan(resolveSpan(props.value));
-		}, [props.value, isPercentMode, minCols, maxCols]);
+		if (incomingSpan !== prevPropSpan) {
+			setPrevPropSpan(incomingSpan);
+			if (span !== incomingSpan) {
+				setSpan(incomingSpan);
+			}
+		}
 
 		const handleSpanChange = (nextSpan: number) => {
 			if (isDisabled) {
@@ -99,11 +104,16 @@ export function RangeField(props: ReactInputfieldProps): React.ReactElement {
 		return Math.max(minNum, Math.min(maxNum, parsed));
 	};
 
-	const [numVal, setNumVal] = useState<number>(() => clampRange(props.value));
+	const incomingNumVal = clampRange(props.value);
+	const [prevPropNumVal, setPrevPropNumVal] = useState<number>(incomingNumVal);
+	const [numVal, setNumVal] = useState<number>(incomingNumVal);
 
-	useEffect(() => {
-		setNumVal(clampRange(props.value));
-	}, [props.value, minNum, maxNum]);
+	if (incomingNumVal !== prevPropNumVal) {
+		setPrevPropNumVal(incomingNumVal);
+		if (numVal !== incomingNumVal) {
+			setNumVal(incomingNumVal);
+		}
+	}
 
 	const formattedVal = `${props.affixPrefix || ''}${numVal}${props.affixSuffix || ''}`;
 	const sliderVars = {

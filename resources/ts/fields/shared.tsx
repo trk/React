@@ -5,12 +5,36 @@ import type {
 	InputfieldLanguageItem,
 	InputfieldMediaItem,
 	InputfieldOptionItem,
-	SchemaConditionSpec,
+	LinkFieldConfig,
+	LinkFieldValue,
 	SchemaFieldConditions,
 	SchemaFieldDefinition,
 	SchemaFieldOption,
 	SchemaFieldValidationRules,
 } from './types';
+import {
+	evaluateCondition,
+	evaluateShowIfCondition,
+	isLinkFieldValueEmpty,
+	isLinkValueObject,
+	lookupScopedFieldValue,
+	navigateTablistByKey,
+	normalizeConditionExpressionToString,
+	resolveScopedFieldValue,
+	scrollTabIntoView,
+} from './schemaRuntimeHelpers';
+
+export {
+	evaluateCondition,
+	evaluateShowIfCondition,
+	isLinkFieldValueEmpty,
+	isLinkValueObject,
+	lookupScopedFieldValue,
+	navigateTablistByKey,
+	normalizeConditionExpressionToString,
+	resolveScopedFieldValue,
+	scrollTabIntoView,
+};
 
 const SLUG_CHAR_MAP: Record<string, string> = {
 	ç: 'c',
@@ -145,326 +169,557 @@ export function resolveGridSpanClass(width?: number, colSpan?: number): string {
 	return GRID_SPAN_CLASSES[span] || 'col-span-12';
 }
 
-export function resolveScopedFieldValue(
-	values: Record<string, unknown>,
-	rawKey: string,
-	scopePrefix?: string
-): unknown {
-	const key = rawKey.trim();
-	if (!key) {
+export function sanitizePhoneInput(raw: string, stripDanglingPlus = false): string {
+	const stripped = raw.replace(/^tel:/i, '').trim();
+	if (stripped === '') {
 		return '';
 	}
+	const hasLeadingPlus = stripped.startsWith('+');
+	const digitsOnly = stripped.replace(/[^0-9]+/g, '');
+	if (digitsOnly === '') {
+		return !stripDanglingPlus && hasLeadingPlus ? '+' : '';
+	}
+	return (hasLeadingPlus ? '+' : '') + digitsOnly;
+}
 
-	const lookupDirect = (targetKey: string): { found: boolean; value: unknown } => {
-		if (scopePrefix) {
-			const cleanPrefix = scopePrefix.replace(/_+$/, '');
-			if (cleanPrefix) {
-				const scopedKey = `${cleanPrefix}_${targetKey}`;
-				if (scopedKey in values) {
-					return { found: true, value: values[scopedKey] };
-				}
-			}
-			if (`${scopePrefix}${targetKey}` in values) {
-				return { found: true, value: values[`${scopePrefix}${targetKey}`] };
-			}
-			if (targetKey in values) {
-				return { found: true, value: values[targetKey] };
-			}
-			return { found: false, value: '' };
-		}
-		if (targetKey in values) {
-			return { found: true, value: values[targetKey] };
-		}
-		if (/^(?:weblock|rwblock)_/.test(targetKey)) {
-			return { found: false, value: '' };
-		}
-		for (const [k, v] of Object.entries(values)) {
-			if (!/^(?:weblock|rwblock)_/.test(k) && k.endsWith(`_${targetKey}`)) {
-				return { found: true, value: v };
-			}
-		}
-		return { found: false, value: '' };
+export function createEmptyLinkValue(defaultType = 'url'): LinkFieldValue {
+	return {
+		type: defaultType === 'anchor' ? 'url' : defaultType,
+		pageId: 0,
+		entryType: '',
+		entryId: '',
+		url: '',
+		file: '',
+		query: '',
+		anchor: '',
+		label: '',
+		ariaLabel: '',
+		target: '_self',
+		rel: '',
 	};
-
-	const direct = lookupDirect(key);
-	if (direct.found) {
-		return direct.value;
-	}
-
-	const dotIdx = key.indexOf('.');
-	if (dotIdx > 0 && dotIdx < key.length - 1) {
-		const rootKey = key.slice(0, dotIdx);
-		const subSegments = key.slice(dotIdx + 1).split('.').filter(Boolean);
-		const rootLookup = lookupDirect(rootKey);
-		if (!rootLookup.found) {
-			return '';
-		}
-		let current: unknown = rootLookup.value;
-		if (typeof current === 'string' && current.trim().startsWith('{')) {
-			try {
-				current = JSON.parse(current.trim());
-			} catch {
-				return '';
-			}
-		}
-		for (const seg of subSegments) {
-			if (
-				current === null ||
-				current === undefined ||
-				typeof current !== 'object' ||
-				seg === '__proto__' ||
-				seg === 'constructor' ||
-				seg === 'prototype' ||
-				!Object.prototype.hasOwnProperty.call(current, seg)
-			) {
-				return '';
-			}
-			current = (current as Record<string, unknown>)[seg];
-		}
-		return current !== undefined && current !== null ? current : '';
-	}
-
-	return '';
 }
 
-export function isLinkValueObject(val: unknown): val is Record<string, unknown> {
-	if (val === null || typeof val !== 'object' || Array.isArray(val)) {
-		return false;
+export function normalizeLinkFieldValue(raw: unknown, defaultType = 'url'): LinkFieldValue {
+	const safeDefault = defaultType === 'anchor' ? 'url' : defaultType;
+	const empty = createEmptyLinkValue(safeDefault);
+	if (raw === null || raw === undefined) {
+		return empty;
 	}
-	const rec = val as Record<string, unknown>;
-	return (
-		typeof rec.type === 'string' &&
-		('pageId' in rec || 'url' in rec || 'entryId' in rec || 'file' in rec || 'anchor' in rec)
-	);
-}
-
-export function isLinkFieldValueEmpty(val: unknown): boolean {
-	if (val === null || val === undefined) {
-		return true;
-	}
-	if (typeof val === 'string') {
-		const trimmed = val.trim();
+	if (typeof raw === 'string') {
+		const trimmed = raw.trim();
 		if (trimmed === '') {
-			return true;
+			return empty;
 		}
 		if (trimmed.startsWith('{')) {
 			try {
-				const parsed = JSON.parse(trimmed);
-				if (isLinkValueObject(parsed)) {
-					return isLinkFieldValueEmpty(parsed);
+				const decoded = JSON.parse(trimmed);
+				if (isLinkValueObject(decoded)) {
+					return normalizeLinkFieldValue(decoded, safeDefault);
 				}
 			} catch {
-				// Treat non-JSON string as plain URL
+				// Fall through to plain string parsing
 			}
 		}
-		return false;
+		if (/^mailto:/i.test(trimmed)) {
+			return { ...empty, type: 'email', url: trimmed.slice(7).trim() };
+		}
+		if (/^tel:/i.test(trimmed)) {
+			return { ...empty, type: 'tel', url: sanitizePhoneInput(trimmed.slice(4), true) };
+		}
+		return { ...empty, type: 'url', url: trimmed };
 	}
-	if (!isLinkValueObject(val)) {
-		return true;
+	if (typeof raw !== 'object' || Array.isArray(raw)) {
+		return empty;
 	}
-	const type = String(val.type || 'url').toLowerCase().trim();
-	if (type === 'page') {
-		return !(Number(val.pageId) > 0);
+	const rec = raw as Record<string, unknown>;
+	let rawType =
+		typeof rec.type === 'string' && rec.type.trim() !== ''
+			? rec.type.trim().toLowerCase()
+			: safeDefault;
+	let urlVal =
+		rec.url !== undefined && rec.url !== null
+			? String(rec.url).trim()
+			: rec.href !== undefined && rec.href !== null
+				? String(rec.href).trim()
+				: '';
+	let anchorVal =
+		rec.anchor !== undefined && rec.anchor !== null
+			? String(rec.anchor).trim().replace(/^#+/, '')
+			: '';
+
+	if (rawType === 'anchor') {
+		rawType = 'url';
+		if (urlVal === '' && anchorVal !== '') {
+			urlVal = `#${anchorVal}`;
+			anchorVal = '';
+		}
+	} else if (rawType === 'tel') {
+		urlVal = sanitizePhoneInput(urlVal, true);
+	} else if (rawType === 'email') {
+		urlVal = urlVal.replace(/^mailto:/i, '').trim();
 	}
-	if (type === 'entry') {
-		return String(val.entryId ?? '').trim() === '';
+
+	const rawTarget = typeof rec.target === 'string' ? rec.target.trim() : '_self';
+	const rawAriaLabel = rec.ariaLabel ?? rec.aria_label;
+	const parseLangTextMap = (rawMap: unknown, defVal: string): Record<string, string> | undefined => {
+		const clean: Record<string, string> = {};
+		let hasNonDefault = false;
+		if (rawMap && typeof rawMap === 'object' && !Array.isArray(rawMap)) {
+			for (const [k, v] of Object.entries(rawMap as Record<string, unknown>)) {
+				if (typeof v === 'string' && v.trim() !== '' && /^[a-zA-Z0-9_-]{1,32}$/.test(k)) {
+					clean[k] = v;
+					if (k !== 'default') {
+						hasNonDefault = true;
+					}
+				}
+			}
+		}
+		if (defVal.trim() !== '') {
+			clean.default = defVal;
+		}
+		return hasNonDefault ? clean : undefined;
+	};
+	let labelVal = rec.label !== undefined && rec.label !== null ? String(rec.label) : '';
+	const labelsMap = parseLangTextMap(rec.labels, labelVal);
+	if (labelVal === '' && labelsMap?.default) {
+		labelVal = labelsMap.default;
 	}
-	if (type === 'anchor') {
-		return String(val.anchor ?? val.url ?? '').replace(/^#+/, '').trim() === '';
+	let ariaLabelVal =
+		rawAriaLabel !== undefined && rawAriaLabel !== null ? String(rawAriaLabel) : '';
+	const ariaLabelsMap = parseLangTextMap(rec.ariaLabels ?? rec.aria_labels, ariaLabelVal);
+	if (ariaLabelVal === '' && ariaLabelsMap?.default) {
+		ariaLabelVal = ariaLabelsMap.default;
 	}
-	if (type === 'tel') {
-		return String(val.url ?? '').replace(/[^0-9]+/g, '') === '';
+	const out: LinkFieldValue = {
+		type: rawType,
+		pageId: Number.isFinite(Number(rec.pageId ?? rec.page_id))
+			? Math.max(0, Math.trunc(Number(rec.pageId ?? rec.page_id)))
+			: 0,
+		entryType:
+			typeof (rec.entryType ?? rec.entry_type) === 'string'
+				? String(rec.entryType ?? rec.entry_type).trim()
+				: '',
+		entryId:
+			rec.entryId !== undefined && rec.entryId !== null
+				? String(rec.entryId).trim()
+				: rec.entry_id !== undefined && rec.entry_id !== null
+					? String(rec.entry_id).trim()
+					: '',
+		url: urlVal,
+		file: rec.file !== undefined && rec.file !== null ? String(rec.file).trim() : '',
+		query:
+			rec.query !== undefined && rec.query !== null
+				? String(rec.query).trim().replace(/^\?+/, '')
+				: '',
+		anchor: anchorVal,
+		label: labelVal,
+		ariaLabel: ariaLabelVal,
+		target: rawTarget === '_blank' ? '_blank' : '_self',
+		rel: rec.rel !== undefined && rec.rel !== null ? String(rec.rel) : '',
+	};
+	if (labelsMap) {
+		out.labels = labelsMap;
 	}
-	if (type === 'email') {
-		return String(val.url ?? '').trim() === '';
+	if (ariaLabelsMap) {
+		out.ariaLabels = ariaLabelsMap;
 	}
-	if (type === 'url') {
-		return String(val.url ?? '').trim() === '' && String(val.anchor ?? '').trim() === '';
+	if (typeof rec.alt === 'string' && rec.alt.trim() !== '') {
+		out.alt = rec.alt.trim();
 	}
-	return (
-		String(val.file ?? '').trim() === '' &&
-		String(val.url ?? '').trim() === '' &&
-		String(val.entryId ?? '').trim() === '' &&
-		!(Number(val.pageId) > 0)
-	);
+	if (rec.descriptions && typeof rec.descriptions === 'object' && !Array.isArray(rec.descriptions)) {
+		const descs: Record<string, string> = {};
+		for (const [k, v] of Object.entries(rec.descriptions as Record<string, unknown>)) {
+			if (typeof v === 'string' && v.trim() !== '') {
+				descs[k] = v;
+			}
+		}
+		if (Object.keys(descs).length > 0) {
+			out.descriptions = descs;
+			if (!out.alt && descs.default) {
+				out.alt = descs.default.trim();
+			}
+		}
+	}
+	if (typeof rec.focus === 'string' && rec.focus.trim() !== '') {
+		out.focus = rec.focus.trim();
+	} else if (rec.focus && typeof rec.focus === 'object' && !Array.isArray(rec.focus)) {
+		const fObj = rec.focus as Record<string, unknown>;
+		const top = Number(fObj.top);
+		const left = Number(fObj.left);
+		const zoom = Number(fObj.zoom);
+		if (Number.isFinite(top) && Number.isFinite(left)) {
+			const safeTop = Math.max(0, Math.min(100, Math.round(top * 10) / 10));
+			const safeLeft = Math.max(0, Math.min(100, Math.round(left * 10) / 10));
+			const safeZoom = Number.isFinite(zoom) ? Math.max(0, Math.min(50, Math.round(zoom))) : 0;
+			if (!(safeTop === 50 && safeLeft === 50 && safeZoom === 0)) {
+				out.focus = `${safeTop} ${safeLeft} ${safeZoom}`;
+			}
+		}
+	}
+	if (typeof rec.tags === 'string' && rec.tags.trim() !== '') {
+		out.tags = rec.tags.trim();
+	}
+	return out;
 }
 
-function evaluateSingleClause(
-	clause: string,
-	values: Record<string, unknown>,
-	scopePrefix?: string
-): boolean {
-	const trimmed = clause.trim();
-	if (!trimmed) {
-		return true;
-	}
-
-	const match = trimmed.match(/^([a-zA-Z0-9_|.]+)\s*(!=|\*=|\^=|\$=|>=|<=|=|>|<)\s*(.*)$/);
-	if (!match) {
-		const bareNegated = trimmed.startsWith('!');
-		const bareKey = (bareNegated ? trimmed.slice(1) : trimmed).trim();
-		if (/^[a-zA-Z0-9_.]+$/.test(bareKey)) {
-			const bareVal = resolveScopedFieldValue(values, bareKey, scopePrefix);
-			const isTruthy = Array.isArray(bareVal)
-				? bareVal.length > 0
-				: isLinkValueObject(bareVal)
-					? !isLinkFieldValueEmpty(bareVal)
-					: bareVal !== null && bareVal !== undefined && bareVal !== false && bareVal !== '' && bareVal !== 0 && bareVal !== '0';
-			return bareNegated ? !isTruthy : isTruthy;
-		}
-		return true;
-	}
-
-	const [, lhsRaw = '', operator = '=', rhsRaw = ''] = match;
-	const fieldKeys = lhsRaw.split('|').map((k) => k.trim()).filter(Boolean);
-	const expectedAlternatives = rhsRaw
-		.replace(/^["']|["']$/g, '')
-		.split('|')
-		.map((v) => v.trim());
-
-	return fieldKeys.some((fieldKey) => {
-		const isCountCheck = fieldKey.endsWith('.count');
-		const baseKey = isCountCheck ? fieldKey.slice(0, -6) : fieldKey;
-		const actualRaw = resolveScopedFieldValue(values, baseKey, scopePrefix);
-
-		const actualList: string[] = Array.isArray(actualRaw)
-			? actualRaw.map((v) => String(v))
-			: isLinkValueObject(actualRaw)
-				? [isLinkFieldValueEmpty(actualRaw) ? '' : '1']
-				: actualRaw === true
-					? ['1']
-					: actualRaw === false || actualRaw === null || actualRaw === undefined
-						? ['']
-						: [String(actualRaw)];
-
-		const compareValue = isCountCheck
-			? String(Array.isArray(actualRaw) ? actualRaw.length : actualList[0] ? 1 : 0)
-			: actualList[0] ?? '';
-
-		switch (operator) {
-			case '=':
-				return expectedAlternatives.some((exp) =>
-					exp === ''
-						? actualList.every((v) => v === '' || v === '0')
-						: actualList.includes(exp) || (exp === '1' && compareValue === 'true')
-				);
-			case '!=':
-				return expectedAlternatives.every((exp) =>
-					exp === ''
-						? actualList.some((v) => v !== '' && v !== '0')
-						: !actualList.includes(exp)
-				);
-			case '*=':
-				return expectedAlternatives.some((exp) =>
-					actualList.some((v) => v.toLowerCase().includes(exp.toLowerCase()))
-				);
-			case '^=':
-				return expectedAlternatives.some((exp) =>
-					actualList.some((v) => v.toLowerCase().startsWith(exp.toLowerCase()))
-				);
-			case '$=':
-				return expectedAlternatives.some((exp) =>
-					actualList.some((v) => v.toLowerCase().endsWith(exp.toLowerCase()))
-				);
-			case '>':
-				return parseFloat(compareValue || '0') > parseFloat(expectedAlternatives[0] || '0');
-			case '<':
-				return parseFloat(compareValue || '0') < parseFloat(expectedAlternatives[0] || '0');
-			case '>=':
-				return parseFloat(compareValue || '0') >= parseFloat(expectedAlternatives[0] || '0');
-			case '<=':
-				return parseFloat(compareValue || '0') <= parseFloat(expectedAlternatives[0] || '0');
-			default:
-				return true;
-		}
-	});
-}
-
-export function normalizeConditionExpressionToString(
-	spec: SchemaConditionSpec | undefined | null
+export function getLocalizedLinkText(
+	defaultText: string,
+	map: Record<string, string> | undefined,
+	lang: InputfieldLanguageItem | undefined
 ): string {
-	if (!spec) {
+	if (lang && !lang.isDefault) {
+		const byId = map?.[String(lang.id)];
+		if (typeof byId === 'string') {
+			return byId;
+		}
+		const byName = map?.[lang.name];
+		if (typeof byName === 'string') {
+			return byName;
+		}
 		return '';
 	}
-	if (typeof spec === 'string') {
-		return spec.trim();
+	if (defaultText !== '') {
+		return defaultText;
 	}
-	const formatRule = (field: string, operator = '=', val: unknown = ''): string => {
-		const cleanField = field.trim();
-		if (!cleanField) {
-			return '';
+	return typeof map?.default === 'string' ? map.default : '';
+}
+
+export function setLocalizedLinkText(
+	defaultText: string,
+	map: Record<string, string> | undefined,
+	lang: InputfieldLanguageItem | undefined,
+	nextValue: string,
+	hasMultiLang: boolean
+): { value: string; map?: Record<string, string> } {
+	const nextMap: Record<string, string> = { ...(map ?? {}) };
+	if (!hasMultiLang || !lang || lang.isDefault) {
+		if (nextValue.trim() !== '') {
+			nextMap.default = nextValue;
+		} else {
+			delete nextMap.default;
 		}
-		const cleanOp =
-			operator === '==' || operator === '===' || !operator.trim()
-				? '='
-				: operator === '!=='
-					? '!='
-					: operator.trim();
-		const valStr = Array.isArray(val)
-			? val.map((item) => (typeof item === 'boolean' ? (item ? '1' : '0') : String(item))).join('|')
-			: typeof val === 'boolean'
-				? val
-					? '1'
-					: '0'
-				: val === null || val === undefined
-					? ''
-					: String(val);
-		return `${cleanField}${cleanOp}${valStr}`;
+		const hasNonDefault = Object.entries(nextMap).some(
+			([k, v]) => k !== 'default' && typeof v === 'string' && v.trim() !== ''
+		);
+		return {
+			value: nextValue,
+			map: hasNonDefault ? nextMap : undefined,
+		};
+	}
+	const langKey = String(lang.id);
+	if (defaultText !== '' && !nextMap.default) {
+		nextMap.default = defaultText;
+	}
+	if (nextValue !== '') {
+		nextMap[langKey] = nextValue;
+	} else {
+		delete nextMap[langKey];
+	}
+	const hasAnyNonDefault = Object.entries(nextMap).some(
+		([k, v]) => k !== 'default' && typeof v === 'string' && v !== ''
+	);
+	return {
+		value: defaultText,
+		map: hasAnyNonDefault ? nextMap : undefined,
 	};
-	if (Array.isArray(spec)) {
-		return (spec as unknown[])
-			.map((entry) => {
-				if (typeof entry === 'string') {
-					return entry.trim();
-				}
-				if (entry && typeof entry === 'object' && 'field' in entry && typeof entry.field === 'string') {
-					const clause = entry as { field: string; operator?: string; value?: unknown };
-					return formatRule(clause.field, clause.operator ?? '=', clause.value ?? '');
-				}
-				return '';
-			})
-			.filter(Boolean)
-			.join(', ');
+}
+
+export const LINK_INLINE_SETTING_PREFIX = '__rw_link_opt__';
+
+export interface LinkFeatureFlags {
+	enableLabel: boolean;
+	enableAriaLabel: boolean;
+	enableTarget: boolean;
+	enableRel: boolean;
+	enableAnchor: boolean;
+	enableQuery: boolean;
+}
+
+export function normalizeLinkConfigFlags(raw?: Partial<LinkFieldConfig> | null): LinkFeatureFlags {
+	const rec = (raw ?? {}) as Record<string, unknown>;
+	const flag = (camel: string, snake: string): boolean => {
+		const v = rec[camel] ?? rec[snake];
+		return v !== false && v !== 0 && v !== '0' && v !== '';
+	};
+	return {
+		enableLabel: flag('enableLabel', 'enable_label'),
+		enableAriaLabel: flag('enableAriaLabel', 'enable_aria_label'),
+		enableTarget: flag('enableTarget', 'enable_target'),
+		enableRel: flag('enableRel', 'enable_rel'),
+		enableAnchor: flag('enableAnchor', 'enable_anchor'),
+		enableQuery: flag('enableQuery', 'enable_query'),
+	};
+}
+
+export function buildLinkInlineSettingFields(
+	linkConfig: Partial<LinkFieldConfig> | undefined,
+	rawVal: unknown,
+	ownerDisabled: boolean
+): {
+	fields: SchemaFieldDefinition[];
+	values: Record<string, unknown>;
+	normLink: LinkFieldValue;
+	isTargetEmpty: boolean;
+	flags: LinkFeatureFlags;
+} {
+	const flags = normalizeLinkConfigFlags(linkConfig);
+	const normLink = normalizeLinkFieldValue(rawVal, linkConfig?.defaultType || 'page');
+	const isTargetEmpty = isLinkFieldValueEmpty(normLink);
+	const locked = Boolean(ownerDisabled || isTargetEmpty);
+	const isHashOnlyUrl = normLink.type === 'url' && normLink.url.trim().startsWith('#');
+	const canHaveAnchor =
+		normLink.type !== 'tel' && normLink.type !== 'email' && !isHashOnlyUrl;
+	const canHaveQuery =
+		normLink.type === 'page' ||
+		normLink.type === 'entry' ||
+		(normLink.type === 'url' && !isHashOnlyUrl);
+
+	const fields: SchemaFieldDefinition[] = [];
+	const values: Record<string, unknown> = {};
+
+	const pushField = (key: keyof LinkFieldValue, def: Omit<SchemaFieldDefinition, 'kind' | 'name' | 'disabled'>) => {
+		const name = `${LINK_INLINE_SETTING_PREFIX}${key}`;
+		fields.push({
+			...def,
+			kind: 'control',
+			name,
+			disabled: locked,
+		});
+		values[name] = normLink[key] ?? '';
+	};
+
+	if (flags.enableTarget) {
+		pushField('target', {
+			type: 'select',
+			label: t('link.openTarget', 'Open Target'),
+			width: 50,
+			options: [
+				{ value: '_self', label: t('link.targetSelf', 'Same tab (_self)') },
+				{ value: '_blank', label: t('link.targetBlank', 'New tab (_blank)') },
+			],
+		});
 	}
-	if (typeof spec === 'object') {
-		const specRec = spec as Record<string, unknown>;
-		if (typeof specRec.field === 'string') {
-			return formatRule(
-				specRec.field,
-				typeof specRec.operator === 'string' ? specRec.operator : '=',
-				specRec.value ?? ''
-			);
+	if (flags.enableRel) {
+		pushField('rel', {
+			type: 'text',
+			label: t('link.relAttribute', 'Rel Attribute'),
+			placeholder: normLink.target === '_blank' ? 'noopener noreferrer' : 'nofollow sponsored',
+			width: 50,
+		});
+	}
+	if (flags.enableAnchor && canHaveAnchor) {
+		pushField('anchor', {
+			type: 'text',
+			label: t('link.anchorFragment', 'Anchor Fragment (#)'),
+			placeholder: 'section-id',
+			width: 50,
+		});
+	}
+	if (flags.enableQuery && canHaveQuery) {
+		pushField('query', {
+			type: 'text',
+			label: t('link.queryParams', 'Query Parameters (?)'),
+			placeholder: 'utm_source=hero&ref=cta',
+			width: 50,
+		});
+	}
+
+	return { fields, values, normLink, isTargetEmpty, flags };
+}
+
+export function applyLinkSettingPatches(
+	currentLink: LinkFieldValue,
+	patches: Record<string, unknown>,
+	flags?: Partial<LinkFeatureFlags>
+): LinkFieldValue {
+	const next: LinkFieldValue = { ...currentLink };
+	for (const [key, rawVal] of Object.entries(patches)) {
+		const cleanKey = key.startsWith(LINK_INLINE_SETTING_PREFIX)
+			? key.slice(LINK_INLINE_SETTING_PREFIX.length)
+			: key;
+		const strVal = rawVal === null || rawVal === undefined ? '' : String(rawVal);
+		if (cleanKey === 'target') {
+			next.target = strVal === '_blank' ? '_blank' : '_self';
+		} else if (cleanKey === 'rel') {
+			next.rel = strVal;
+		} else if (cleanKey === 'anchor') {
+			next.anchor = strVal.replace(/^#+/, '');
+		} else if (cleanKey === 'query') {
+			next.query = strVal.replace(/^\?+/, '');
 		}
-		return Object.entries(spec)
-			.map(([key, val]) => formatRule(key, '=', val))
-			.filter(Boolean)
-			.join(', ');
+	}
+	if (next.target === '_blank' && flags?.enableRel !== false && !next.rel.trim()) {
+		next.rel = 'noopener noreferrer';
+	}
+	return next;
+}
+
+export const INLINE_SETTING_NEUTRAL_VALUES = new Set([
+	'',
+	'0',
+	'false',
+	'no',
+	'none',
+	'auto',
+	'normal',
+	'inherit',
+	'default',
+	'_self',
+]);
+
+export function formatInlineSettingSummaryChip(
+	bf: SchemaFieldDefinition,
+	rawVal: unknown
+): string | null {
+	const rawType = String(bf.type || bf.inputfieldClass || 'text').toLowerCase();
+	const opts = normalizeOptions(bf.options);
+	const isBinaryToggle =
+		rawType === 'toggle' &&
+		(opts.length === 0 ||
+			opts.every(
+				(o) =>
+					INLINE_SETTING_NEUTRAL_VALUES.has(String(o.value).trim().toLowerCase()) ||
+					String(o.value).trim().toLowerCase() === '1' ||
+					String(o.value).trim().toLowerCase() === 'true' ||
+					String(o.value).trim().toLowerCase() === 'yes'
+			));
+	const isBool =
+		rawType === 'checkbox' ||
+		rawType === 'consent' ||
+		rawType === 'switch' ||
+		rawType === 'boolean' ||
+		rawType === 'bool' ||
+		isBinaryToggle;
+	if (isBool) {
+		const norm = typeof rawVal === 'string' ? rawVal.trim().toLowerCase() : rawVal;
+		const truthy = norm === true || norm === 1 || norm === '1' || norm === 'true' || norm === 'yes';
+		if (!truthy) {
+			return null;
+		}
+		const shortLabel = (bf.label || bf.name || '').trim();
+		return shortLabel
+			? shortLabel.length > 14
+				? `${shortLabel.slice(0, 13).trimEnd()}…`
+				: shortLabel
+			: null;
+	}
+	if (rawVal === null || rawVal === undefined || typeof rawVal === 'object') {
+		return null;
+	}
+	const valStr = String(rawVal).trim();
+	if (INLINE_SETTING_NEUTRAL_VALUES.has(valStr.toLowerCase())) {
+		return null;
+	}
+	const lowerName = (bf.name || '').toLowerCase();
+	if (lowerName === `${LINK_INLINE_SETTING_PREFIX}anchor`) {
+		const frag = `#${valStr.replace(/^#+/, '')}`;
+		return frag.length > 14 ? `${frag.slice(0, 13).trimEnd()}…` : frag;
+	}
+	if (lowerName === `${LINK_INLINE_SETTING_PREFIX}query`) {
+		const qry = `?${valStr.replace(/^\?+/, '')}`;
+		return qry.length > 14 ? `${qry.slice(0, 13).trimEnd()}…` : qry;
+	}
+	if (lowerName === `${LINK_INLINE_SETTING_PREFIX}target` && valStr === '_blank') {
+		return t('link.newTabBadge', 'New tab');
+	}
+	if (
+		lowerName === 'html_element' ||
+		lowerName.endsWith('_html_element') ||
+		lowerName.endsWith('_tag')
+	) {
+		return valStr.toUpperCase();
+	}
+	const lowerLabel = (bf.label || '').toLowerCase();
+	const hasPxUnit =
+		lowerLabel.includes('(px)') ||
+		lowerName.endsWith('_px') ||
+		lowerName === 'width' ||
+		lowerName === 'height' ||
+		lowerName.endsWith('_width') ||
+		lowerName.endsWith('_height');
+	if (hasPxUnit && /^-?\d+(\.\d+)?$/.test(valStr)) {
+		const withUnit = `${valStr}px`;
+		return withUnit.length > 14 ? `${withUnit.slice(0, 13).trimEnd()}…` : withUnit;
+	}
+	if (valStr.length <= 14) {
+		return valStr;
+	}
+	const matched = opts.find((o) => o.value === valStr);
+	const candidate = matched ? matched.label.trim() : valStr;
+	return candidate.length > 14 ? `${candidate.slice(0, 13).trimEnd()}…` : candidate;
+}
+
+export function isCompactPopoverField(bf: SchemaFieldDefinition): boolean {
+	const rawType = String(bf.type || bf.inputfieldClass || 'text').toLowerCase();
+	if (
+		rawType === 'select' ||
+		rawType === 'integer' ||
+		rawType === 'float' ||
+		rawType === 'number' ||
+		rawType === 'checkbox' ||
+		rawType === 'toggle' ||
+		rawType === 'switch' ||
+		rawType === 'boolean' ||
+		rawType === 'bool' ||
+		rawType === 'consent' ||
+		rawType === 'color' ||
+		rawType === 'date' ||
+		rawType === 'time' ||
+		rawType === 'datetime'
+	) {
+		return true;
+	}
+	if (rawType === 'radios') {
+		return normalizeOptions(bf.options).length <= 3;
+	}
+	return rawType === 'text' && typeof bf.width === 'number' && bf.width <= 50;
+}
+
+export function getNeutralSettingValue(bf: SchemaFieldDefinition): unknown {
+	const rawType = String(bf.type || bf.inputfieldClass || 'text').toLowerCase();
+	if (
+		rawType === 'checkbox' ||
+		rawType === 'consent' ||
+		rawType === 'switch' ||
+		rawType === 'boolean' ||
+		rawType === 'bool'
+	) {
+		return '';
+	}
+	if (
+		Boolean(bf.multiple) ||
+		rawType === 'checkboxes' ||
+		rawType === 'asmselect' ||
+		rawType === 'multiselect' ||
+		rawType === 'repeater'
+	) {
+		return [];
+	}
+	if (rawType === 'toggle' || rawType === 'select' || rawType === 'radios') {
+		const opts = normalizeOptions(bf.options);
+		const neutralMatch = opts.find((o) =>
+			INLINE_SETTING_NEUTRAL_VALUES.has(String(o.value).trim().toLowerCase())
+		);
+		if (neutralMatch) {
+			return neutralMatch.value;
+		}
+		const firstOpt = opts[0];
+		if (firstOpt) {
+			return firstOpt.value;
+		}
+		return rawType === 'toggle' ? '0' : '';
 	}
 	return '';
 }
 
-export function evaluateCondition(
-	spec: SchemaConditionSpec | undefined | null,
-	values: Record<string, unknown>,
-	scopePrefix?: string
-): boolean {
-	const expression = normalizeConditionExpressionToString(spec);
-	if (!expression) {
-		return true;
+export function inlineSettingValuesEqual(a: unknown, b: unknown): boolean {
+	if (Array.isArray(a) || Array.isArray(b)) {
+		if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) {
+			return false;
+		}
+		return a.every((item, idx) => String(item ?? '') === String(b[idx] ?? ''));
 	}
-	const clauses = expression
-		.split(',')
-		.map((c) => c.trim())
-		.filter(Boolean);
-	return clauses.every((clause) => evaluateSingleClause(clause, values, scopePrefix));
-}
-
-export function evaluateShowIfCondition(
-	expression: SchemaConditionSpec | undefined,
-	values: Record<string, unknown>,
-	scopePrefix?: string
-): boolean {
-	return evaluateCondition(expression, values, scopePrefix);
+	return String(a ?? '') === String(b ?? '');
 }
 
 export function resolveFieldState(
@@ -823,79 +1078,6 @@ export function broadcastLanguageSync(langId: number, sourceEl: HTMLElement | nu
 			isSyncingLanguageBroadcast = false;
 		}, 280);
 	}
-}
-
-export function scrollTabIntoView(tabEl: HTMLElement | null): void {
-	if (!tabEl || typeof tabEl.scrollIntoView !== 'function') {
-		return;
-	}
-	try {
-		tabEl.scrollIntoView({
-			block: 'nearest',
-			inline: 'nearest',
-			container: 'nearest',
-		} as ScrollIntoViewOptions);
-	} catch {
-		tabEl.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-	}
-}
-
-export function navigateTablistByKey(
-	event: React.KeyboardEvent<HTMLElement>,
-	orientation: 'horizontal' | 'vertical' = 'horizontal'
-): void {
-	const listEl = event.currentTarget;
-	const tabs = Array.from(
-		listEl.querySelectorAll<HTMLButtonElement>(':scope > [role="tab"]:not(:disabled)')
-	);
-	if (tabs.length <= 1) {
-		return;
-	}
-
-	const focusedTab = (event.target as HTMLElement | null)?.closest<HTMLButtonElement>('[role="tab"]');
-	const currentIndex = focusedTab ? tabs.indexOf(focusedTab) : -1;
-	if (currentIndex === -1) {
-		return;
-	}
-
-	const isRtl =
-		orientation === 'horizontal' &&
-		(listEl.matches(':dir(rtl)') ||
-			(typeof document !== 'undefined' && document.documentElement.dir === 'rtl'));
-
-	let nextIndex = -1;
-	if (event.key === 'Home') {
-		nextIndex = 0;
-	} else if (event.key === 'End') {
-		nextIndex = tabs.length - 1;
-	} else if (orientation === 'vertical') {
-		if (event.key === 'ArrowDown') {
-			nextIndex = (currentIndex + 1) % tabs.length;
-		} else if (event.key === 'ArrowUp') {
-			nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
-		}
-	} else {
-		const forwardKey = isRtl ? 'ArrowLeft' : 'ArrowRight';
-		const backwardKey = isRtl ? 'ArrowRight' : 'ArrowLeft';
-		if (event.key === forwardKey) {
-			nextIndex = (currentIndex + 1) % tabs.length;
-		} else if (event.key === backwardKey) {
-			nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
-		}
-	}
-
-	if (nextIndex === -1 || nextIndex === currentIndex) {
-		return;
-	}
-
-	const targetTab = tabs[nextIndex];
-	if (!targetTab) {
-		return;
-	}
-	event.preventDefault();
-	targetTab.focus();
-	targetTab.click();
-	scrollTabIntoView(targetTab);
 }
 
 export function SearchableTabPanel({

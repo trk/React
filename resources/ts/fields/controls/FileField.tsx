@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { useTranslations } from '../../lib/i18n';
 import { cn, DynamicIcon } from '../../lib/utils';
-import { Badge, Button, SortableHandle, SortableStatusRegion, useSortableList, type SortableHandleProps } from '../../ui';
+import { Badge, Button, SortableStatusRegion } from '../../ui';
+import { FileGridCard, FileTableRow, resolveFileIconName } from './FileFieldViews';
 import {
 	AssetInspectorSheet,
 	CompactMediaDropBar,
@@ -9,1000 +10,92 @@ import {
 	extractClipboardFiles,
 	getLanguageCountSummary,
 	hasDraggedOsFiles,
-	hydrateStudioMediaItems,
 	MediaHiddenFormInputs,
+	MediaStatusBar,
 	MultiLangDescriptionEditor,
 	normalizeMediaControlProps,
-	notifyHostFormChanged,
 	TagsChipEditor,
-	uploadMediaFileViaXhr,
-	validateStudioIncomingFiles,
-	type ActiveUploadTask,
-	type StudioMediaItem,
+	useMediaCollectionController,
 } from '../media';
-import {
-	assignInputFiles,
-	ensureNativeLanguageTabsBridge,
-	FieldStatusRow,
-	formatMediaBytes,
-	LANGUAGE_SELECT_ALL_EVENT,
-	MediaItemFilename,
-	readInitialSyncedLanguageId,
-	resolveLanguageSyncScope,
-} from '../shared';
-import type {
-	InputfieldLanguageItem,
-	InputfieldMediaItem,
-	ReactInputfieldProps,
-} from '../types';
-
-function resolveFileIconName(ext?: string): string {
-	const clean = (ext || '').toLowerCase();
-	if (['zip', 'rar', '7z', 'tar', 'gz', 'tgz'].includes(clean)) {
-		return 'file-archive';
-	}
-	if (['json', 'xml', 'csv', 'yml', 'yaml', 'md', 'html', 'css', 'js', 'ts', 'php', 'sql'].includes(clean)) {
-		return 'file-code';
-	}
-	if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'svg'].includes(clean)) {
-		return 'image';
-	}
-	return 'file-text';
-}
-
-const FileTableRow = React.memo(function FileTableRow({
-	fileItem,
-	totalItems,
-	isLocked,
-	canUpload,
-	hasLiveGateway,
-	descriptionRows,
-	useTags,
-	tagsList,
-	tagsPredefinedOnly,
-	languages,
-	activeLangId,
-	itemSortProps,
-	handleSortProps,
-	onSelectLang,
-	onUpdateDescription,
-	onUpdateTags,
-	onOpenInspector,
-	onTriggerReplace,
-	onDropReplace,
-	onToggleDelete,
-	t,
-}: {
-	fileItem: StudioMediaItem;
-	totalItems: number;
-	isLocked: boolean;
-	canUpload: boolean;
-	hasLiveGateway: boolean;
-	descriptionRows: number;
-	useTags: boolean;
-	tagsList?: string[];
-	tagsPredefinedOnly?: boolean;
-	languages?: InputfieldLanguageItem[];
-	activeLangId: number;
-	itemSortProps: React.HTMLAttributes<HTMLDivElement> & Record<string, unknown>;
-	handleSortProps: SortableHandleProps | null;
-	onSelectLang: (langId: number) => void;
-	onUpdateDescription: (itemId: string, value: string, langId?: number) => void;
-	onUpdateTags: (itemId: string, tags: string) => void;
-	onOpenInspector: (itemId: string) => void;
-	onTriggerReplace: (item: StudioMediaItem) => void;
-	onDropReplace: (target: StudioMediaItem, files: FileList | null) => void;
-	onToggleDelete: (itemId: string) => void;
-	t: (
-		key: string,
-		paramsOrFallback?: string | Record<string, string | number | boolean | null | undefined>,
-		maybeFallback?: string
-	) => string;
-}): React.ReactElement {
-	const [isDropOverRow, setIsDropOverRow] = useState<boolean>(false);
-	const [isInlineMetaOpen, setIsInlineMetaOpen] = useState<boolean>(false);
-	const langSummary = getLanguageCountSummary(fileItem, languages);
-	const canDropReplace = Boolean(canUpload && hasLiveGateway && !fileItem.markedForDelete);
-	const hasInlineMeta = descriptionRows > 0 || useTags;
-
-	return (
-		<div
-			{...itemSortProps}
-			data-rw-media-row=""
-			onDragOver={(e) => {
-				if (!canDropReplace || !hasDraggedOsFiles(e)) return;
-				e.preventDefault();
-				e.stopPropagation();
-				if (!isDropOverRow) {
-					setIsDropOverRow(true);
-				}
-			}}
-			onDragLeave={(e) => {
-				if (!isDropOverRow) return;
-				if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
-					setIsDropOverRow(false);
-				}
-			}}
-			onDrop={(e) => {
-				if (!canDropReplace || !hasDraggedOsFiles(e)) return;
-				e.preventDefault();
-				e.stopPropagation();
-				setIsDropOverRow(false);
-				onDropReplace(fileItem, e.dataTransfer?.files || null);
-			}}
-			className={cn(
-				'relative px-2.5 py-1.5 transition-colors space-y-2',
-				fileItem.markedForDelete && 'bg-destructive/5',
-				isDropOverRow && 'bg-primary/8 ring-2 ring-inset ring-primary/35'
-			)}
-		>
-			<div className="flex items-center justify-between gap-2">
-				<div className="flex min-w-0 flex-1 items-center gap-2">
-					{!isLocked && totalItems > 1 && handleSortProps ? (
-						<SortableHandle
-							{...handleSortProps}
-							title={t(
-								'media.dragToReorder',
-								{ name: fileItem.basename },
-								`Reorder ${fileItem.basename}`
-							)}
-							aria-label={t(
-								'media.dragToReorder',
-								{ name: fileItem.basename },
-								`Reorder ${fileItem.basename}`
-							)}
-						/>
-					) : null}
-					<button
-						type="button"
-						onClick={() => onOpenInspector(fileItem.id)}
-						aria-label={t('media.editAsset', { name: fileItem.basename }, `Inspect & edit ${fileItem.basename}`)}
-						className={cn(
-							'flex size-8 shrink-0 items-center justify-center rounded-sm border border-border bg-muted/40 text-muted-foreground transition-colors hover:text-foreground cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-							fileItem.markedForDelete && 'opacity-45'
-						)}
-					>
-						<DynamicIcon name={resolveFileIconName(fileItem.ext)} className="size-3.5" aria-hidden="true" />
-					</button>
-					<div className="min-w-0 flex-1">
-						<MediaItemFilename item={fileItem} isDeleted={fileItem.markedForDelete} />
-						<div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] tabular-nums text-muted-foreground">
-							{fileItem.markedForDelete ? (
-								<span className="font-medium text-destructive">
-									{t('media.markedForDeletion', 'Marked for deletion')}
-								</span>
-							) : (
-								<>
-									<span className="font-mono uppercase">{fileItem.ext || 'file'}</span>
-									<span className="font-mono">
-										· {fileItem.filesizeStr || formatMediaBytes(fileItem.size)}
-									</span>
-									{languages && languages.length > 1 ? (
-										<span className="font-mono">
-											· {langSummary.filled}/{langSummary.total}
-										</span>
-									) : null}
-									{fileItem.description?.trim() ? (
-										<span className="hidden max-w-48 truncate @md:inline">
-											· {fileItem.description.trim()}
-										</span>
-									) : null}
-								</>
-							)}
-						</div>
-					</div>
-				</div>
-
-				<div className="flex shrink-0 items-center gap-0.5">
-					{fileItem.markedForDelete ? (
-						!isLocked ? (
-							<Button
-								type="button"
-								variant="outline"
-								size="xs"
-								className="h-6 gap-1 px-2 text-[11px]"
-								onClick={() => onToggleDelete(fileItem.id)}
-							>
-								<DynamicIcon name="rotate-ccw" className="size-3" aria-hidden="true" />
-								<span>{t('media.undoDelete', 'Undo')}</span>
-							</Button>
-						) : null
-					) : (
-						<>
-							{hasInlineMeta ? (
-								<Button
-									type="button"
-									variant={isInlineMetaOpen ? 'secondary' : 'ghost'}
-									size="icon"
-									aria-expanded={isInlineMetaOpen}
-									aria-label={t('media.altLabelFile', 'Description')}
-									title={t('media.altLabelFile', 'Description')}
-									className="size-7 text-muted-foreground hover:text-foreground pointer-coarse:size-9"
-									onClick={() => setIsInlineMetaOpen((prev) => !prev)}
-								>
-									<DynamicIcon name="square-pen" className="size-3.5" aria-hidden="true" />
-								</Button>
-							) : null}
-							<Button
-								type="button"
-								variant="ghost"
-								size="icon"
-								className="size-7 text-muted-foreground hover:text-foreground pointer-coarse:size-9"
-								aria-label={t('common.edit', 'Edit')}
-								title={t('common.edit', 'Edit')}
-								onClick={() => onOpenInspector(fileItem.id)}
-							>
-								<DynamicIcon name="sliders" className="size-3.5" aria-hidden="true" />
-							</Button>
-							{canUpload && hasLiveGateway ? (
-								<Button
-									type="button"
-									variant="ghost"
-									size="icon"
-									className="size-7 text-muted-foreground hover:text-foreground pointer-coarse:size-9"
-									aria-label={t('media.replace', 'Replace')}
-									title={t('media.replace', 'Replace')}
-									onClick={() => onTriggerReplace(fileItem)}
-								>
-									<DynamicIcon name="refresh-cw" className="size-3.5" aria-hidden="true" />
-								</Button>
-							) : null}
-							{!isLocked ? (
-								<Button
-									type="button"
-									variant="ghost"
-									size="icon"
-									className="size-7 text-muted-foreground hover:bg-destructive/10 hover:text-destructive pointer-coarse:size-9"
-									aria-label={t(
-										'media.removeFile',
-										{ name: fileItem.basename },
-										`Remove ${fileItem.basename}`
-									)}
-									title={t('common.delete', 'Delete')}
-									onClick={() => onToggleDelete(fileItem.id)}
-								>
-									<DynamicIcon name="trash" className="size-3.5" aria-hidden="true" />
-								</Button>
-							) : null}
-						</>
-					)}
-				</div>
-			</div>
-
-			{isInlineMetaOpen && !fileItem.markedForDelete && hasInlineMeta ? (
-				<div className="space-y-1.5 border-t border-border/60 pt-2">
-					{descriptionRows > 0 ? (
-						<MultiLangDescriptionEditor
-							item={fileItem}
-							isImage={false}
-							descriptionRows={descriptionRows}
-							languages={languages}
-							activeLangId={activeLangId}
-							onSelectLang={onSelectLang}
-							disabled={isLocked}
-							compact={descriptionRows === 1}
-							onUpdateDescription={onUpdateDescription}
-						/>
-					) : null}
-					{useTags ? (
-						<TagsChipEditor
-							value={fileItem.tags || ''}
-							tagsList={tagsList}
-							predefinedOnly={tagsPredefinedOnly}
-							disabled={isLocked}
-							onChange={(nextTags) => onUpdateTags(fileItem.id, nextTags)}
-						/>
-					) : null}
-				</div>
-			) : null}
-		</div>
-	);
-});
-
-const FileGridCard = React.memo(function FileGridCard({
-	fileItem,
-	totalItems,
-	isLocked,
-	canUpload,
-	hasLiveGateway,
-	languages,
-	itemSortProps,
-	handleSortProps,
-	onOpenInspector,
-	onTriggerReplace,
-	onDropReplace,
-	onToggleDelete,
-	t,
-}: {
-	fileItem: StudioMediaItem;
-	totalItems: number;
-	isLocked: boolean;
-	canUpload: boolean;
-	hasLiveGateway: boolean;
-	descriptionRows: number;
-	languages?: InputfieldLanguageItem[];
-	itemSortProps: React.HTMLAttributes<HTMLDivElement> & Record<string, unknown>;
-	handleSortProps: SortableHandleProps | null;
-	onOpenInspector: (itemId: string) => void;
-	onTriggerReplace: (item: StudioMediaItem) => void;
-	onDropReplace: (target: StudioMediaItem, files: FileList | null) => void;
-	onToggleDelete: (itemId: string) => void;
-	t: (
-		key: string,
-		paramsOrFallback?: string | Record<string, string | number | boolean | null | undefined>,
-		maybeFallback?: string
-	) => string;
-}): React.ReactElement {
-	const [isDropOverCard, setIsDropOverCard] = useState<boolean>(false);
-	const langSummary = getLanguageCountSummary(fileItem, languages);
-	const canDropReplace = Boolean(canUpload && hasLiveGateway && !fileItem.markedForDelete);
-
-	return (
-		<div
-			{...itemSortProps}
-			data-rw-media-card=""
-			onDragOver={(e) => {
-				if (!canDropReplace || !hasDraggedOsFiles(e)) return;
-				e.preventDefault();
-				e.stopPropagation();
-				if (!isDropOverCard) {
-					setIsDropOverCard(true);
-				}
-			}}
-			onDragLeave={(e) => {
-				if (!isDropOverCard) return;
-				if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
-					setIsDropOverCard(false);
-				}
-			}}
-			onDrop={(e) => {
-				if (!canDropReplace || !hasDraggedOsFiles(e)) return;
-				e.preventDefault();
-				e.stopPropagation();
-				setIsDropOverCard(false);
-				onDropReplace(fileItem, e.dataTransfer?.files || null);
-			}}
-			className={cn(
-				'relative flex items-center justify-between gap-2 overflow-hidden rounded-lg border border-border bg-card px-2 py-1.5 shadow-2xs transition-colors',
-				fileItem.markedForDelete && 'border-destructive/35 bg-destructive/5',
-				isDropOverCard && 'border-primary ring-2 ring-primary/25'
-			)}
-		>
-			{isDropOverCard ? (
-				<div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-background/85 backdrop-blur-[2px]">
-					<div className="flex items-center gap-1 rounded-full border border-primary/40 bg-primary/12 px-2.5 py-0.5 text-[11px] font-semibold text-primary-ink">
-						<DynamicIcon name="refresh-cw" className="size-3" aria-hidden="true" />
-						<span>{t('media.dropToReplace', 'Drop file to replace')}</span>
-					</div>
-				</div>
-			) : null}
-
-			<div className="flex min-w-0 flex-1 items-center gap-2">
-				{!isLocked && totalItems > 1 && handleSortProps ? (
-					<SortableHandle
-						{...handleSortProps}
-						title={t(
-							'media.dragToReorder',
-							{ name: fileItem.basename },
-							`Reorder ${fileItem.basename}`
-						)}
-						aria-label={t(
-							'media.dragToReorder',
-							{ name: fileItem.basename },
-							`Reorder ${fileItem.basename}`
-						)}
-					/>
-				) : null}
-				<button
-					type="button"
-					onClick={() => onOpenInspector(fileItem.id)}
-					aria-label={t('media.editAsset', { name: fileItem.basename }, `Inspect & edit ${fileItem.basename}`)}
-					className={cn(
-						'flex size-8 shrink-0 items-center justify-center rounded-sm border border-border bg-muted/40 text-muted-foreground hover:text-foreground cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-						fileItem.markedForDelete && 'opacity-45'
-					)}
-				>
-					<DynamicIcon name={resolveFileIconName(fileItem.ext)} className="size-3.5" aria-hidden="true" />
-				</button>
-				<div className="min-w-0 flex-1">
-					<MediaItemFilename item={fileItem} isDeleted={fileItem.markedForDelete} />
-					<div className="flex items-center gap-1 text-[10px] tabular-nums text-muted-foreground">
-						{fileItem.markedForDelete ? (
-							<span className="font-medium text-destructive">
-								{t('media.markedForDeletion', 'Marked for deletion')}
-							</span>
-						) : (
-							<>
-								<span className="font-mono uppercase">{fileItem.ext || 'file'}</span>
-								<span className="font-mono">
-									· {fileItem.filesizeStr || formatMediaBytes(fileItem.size)}
-								</span>
-								{languages && languages.length > 1 ? (
-									<span className="font-mono">
-										· {langSummary.filled}/{langSummary.total}
-									</span>
-								) : null}
-							</>
-						)}
-					</div>
-				</div>
-			</div>
-
-			<div className="flex shrink-0 items-center gap-0.5">
-				{fileItem.markedForDelete ? (
-					!isLocked ? (
-						<Button
-							type="button"
-							variant="outline"
-							size="xs"
-							className="h-6 gap-1 px-1.5 text-[10px]"
-							onClick={() => onToggleDelete(fileItem.id)}
-						>
-							<DynamicIcon name="rotate-ccw" className="size-3" aria-hidden="true" />
-							<span>{t('media.undoDelete', 'Undo')}</span>
-						</Button>
-					) : null
-				) : (
-					<>
-						<Button
-							type="button"
-							variant="ghost"
-							size="icon"
-							className="size-7 text-muted-foreground hover:text-foreground pointer-coarse:size-8"
-							aria-label={t('common.edit', 'Edit')}
-							title={t('common.edit', 'Edit')}
-							onClick={() => onOpenInspector(fileItem.id)}
-						>
-							<DynamicIcon name="sliders" className="size-3.5" aria-hidden="true" />
-						</Button>
-						{canUpload && hasLiveGateway ? (
-							<Button
-								type="button"
-								variant="ghost"
-								size="icon"
-								className="size-7 text-muted-foreground hover:text-foreground pointer-coarse:size-8"
-								aria-label={t('media.replace', 'Replace')}
-								title={t('media.replace', 'Replace')}
-								onClick={() => onTriggerReplace(fileItem)}
-							>
-								<DynamicIcon name="refresh-cw" className="size-3.5" aria-hidden="true" />
-							</Button>
-						) : null}
-						{!isLocked ? (
-							<Button
-								type="button"
-								variant="ghost"
-								size="icon"
-								className="size-7 text-muted-foreground hover:bg-destructive/10 hover:text-destructive pointer-coarse:size-8"
-								aria-label={t(
-									'media.removeFile',
-									{ name: fileItem.basename },
-									`Remove ${fileItem.basename}`
-								)}
-								title={t('common.delete', 'Delete')}
-								onClick={() => onToggleDelete(fileItem.id)}
-							>
-								<DynamicIcon name="trash" className="size-3.5" aria-hidden="true" />
-							</Button>
-						) : null}
-					</>
-				)}
-			</div>
-		</div>
-	);
-});
+import { formatMediaBytes, MediaItemFilename } from '../shared';
+import type { ReactInputfieldProps } from '../types';
 
 export function FileField(rawProps: ReactInputfieldProps): React.ReactElement {
-	const props = useMemo(() => normalizeMediaControlProps(rawProps, false), [rawProps]);
 	const { t } = useTranslations('core');
-	const rootRef = useRef<HTMLDivElement | null>(null);
-	const inputRef = useRef<HTMLInputElement | null>(null);
-	const replaceInputRef = useRef<HTMLInputElement | null>(null);
-	const uploadAbortControllersRef = useRef<Map<string, AbortController>>(new Map());
-	const fallbackId = useId();
-
-	const isLocked = Boolean(props.disabled || props.readOnly || props.renderValueMode);
-	const noUpload = Boolean(props.noUpload);
-	const canUpload = !isLocked && !noUpload;
-	const maxFiles = props.maxFiles ?? 0;
-	const isSingleMode = maxFiles === 1;
-	const isMultiple = !isSingleMode && (props.multiple ?? true);
-	const inputId = props.id || `rw_file_${fallbackId}`;
-	const inputName = props.name ? (props.name.endsWith('[]') ? props.name : `${props.name}[]`) : 'files[]';
-	const descriptionRows = props.descriptionRows ?? 1;
-	const useTags = Boolean(props.useTags);
-	const allowedExts = useMemo(
-		() => (props.extensions || []).map((e) => e.toLowerCase().replace(/^\./, '')),
-		[props.extensions]
+	const [viewMode, setViewMode] = useState<'grid' | 'table'>(() =>
+		normalizeMediaControlProps(rawProps, false).gridMode === 'grid' ? 'grid' : 'table'
 	);
-	const acceptAttr = props.accept || (allowedExts.length > 0 ? allowedExts.map((e) => `.${e}`).join(',') : '');
-	const hasLiveGateway = Boolean(!isLocked && props.mediaEndpoint && props.mediaToken);
-
-	const [items, setItems] = useState<StudioMediaItem[]>(() => hydrateStudioMediaItems(props.files));
-	const [queuedFiles, setQueuedFiles] = useState<File[]>([]);
-	const [uploadTasks, setUploadTasks] = useState<ActiveUploadTask[]>([]);
-	const [validationNotice, setValidationNotice] = useState<string>('');
-	const [viewMode, setViewMode] = useState<'table' | 'grid'>(() =>
-		props.gridMode === 'grid' ? 'grid' : 'table'
-	);
-	const [isSingleMetaOpen, setIsSingleMetaOpen] = useState<boolean>(false);
-	const [isDropOverZone, setIsDropOverZone] = useState<boolean>(false);
-	const [isDropOverSingle, setIsDropOverSingle] = useState<boolean>(false);
-	const [replaceTarget, setReplaceTarget] = useState<StudioMediaItem | null>(null);
 	const [inspectorItemId, setInspectorItemId] = useState<string | null>(null);
 
-	const [activeLangId, setActiveLangId] = useState<number>(() =>
-		readInitialSyncedLanguageId(props.languages)
-	);
-
-	useEffect(() => {
-		if (!props.languages || props.languages.length <= 1 || typeof window === 'undefined') {
-			return;
-		}
-		ensureNativeLanguageTabsBridge();
-		const langs = props.languages;
-		const onSelectAll = (event: Event) => {
-			const detail = (
-				event as CustomEvent<{
-					langId: number;
-					scope?: Element | null;
-					form?: HTMLFormElement | null;
-				}>
-			).detail;
-			if (!detail || typeof detail.langId !== 'number') {
-				return;
-			}
-			const ownForm = resolveLanguageSyncScope(rootRef.current);
-			const incomingForm =
-				detail.form ?? (detail.scope instanceof HTMLFormElement ? detail.scope : null);
-			if (incomingForm && ownForm && incomingForm !== ownForm) {
-				return;
-			}
-			if (langs.some((l) => l.id === detail.langId)) {
-				setActiveLangId(detail.langId);
-			}
-		};
-		window.addEventListener(LANGUAGE_SELECT_ALL_EVENT, onSelectAll);
-		return () => window.removeEventListener(LANGUAGE_SELECT_ALL_EVENT, onSelectAll);
-	}, [props.languages]);
-
-	const prevServerKeyRef = useRef<string>(
-		JSON.stringify((props.files || []).map((f) => `${f.id}:${f.hash}:${f.url}`))
-	);
-	useEffect(() => {
-		const nextKey = JSON.stringify((props.files || []).map((f) => `${f.id}:${f.hash}:${f.url}`));
-		if (nextKey !== prevServerKeyRef.current) {
-			prevServerKeyRef.current = nextKey;
-			setItems(hydrateStudioMediaItems(props.files));
-		}
-	}, [props.files]);
-
-	useEffect(() => {
-		const controllers = uploadAbortControllersRef.current;
-		return () => {
-			controllers.forEach((ctrl) => ctrl.abort());
-			controllers.clear();
-		};
-	}, []);
-
-	const queuedFilesRef = useRef<File[]>(queuedFiles);
-	queuedFilesRef.current = queuedFiles;
-	const itemsRef = useRef<StudioMediaItem[]>(items);
-	itemsRef.current = items;
-	const inFlightUploadsRef = useRef<number>(0);
-
-	useEffect(() => {
-		const el = rootRef.current as (HTMLDivElement & { __rwGetMediaItems?: () => StudioMediaItem[] }) | null;
-		if (!el) {
-			return;
-		}
-		el.__rwGetMediaItems = () => itemsRef.current.filter((i) => !i.markedForDelete);
-		return () => {
-			delete el.__rwGetMediaItems;
-		};
-	}, []);
-
-	const emitChange = useCallback(
-		(nextItems: StudioMediaItem[], nextQueued: File[] = queuedFilesRef.current) => {
-			const activeNames = nextItems.filter((i) => !i.markedForDelete).map((i) => i.name);
-			props.onValueChange?.(props.name, [...activeNames, ...nextQueued.map((f) => f.name)]);
-			notifyHostFormChanged(rootRef.current);
-		},
-		[props.name, props.onValueChange]
-	);
-
-	const sortable = useSortableList({
+	const {
+		props,
+		rootRef,
+		inputRef,
+		replaceInputRef,
+		isLocked,
+		noUpload,
+		canUpload,
+		maxFiles,
+		isSingleMode,
+		isMultiple,
+		inputId,
+		inputName,
+		descriptionRows,
+		useTags,
+		allowedExts,
+		acceptAttr,
+		hasLiveGateway,
 		items,
-		getId: (item) => item.id,
-		disabled: isLocked || items.length <= 1,
-		axis: viewMode === 'grid' ? 'grid' : 'vertical',
-		getLabel: (item) => item.basename,
-		onReorder: (next) => {
-			const reindexed = next.map((item, idx) => ({ ...item, sort: idx }));
-			itemsRef.current = reindexed;
-			setItems(reindexed);
-			emitChange(reindexed);
-		},
+		queuedEntries,
+		uploadTasks,
+		validationNotice,
+		setValidationNotice,
+		isSingleMetaOpen,
+		setIsSingleMetaOpen,
+		isDropOverZone,
+		setIsDropOverZone,
+		isDropOverSingle,
+		setIsDropOverSingle,
+		replaceTarget,
+		activeLangId,
+		setActiveLangId,
+		sortable,
+		activeExisting,
+		singleItem,
+		singleDeletedItems,
+		hasInlineMeta,
+		canAddMore,
+		mergedFieldError,
+		updateDescription,
+		updateTags,
+		updateCustomValue,
+		toggleDelete,
+		cancelUploadTask,
+		mergeServerItem,
+		removeQueuedEntry,
+		processIncomingFiles,
+		handleDropReplace,
+		triggerReplacePicker,
+	} = useMediaCollectionController({
+		rawProps,
+		isImage: false,
+		viewMode,
 	});
 
-	const activeExisting = useMemo(() => items.filter((i) => !i.markedForDelete), [items]);
-	const inFlightAdditionCount = useMemo(
-		() => uploadTasks.filter((tk) => !tk.isReplace).length,
-		[uploadTasks]
-	);
-	const activeCount = activeExisting.length + queuedFiles.length + inFlightAdditionCount;
-
-	const updateDescription = useCallback(
-		(itemId: string, value: string, langId?: number) => {
-			const isDef =
-				!langId ||
-				!props.languages ||
-				props.languages.length <= 1 ||
-				Boolean(props.languages.find((l) => l.id === langId)?.isDefault);
-			const langKey = isDef ? 'default' : String(langId);
-
-			setItems((prev) =>
-				prev.map((item) => {
-					if (item.id !== itemId) return item;
-					return {
-						...item,
-						description: isDef ? value : item.description,
-						descriptions: {
-							...(item.descriptions || {}),
-							[langKey]: value,
-						},
-					};
-				})
-			);
-			notifyHostFormChanged(rootRef.current);
-		},
-		[props.languages]
-	);
-
-	const updateTags = useCallback((itemId: string, tags: string) => {
-		setItems((prev) => prev.map((item) => (item.id === itemId ? { ...item, tags } : item)));
-		notifyHostFormChanged(rootRef.current);
-	}, []);
-
-	const updateCustomValue = useCallback(
-		(itemId: string, fieldName: string, nextVal: unknown) => {
-			setItems((prev) =>
-				prev.map((item) =>
-					item.id === itemId
-						? {
-								...item,
-								customValues: {
-									...(item.customValues || {}),
-									[fieldName]: nextVal,
-								},
-							}
-						: item
-				)
-			);
-			props.onValueChange?.(fieldName, nextVal);
-			notifyHostFormChanged(rootRef.current);
-		},
-		[props.onValueChange]
-	);
-
-	const toggleDelete = useCallback(
-		(itemId: string) => {
-			const current = itemsRef.current.find((item) => item.id === itemId);
-			if (current?.markedForDelete && maxFiles > 0) {
-				const liveActive =
-					itemsRef.current.filter((item) => !item.markedForDelete).length +
-					queuedFilesRef.current.length +
-					inFlightUploadsRef.current;
-				if (liveActive >= maxFiles) {
-					setValidationNotice(
-						t('media.maxFilesReached', { max: maxFiles }, `Maximum file limit (${maxFiles}) reached.`)
-					);
-					return;
-				}
-			}
-			setItems((prev) => {
-				const next = prev.map((item) =>
-					item.id === itemId ? { ...item, markedForDelete: !item.markedForDelete } : item
-				);
-				itemsRef.current = next;
-				emitChange(next);
-				return next;
-			});
-		},
-		[emitChange, maxFiles, t]
-	);
-
-	const cancelUploadTask = useCallback((taskId: string) => {
-		const controller = uploadAbortControllersRef.current.get(taskId);
-		if (controller) {
-			controller.abort();
-			uploadAbortControllersRef.current.delete(taskId);
-		}
-		setUploadTasks((prev) => prev.filter((tk) => tk.id !== taskId));
-	}, []);
-
-	const mergeServerItem = useCallback(
-		(updated: InputfieldMediaItem, replacedId?: string) => {
-			const hydrated = hydrateStudioMediaItems([updated])[0];
-			if (!hydrated) {
-				return;
-			}
-			setItems((prev) => {
-				const idx = prev.findIndex(
-					(it) =>
-						(replacedId && it.id === replacedId) ||
-						it.id === hydrated.id ||
-						it.hash === hydrated.hash ||
-						it.name === hydrated.name
-				);
-				const next = [...prev];
-				const existingAtIdx = idx >= 0 ? next[idx] : undefined;
-				if (idx >= 0 && existingAtIdx) {
-					next[idx] = { ...existingAtIdx, ...hydrated, markedForDelete: false };
-				} else {
-					next.push(hydrated);
-				}
-				itemsRef.current = next;
-				emitChange(next);
-				return next;
-			});
-		},
-		[emitChange]
-	);
-
-	const syncFallbackQueue = (nextQueued: File[]) => {
-		setQueuedFiles(nextQueued);
-		assignInputFiles(inputRef.current, nextQueued);
-		emitChange(items, nextQueued);
-	};
-
-	const processIncomingFiles = async (
-		rawList: FileList | File[] | null,
-		explicitReplace?: StudioMediaItem | null,
-		isCardDrop = false
-	) => {
-		if (!rawList || !canUpload) return;
-		const incoming = Array.from(rawList);
-		if (incoming.length === 0) return;
-
-		const liveActiveExisting = itemsRef.current.filter((i) => !i.markedForDelete);
-		const targetToReplace =
-			explicitReplace || (isSingleMode && liveActiveExisting.length === 1 && hasLiveGateway ? liveActiveExisting[0] : null);
-		const isReplacement = Boolean(targetToReplace);
-		const effectiveExistingCount = targetToReplace
-			? Math.max(0, liveActiveExisting.length - 1)
-			: liveActiveExisting.length;
-		const effectiveQueuedCount = hasLiveGateway
-			? isReplacement
-				? 0
-				: inFlightUploadsRef.current
-			: queuedFilesRef.current.length;
-
-		const { accepted, errors } = validateStudioIncomingFiles(incoming, {
-			allowedExtensions: allowedExts,
-			maxFilesize: props.maxFilesize,
-			maxFiles: targetToReplace ? 1 : maxFiles,
-			existingCount: effectiveExistingCount,
-			queuedCount: effectiveQueuedCount,
-			isMultiple: targetToReplace ? false : isMultiple,
-			overwrite: Boolean(props.overwrite || isSingleMode),
-			isReplacement,
-			isExplicitCardReplace: isCardDrop,
-			existingNames: liveActiveExisting.map((i) => i.name),
-			t,
-		});
-
-		setValidationNotice(errors.join(' '));
-		if (inputRef.current) {
-			inputRef.current.value = '';
-		}
-		if (replaceInputRef.current) {
-			replaceInputRef.current.value = '';
-		}
-
-		if (accepted.length === 0) {
-			return;
-		}
-
-		if (hasLiveGateway && props.mediaEndpoint && props.mediaToken) {
-			const reservedSlots = !isReplacement ? accepted.length : 0;
-			if (reservedSlots > 0) {
-				inFlightUploadsRef.current += reservedSlots;
-			}
-
-			for (const file of accepted) {
-				const taskId = `up_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-				const abortController = new AbortController();
-				uploadAbortControllersRef.current.set(taskId, abortController);
-				setUploadTasks((prev) => [
-					...prev,
-					{ id: taskId, name: file.name, size: file.size, progress: 5, isReplace: isReplacement },
-				]);
-
-				try {
-					const result = await uploadMediaFileViaXhr({
-						endpoint: props.mediaEndpoint,
-						mediaToken: props.mediaToken,
-						file,
-						action: targetToReplace ? 'replace' : 'upload',
-						targetHash: targetToReplace?.hash,
-						targetName: targetToReplace?.name,
-						clientOwnerId: props.ownerId ? String(props.ownerId) : undefined,
-						clientInputName: props.name || undefined,
-						signal: abortController.signal,
-						onProgress: (pct) => {
-							setUploadTasks((prev) =>
-								prev.map((tk) => (tk.id === taskId ? { ...tk, progress: pct } : tk))
-							);
-						},
-					});
-
-					uploadAbortControllersRef.current.delete(taskId);
-					setUploadTasks((prev) => prev.filter((tk) => tk.id !== taskId));
-
-					if (result.aborted) {
-						continue;
-					}
-
-					if (result.ok) {
-						if (targetToReplace && result.item) {
-							mergeServerItem(result.item, targetToReplace.id);
-							if (inspectorItemId === targetToReplace.id) {
-								setInspectorItemId(result.item.id);
-							}
-						} else if (Array.isArray(result.items) && result.items.length > 0) {
-							const incomingHydrated = hydrateStudioMediaItems(result.items);
-							setItems((prev) => {
-								if (isSingleMode) {
-									const preservedDeleted = prev.filter(
-										(p) =>
-											p.markedForDelete &&
-											!incomingHydrated.some(
-												(hi) => hi.id === p.id || hi.hash === p.hash || hi.name === p.name
-											)
-									);
-									const singleNext = [
-										...preservedDeleted,
-										...incomingHydrated.slice(-1).map((hi) => ({ ...hi, sort: 0 })),
-									];
-									itemsRef.current = singleNext;
-									emitChange(singleNext);
-									return singleNext;
-								}
-								const next = [...prev];
-								for (const hi of incomingHydrated) {
-									const existingIdx = next.findIndex(
-										(p) => p.id === hi.id || p.hash === hi.hash || p.name === hi.name
-									);
-									if (existingIdx >= 0) {
-										next[existingIdx] = { ...next[existingIdx], ...hi, markedForDelete: false };
-									} else if (
-										maxFiles === 0 ||
-										next.filter((p) => !p.markedForDelete).length < maxFiles
-									) {
-										next.push({ ...hi, sort: next.length });
-									}
-								}
-								itemsRef.current = next;
-								emitChange(next);
-								return next;
-							});
-						}
-						if (Array.isArray(result.errors) && result.errors.length > 0) {
-							setValidationNotice(result.errors.join(' '));
-						}
-					} else {
-						setValidationNotice(result.error || t('media.uploadFailed', 'Upload failed.'));
-					}
-				} finally {
-					uploadAbortControllersRef.current.delete(taskId);
-					setUploadTasks((prev) => prev.filter((tk) => tk.id !== taskId));
-					if (reservedSlots > 0) {
-						inFlightUploadsRef.current = Math.max(0, inFlightUploadsRef.current - 1);
-					}
-				}
-			}
-			setReplaceTarget(null);
-			return;
-		}
-
-		// Fallback client-side DataTransfer queue
-		if (!isMultiple) {
-			if (isSingleMode && liveActiveExisting.length > 0) {
-				setItems((prev) => {
-					const marked = prev.map((it) => ({ ...it, markedForDelete: true }));
-					itemsRef.current = marked;
-					return marked;
-				});
-			}
-			syncFallbackQueue(accepted.slice(0, 1));
-		} else {
-			const combined = [...queuedFilesRef.current, ...accepted];
-			const maxFallback =
-				maxFiles > 0 ? Math.max(0, maxFiles - liveActiveExisting.length) : combined.length;
-			syncFallbackQueue(combined.slice(0, maxFallback));
-		}
-	};
-
-	const processIncomingFilesRef = useRef(processIncomingFiles);
-	processIncomingFilesRef.current = processIncomingFiles;
-
-	const handleDropReplaceOnItem = useCallback((target: StudioMediaItem, files: FileList | null) => {
-		void processIncomingFilesRef.current(files, target, true);
-	}, []);
-
-	const triggerReplacePicker = useCallback((target: StudioMediaItem) => {
-		setReplaceTarget(target);
-		replaceInputRef.current?.click();
-	}, []);
-
+	const activeCount = activeExisting.length + queuedEntries.length;
 	const inspectedIndex = inspectorItemId ? items.findIndex((it) => it.id === inspectorItemId) : -1;
 	const inspectedItem = inspectedIndex >= 0 ? items[inspectedIndex] : null;
-	const singleItem = isSingleMode && activeExisting.length > 0 ? activeExisting[0] : null;
-	const singleDeletedItems = isSingleMode ? items.filter((it) => it.markedForDelete) : [];
-	const hasInlineMeta = descriptionRows > 0 || useTags;
-	const canAddMore = canUpload && (maxFiles === 0 || activeCount < maxFiles);
 
-	const mergedFieldError =
-		(rawProps.error && rawProps.error.trim() !== '' ? rawProps.error : '') ||
-		(props.isStandaloneIsland && props.fieldErrors.length > 0 ? props.fieldErrors.join(' ') : '');
-	const hasStatusSection = Boolean(mergedFieldError || validationNotice || uploadTasks.length > 0);
-
-	const statusSectionNode = hasStatusSection ? (
-		<div data-rw-field-slot="status" className="space-y-1.5">
-			{mergedFieldError ? (
-				<FieldStatusRow error={mergedFieldError} errorId={rawProps.errorId} />
-			) : null}
-
-			{validationNotice ? (
-				<div
-					role="alert"
-					aria-live="assertive"
-					className="flex items-start justify-between gap-2 rounded-md border border-destructive/40 bg-destructive/8 px-3 py-1.5 text-xs font-medium text-destructive"
-				>
-					<div className="flex items-start gap-1.5 min-w-0">
-						<DynamicIcon name="alert-circle" className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-						<span className="break-words">{validationNotice}</span>
-					</div>
-					<button
-						type="button"
-						onClick={() => setValidationNotice('')}
-						aria-label={t('common.dismiss', 'Dismiss')}
-						className="shrink-0 rounded-xs p-0.5 hover:bg-destructive/15 cursor-pointer"
-					>
-						<DynamicIcon name="x" className="size-3.5" aria-hidden="true" />
-					</button>
-				</div>
-			) : null}
-
-			{uploadTasks.length > 0 ? (
-				<div className="space-y-1.5 rounded-md border border-border bg-muted/25 px-3 py-2" aria-live="polite">
-					{uploadTasks.map((task) => (
-						<div key={task.id} className="space-y-1">
-							<div className="flex items-center justify-between gap-2 text-xs">
-								<span className="truncate font-medium text-foreground">{task.name}</span>
-								<div className="flex shrink-0 items-center gap-1.5">
-									<span className="font-mono text-[11px] tabular-nums text-muted-foreground">
-										{task.progress}%
-									</span>
-									<button
-										type="button"
-										onClick={() => cancelUploadTask(task.id)}
-										aria-label={t('media.cancelUpload', 'Cancel upload')}
-										title={t('media.cancelUpload', 'Cancel upload')}
-										className="inline-flex size-5 items-center justify-center rounded-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer pointer-coarse:size-7"
-									>
-										<DynamicIcon name="x" className="size-3" aria-hidden="true" />
-									</button>
-								</div>
-							</div>
-							<progress data-rw-progress="" aria-label={task.name} value={task.progress} max={100} />
-						</div>
-					))}
-				</div>
-			) : null}
-		</div>
-	) : null;
+	const statusBarNode = (
+		<MediaStatusBar
+			mergedFieldError={mergedFieldError}
+			errorId={rawProps.errorId}
+			validationNotice={validationNotice}
+			onDismissNotice={() => setValidationNotice('')}
+			uploadTasks={uploadTasks}
+			onCancelUploadTask={cancelUploadTask}
+		/>
+	);
 
 	return (
 		<div
@@ -1257,13 +350,13 @@ export function FileField(rawProps: ReactInputfieldProps): React.ReactElement {
 							tabIndex={-1}
 						/>
 					) : items.length === 0 ? (
-						<CompactMediaLockedBar isImage={false} />
+						<CompactMediaLockedBar isImage={false} isDisabled={Boolean(props.disabled)} />
 					) : null}
 					</div>
 
-					{statusSectionNode}
+					{statusBarNode}
 
-					{!singleItem && ((activeCount === 0 && singleDeletedItems.length > 0) || queuedFiles.length > 0) ? (
+					{!singleItem && ((activeCount === 0 && singleDeletedItems.length > 0) || queuedEntries.length > 0) ? (
 						<div data-rw-field-slot="selected" className="space-y-1">
 							{activeCount === 0 && singleDeletedItems.length > 0
 								? singleDeletedItems.map((delItem) => (
@@ -1300,27 +393,27 @@ export function FileField(rawProps: ReactInputfieldProps): React.ReactElement {
 									))
 								: null}
 
-							{queuedFiles.map((file, idx) => (
+							{queuedEntries.map((entry, idx) => (
 								<div
-									key={`${file.name}_${idx}`}
+									key={`${entry.file.name}_${idx}`}
 									className="flex items-center justify-between gap-2 rounded-md border border-primary/40 bg-primary/5 px-2.5 py-1.5 text-xs"
 								>
 									<div className="flex min-w-0 items-center gap-2">
 										<span className="font-medium text-primary">
 											{t('media.pendingUpload', 'Pending save')}
 										</span>
-										<span className="truncate font-medium text-foreground">{file.name}</span>
+										<span className="truncate font-medium text-foreground">{entry.file.name}</span>
 										<span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
-											· {formatMediaBytes(file.size)}
+											· {formatMediaBytes(entry.file.size)}
 										</span>
 									</div>
 									<Button
 										type="button"
 										variant="ghost"
 										size="icon"
-										aria-label={t('media.removeFile', { name: file.name }, `Remove ${file.name}`)}
+										aria-label={t('media.removeFile', { name: entry.file.name }, `Remove ${entry.file.name}`)}
 										className="size-7 shrink-0 text-muted-foreground hover:text-destructive pointer-coarse:size-9"
-										onClick={() => syncFallbackQueue(queuedFiles.filter((_, qIdx) => qIdx !== idx))}
+										onClick={() => removeQueuedEntry(idx)}
 									>
 										<DynamicIcon name="x" className="size-3.5" aria-hidden="true" />
 									</Button>
@@ -1341,7 +434,7 @@ export function FileField(rawProps: ReactInputfieldProps): React.ReactElement {
 								isImage={false}
 								isMultiple={isMultiple}
 								isSingleMode={isSingleMode}
-								hasExistingItems={items.length > 0 || queuedFiles.length > 0}
+								hasExistingItems={items.length > 0 || queuedEntries.length > 0}
 								isLocked={isLocked}
 								required={Boolean(props.required && activeCount === 0)}
 								acceptAttr={acceptAttr || undefined}
@@ -1366,14 +459,14 @@ export function FileField(rawProps: ReactInputfieldProps): React.ReactElement {
 								tabIndex={-1}
 							/>
 						) : items.length === 0 ? (
-							<CompactMediaLockedBar isImage={false} />
+							<CompactMediaLockedBar isImage={false} isDisabled={Boolean(props.disabled)} />
 						) : null}
 					</div>
 
-					{statusSectionNode}
+					{statusBarNode}
 
 					{/* Selected / Uploaded Multi-File List */}
-					{items.length > 0 || queuedFiles.length > 0 ? (
+					{items.length > 0 || queuedEntries.length > 0 ? (
 						<div data-rw-field-slot="selected" className="space-y-2">
 					{/* Multi-File Toolbar */}
 					{items.length > 0 ? (
@@ -1472,7 +565,7 @@ export function FileField(rawProps: ReactInputfieldProps): React.ReactElement {
 										onUpdateTags={updateTags}
 										onOpenInspector={setInspectorItemId}
 										onTriggerReplace={triggerReplacePicker}
-										onDropReplace={handleDropReplaceOnItem}
+										onDropReplace={handleDropReplace}
 										onToggleDelete={toggleDelete}
 										t={t}
 									/>
@@ -1507,7 +600,7 @@ export function FileField(rawProps: ReactInputfieldProps): React.ReactElement {
 										}
 										onOpenInspector={setInspectorItemId}
 										onTriggerReplace={triggerReplacePicker}
-										onDropReplace={handleDropReplaceOnItem}
+										onDropReplace={handleDropReplace}
 										onToggleDelete={toggleDelete}
 										t={t}
 									/>
@@ -1517,29 +610,29 @@ export function FileField(rawProps: ReactInputfieldProps): React.ReactElement {
 					) : null}
 
 					{/* Fallback Pending Queue */}
-					{queuedFiles.length > 0 ? (
+					{queuedEntries.length > 0 ? (
 						<div className="space-y-1.5">
-							{queuedFiles.map((file, idx) => (
+							{queuedEntries.map((entry, idx) => (
 								<div
-									key={`${file.name}_${idx}`}
+									key={`${entry.file.name}_${idx}`}
 									className="flex items-center justify-between gap-2 rounded-md border border-primary/40 bg-primary/5 px-2.5 py-1.5 text-xs"
 								>
 									<div className="flex min-w-0 items-center gap-2">
 										<span className="font-medium text-primary">
 											{t('media.pendingUpload', 'Pending save')}
 										</span>
-										<span className="truncate font-medium text-foreground">{file.name}</span>
+										<span className="truncate font-medium text-foreground">{entry.file.name}</span>
 										<span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
-											· {formatMediaBytes(file.size)}
+											· {formatMediaBytes(entry.file.size)}
 										</span>
 									</div>
 									<Button
 										type="button"
 										variant="ghost"
 										size="icon"
-										aria-label={t('media.removeFile', { name: file.name }, `Remove ${file.name}`)}
+										aria-label={t('media.removeFile', { name: entry.file.name }, `Remove ${entry.file.name}`)}
 										className="size-7 shrink-0 text-muted-foreground hover:text-destructive pointer-coarse:size-9"
-										onClick={() => syncFallbackQueue(queuedFiles.filter((_, qIdx) => qIdx !== idx))}
+										onClick={() => removeQueuedEntry(idx)}
 									>
 										<DynamicIcon name="x" className="size-3.5" aria-hidden="true" />
 									</Button>

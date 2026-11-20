@@ -36,7 +36,15 @@ function coerceSlugSourceString(raw: unknown): string {
 export function TextField(props: ReactInputfieldProps): React.ReactElement {
 	const hasLanguages = Array.isArray(props.languages) && props.languages.length > 1;
 	const defaultScalar = coerceSlugSourceString(props.value);
+	const languagesSignature = useMemo(() => {
+		if (!props.languages || props.languages.length === 0) {
+			return '';
+		}
+		return props.languages.map((lang) => `${lang.id}:${String(lang.value ?? '')}`).join('\u0000');
+	}, [props.languages]);
 
+	const [prevPropScalar, setPrevPropScalar] = useState<string>(defaultScalar);
+	const [prevLangSignature, setPrevLangSignature] = useState<string>(languagesSignature);
 	const [scalarValue, setScalarValue] = useState<string>(defaultScalar);
 	const [langValues, setLangValues] = useState<Record<number, string>>(() => {
 		const map: Record<number, string> = {};
@@ -47,6 +55,30 @@ export function TextField(props: ReactInputfieldProps): React.ReactElement {
 		}
 		return map;
 	});
+
+	if (defaultScalar !== prevPropScalar) {
+		setPrevPropScalar(defaultScalar);
+		if (scalarValue !== defaultScalar) {
+			setScalarValue(defaultScalar);
+		}
+	}
+	if (languagesSignature !== prevLangSignature) {
+		setPrevLangSignature(languagesSignature);
+		if (props.languages && props.languages.length > 0) {
+			const nextLangMap: Record<number, string> = { ...langValues };
+			let langChanged = false;
+			for (const lang of props.languages) {
+				const incoming = String(lang.value ?? '');
+				if (nextLangMap[lang.id] !== incoming) {
+					nextLangMap[lang.id] = incoming;
+					langChanged = true;
+				}
+			}
+			if (langChanged) {
+				setLangValues(nextLangMap);
+			}
+		}
+	}
 	const [internalLangId, setInternalLangId] = useState<number>(() =>
 		readInitialSyncedLanguageId(props.languages)
 	);
@@ -112,37 +144,6 @@ export function TextField(props: ReactInputfieldProps): React.ReactElement {
 			onValueChangeRef.current?.(lang.inputName || `${props.name}__${lang.id}`, nextLangSlug);
 		}
 	};
-
-	const languagesSignature = useMemo(() => {
-		if (!props.languages || props.languages.length === 0) {
-			return '';
-		}
-		return props.languages.map((lang) => `${lang.id}:${String(lang.value ?? '')}`).join('\u0000');
-	}, [props.languages]);
-
-	useEffect(() => {
-		const nextScalar = coerceSlugSourceString(props.value);
-		setScalarValue(nextScalar);
-	}, [props.value]);
-
-	useEffect(() => {
-		const currentLangs = languagesRef.current;
-		if (!currentLangs || currentLangs.length === 0) {
-			return;
-		}
-		setLangValues((prev) => {
-			let changed = false;
-			const next: Record<number, string> = { ...prev };
-			for (const lang of currentLangs) {
-				const incoming = String(lang.value ?? '');
-				if (next[lang.id] !== incoming) {
-					next[lang.id] = incoming;
-					changed = true;
-				}
-			}
-			return changed ? next : prev;
-		});
-	}, [languagesSignature]);
 
 	// Reactive formValues watcher for connected slug fields inside <SchemaForm />
 	useEffect(() => {

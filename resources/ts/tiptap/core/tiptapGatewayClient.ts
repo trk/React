@@ -1,38 +1,12 @@
 import { getReactWorkspaceRuntime } from '../../runtime';
 import type { PwImagePickerItem, TiptapPwContext } from './tiptapTypes';
 
-function sanitizeSameOriginUrl(url?: string | null): string {
-	const trimmed = String(url ?? '').trim();
-	if (!trimmed || /[\x00-\x1F\x7F]/.test(trimmed)) {
-		return '';
-	}
-	if (trimmed.startsWith('//') || trimmed.startsWith('/\\') || trimmed.startsWith('\\')) {
-		return '';
-	}
-	if (trimmed.startsWith('/') || trimmed.startsWith('./') || trimmed.startsWith('../')) {
-		return trimmed;
-	}
-	if (typeof window !== 'undefined' && window.location?.origin && window.location.origin !== 'null') {
-		try {
-			const parsed = new URL(trimmed, window.location.origin);
-			if (
-				(parsed.protocol === 'http:' || parsed.protocol === 'https:') &&
-				parsed.origin === window.location.origin
-			) {
-				return trimmed;
-			}
-		} catch {
-			return '';
-		}
-	}
-	return '';
-}
-
 export async function fetchTiptapGet<T = Record<string, unknown>>(
 	pwContext: TiptapPwContext,
 	params: Record<string, string | number | boolean | undefined>
 ): Promise<T | null> {
-	const endpoint = sanitizeSameOriginUrl(pwContext.endpoint || '/_react/tiptap');
+	const { Hooks, Utils } = getReactWorkspaceRuntime();
+	const endpoint = Utils.sanitizeSameOriginUrl(pwContext.endpoint || '/_react/tiptap');
 	const token = String(pwContext.tiptapToken || '').trim();
 	if (!endpoint || !token || typeof window === 'undefined') {
 		return null;
@@ -44,59 +18,31 @@ export async function fetchTiptapGet<T = Record<string, unknown>>(
 			url.searchParams.set(k, String(v));
 		}
 	}
-	const res = await window.fetch(url.toString(), {
-		method: 'GET',
-		credentials: 'same-origin',
-		headers: {
-			Accept: 'application/json',
-			'X-Requested-With': 'XMLHttpRequest',
-		},
-	});
-	if (!res.ok) {
-		return null;
-	}
-	return (await res.json()) as T;
+	const res = await Hooks.fetchGatewayJson<T>(url.toString(), { method: 'GET' });
+	return res.ok ? res.data : null;
 }
 
 export async function postTiptapJson<T = Record<string, unknown>>(
 	pwContext: TiptapPwContext,
 	payload: Record<string, unknown>
 ): Promise<T> {
-	const endpoint = sanitizeSameOriginUrl(pwContext.endpoint || '/_react/tiptap');
+	const { Hooks, Utils } = getReactWorkspaceRuntime();
+	const endpoint = Utils.sanitizeSameOriginUrl(pwContext.endpoint || '/_react/tiptap');
 	const token = String(pwContext.tiptapToken || '').trim();
 	if (!endpoint || !token || typeof window === 'undefined') {
 		throw new Error('Editor context is unavailable.');
 	}
-	const { getCsrfToken } = getReactWorkspaceRuntime();
-	const csrf = getCsrfToken();
-	const bodyPayload: Record<string, unknown> = {
-		...payload,
-		tiptapToken: token,
-	};
-	if (csrf.name && csrf.value) {
-		bodyPayload[csrf.name] = csrf.value;
-	}
-
-	const headers: Record<string, string> = {
-		Accept: 'application/json',
-		'Content-Type': 'application/json',
-		'X-Requested-With': 'XMLHttpRequest',
-	};
-	if (csrf.name && csrf.value) {
-		headers['X-CSRF-TOKEN'] = csrf.value;
-	}
-
-	const res = await window.fetch(endpoint, {
+	const res = await Hooks.fetchGatewayJson<T & { ok?: unknown }>(endpoint, {
 		method: 'POST',
-		credentials: 'same-origin',
-		headers,
-		body: JSON.stringify(bodyPayload),
+		payload: {
+			...payload,
+			tiptapToken: token,
+		},
 	});
-	const data = await res.json().catch(() => ({ ok: false, error: `HTTP ${res.status}` }));
-	if (!res.ok || !data?.ok) {
-		throw new Error(String(data?.error || `HTTP ${res.status}`));
+	if (!res.ok || !res.data || !res.data.ok) {
+		throw new Error(res.error || `HTTP ${res.status}`);
 	}
-	return data as T;
+	return res.data as T;
 }
 
 export async function uploadTiptapImages(
@@ -104,7 +50,8 @@ export async function uploadTiptapImages(
 	files: File[],
 	options?: { pageId?: number; fieldName?: string; mediaToken?: string }
 ): Promise<PwImagePickerItem[]> {
-	const endpoint = sanitizeSameOriginUrl(pwContext.endpoint || '/_react/tiptap');
+	const { Utils } = getReactWorkspaceRuntime();
+	const endpoint = Utils.sanitizeSameOriginUrl(pwContext.endpoint || '/_react/tiptap');
 	const token = String(pwContext.tiptapToken || '').trim();
 	if (!endpoint || !token || typeof window === 'undefined' || files.length === 0) {
 		throw new Error('Image upload is unavailable.');

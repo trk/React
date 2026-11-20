@@ -16,7 +16,8 @@ import type {
 } from '../core/tiptapTypes';
 
 const runtime = getReactWorkspaceRuntime();
-const { React, ReactDOM, cn } = runtime;
+const { React, Portal, cn } = runtime;
+const { PortalRoot } = Portal;
 const { useEffect, useId, useMemo, useRef, useState } = React;
 
 const SLASH_PLUGIN_KEY = new PluginKey('rwTiptapSlashMenu');
@@ -759,8 +760,12 @@ export function SlashCommandPalette({
 		</div>
 	);
 
-	if (typeof document !== 'undefined' && ReactDOM?.createPortal) {
-		return ReactDOM.createPortal(paletteNode, document.body);
+	let anchorEl: HTMLElement | null = null;
+	try {
+		anchorEl = editor?.view?.dom ?? null;
+	} catch {
+		anchorEl = null;
 	}
-	return paletteNode;
+
+	return <PortalRoot anchor={anchorEl}>{paletteNode}</PortalRoot>;
 }

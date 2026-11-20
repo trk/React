@@ -1,3 +1,4 @@
+import { fetchGatewayJson } from '../hooks';
 import {
 	clampIconSize,
 	clampIconStrokeWidth,
@@ -130,17 +131,17 @@ function flushHydrationBatch(): void {
 	const sep = endpoint.includes('?') ? '&' : '?';
 	const url = `${endpoint}${sep}action=hydrate&names=${encodeURIComponent(names.join(','))}`;
 
-	void fetch(url, {
+	void fetchGatewayJson<{ icons?: Record<string, IconCatalogEntry> }>(url, {
 		method: 'GET',
-		headers: {
-			Accept: 'application/json',
-			'X-Requested-With': 'XMLHttpRequest',
-		},
-		credentials: 'same-origin',
 	})
-		.then((res) => (res.ok ? res.json() : null))
-		.then((json: { icons?: Record<string, IconCatalogEntry> } | null) => {
-			const returned = json?.icons ?? {};
+		.then((res) => {
+			if (!res.ok || !res.data) {
+				for (const requested of names) {
+					failedNames.add(requested);
+				}
+				return;
+			}
+			const returned = res.data.icons ?? {};
 			storeCatalogEntries(returned);
 			for (const requested of names) {
 				if (!iconEntryCache.has(requested)) {
@@ -199,19 +200,14 @@ export async function queryIcons(params: {
 	}
 
 	const sep = endpoint.includes('?') ? '&' : '?';
-	const res = await fetch(`${endpoint}${sep}${qs.toString()}`, {
+	const res = await fetchGatewayJson<IconQueryResponse>(`${endpoint}${sep}${qs.toString()}`, {
 		method: 'GET',
-		headers: {
-			Accept: 'application/json',
-			'X-Requested-With': 'XMLHttpRequest',
-		},
-		credentials: 'same-origin',
 		signal: params.signal,
 	});
-	if (!res.ok) {
-		throw new Error(`Icon query failed (${res.status})`);
+	if (!res.ok || !res.data) {
+		throw new Error(res.error || `Icon query failed (${res.status})`);
 	}
-	const data = (await res.json()) as IconQueryResponse;
+	const data = res.data;
 	if (Array.isArray(data.categories)) {
 		cachedCategories = data.categories;
 	} else if (cachedCategories) {

@@ -20,8 +20,9 @@ export interface WorkspaceLauncherPageProps {
 }
 
 const runtime = getReactWorkspaceRuntime();
-const { React, Inertia, UI, Layout, Utils, cn, DynamicIcon, getCsrfToken, registerPages, useTranslations } = runtime;
-const { sanitizeHref, sanitizeSameOriginUrl, withWorkspaceShellUrl } = Utils;
+const { React, Inertia, UI, Hooks, Layout, Utils, cn, DynamicIcon, registerPages, useTranslations } = runtime;
+const { sanitizeHref, withWorkspaceShellUrl } = Utils;
+const { fetchGatewayJson } = Hooks;
 const { useEffect, useMemo, useRef, useState } = React;
 const { Link, router, usePage } = Inertia;
 const { AppShell, postWorkspacePreferenceAction } = Layout;
@@ -498,26 +499,20 @@ export function WorkspaceLauncher({
 
 		setSavingPrefs(true);
 		try {
-			const safePrefsEndpoint = sanitizeSameOriginUrl(prefsEndpoint) || '/_react/workspace-prefs';
-			const csrf = getCsrfToken();
-			const res = await window.fetch(safePrefsEndpoint, {
+			const res = await fetchGatewayJson<{
+				ok?: boolean;
+				error?: string;
+				preferences?: WorkspacePreferencesDto;
+			}>(prefsEndpoint || '/_react/workspace-prefs', {
 				method: 'POST',
-				credentials: 'same-origin',
-				headers: {
-					'Content-Type': 'application/json',
-					Accept: 'application/json',
-					...(csrf.value ? { 'X-CSRF-Token': csrf.value } : {}),
-				},
-				body: JSON.stringify({
+				payload: {
 					action: 'import_layout',
 					preset: parsed,
-					csrf,
-					...(csrf.name && csrf.value ? { [csrf.name]: csrf.value } : {}),
-				}),
+				},
 			});
-			const json = await res.json();
+			const json = res.data;
 			if (!res.ok || !json?.ok) {
-				setImportError(json?.error || 'Could not import layout preset.');
+				setImportError(res.error || json?.error || 'Could not import layout preset.');
 				return;
 			}
 			if (json.preferences) {

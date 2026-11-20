@@ -25,7 +25,8 @@ export type {
 };
 
 const runtime = getReactWorkspaceRuntime();
-const { React, ReactDOM, UI, cn, DynamicIcon } = runtime;
+const { React, Portal, UI, cn, DynamicIcon } = runtime;
+const { PortalRoot } = Portal;
 const { useCallback, useEffect, useId, useMemo, useRef, useState } = React;
 const { Badge, Button, Input, Label, Select, Tabs, TabsContent, TabsList, TabsTrigger } = UI;
 
@@ -156,16 +157,18 @@ function NativeModalDialog({
 		}
 	}, [open]);
 
-	if (!open || typeof document === 'undefined') {
+	if (!open) {
 		return null;
 	}
 
-	return ReactDOM.createPortal(
-		<dialog
-			ref={dialogRef}
+	return (
+		<PortalRoot ssrFallback={false}>
+			<dialog
+				ref={dialogRef}
 			aria-labelledby={titleId}
 			data-rw-tiptap-dialog={dialogKind}
 			data-rw-portal-overlay=""
+			data-rw-surface="elevated"
 			{...({ closedby: 'any' } as Record<string, string>)}
 			className={cn('w-full text-sm', maxWidthClass)}
 		>
@@ -191,8 +194,8 @@ function NativeModalDialog({
 					{footer}
 				</div>
 			) : null}
-		</dialog>,
-		document.body
+			</dialog>
+		</PortalRoot>
 	);
 }
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { createPortal, flushSync } from 'react-dom';
+import { createPortal, flushSync, unstable_batchedUpdates } from 'react-dom';
 import * as ReactDOMClient from 'react-dom/client';
 import * as ReactJsxRuntime from 'react/jsx-runtime';
 import type * as InertiaReactModule from '@inertiajs/react';
@@ -13,6 +13,7 @@ import {
 	resolveCanonicalIconName,
 	sanitizeAssetUrl,
 	sanitizeHref,
+	sanitizeImageSrc,
 	sanitizeSameOriginUrl,
 	subscribeIconCatalog,
 } from '../lib/utils';
@@ -35,15 +36,19 @@ import {
 	safeRouter,
 	safeUsePage,
 	setInertiaAdapter,
+	submitNativeFormPost,
 	visitSameModuleHref,
 	withWorkspaceShellUrl,
 } from '../lib/inertia-bridge';
 import * as UI from '../ui';
+import * as Portal from '../portal/PortalRoot';
+import * as Hooks from '../hooks';
 import type * as LayoutType from '../layout/AppShell';
 import type * as ViewportsType from '../viewports/DataViewport';
 import type { DataTableCanvas as DataTableCanvasType } from '../viewports/DataTableCanvas';
 import type { DataCardsCanvas as DataCardsCanvasType } from '../viewports/DataCardsCanvas';
 import type * as FieldsType from '../fields/SchemaForm';
+import { evaluateShowIfCondition, navigateTablistByKey } from '../fields/schemaRuntimeHelpers';
 import type * as MediaUtilsType from '../fields/mediaUtils';
 import type { FileFieldControl as FileFieldControlType } from '../fields/controls/FileField';
 import type { IconFieldControl as IconFieldControlType } from '../fields/controls/IconField';
@@ -51,6 +56,9 @@ import type { ImageFieldControl as ImageFieldControlType } from '../fields/contr
 import type { KeyValueFieldControl as KeyValueFieldControlType } from '../fields/controls/KeyValueField';
 import type { LinkFieldControl as LinkFieldControlType } from '../fields/controls/LinkField';
 import type { RelationFieldControl as RelationFieldControlType } from '../fields/controls/RelationField';
+import type * as GridEngineType from '../engines/grid';
+import type * as DndEngineType from '../engines/dnd';
+import type * as CalendarEngineType from '../engines/calendar';
 
 interface LazyFallbackWrapperProps extends Record<string, unknown> {
 	fallback?: React.ReactNode;
@@ -86,6 +94,7 @@ const InertiaReact = {
 	}) as typeof InertiaReactModule.createInertiaApp,
 	isInertiaAppActive,
 	isWorkspaceShellActive,
+	submitNativeFormPost,
 	visitSameModuleHref,
 	withWorkspaceShellUrl,
 	SafeHead,
@@ -128,6 +137,7 @@ const InertiaReact = {
 const ReactDOM = {
 	createPortal,
 	flushSync,
+	unstable_batchedUpdates,
 };
 
 type PageComponent = React.ComponentType<Record<string, unknown>>;
@@ -318,6 +328,7 @@ function provideLayout(mod: typeof LayoutType): void {
 	Object.assign(LayoutProxy, {
 		AppShell: mod.AppShell,
 		EditPresenceBanner: mod.EditPresenceBanner,
+		RecordHeader: mod.RecordHeader,
 		postWorkspacePreferenceAction: mod.postWorkspacePreferenceAction,
 		renderNoticeMarkup: mod.renderNoticeMarkup,
 	});
@@ -365,29 +376,6 @@ function createLazyLayoutComponent<K extends 'AppShell' | 'EditPresenceBanner' |
 	return LazyLayoutWrapper as unknown as (typeof LayoutType)[K];
 }
 
-const NOOP_ASYNC = async () => {};
-const NOOP_SYNC = () => {};
-
-const EMPTY_PRESENCE_RESULT: LayoutType.UseEditPresenceResult = {
-	coEditors: [],
-	remoteSave: null,
-	notifySaved: NOOP_ASYNC,
-	dismissRemoteSave: NOOP_SYNC,
-	reloadLatest: NOOP_SYNC,
-};
-
-const PresenceHookFiberBridge: React.FC<{
-	options: LayoutType.UseEditPresenceOptions;
-	onResult: (next: LayoutType.UseEditPresenceResult) => void;
-}> = ({ options, onResult }) => {
-	const useHook = loadedLayoutModule!.useEditPresence!;
-	const res = useHook(options);
-	React.useEffect(() => {
-		onResult(res);
-	}, [res, onResult]);
-	return null;
-};
-
 const LayoutProxy: typeof LayoutType = {
 	AppShell: createLazyLayoutComponent('AppShell', 'shell'),
 	EditPresenceBanner: createLazyLayoutComponent('EditPresenceBanner', 'none'),
@@ -406,64 +394,7 @@ const LayoutProxy: typeof LayoutType = {
 		void ensureLayoutLoaded();
 		return raw;
 	},
-	useEditPresence: (options: LayoutType.UseEditPresenceOptions): LayoutType.UseEditPresenceResult => {
-		const hadHookAtMountRef = React.useRef<boolean | null>(null);
-		if (hadHookAtMountRef.current === null) {
-			hadHookAtMountRef.current = Boolean(loadedLayoutModule?.useEditPresence);
-		}
-		if (hadHookAtMountRef.current && loadedLayoutModule?.useEditPresence) {
-			return loadedLayoutModule.useEditPresence(options);
-		}
-
-		const [bridged, setBridged] = React.useState<LayoutType.UseEditPresenceResult>(EMPTY_PRESENCE_RESULT);
-		const [layoutReadyTick, setLayoutReadyTick] = React.useState(0);
-		const fiberRootRef = React.useRef<ReturnType<typeof ReactDOMClient.createRoot> | null>(null);
-
-		React.useEffect(() => {
-			if (loadedLayoutModule?.useEditPresence) {
-				return;
-			}
-			const onReady = () => setLayoutReadyTick((t) => t + 1);
-			layoutLoadListeners.add(onReady);
-			void ensureLayoutLoaded();
-			return () => {
-				layoutLoadListeners.delete(onReady);
-			};
-		}, []);
-
-		React.useEffect(() => {
-			if (!loadedLayoutModule?.useEditPresence || typeof document === 'undefined') {
-				return;
-			}
-			if (!fiberRootRef.current) {
-				fiberRootRef.current = ReactDOMClient.createRoot(document.createElement('div'));
-			}
-			fiberRootRef.current.render(
-				React.createElement(PresenceHookFiberBridge, {
-					options,
-					onResult: setBridged,
-				})
-			);
-		}, [
-			layoutReadyTick,
-			options.resourceKey,
-			options.endpoint,
-			options.enabled,
-			options.pollIntervalMs,
-		]);
-
-		React.useEffect(() => {
-			return () => {
-				if (fiberRootRef.current) {
-					const root = fiberRootRef.current;
-					fiberRootRef.current = null;
-					queueMicrotask(() => root.unmount());
-				}
-			};
-		}, []);
-
-		return bridged;
-	},
+	useEditPresence: Hooks.useEditPresence,
 };
 
 /* ============================================================================
@@ -798,6 +729,8 @@ const FieldsProxy = {
 	SchemaField: createLazyFieldComponent('SchemaField', ensureFieldsLoaded, 'h-9'),
 	SchemaFormContext,
 	useSchemaFormContext,
+	evaluateShowIfCondition,
+	navigateTablistByKey,
 	FileFieldControl: createLazyFieldComponent('FileFieldControl', ensureFileFieldLoaded, 'h-24'),
 	IconFieldControl: createLazyFieldComponent('IconFieldControl', ensureIconFieldLoaded, 'h-9'),
 	ImageFieldControl: createLazyFieldComponent('ImageFieldControl', ensureImageFieldLoaded, 'h-24'),
@@ -824,6 +757,256 @@ function provideIcons(catalog: unknown): void {
 	loadedIconsCatalog = catalog;
 	notifyIconCatalogLoaded();
 }
+
+/* ============================================================================
+ * Lazy On-Demand Grid Engine (`dist/ReactGrid.js`)
+ * ========================================================================== */
+
+let loadedGridModule: GridEngineType.GridEngineModule | null = null;
+const gridLoadListeners = new Set<() => void>();
+
+export function ensureGridLoaded(): Promise<void> {
+	if (loadedGridModule) {
+		return Promise.resolve();
+	}
+	return loadRuntimeScriptOnce(resolveSiblingRuntimeAssetUrl('ReactGrid.js'));
+}
+
+function subscribeGrid(listener: () => void): () => void {
+	gridLoadListeners.add(listener);
+	return () => {
+		gridLoadListeners.delete(listener);
+	};
+}
+
+function getGridModule(): GridEngineType.GridEngineModule | null {
+	return loadedGridModule;
+}
+
+function provideGrid(mod: GridEngineType.GridEngineModule): void {
+	loadedGridModule = mod;
+	Object.assign(GridProxy, mod);
+	gridLoadListeners.forEach((fn) => fn());
+}
+
+function createLazyGridComponent<K extends 'DataGrid'>(
+	exportName: K
+): GridEngineType.GridEngineModule[K] {
+	const LazyGridWrapper: React.FC<Record<string, unknown>> = (props) => {
+		const [, setTick] = React.useState(0);
+		const Resolved = loadedGridModule?.[exportName] as unknown as
+			| React.ComponentType<Record<string, unknown>>
+			| undefined;
+
+		React.useEffect(() => {
+			if (loadedGridModule?.[exportName]) {
+				return;
+			}
+			const onReady = () => setTick((t) => t + 1);
+			gridLoadListeners.add(onReady);
+			void ensureGridLoaded();
+			return () => {
+				gridLoadListeners.delete(onReady);
+			};
+		}, []);
+
+		if (Resolved) {
+			return React.createElement(Resolved, props);
+		}
+		return React.createElement('div', {
+			className: 'h-48 w-full motion-safe:animate-pulse rounded-md border border-border bg-muted/20',
+			'data-rw-lazy-chunk': `Grid.${exportName}`,
+		});
+	};
+	LazyGridWrapper.displayName = `LazyGrid(${exportName})`;
+	return LazyGridWrapper as unknown as GridEngineType.GridEngineModule[K];
+}
+
+export type GridRuntimeProxy = GridEngineType.GridEngineModule & {
+	isLoaded: () => boolean;
+	getModule: () => GridEngineType.GridEngineModule | null;
+	ensureLoaded: typeof ensureGridLoaded;
+	subscribe: typeof subscribeGrid;
+};
+
+const GridProxy = {
+	DataGrid: createLazyGridComponent('DataGrid'),
+	isLoaded: () => loadedGridModule !== null,
+	getModule: getGridModule,
+	ensureLoaded: ensureGridLoaded,
+	subscribe: subscribeGrid,
+} as unknown as GridRuntimeProxy;
+
+/* ============================================================================
+ * Lazy On-Demand DnD Engine (`dist/ReactDnd.js`)
+ * ========================================================================== */
+
+let loadedDndModule: DndEngineType.DndEngineModule | null = null;
+const dndLoadListeners = new Set<() => void>();
+
+export function ensureDndLoaded(): Promise<void> {
+	if (loadedDndModule) {
+		return Promise.resolve();
+	}
+	return loadRuntimeScriptOnce(resolveSiblingRuntimeAssetUrl('ReactDnd.js'));
+}
+
+function subscribeDnd(listener: () => void): () => void {
+	dndLoadListeners.add(listener);
+	return () => {
+		dndLoadListeners.delete(listener);
+	};
+}
+
+function getDndModule(): DndEngineType.DndEngineModule | null {
+	return loadedDndModule;
+}
+
+function provideDnd(mod: DndEngineType.DndEngineModule): void {
+	loadedDndModule = mod;
+	Object.assign(DndProxy, mod);
+	dndLoadListeners.forEach((fn) => fn());
+}
+
+function createLazyDndComponent<
+	K extends 'SortableListCanvas' | 'KanbanBoardDnd' | 'SortableTreeCanvas',
+>(exportName: K): DndEngineType.DndEngineModule[K] {
+	const LazyDndWrapper: React.FC<Record<string, unknown>> = (props) => {
+		const [, setTick] = React.useState(0);
+		const Resolved = loadedDndModule?.[exportName] as unknown as
+			| React.ComponentType<Record<string, unknown>>
+			| undefined;
+
+		React.useEffect(() => {
+			if (loadedDndModule?.[exportName]) {
+				return;
+			}
+			const onReady = () => setTick((t) => t + 1);
+			dndLoadListeners.add(onReady);
+			void ensureDndLoaded();
+			return () => {
+				dndLoadListeners.delete(onReady);
+			};
+		}, []);
+
+		if (Resolved) {
+			return React.createElement(Resolved, props);
+		}
+		return React.createElement('div', {
+			className: 'h-32 w-full motion-safe:animate-pulse rounded-md border border-border bg-muted/20',
+			'data-rw-lazy-chunk': `Dnd.${exportName}`,
+		});
+	};
+	LazyDndWrapper.displayName = `LazyDnd(${exportName})`;
+	return LazyDndWrapper as unknown as DndEngineType.DndEngineModule[K];
+}
+
+export type DndRuntimeProxy = DndEngineType.DndEngineModule & {
+	isLoaded: () => boolean;
+	getModule: () => DndEngineType.DndEngineModule | null;
+	ensureLoaded: typeof ensureDndLoaded;
+	subscribe: typeof subscribeDnd;
+};
+
+const DndProxy = {
+	SortableListCanvas: createLazyDndComponent('SortableListCanvas'),
+	KanbanBoardDnd: createLazyDndComponent('KanbanBoardDnd'),
+	SortableTreeCanvas: createLazyDndComponent('SortableTreeCanvas'),
+	isLoaded: () => loadedDndModule !== null,
+	getModule: getDndModule,
+	ensureLoaded: ensureDndLoaded,
+	subscribe: subscribeDnd,
+} as unknown as DndRuntimeProxy;
+
+/* ============================================================================
+ * Lazy On-Demand Calendar Engine (`dist/ReactCalendar.js` + `.css`)
+ * ========================================================================== */
+
+let loadedCalendarModule: CalendarEngineType.CalendarEngineModule | null = null;
+const calendarLoadListeners = new Set<() => void>();
+
+export function ensureCalendarStyleLoaded(): void {
+	loadRuntimeStyleOnce(resolveSiblingRuntimeAssetUrl('ReactCalendar.css'));
+}
+
+export function ensureCalendarLoaded(): Promise<void> {
+	ensureCalendarStyleLoaded();
+	if (loadedCalendarModule) {
+		return Promise.resolve();
+	}
+	return loadRuntimeScriptOnce(resolveSiblingRuntimeAssetUrl('ReactCalendar.js'));
+}
+
+function subscribeCalendar(listener: () => void): () => void {
+	calendarLoadListeners.add(listener);
+	return () => {
+		calendarLoadListeners.delete(listener);
+	};
+}
+
+function getCalendarModule(): CalendarEngineType.CalendarEngineModule | null {
+	return loadedCalendarModule;
+}
+
+function provideCalendar(mod: CalendarEngineType.CalendarEngineModule): void {
+	ensureCalendarStyleLoaded();
+	loadedCalendarModule = mod;
+	Object.assign(CalendarProxy, mod);
+	calendarLoadListeners.forEach((fn) => fn());
+}
+
+function createLazyCalendarComponent<K extends 'Calendar' | 'DatePicker' | 'DateRangePicker'>(
+	exportName: K,
+	skeletonHeightClass: 'h-9' | 'h-64'
+): CalendarEngineType.CalendarEngineModule[K] {
+	const LazyCalendarWrapper: React.FC<Record<string, unknown>> = (props) => {
+		const [, setTick] = React.useState(0);
+		const Resolved = loadedCalendarModule?.[exportName] as
+			| React.ComponentType<Record<string, unknown>>
+			| undefined;
+
+		React.useEffect(() => {
+			if (loadedCalendarModule?.[exportName]) {
+				return;
+			}
+			const onReady = () => setTick((t) => t + 1);
+			calendarLoadListeners.add(onReady);
+			void ensureCalendarLoaded();
+			return () => {
+				calendarLoadListeners.delete(onReady);
+			};
+		}, []);
+
+		if (Resolved) {
+			return React.createElement(Resolved, props);
+		}
+		return React.createElement('div', {
+			className: `${skeletonHeightClass} w-full motion-safe:animate-pulse rounded-md border border-border bg-muted/20`,
+			'data-rw-lazy-chunk': `Calendar.${exportName}`,
+		});
+	};
+	LazyCalendarWrapper.displayName = `LazyCalendar(${exportName})`;
+	return LazyCalendarWrapper as unknown as CalendarEngineType.CalendarEngineModule[K];
+}
+
+export type CalendarRuntimeProxy = CalendarEngineType.CalendarEngineModule & {
+	isLoaded: () => boolean;
+	getModule: () => CalendarEngineType.CalendarEngineModule | null;
+	ensureLoaded: typeof ensureCalendarLoaded;
+	ensureStyleLoaded: typeof ensureCalendarStyleLoaded;
+	subscribe: typeof subscribeCalendar;
+};
+
+const CalendarProxy = {
+	Calendar: createLazyCalendarComponent('Calendar', 'h-64'),
+	DatePicker: createLazyCalendarComponent('DatePicker', 'h-9'),
+	DateRangePicker: createLazyCalendarComponent('DateRangePicker', 'h-9'),
+	isLoaded: () => loadedCalendarModule !== null,
+	getModule: getCalendarModule,
+	ensureLoaded: ensureCalendarLoaded,
+	ensureStyleLoaded: ensureCalendarStyleLoaded,
+	subscribe: subscribeCalendar,
+} as unknown as CalendarRuntimeProxy;
 
 function getTiptapRuntimeHandle():
 	| {
@@ -1209,9 +1392,14 @@ export interface ReactWorkspaceRuntimeGlobal {
 	jsxRuntime: typeof ReactJsxRuntime;
 	Inertia: typeof InertiaReact;
 	UI: typeof UI;
+	Portal: typeof Portal;
+	Hooks: typeof Hooks;
 	Layout: typeof LayoutType;
 	Viewports: ExtendedViewportsModule;
 	Fields: ExtendedFieldsModule;
+	Grid: GridRuntimeProxy;
+	Dnd: DndRuntimeProxy;
+	Calendar: CalendarRuntimeProxy;
 	Utils: {
 		getCsrfToken: typeof getCsrfToken;
 		cn: typeof cn;
@@ -1223,6 +1411,7 @@ export interface ReactWorkspaceRuntimeGlobal {
 		subscribeIconCatalog: typeof subscribeIconCatalog;
 		sanitizeAssetUrl: typeof sanitizeAssetUrl;
 		sanitizeHref: typeof sanitizeHref;
+		sanitizeImageSrc: typeof sanitizeImageSrc;
 		sanitizeSameOriginUrl: typeof sanitizeSameOriginUrl;
 		isWorkspaceShellActive: typeof isWorkspaceShellActive;
 		withWorkspaceShellUrl: typeof withWorkspaceShellUrl;
@@ -1265,6 +1454,10 @@ export interface ReactWorkspaceRuntimeGlobal {
 	ensureRelationFieldLoaded: typeof ensureRelationFieldLoaded;
 	ensureTiptapLoaded: typeof ensureTiptapLoaded;
 	ensureIconsLoaded: typeof ensureIconsLoaded;
+	ensureGridLoaded: typeof ensureGridLoaded;
+	ensureDndLoaded: typeof ensureDndLoaded;
+	ensureCalendarStyleLoaded: typeof ensureCalendarStyleLoaded;
+	ensureCalendarLoaded: typeof ensureCalendarLoaded;
 	loadRuntimeScript: typeof loadRuntimeScript;
 	loadRuntimeStyle: typeof loadRuntimeStyle;
 	preloadRuntimeScript: typeof preloadRuntimeScriptAsset;
@@ -1278,6 +1471,9 @@ export interface ReactWorkspaceRuntimeGlobal {
 	__setMediaCustomFieldRenderer: typeof setMediaCustomFieldRenderer;
 	__getMediaCustomFieldRenderer: typeof getMediaCustomFieldRenderer;
 	__provideIcons: typeof provideIcons;
+	__provideGrid: typeof provideGrid;
+	__provideDnd: typeof provideDnd;
+	__provideCalendar: typeof provideCalendar;
 	mountIslands: typeof mountIslands;
 	bootInertiaApp: typeof bootInertiaApp;
 }
@@ -1296,9 +1492,14 @@ if (typeof window !== 'undefined') {
 		jsxRuntime: ReactJsxRuntime,
 		Inertia: InertiaReact,
 		UI,
+		Portal,
+		Hooks,
 		Layout: LayoutProxy,
 		Viewports: ViewportsProxy,
 		Fields: FieldsProxy,
+		Grid: GridProxy,
+		Dnd: DndProxy,
+		Calendar: CalendarProxy,
 		Utils: {
 			getCsrfToken,
 			cn,
@@ -1310,6 +1511,7 @@ if (typeof window !== 'undefined') {
 			subscribeIconCatalog,
 			sanitizeAssetUrl,
 			sanitizeHref,
+			sanitizeImageSrc,
 			sanitizeSameOriginUrl,
 			isWorkspaceShellActive,
 			withWorkspaceShellUrl,
@@ -1352,6 +1554,10 @@ if (typeof window !== 'undefined') {
 		ensureRelationFieldLoaded,
 		ensureTiptapLoaded,
 		ensureIconsLoaded,
+		ensureGridLoaded,
+		ensureDndLoaded,
+		ensureCalendarStyleLoaded,
+		ensureCalendarLoaded,
 		loadRuntimeScript,
 		loadRuntimeStyle,
 		preloadRuntimeScript: preloadRuntimeScriptAsset,
@@ -1365,6 +1571,9 @@ if (typeof window !== 'undefined') {
 		__setMediaCustomFieldRenderer: setMediaCustomFieldRenderer,
 		__getMediaCustomFieldRenderer: getMediaCustomFieldRenderer,
 		__provideIcons: provideIcons,
+		__provideGrid: provideGrid,
+		__provideDnd: provideDnd,
+		__provideCalendar: provideCalendar,
 		mountIslands,
 		bootInertiaApp,
 	};
