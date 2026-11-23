@@ -15,6 +15,7 @@ Architecture overview: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Chapter 
    - Never add `class_exists` / `trait_exists` / `interface_exists` / `require_once` guards or duplicate `addNamespace()` calls in `.module.php` or `src/` files; `WireClassLoader` resolves all `Totoglu\React\*` classes and companion `.module.php` modules natively.
    - Zero dependency on downstream consumer modules; verify with `LayeringTest.php`.
    - `React` installs all 14 companion modules: `MarkupReactTable` (`singular => false`), `MarkupReactCards` (`singular => false`), `MarkupReactTab` (`singular => false`), `InputfieldReactKeyValue`, `InputfieldReactLink`, `InputfieldReactIcon`, `InputfieldReactM2O`, `InputfieldReactM2M`, `InputfieldReactO2M`, `InputfieldReactM2A`, `InputfieldTiptap`, `TextformatterTiptapMiniBlocks`, `InputfieldReactFile`, `InputfieldReactImage`.
+   - Module versions live solely in `static getModuleInfo()['version']` (no `VERSION` class constants): when a companion submodule changes, bump both that submodule's version and `React::getModuleInfo()['version']`; when no companion submodule changed, bump only `React::getModuleInfo()['version']`.
 
 2. **Pull-Discovery (`reactCapabilities`) & Zero Cold-Boot Overhead:**
    - Downstream modules stay `'autoload' => false` and declare `'reactCapabilities' => [...]` (subset of `React::CAPABILITIES`: `['workspace', 'icons', 'commandSearch', 'providers', 'relations', 'media', 'viewportModes']`) in `static getModuleInfo(): array`.

@@ -1127,7 +1127,10 @@ it('implements ReactReorderProvider on PagesDataProvider and exposes shared drag
 	$tabMod = wire()->modules->get('MarkupReactTab');
 	$dummyField = new \ProcessWire\Field();
 	wire($dummyField);
-	expect(\ProcessWire\MarkupReactTab::getModuleInfo()['version'])->toBe(\ProcessWire\React::VERSION)
+	$tabVersion = \ProcessWire\MarkupReactTab::getModuleInfo()['version'] ?? null;
+	$reactVersion = \ProcessWire\React::getModuleInfo()['version'] ?? null;
+	expect($tabVersion)->toBeInt()->toBeGreaterThan(0)
+		->and($reactVersion)->toBeInt()->toBeGreaterThanOrEqual($tabVersion)
 		->and($tabMod->getConfigAllowContext($dummyField))->toContain('variant', 'badge', 'lazyLoad');
 
 	// Verify PagesDataProvider::mutate() confines scope and blocks protected system property writes

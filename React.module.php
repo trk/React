@@ -63,8 +63,6 @@ use Totoglu\React\Workspace\WorkspaceWidgetRegistry;
  */
 class React extends WireData implements Module, ConfigurableModule
 {
-	public const int VERSION = 30;
-
 	/** @var list<string> */
 	public const array CAPABILITIES = [
 		'workspace',
@@ -2030,7 +2028,8 @@ class React extends WireData implements Module, ConfigurableModule
 			return self::$moduleAssetUrlCache[$cacheKey];
 		}
 
-		$version = (string) (self::getModuleInfo()['version'] ?? self::VERSION);
+		$rawVersion = self::getModuleInfo()['version'] ?? 1;
+		$version = is_scalar($rawVersion) ? (string) $rawVersion : '1';
 		$filePath = __DIR__ . '/dist/' . $cleanFile;
 		$ver = is_file($filePath) ? (string) filemtime($filePath) : $version;
 
