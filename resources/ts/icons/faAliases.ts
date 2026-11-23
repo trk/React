@@ -153,6 +153,7 @@ export const ICON_ALIASES: Record<string, string> = {
 	hdd: 'server',
 	'hdd-o': 'server',
 	monitor: 'device-desktop',
+	tablet: 'device-tablet',
 	smartphone: 'device-mobile',
 	'mobile-phone': 'device-mobile',
 	microchip: 'cpu',

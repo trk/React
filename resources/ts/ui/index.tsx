@@ -32,6 +32,11 @@ export {
 	type TabsVariant,
 } from './primitives/Tabs';
 export {
+	ResponsiveTabBar,
+	type ResponsiveTabBarProps,
+	type ResponsiveTabItem,
+} from './primitives/ResponsiveTabBar';
+export {
 	Table,
 	TableHeader,
 	TableBody,

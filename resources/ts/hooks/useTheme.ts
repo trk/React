@@ -7,11 +7,10 @@ export type ThemePresetId =
 	| 'native'
 	| 'neutral'
 	| 'slate'
+	| 'stone'
 	| 'ocean'
-	| 'emerald'
-	| 'violet'
-	| 'rose'
-	| 'amber'
+	| 'indigo'
+	| 'teal'
 	| 'custom';
 
 export interface ThemePresetMeta {
@@ -44,46 +43,39 @@ export const THEME_PRESETS: readonly ThemePresetMeta[] = [
 		darkSwatch: '#e2e8f0',
 	},
 	{
+		id: 'stone',
+		labelKey: 'shell.themePresetStone',
+		defaultLabel: 'Stone',
+		swatch: '#44403c',
+		darkSwatch: '#d6d3d1',
+	},
+	{
 		id: 'ocean',
 		labelKey: 'shell.themePresetOcean',
 		defaultLabel: 'Ocean',
-		swatch: '#2563eb',
-		darkSwatch: '#3b82f6',
+		swatch: '#135eb5',
+		darkSwatch: '#4c9cf0',
 	},
 	{
-		id: 'emerald',
-		labelKey: 'shell.themePresetEmerald',
-		defaultLabel: 'Emerald',
-		swatch: '#059669',
-		darkSwatch: '#34d399',
+		id: 'indigo',
+		labelKey: 'shell.themePresetIndigo',
+		defaultLabel: 'Indigo',
+		swatch: '#3f4fb4',
+		darkSwatch: '#7f95f5',
 	},
 	{
-		id: 'violet',
-		labelKey: 'shell.themePresetViolet',
-		defaultLabel: 'Violet',
-		swatch: '#7c3aed',
-		darkSwatch: '#a78bfa',
-	},
-	{
-		id: 'rose',
-		labelKey: 'shell.themePresetRose',
-		defaultLabel: 'Rose',
-		swatch: '#e11d48',
-		darkSwatch: '#fb7185',
-	},
-	{
-		id: 'amber',
-		labelKey: 'shell.themePresetAmber',
-		defaultLabel: 'Amber',
-		swatch: '#d97706',
-		darkSwatch: '#fbbf24',
+		id: 'teal',
+		labelKey: 'shell.themePresetTeal',
+		defaultLabel: 'Teal',
+		swatch: '#126c72',
+		darkSwatch: '#3db7bd',
 	},
 	{
 		id: 'custom',
 		labelKey: 'shell.themePresetCustom',
 		defaultLabel: 'Custom Tokens',
-		swatch: '#6366f1',
-		darkSwatch: '#818cf8',
+		swatch: '#3f4fb4',
+		darkSwatch: '#7f95f5',
 	},
 ] as const;
 

@@ -17,6 +17,8 @@ export interface WorkspaceLauncherPageProps {
 	widgets?: WorkspaceWidgetDto[] | Record<string, WorkspaceWidgetDto>;
 	preferences?: WorkspacePreferencesDto;
 	prefsEndpoint?: string;
+	debugShowcaseUrl?: string;
+	debugShowcaseLabel?: string;
 }
 
 const runtime = getReactWorkspaceRuntime();
@@ -31,6 +33,7 @@ const {
 	AlertDescription,
 	Badge,
 	Button,
+	buttonVariants,
 	Card,
 	CliBox,
 	ColumnSpanSlider,
@@ -110,11 +113,14 @@ export function WorkspaceLauncher({
 	widgets: rawWidgets,
 	preferences: rawPreferences,
 	prefsEndpoint: rawPrefsEndpoint,
+	debugShowcaseUrl = '',
+	debugShowcaseLabel = 'UI Showcase',
 }: WorkspaceLauncherPageProps) {
 	const page = usePage<{ workspace?: WorkspaceSharedContext }>();
 	const { t } = useTranslations('core');
 	const workspace = page.props.workspace;
 	const prefsEndpoint = rawPrefsEndpoint || workspace?.prefsEndpoint || '/_react/workspace-prefs';
+	const safeShowcaseUrl = debugShowcaseUrl ? sanitizeHref(debugShowcaseUrl) : '';
 
 	const [search, setSearch] = useState(searchQuery);
 	const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -591,7 +597,20 @@ export function WorkspaceLauncher({
 					: []),
 			]}
 			headerActions={
-				<div className="flex flex-wrap items-center gap-2">
+				<div
+					data-rw-workspace-header-actions=""
+					className="flex min-w-0 max-w-full flex-wrap items-center gap-2"
+				>
+					{safeShowcaseUrl ? (
+						<a
+							href={safeShowcaseUrl}
+							data-rw-ui-showcase-link=""
+							className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'no-underline')}
+						>
+							<DynamicIcon name="eye" className="size-3.5 shrink-0" />
+							<span>{debugShowcaseLabel || 'UI Showcase'}</span>
+						</a>
+					) : null}
 					<Button
 						variant={customizerOpen ? 'primary' : 'outline'}
 						size="sm"

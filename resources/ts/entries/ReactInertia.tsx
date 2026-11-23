@@ -56,6 +56,19 @@ import type { ImageFieldControl as ImageFieldControlType } from '../fields/contr
 import type { KeyValueFieldControl as KeyValueFieldControlType } from '../fields/controls/KeyValueField';
 import type { LinkFieldControl as LinkFieldControlType } from '../fields/controls/LinkField';
 import type { RelationFieldControl as RelationFieldControlType } from '../fields/controls/RelationField';
+import type { ColorFieldControl as ColorFieldControlType } from '../fields/controls/ColorField';
+import type { TagsFieldControl as TagsFieldControlType } from '../fields/controls/TagsField';
+import type { ComboboxFieldControl as ComboboxFieldControlType } from '../fields/controls/ComboboxField';
+import type { PhoneFieldControl as PhoneFieldControlType } from '../fields/controls/PhoneField';
+import type { UnitNumberFieldControl as UnitNumberFieldControlType } from '../fields/controls/UnitNumberField';
+import type { SegmentedFieldControl as SegmentedFieldControlType } from '../fields/controls/SegmentedField';
+import type { SpacingFieldControl as SpacingFieldControlType } from '../fields/controls/SpacingField';
+import type { OtpFieldControl as OtpFieldControlType } from '../fields/controls/OtpField';
+import type { PasswordFieldControl as PasswordFieldControlType } from '../fields/controls/PasswordField';
+import type { MarkdownFieldControl as MarkdownFieldControlType } from '../fields/controls/MarkdownField';
+import type { ConditionBuilderFieldControl as ConditionBuilderFieldControlType } from '../fields/controls/ConditionBuilderField';
+import type { ExtraFieldControlIsland as ExtraFieldControlIslandType } from '../fields/controls/ExtraFieldControlIsland';
+import type { FieldControlIsland as FieldControlIslandType } from '../fields/schema/FieldControlIsland';
 import type * as GridEngineType from '../engines/grid';
 import type * as DndEngineType from '../engines/dnd';
 import type * as CalendarEngineType from '../engines/calendar';
@@ -347,9 +360,18 @@ function createLazyLayoutComponent<K extends 'AppShell' | 'EditPresenceBanner' |
 
 		React.useEffect(() => {
 			if (loadedLayoutModule?.[exportName]) {
+				if (!Resolved) {
+					setTick((t) => t + 1);
+				}
 				return;
 			}
-			const onReady = () => setTick((t) => t + 1);
+			const onReady = () => {
+				if (!loadedLayoutModule?.[exportName]) {
+					return;
+				}
+				layoutLoadListeners.delete(onReady);
+				setTick((t) => t + 1);
+			};
 			layoutLoadListeners.add(onReady);
 			void ensureLayoutLoaded();
 			return () => {
@@ -467,9 +489,18 @@ function createLazyViewportComponent<
 
 		React.useEffect(() => {
 			if (loadedViewportsModule?.[exportName]) {
+				if (!Resolved) {
+					setTick((t) => t + 1);
+				}
 				return;
 			}
-			const onReady = () => setTick((t) => t + 1);
+			const onReady = () => {
+				if (!loadedViewportsModule?.[exportName]) {
+					return;
+				}
+				viewportsLoadListeners.delete(onReady);
+				setTick((t) => t + 1);
+			};
 			viewportsLoadListeners.add(onReady);
 			if (exportName === 'DataTable') {
 				void ensureViewportsLoaded();
@@ -523,6 +554,19 @@ type ExtendedFieldsModule = typeof FieldsType & {
 	KeyValueFieldControl: typeof KeyValueFieldControlType;
 	LinkFieldControl: typeof LinkFieldControlType;
 	RelationFieldControl: typeof RelationFieldControlType;
+	ColorFieldControl: typeof ColorFieldControlType;
+	TagsFieldControl: typeof TagsFieldControlType;
+	ComboboxFieldControl: typeof ComboboxFieldControlType;
+	PhoneFieldControl: typeof PhoneFieldControlType;
+	UnitNumberFieldControl: typeof UnitNumberFieldControlType;
+	SegmentedFieldControl: typeof SegmentedFieldControlType;
+	SpacingFieldControl: typeof SpacingFieldControlType;
+	OtpFieldControl: typeof OtpFieldControlType;
+	PasswordFieldControl: typeof PasswordFieldControlType;
+	MarkdownFieldControl: typeof MarkdownFieldControlType;
+	ConditionBuilderFieldControl: typeof ConditionBuilderFieldControlType;
+	ExtraFieldControlIsland: typeof ExtraFieldControlIslandType;
+	FieldControlIsland: typeof FieldControlIslandType;
 	SchemaTabContainer: React.ComponentType<Record<string, unknown>>;
 };
 
@@ -660,6 +704,13 @@ export function ensureRelationFieldLoaded(): Promise<void> {
 	return loadRuntimeScriptOnce(resolveSiblingRuntimeAssetUrl('InputfieldReactRelation.js'));
 }
 
+export function ensureExtraFieldsLoaded(): Promise<void> {
+	if (loadedFieldsModule?.ColorFieldControl && loadedFieldsModule?.ConditionBuilderFieldControl) {
+		return Promise.resolve();
+	}
+	return loadRuntimeScriptOnce(resolveSiblingRuntimeAssetUrl('ReactExtraFields.js'));
+}
+
 function provideFields(mod: Partial<ExtendedFieldsModule>): void {
 	loadedFieldsModule = { ...(loadedFieldsModule || {}), ...mod };
 	Object.assign(FieldsProxy, loadedFieldsModule, {
@@ -688,6 +739,19 @@ function createLazyFieldComponent<
 		| 'KeyValueFieldControl'
 		| 'LinkFieldControl'
 		| 'RelationFieldControl'
+		| 'ColorFieldControl'
+		| 'TagsFieldControl'
+		| 'ComboboxFieldControl'
+		| 'PhoneFieldControl'
+		| 'UnitNumberFieldControl'
+		| 'SegmentedFieldControl'
+		| 'SpacingFieldControl'
+		| 'OtpFieldControl'
+		| 'PasswordFieldControl'
+		| 'MarkdownFieldControl'
+		| 'ConditionBuilderFieldControl'
+		| 'ExtraFieldControlIsland'
+		| 'FieldControlIsland'
 		| 'SchemaTabContainer'
 >(
 	exportName: K,
@@ -704,7 +768,13 @@ function createLazyFieldComponent<
 			if (loadedFieldsModule?.[exportName]) {
 				return;
 			}
-			const onReady = () => setTick((t) => t + 1);
+			const onReady = () => {
+				if (!loadedFieldsModule?.[exportName]) {
+					return;
+				}
+				fieldsLoadListeners.delete(onReady);
+				setTick((t) => t + 1);
+			};
 			fieldsLoadListeners.add(onReady);
 			void loader();
 			return () => {
@@ -737,6 +807,19 @@ const FieldsProxy = {
 	KeyValueFieldControl: createLazyFieldComponent('KeyValueFieldControl', ensureKeyValueLoaded, 'h-24'),
 	LinkFieldControl: createLazyFieldComponent('LinkFieldControl', ensureLinkFieldLoaded, 'h-9'),
 	RelationFieldControl: createLazyFieldComponent('RelationFieldControl', ensureRelationFieldLoaded, 'h-9'),
+	ColorFieldControl: createLazyFieldComponent('ColorFieldControl', ensureExtraFieldsLoaded, 'h-9'),
+	TagsFieldControl: createLazyFieldComponent('TagsFieldControl', ensureExtraFieldsLoaded, 'h-9'),
+	ComboboxFieldControl: createLazyFieldComponent('ComboboxFieldControl', ensureExtraFieldsLoaded, 'h-9'),
+	PhoneFieldControl: createLazyFieldComponent('PhoneFieldControl', ensureExtraFieldsLoaded, 'h-9'),
+	UnitNumberFieldControl: createLazyFieldComponent('UnitNumberFieldControl', ensureExtraFieldsLoaded, 'h-9'),
+	SegmentedFieldControl: createLazyFieldComponent('SegmentedFieldControl', ensureExtraFieldsLoaded, 'h-9'),
+	SpacingFieldControl: createLazyFieldComponent('SpacingFieldControl', ensureExtraFieldsLoaded, 'h-24'),
+	OtpFieldControl: createLazyFieldComponent('OtpFieldControl', ensureExtraFieldsLoaded, 'h-9'),
+	PasswordFieldControl: createLazyFieldComponent('PasswordFieldControl', ensureExtraFieldsLoaded, 'h-24'),
+	MarkdownFieldControl: createLazyFieldComponent('MarkdownFieldControl', ensureExtraFieldsLoaded, 'h-32'),
+	ConditionBuilderFieldControl: createLazyFieldComponent('ConditionBuilderFieldControl', ensureExtraFieldsLoaded, 'h-32'),
+	ExtraFieldControlIsland: createLazyFieldComponent('ExtraFieldControlIsland', ensureExtraFieldsLoaded, 'h-9'),
+	FieldControlIsland: createLazyFieldComponent('FieldControlIsland', ensureFieldsLoaded, 'h-9'),
 	SchemaTabContainer: createLazyFieldComponent('SchemaTabContainer', ensureTabLoaded, 'h-32'),
 } as unknown as ExtendedFieldsModule;
 
@@ -869,7 +952,7 @@ function provideDnd(mod: DndEngineType.DndEngineModule): void {
 }
 
 function createLazyDndComponent<
-	K extends 'SortableListCanvas' | 'KanbanBoardDnd' | 'SortableTreeCanvas',
+	K extends 'SortableListCanvas' | 'SortableTreeCanvas',
 >(exportName: K): DndEngineType.DndEngineModule[K] {
 	const LazyDndWrapper: React.FC<Record<string, unknown>> = (props) => {
 		const [, setTick] = React.useState(0);
@@ -910,7 +993,6 @@ export type DndRuntimeProxy = DndEngineType.DndEngineModule & {
 
 const DndProxy = {
 	SortableListCanvas: createLazyDndComponent('SortableListCanvas'),
-	KanbanBoardDnd: createLazyDndComponent('KanbanBoardDnd'),
 	SortableTreeCanvas: createLazyDndComponent('SortableTreeCanvas'),
 	isLoaded: () => loadedDndModule !== null,
 	getModule: getDndModule,
@@ -955,9 +1037,18 @@ function provideCalendar(mod: CalendarEngineType.CalendarEngineModule): void {
 	calendarLoadListeners.forEach((fn) => fn());
 }
 
-function createLazyCalendarComponent<K extends 'Calendar' | 'DatePicker' | 'DateRangePicker'>(
+function createLazyCalendarComponent<
+	K extends
+		| 'Calendar'
+		| 'DatePicker'
+		| 'TimePicker'
+		| 'TimePickerPanel'
+		| 'DateTimePicker'
+		| 'DateTimePickerPanel'
+		| 'DateRangePicker'
+>(
 	exportName: K,
-	skeletonHeightClass: 'h-9' | 'h-64'
+	skeletonHeightClass: 'h-9' | 'h-48' | 'h-64'
 ): CalendarEngineType.CalendarEngineModule[K] {
 	const LazyCalendarWrapper: React.FC<Record<string, unknown>> = (props) => {
 		const [, setTick] = React.useState(0);
@@ -969,7 +1060,13 @@ function createLazyCalendarComponent<K extends 'Calendar' | 'DatePicker' | 'Date
 			if (loadedCalendarModule?.[exportName]) {
 				return;
 			}
-			const onReady = () => setTick((t) => t + 1);
+			const onReady = () => {
+				if (!loadedCalendarModule?.[exportName]) {
+					return;
+				}
+				calendarLoadListeners.delete(onReady);
+				setTick((t) => t + 1);
+			};
 			calendarLoadListeners.add(onReady);
 			void ensureCalendarLoaded();
 			return () => {
@@ -1000,6 +1097,10 @@ export type CalendarRuntimeProxy = CalendarEngineType.CalendarEngineModule & {
 const CalendarProxy = {
 	Calendar: createLazyCalendarComponent('Calendar', 'h-64'),
 	DatePicker: createLazyCalendarComponent('DatePicker', 'h-9'),
+	TimePicker: createLazyCalendarComponent('TimePicker', 'h-9'),
+	TimePickerPanel: createLazyCalendarComponent('TimePickerPanel', 'h-48'),
+	DateTimePicker: createLazyCalendarComponent('DateTimePicker', 'h-9'),
+	DateTimePickerPanel: createLazyCalendarComponent('DateTimePickerPanel', 'h-64'),
 	DateRangePicker: createLazyCalendarComponent('DateRangePicker', 'h-9'),
 	isLoaded: () => loadedCalendarModule !== null,
 	getModule: getCalendarModule,
@@ -1087,6 +1188,8 @@ islandRegistry.set('ReactWorkspace/Cards', ViewportsProxy.DataCards as unknown a
 islandRegistry.set('MarkupReactCards', ViewportsProxy.DataCards as unknown as PageComponent);
 islandRegistry.set('ReactWorkspace/SchemaForm', FieldsProxy.SchemaForm as unknown as PageComponent);
 islandRegistry.set('SchemaForm', FieldsProxy.SchemaForm as unknown as PageComponent);
+islandRegistry.set('ReactWorkspace/FieldControl', FieldsProxy.FieldControlIsland as unknown as PageComponent);
+islandRegistry.set('ReactWorkspace/ExtraFieldControl', FieldsProxy.ExtraFieldControlIsland as unknown as PageComponent);
 islandRegistry.set('MarkupReactTab', FieldsProxy.SchemaTabContainer as unknown as PageComponent);
 islandRegistry.set('InputfieldReactFile', FieldsProxy.FileFieldControl as unknown as PageComponent);
 islandRegistry.set('InputfieldReactImage', FieldsProxy.ImageFieldControl as unknown as PageComponent);
@@ -1184,7 +1287,14 @@ export function mountIslands(root: ParentNode = document): void {
 			};
 		}
 
-		const inputId = node.getAttribute('data-input-id') || parsedProps.id || '';
+		const ownsOwnInputs =
+			name === 'ReactWorkspace/SchemaForm' ||
+			name === 'SchemaForm' ||
+			name === 'ReactWorkspace/ExtraFieldControl' ||
+			name === 'ReactWorkspace/FieldControl';
+		const inputId = ownsOwnInputs
+			? ''
+			: node.getAttribute('data-input-id') || parsedProps.id || '';
 		const isKeyValueIsland = name === 'InputfieldReactKeyValue';
 		const syncHiddenInput = (nextValue: unknown) => {
 			if (!inputId || typeof document === 'undefined') {
@@ -1452,6 +1562,7 @@ export interface ReactWorkspaceRuntimeGlobal {
 	ensureImageFieldLoaded: typeof ensureImageFieldLoaded;
 	ensureLinkFieldLoaded: typeof ensureLinkFieldLoaded;
 	ensureRelationFieldLoaded: typeof ensureRelationFieldLoaded;
+	ensureExtraFieldsLoaded: typeof ensureExtraFieldsLoaded;
 	ensureTiptapLoaded: typeof ensureTiptapLoaded;
 	ensureIconsLoaded: typeof ensureIconsLoaded;
 	ensureGridLoaded: typeof ensureGridLoaded;
@@ -1552,6 +1663,7 @@ if (typeof window !== 'undefined') {
 		ensureImageFieldLoaded,
 		ensureLinkFieldLoaded,
 		ensureRelationFieldLoaded,
+		ensureExtraFieldsLoaded,
 		ensureTiptapLoaded,
 		ensureIconsLoaded,
 		ensureGridLoaded,

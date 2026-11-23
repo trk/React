@@ -50,6 +50,19 @@ export type WorkspaceWidgetSize =
 	| '12'
 	| string;
 
+export type ShellLayoutId = 'topbar' | 'sidebar' | (string & {});
+
+export interface ShellLayoutDescriptorDto {
+	id: ShellLayoutId;
+	label: string;
+	labelKey?: string;
+	description?: string;
+	descriptionKey?: string;
+	icon?: string;
+	supportsCollapse?: boolean;
+	order?: number;
+}
+
 export interface WorkspacePreferencesDto {
 	userId?: number;
 	favorites: string[];
@@ -58,6 +71,8 @@ export interface WorkspacePreferencesDto {
 	widgetSizes: Record<string, WorkspaceWidgetSize>;
 	themeMode?: string;
 	themePreset?: string;
+	shellLayout?: string;
+	sidebarCollapsed?: boolean;
 	updatedAt?: string;
 }
 
@@ -129,12 +144,18 @@ export interface WorkspaceSharedContext {
 	shellMode?: 'workspace' | 'admin';
 	launcherUrl: string;
 	prefsEndpoint?: string;
+	commandSearchEndpoint?: string;
 	processUrl?: string;
 	themeMode: 'light' | 'dark' | 'system';
 	themePreset?: ThemePresetId;
 	userThemePreset?: string;
 	siteDefaultThemePreset?: ThemePresetId;
 	hasCustomThemeTokens?: boolean;
+	shellLayout?: ShellLayoutId;
+	userShellLayout?: string;
+	siteDefaultShellLayout?: ShellLayoutId;
+	sidebarCollapsed?: boolean;
+	availableShellLayouts?: ShellLayoutDescriptorDto[];
 	useInputFocus?: boolean;
 	enableKeyboardShortcuts?: boolean;
 	mainColor?: string;
@@ -167,12 +188,15 @@ export interface AppShellNavItem {
 	active?: boolean;
 	dividerBefore?: boolean;
 	onClick?: () => void;
+	children?: AppShellNavItem[];
 }
 
 export interface AppShellNavSection {
 	id: string;
 	label?: string;
 	items: AppShellNavItem[];
+	collapsible?: boolean;
+	defaultCollapsed?: boolean;
 }
 
 export interface ActionFeedbackDto {
@@ -206,6 +230,7 @@ export interface AppShellRecordHeaderProps {
 
 export interface AppShellProps {
 	workspace?: WorkspaceSharedContext;
+	layout?: ShellLayoutId;
 	title: string;
 	subtitle?: string;
 	icon?: string;
@@ -213,10 +238,8 @@ export interface AppShellProps {
 	navItems?: AppShellNavItem[];
 	sections?: AppShellNavSection[];
 	activeNav?: string;
-	activeId?: string;
 	recordHeader?: AppShellRecordHeaderProps | React.ReactNode;
 	headerActions?: React.ReactNode;
-	actions?: React.ReactNode;
 	feedback?: ActionFeedbackDto | null;
 	onDismissFeedback?: () => void;
 	children: React.ReactNode;
@@ -226,6 +249,8 @@ export interface CommandPaletteItem {
 	id: string;
 	label: string;
 	subtitle: string;
+	badge?: string;
+	group?: string;
 	icon: string;
 	href?: string;
 	onClick?: () => void;

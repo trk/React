@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { cn, DynamicIcon } from '../lib/utils';
-import { Badge } from '../ui';
-import { navigateTablistByKey, scrollTabIntoView, SearchableTabPanel } from '../fields/shared';
+import { cn } from '../lib/utils';
+import { ResponsiveTabBar, type ResponsiveTabItem } from '../ui';
+import { SearchableTabPanel } from '../fields/shared';
 
 interface TabPaneItem {
 	id?: string;
@@ -129,90 +129,28 @@ export function SchemaTabContainer(rawProps: Record<string, unknown>) {
 			data-variant={variant}
 			data-error-lock={resolved.errorLock ? '1' : '0'}
 		>
-			<div
-				role="tablist"
-				aria-label={groupLabel}
-				aria-orientation={variant === 'vertical' ? 'vertical' : 'horizontal'}
-				data-rw-tablist=""
-				data-variant={variant}
-				onKeyDown={(e) => navigateTablistByKey(e, variant === 'vertical' ? 'vertical' : 'horizontal')}
-				className={cn(
-					variant === 'line' && 'flex items-center gap-1 border-b border-border',
-					variant === 'segmented' &&
-						'inline-flex max-w-full items-center gap-1 rounded-lg bg-muted/50 p-1 border border-border',
-					variant === 'vertical' && 'flex flex-col gap-1 border-r border-border pr-4'
-				)}
-			>
-				{panes.map((pane) => {
-					const isActive = pane.key === currentPane?.key;
-					const hasErrors = pane.errors > 0;
-					const btnId = `pw-tab-btn-${pane.domId}`;
-					const panelId = `pw-tab-panel-${pane.domId}`;
-
-					return (
-						<button
-							key={pane.key}
-							type="button"
-							role="tab"
-							id={btnId}
-							aria-selected={isActive}
-							aria-controls={panelId}
-							tabIndex={isActive ? 0 : -1}
-							disabled={pane.disabled}
-							data-tab-key={pane.key}
-							data-show-if={pane.showIf || undefined}
-							onClick={(e) => {
-								selectTab(pane.key);
-								scrollTabIntoView(e.currentTarget);
-							}}
-							className={cn(
-								'inline-flex items-center gap-2 text-xs font-medium transition-colors cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-								variant === 'line' && [
-									'px-3.5 py-2.5',
-									isActive
-										? 'text-foreground'
-										: 'text-muted-foreground hover:text-foreground',
-								],
-								variant === 'segmented' && [
-									'rounded-md px-3 py-1.5',
-									isActive
-										? 'bg-background text-foreground shadow-2xs'
-										: 'text-muted-foreground hover:text-foreground',
-								],
-								variant === 'vertical' && [
-									'w-full justify-start rounded-md px-3 py-2 text-left',
-									isActive
-										? 'bg-accent text-accent-foreground shadow-2xs'
-										: 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
-								],
-								hasErrors && 'text-destructive',
-								pane.disabled && 'pointer-events-none opacity-50'
-							)}
-						>
-							{pane.icon ? <DynamicIcon name={pane.icon} className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> : null}
-							<span className="truncate">{pane.label}</span>
-							{pane.badge !== '' ? (
-								<Badge
-									variant={isActive ? 'secondary' : 'outline'}
-									className="ml-auto px-1.5 py-0 text-[10px] tabular-nums"
-								>
-									{pane.badge}
-								</Badge>
-							) : null}
-							{hasErrors ? (
-								<Badge
-									variant="destructive"
-									title={pane.errorLabel}
-									aria-label={pane.errorLabel}
-									className="ml-auto px-1.5 py-0 text-[10px] tabular-nums"
-								>
-									{pane.errors}
-								</Badge>
-							) : null}
-						</button>
-					);
-				})}
-			</div>
+			<ResponsiveTabBar
+				items={panes.map<ResponsiveTabItem>((pane) => ({
+					id: pane.key,
+					btnId: `pw-tab-btn-${pane.domId}`,
+					controlsId: `pw-tab-panel-${pane.domId}`,
+					label: pane.label,
+					icon: pane.icon,
+					badge: pane.badge,
+					errorCount: pane.errors,
+					errorLabel: pane.errorLabel,
+					disabled: pane.disabled,
+					dataAttrs: {
+						'data-tab-key': pane.key,
+						'data-show-if': pane.showIf || undefined,
+					},
+				}))}
+				activeId={currentPane?.key || ''}
+				ariaLabel={groupLabel}
+				variant={variant}
+				className={variant === 'vertical' ? 'border-r border-border pr-4' : undefined}
+				onSelect={(id) => selectTab(id)}
+			/>
 
 			<div className="min-w-0 flex-1">
 				{panes.map((pane) => {

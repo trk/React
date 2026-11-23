@@ -18,8 +18,10 @@ export function useShellDirtyNavigationGuard({
 	const [dirtyFormsMap, setDirtyFormsMap] = useState<Record<string, { guarded: boolean }>>({});
 	const [pendingDirtyVisitUrl, setPendingDirtyVisitUrl] = useState<string | null>(null);
 	const bypassDirtyNavRef = useRef(false);
+	const dirtyFormsRef = useRef<Record<string, { guarded: boolean }>>({});
 
 	useEffect(() => {
+		dirtyFormsRef.current = {};
 		setDirtyFormsMap({});
 		setPendingDirtyVisitUrl(null);
 		bypassDirtyNavRef.current = false;
@@ -36,6 +38,11 @@ export function useShellDirtyNavigationGuard({
 			const formKey = String(detail?.formId || '__default__');
 			const dirtyNext = Boolean(detail?.isDirty);
 			const guardedNext = detail?.dirtyGuard !== false;
+			if (dirtyNext) {
+				dirtyFormsRef.current[formKey] = { guarded: guardedNext };
+			} else {
+				delete dirtyFormsRef.current[formKey];
+			}
 			setDirtyFormsMap((prev) => {
 				if (dirtyNext) {
 					const existing = prev[formKey];
@@ -74,6 +81,9 @@ export function useShellDirtyNavigationGuard({
 			}) => {
 				if (bypassDirtyNavRef.current) {
 					bypassDirtyNavRef.current = false;
+					return;
+				}
+				if (!Object.values(dirtyFormsRef.current).some((entry) => entry.guarded)) {
 					return;
 				}
 				const visit = event?.detail?.visit;

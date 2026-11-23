@@ -8,6 +8,7 @@ export interface ComboboxOption {
 	value: string;
 	label: string;
 	description?: string;
+	keywords?: string;
 	icon?: string;
 	disabled?: boolean;
 }
@@ -20,10 +21,15 @@ export interface ComboboxProps {
 	emptyText?: string;
 	clearable?: boolean;
 	disabled?: boolean;
+	readOnly?: boolean;
 	id?: string;
 	name?: string;
 	'aria-label'?: string;
+	'aria-invalid'?: boolean;
+	'aria-describedby'?: string;
 	className?: string;
+	inputClassName?: string;
+	popupClassName?: string;
 }
 
 export function Combobox({
@@ -34,31 +40,62 @@ export function Combobox({
 	emptyText,
 	clearable = false,
 	disabled = false,
+	readOnly = false,
 	id,
 	name,
 	'aria-label': ariaLabel,
+	'aria-invalid': ariaInvalid,
+	'aria-describedby': ariaDescribedBy,
 	className,
+	inputClassName,
+	popupClassName,
 }: ComboboxProps): React.ReactElement {
 	const [anchorEl, setAnchorEl] = useState<HTMLDivElement | null>(null);
+	const { contains } = BaseCombobox.useFilter();
 	const selectedOption = options.find((opt) => opt.value === value) ?? null;
 
 	return (
 		<BaseCombobox.Root<ComboboxOption>
 			items={options}
 			value={selectedOption}
-			disabled={disabled}
+			disabled={disabled || readOnly}
 			name={name}
 			isItemEqualToValue={(item, current) => item.value === current.value}
+			itemToStringLabel={(item) => item.label}
+			itemToStringValue={(item) => item.value}
+			filter={(item, query) => {
+				const q = query.trim();
+				if (!q) {
+					return true;
+				}
+				if (contains(item, q, (opt) => opt.label)) {
+					return true;
+				}
+				if (item.description && contains(item, q, (opt) => opt.description ?? '')) {
+					return true;
+				}
+				if (item.keywords && contains(item, q, (opt) => opt.keywords ?? '')) {
+					return true;
+				}
+				return contains(item, q, (opt) => opt.value);
+			}}
 			onValueChange={(next) => {
 				onValueChange?.(next ? next.value : '');
 			}}
 		>
-			<div ref={setAnchorEl} className={cn('relative flex w-full items-center', className)}>
+			<div ref={setAnchorEl} className={cn('relative flex w-full items-center min-w-0', className)}>
 				<BaseCombobox.Input
 					id={id}
 					aria-label={ariaLabel}
+					aria-invalid={ariaInvalid || undefined}
+					aria-describedby={ariaDescribedBy}
+					aria-readonly={readOnly || undefined}
 					placeholder={placeholder ?? t('common.selectOption', 'Select option...')}
-					className="flex h-9 w-full rounded-md border border-input bg-input-surface pl-3 pr-14 text-sm text-foreground shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+					className={cn(
+						'flex h-9 w-full min-w-0 rounded-md border border-input bg-input-surface pl-3 pr-14 text-sm text-foreground shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+						ariaInvalid && 'border-destructive focus-visible:ring-destructive/40',
+						inputClassName,
+					)}
 				/>
 				<div className="absolute right-1.5 flex items-center gap-0.5">
 					{clearable && selectedOption && !disabled ? (
@@ -82,9 +119,12 @@ export function Combobox({
 				<BaseCombobox.Positioner sideOffset={4} className="z-50">
 					<BaseCombobox.Popup
 						data-rw-portal-overlay=""
-						className="z-50 max-h-64 w-[var(--anchor-width)] min-w-48 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg outline-none"
+						className={cn(
+							'z-50 max-h-64 w-[var(--anchor-width)] min-w-48 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg outline-none',
+							popupClassName,
+						)}
 					>
-						<BaseCombobox.Empty className="px-2.5 py-4 text-center text-xs text-muted-foreground">
+						<BaseCombobox.Empty className="px-2.5 py-4 empty:p-0 text-center text-xs text-muted-foreground">
 							{emptyText ?? t('common.noResults', 'No matching options')}
 						</BaseCombobox.Empty>
 						<BaseCombobox.List>

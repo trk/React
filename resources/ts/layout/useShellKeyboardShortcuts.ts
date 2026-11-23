@@ -11,12 +11,14 @@ export interface UseShellKeyboardShortcutsOptions {
 	shortcutsOpen: boolean;
 	moreMenuOpen: boolean;
 	showGlobalWorkspaceBar: boolean;
+	supportsSidebarCollapse?: boolean;
 	workspace?: WorkspaceSharedContext;
 	resolvedNavItems: AppShellNavItem[];
 	recordHeaderSpec: AppShellRecordHeaderProps | null;
 	onToggleCommandPalette: () => void;
 	onToggleShortcutsDialog: () => void;
 	onCloseMoreMenu: () => void;
+	onToggleSidebar?: () => void;
 }
 
 function navigateDestination(rawHref: string | undefined, isInertiaNav = false): void {
@@ -40,12 +42,14 @@ export function useShellKeyboardShortcuts({
 	shortcutsOpen,
 	moreMenuOpen,
 	showGlobalWorkspaceBar,
+	supportsSidebarCollapse = false,
 	workspace,
 	resolvedNavItems,
 	recordHeaderSpec,
 	onToggleCommandPalette,
 	onToggleShortcutsDialog,
 	onCloseMoreMenu,
+	onToggleSidebar,
 }: UseShellKeyboardShortcutsOptions): void {
 	const safeLauncherHref = sanitizeHref(workspace?.launcherUrl);
 	const safeAdminHref = sanitizeHref(workspace?.adminUrl);
@@ -114,6 +118,14 @@ export function useShellKeyboardShortcuts({
 			group: 'navigation',
 			when: enableShortcuts && showGlobalWorkspaceBar && Boolean(safeAdminHref),
 			handler: () => navigateDestination(safeAdminHref, false),
+		},
+		{
+			id: 'shell-toggle-sidebar',
+			keys: 'mod+b',
+			label: t('shell.toggleSidebarShortcut', 'Toggle sidebar'),
+			group: 'navigation',
+			when: enableShortcuts && Boolean(supportsSidebarCollapse && onToggleSidebar),
+			handler: () => onToggleSidebar?.(),
 		},
 		{
 			id: 'shell-record-back',

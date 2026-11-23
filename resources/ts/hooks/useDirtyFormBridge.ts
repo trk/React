@@ -54,11 +54,14 @@ export function markHostFormDirty(
 			const wasChanged = curInputfield.classList.contains('InputfieldStateChanged');
 			curInputfield.classList.add('InputfieldStateChanged');
 			if (!wasChanged && typeof jq === 'function') {
-				try {
-					jq(curInputfield).trigger('changed');
-				} catch {
-					// Ignore optional jQuery event bridge errors
-				}
+				const targetInputfield = curInputfield;
+				window.requestAnimationFrame(() => {
+					try {
+						jq(targetInputfield).trigger('changed');
+					} catch {
+						// Ignore optional jQuery event bridge errors
+					}
+				});
 			}
 		}
 		curInputfield = curInputfield.parentElement?.closest<HTMLElement>('.Inputfield') ?? null;

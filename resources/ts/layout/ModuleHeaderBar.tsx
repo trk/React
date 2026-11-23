@@ -42,7 +42,7 @@ export function ModuleHeaderBar({
 		<div data-rw-module-header="" className="border-b border-border bg-card">
 			<div className="mx-auto max-w-[1600px] px-4 pt-4 pb-0 sm:px-6 sm:pt-5">
 				<div className="flex flex-col gap-3 pb-4 md:flex-row md:items-start md:justify-between">
-					<div className="space-y-1">
+					<div className="min-w-0 md:flex-1 space-y-1">
 						<div className="flex flex-wrap items-center gap-2.5">
 							{icon ? (
 								<span className="inline-flex size-8 items-center justify-center rounded-lg bg-primary/12 text-primary">
@@ -70,7 +70,10 @@ export function ModuleHeaderBar({
 					{(!hasRecordHeader && resolvedHeaderActions) ||
 					openInWorkspaceHref ||
 					(isClassicAdminShell && enableShortcuts) ? (
-						<div className="flex flex-wrap items-center gap-2 shrink-0">
+						<div
+							data-rw-header-actions=""
+							className="flex min-w-0 max-w-full flex-wrap items-center gap-2 md:justify-end"
+						>
 							{!hasRecordHeader ? resolvedHeaderActions : null}
 							{isClassicAdminShell && enableShortcuts ? (
 								<button
