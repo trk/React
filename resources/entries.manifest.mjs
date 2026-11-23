@@ -33,6 +33,8 @@ export const ISOLATED_BUILD_ENTRIES = [
 	'ReactGrid',
 	'ReactDnd',
 	'ReactCalendar',
+	'ReactExtraFields',
+	'ReactUiShowcase',
 ];
 
 export const TIPTAP_ADDON_ENTRIES = [

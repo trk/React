@@ -532,6 +532,7 @@ function optimizeReactWorkspaceDepsPlugin(
 					'  Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter,',
 					'  Label, Input, Textarea, Select, Switch, Checkbox, RadioGroup, RadioGroupItem,',
 					'  Tabs, TabsList, TabsTrigger, TabsContent,',
+					'  ResponsiveTabBar,',
 					'  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,',
 					'  Alert, AlertTitle, AlertDescription, Progress, Separator, Skeleton,',
 					'  Dialog, Sheet, Drawer, useModalDialogController,',

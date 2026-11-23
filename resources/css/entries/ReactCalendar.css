@@ -218,3 +218,20 @@
 [data-rw-calendar]:dir(rtl) .rdp-nav {
 	flex-direction: row-reverse;
 }
+
+/* Time, DateTime & DateRange Popover Scopes */
+[data-rw-time-picker] {
+	color: var(--foreground);
+}
+
+[data-rw-time-column] > div {
+	scrollbar-width: thin;
+}
+
+[data-rw-datetime-popover] {
+	max-width: min(100vw - 1.5rem, 36rem);
+}
+
+[data-rw-daterange-presets] button {
+	white-space: nowrap;
+}

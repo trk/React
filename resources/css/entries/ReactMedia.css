@@ -119,20 +119,8 @@ progress[data-rw-progress]:indeterminate::-moz-progress-bar {
 	}
 }
 
-/* Gallery & File List Layout Containment for Smooth 60fps Interactions */
-[data-rw-media-card]:not([data-rw-lifted="true"]) {
-	content-visibility: auto;
-	contain-intrinsic-size: auto 260px auto 220px;
-}
-
+/* Gallery & File List Layout Containment (avoid content-visibility: auto blank paints in iframes) */
+[data-rw-media-card]:not([data-rw-lifted="true"]),
 [data-rw-media-row]:not([data-rw-lifted="true"]) {
-	content-visibility: auto;
-	contain-intrinsic-size: auto 640px auto 72px;
-}
-
-@supports not (content-visibility: auto) {
-	[data-rw-media-card]:not([data-rw-lifted="true"]),
-	[data-rw-media-row]:not([data-rw-lifted="true"]) {
-		contain: layout style paint;
-	}
+	contain: layout style;
 }
