@@ -20,7 +20,7 @@ interface ReactQuickEditProvider
 	public function saveQuickEdit(string $id, array $input): array;
 
 	/**
-	 * Optional inline quick-create in a Kanban stage or Calendar day (`$context = ['stage' => ...] | ['date' => ...]`).
+	 * Optional inline quick-create with pluggable viewport mode or filter context.
 	 *
 	 * @param array<string, mixed> $context
 	 */

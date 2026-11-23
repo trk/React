@@ -36,21 +36,19 @@ final readonly class ReactRecord
 	 * @param int $sort Sort order index
 	 * @param int $created Unix timestamp of creation
 	 * @param int $modified Unix timestamp of last modification
-	 * @param string $stage Current Kanban stage key
-	 * @param string $startDate ISO `YYYY-MM-DD` start date for Calendar view
-	 * @param string $endDate ISO `YYYY-MM-DD` end date for Calendar view
 	 * @param bool $hasDraft Whether an unpublished working draft exists
 	 * @param object|array<string, mixed>|null $raw Underlying domain entity (`EntryItem`, `Page`, or `array`)
-	 * @param string $subtitle Optional pre-resolved subtitle for Cards/Kanban
-	 * @param string $thumbHtml Optional sanitized thumbnail HTML (`<img>` or `<svg>`) for Table/Cards/Kanban
+	 * @param string $subtitle Optional pre-resolved subtitle for Cards and custom viewports
+	 * @param string $thumbHtml Optional sanitized thumbnail HTML (`<img>` or `<svg>`) for Table, Cards, and custom viewports
 	 * @param bool $formattedIsHtml When true, all `$formatted[$col]` values are pre-sanitized HTML
 	 * @param list<string>|array<string, bool> $htmlColumns Column keys whose formatted values contain safe HTML
 	 * @param string $parentId Parent record ID for hierarchical child grouping
 	 * @param array<string, bool> $isEditableField Per-column inline-edit eligibility (`colKey => bool`)
-	 * @param string|array<string, mixed> $icon Optional leading icon identifier or `ReactIconValue` payload for Table/Cards/Kanban/Calendar
-	 * @param array{src: string, darkSrc?: string, alt?: string, count?: int, aspect?: string}|null $thumb Optional sanitized thumbnail descriptor for Table/Cards/Kanban/Calendar
+	 * @param string|array<string, mixed> $icon Optional leading icon identifier or `ReactIconValue` payload for viewports
+	 * @param array{src: string, darkSrc?: string, alt?: string, count?: int, aspect?: string}|null $thumb Optional sanitized thumbnail descriptor for viewports
 	 * @param list<array{label: string, variant?: string, dot?: bool}> $badges Optional record-level status/metadata badges
 	 * @param array<string, array<string, mixed>> $cells Optional structured cell payloads keyed by column name
+	 * @param array<string, mixed> $meta Optional extension metadata bag for pluggable viewport modes
 	 */
 	public function __construct(
 		public string $id,
@@ -67,9 +65,6 @@ final readonly class ReactRecord
 		public int $sort = 0,
 		public int $created = 0,
 		public int $modified = 0,
-		public string $stage = '',
-		public string $startDate = '',
-		public string $endDate = '',
 		public bool $hasDraft = false,
 		public object|array|null $raw = null,
 		public string $subtitle = '',
@@ -82,6 +77,7 @@ final readonly class ReactRecord
 		public ?array $thumb = null,
 		public array $badges = [],
 		public array $cells = [],
+		public array $meta = [],
 	) {
 	}
 

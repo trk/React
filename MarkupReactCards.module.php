@@ -27,7 +27,7 @@ class MarkupReactCards extends MarkupReactViewport
 			'summary' => __('Interactive responsive card grid with search, filters, bulk actions, and pagination.', __FILE__),
 			'author' => 'Iskender TOTOGLU @trk @ukyo',
 			'icon' => 'th-large',
-			'singular' => true,
+			'singular' => false,
 			'autoload' => false,
 			'requires' => [
 				'PHP>=8.4',

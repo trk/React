@@ -7,7 +7,6 @@ namespace Totoglu\React\Provider;
 use Closure;
 use ProcessWire\Wire;
 use Totoglu\React\Contract\ReactBulkFieldsProvider;
-use Totoglu\React\Contract\ReactCalendarProvider;
 use Totoglu\React\Contract\ReactDataProviderInterface;
 use Totoglu\React\Contract\ReactExportProvider;
 use Totoglu\React\Contract\ReactFieldSchemaProvider;
@@ -28,7 +27,6 @@ use Totoglu\React\Viewport\MarkupReactViewport;
 final class ArrayDataProvider extends Wire implements
 	ReactDataProviderInterface,
 	ReactBulkFieldsProvider,
-	ReactCalendarProvider,
 	ReactFieldSchemaProvider,
 	ReactViewsProvider,
 	ReactExportProvider,
@@ -69,25 +67,7 @@ final class ArrayDataProvider extends Wire implements
 	 */
 	private array $statusOptions;
 
-	private string $stageField;
-
-	/**
-	 * @var array<string, string>
-	 */
-	private array $stageOptions;
-
-	private string $dateStartField;
-
-	private string $dateEndField;
-
 	private bool $locked;
-
-	private string $laneField = '';
-
-	/**
-	 * @var array<string, string>
-	 */
-	private array $laneOptions = [];
 
 	/**
 	 * @var array<string, array{label: string, options: array<string, string>}>
@@ -120,7 +100,7 @@ final class ArrayDataProvider extends Wire implements
 	private array $inlineEditableFields = [];
 
 	/**
-	 * @var array<string, array{label: string, icon?: string, layout?: 'table'|'cards'|'kanban'|'calendar', columns?: list<string>, sort?: string, groupBy?: string, search?: string, statusFilter?: string, fieldFilters?: array<string, string>}>
+	 * @var array<string, array{label: string, icon?: string, layout?: string, columns?: list<string>, sort?: string, groupBy?: string, search?: string, statusFilter?: string, fieldFilters?: array<string, string>}>
 	 */
 	private array $savedViews = [];
 
@@ -133,13 +113,6 @@ final class ArrayDataProvider extends Wire implements
 	 * @var array<string, string|array<string, mixed>>
 	 */
 	private array $summaries = [];
-
-	private string $stageSummaryField = '';
-
-	/**
-	 * @var Closure(list<ReactRecord>): array<string, bool>|null
-	 */
-	private ?Closure $conflictsResolver = null;
 
 	private bool $quickEdit = false;
 
@@ -193,14 +166,6 @@ final class ArrayDataProvider extends Wire implements
 			'draft' => $this->_('Draft'),
 			'trash' => $this->_('Trash'),
 		];
-		$this->stageField = 'stage';
-		$this->stageOptions = [
-			'todo' => $this->_('To Do'),
-			'in_progress' => $this->_('In Progress'),
-			'done' => $this->_('Done'),
-		];
-		$this->dateStartField = 'start_date';
-		$this->dateEndField = 'end_date';
 		$this->locked = false;
 		$this->applyOptions($options);
 	}
@@ -220,10 +185,6 @@ final class ArrayDataProvider extends Wire implements
 			$this->quickEditSaver = $options['quickEditSaver'];
 			$this->quickEdit = true;
 			unset($options['quickEditSaver']);
-		}
-		if (isset($options['conflicts']) && $options['conflicts'] instanceof Closure) {
-			$this->conflictsResolver = $options['conflicts'];
-			unset($options['conflicts']);
 		}
 		if (is_array($options['items'] ?? null) && $this->items === [] && $this->itemsLoader === null) {
 			$this->items = array_values($options['items']);
@@ -282,29 +243,8 @@ final class ArrayDataProvider extends Wire implements
 		if (is_array($options['statusOptions'] ?? null)) {
 			$this->statusOptions = $options['statusOptions'];
 		}
-		if (array_key_exists('stageField', $options)) {
-			$this->stageField = (string) $options['stageField'];
-			if ($this->stageField === '' && !array_key_exists('stageOptions', $options)) {
-				$this->stageOptions = [];
-			}
-		}
-		if (is_array($options['stageOptions'] ?? null)) {
-			$this->stageOptions = $options['stageOptions'];
-		}
-		if (array_key_exists('dateStartField', $options)) {
-			$this->dateStartField = (string) $options['dateStartField'];
-		}
-		if (array_key_exists('dateEndField', $options)) {
-			$this->dateEndField = (string) $options['dateEndField'];
-		}
 		if (array_key_exists('locked', $options)) {
 			$this->locked = (bool) $options['locked'];
-		}
-		if (array_key_exists('laneField', $options)) {
-			$this->laneField = (string) $options['laneField'];
-		}
-		if (is_array($options['laneOptions'] ?? null)) {
-			$this->laneOptions = $options['laneOptions'];
 		}
 		if (is_array($options['bulkFields'] ?? null)) {
 			$this->bulkFields = $options['bulkFields'];
@@ -351,9 +291,6 @@ final class ArrayDataProvider extends Wire implements
 		}
 		if (is_array($options['summaries'] ?? null)) {
 			$this->summaries = $options['summaries'];
-		}
-		if (array_key_exists('stageSummaryField', $options)) {
-			$this->stageSummaryField = (string) $options['stageSummaryField'];
 		}
 		if (array_key_exists('quickEdit', $options)) {
 			$this->quickEdit = (bool) $options['quickEdit'];
@@ -430,26 +367,6 @@ final class ArrayDataProvider extends Wire implements
 		return $this->statusOptions;
 	}
 
-	public function stageField(): string
-	{
-		return $this->stageField;
-	}
-
-	public function stageOptions(string $field = ''): array
-	{
-		return $this->stageOptions;
-	}
-
-	public function dateStartField(): string
-	{
-		return $this->dateStartField;
-	}
-
-	public function dateEndField(): string
-	{
-		return $this->dateEndField;
-	}
-
 	public function isLocked(): bool
 	{
 		return $this->locked;
@@ -458,129 +375,6 @@ final class ArrayDataProvider extends Wire implements
 	public function bulkEditableFields(): array
 	{
 		return $this->bulkFields;
-	}
-
-	public function supportsDateShift(): bool
-	{
-		return $this->dateStartField !== '';
-	}
-
-	public function queryWindow(array $criteria, string $startIso, string $endIso): array
-	{
-		return $this->query(array_merge($criteria, [
-			'dateFrom' => $startIso,
-			'dateTo' => $endIso,
-			'pageNum' => 1,
-			'limit' => 10000,
-		]))->items;
-	}
-
-	public function laneField(): string
-	{
-		return $this->laneField;
-	}
-
-	public function laneOptions(): array
-	{
-		return $this->laneOptions;
-	}
-
-	/**
-	 * @param list<ReactRecord> $records
-	 * @return array<string, bool>
-	 */
-	public function conflicts(array $records): array
-	{
-		if ($this->conflictsResolver instanceof Closure) {
-			/** @var array<string, bool> $res */
-			$res = ($this->conflictsResolver)($records);
-
-			return $res;
-		}
-
-		$conflicts = [];
-		$explicit = $this->options['conflicts'] ?? null;
-		if (is_array($explicit)) {
-			foreach ($explicit as $k => $v) {
-				if (is_int($k) && is_scalar($v)) {
-					$conflicts[(string) $v] = true;
-				} elseif ((bool) $v) {
-					$conflicts[(string) $k] = true;
-				}
-			}
-		}
-
-		$noOverlap = $this->options['noOverlap'] ?? $this->options['conflictScope'] ?? null;
-		if ($noOverlap === null && ($this->options['detectLaneConflicts'] ?? false) && $this->laneField !== '') {
-			$noOverlap = [$this->laneField];
-		}
-
-		if ($noOverlap !== null && $noOverlap !== false) {
-			/** @var list<string> $scopeFields */
-			$scopeFields = [];
-			if (is_string($noOverlap) && $noOverlap !== '') {
-				$scopeFields = [$noOverlap];
-			} elseif (is_array($noOverlap)) {
-				$scopeFields = array_values(array_filter(array_map('strval', $noOverlap)));
-			}
-
-			$count = count($records);
-			for ($i = 0; $i < $count; $i++) {
-				$a = $records[$i];
-				$startA = substr($a->startDate, 0, 10);
-				$endA = substr($a->endDate !== '' ? $a->endDate : $a->startDate, 0, 10);
-				if ($startA === '') {
-					continue;
-				}
-				if ($endA === '' || strcmp($endA, $startA) < 0) {
-					$endA = $startA;
-				}
-
-				$scopeA = [];
-				$skipA = false;
-				foreach ($scopeFields as $sf) {
-					$sv = trim((string) $a->getValue($sf, ''));
-					if ($sv === '') {
-						$skipA = true;
-						break;
-					}
-					$scopeA[$sf] = $sv;
-				}
-				if ($skipA) {
-					continue;
-				}
-
-				for ($j = $i + 1; $j < $count; $j++) {
-					$b = $records[$j];
-					$startB = substr($b->startDate, 0, 10);
-					$endB = substr($b->endDate !== '' ? $b->endDate : $b->startDate, 0, 10);
-					if ($startB === '') {
-						continue;
-					}
-					if ($endB === '' || strcmp($endB, $startB) < 0) {
-						$endB = $startB;
-					}
-
-					$sameScope = true;
-					foreach ($scopeFields as $sf) {
-						if (trim((string) $b->getValue($sf, '')) !== $scopeA[$sf]) {
-							$sameScope = false;
-							break;
-						}
-					}
-					if (!$sameScope) {
-						continue;
-					}
-
-					if (strcmp($startA, $endB) <= 0 && strcmp($endA, $startB) >= 0) {
-						$conflicts[$a->id] = true;
-						$conflicts[$b->id] = true;
-					}
-				}
-			}
-		}
-
-		return $conflicts;
 	}
 
 	/**
@@ -781,117 +575,6 @@ final class ArrayDataProvider extends Wire implements
 		return $out;
 	}
 
-	public function stageSummaryField(): ?string
-	{
-		if ($this->stageSummaryField !== '') {
-			return $this->stageSummaryField;
-		}
-		if ($this->summaries !== []) {
-			return (string) array_key_first($this->summaries);
-		}
-
-		return null;
-	}
-
-	public function computeStageSummaries(array $criteria = []): array
-	{
-		$field = $this->stageSummaryField();
-		if ($field === null || $field === '' || $this->stageField === '') {
-			return [];
-		}
-
-		$aggDef = $this->summaries[$field] ?? 'sum';
-		$type = is_array($aggDef)
-			? strtolower(trim((string) ($aggDef['op'] ?? $aggDef['type'] ?? 'sum')))
-			: strtolower(trim((string) $aggDef));
-		if (!in_array($type, ['sum', 'avg', 'min', 'max', 'count'], true)) {
-			$type = 'sum';
-		}
-		$prefix = is_array($aggDef) ? (string) ($aggDef['prefix'] ?? '') : '';
-		$suffix = is_array($aggDef) ? (string) ($aggDef['suffix'] ?? '') : '';
-		$label = is_array($aggDef) && isset($aggDef['label']) && (string) $aggDef['label'] !== ''
-			? (string) $aggDef['label']
-			: ($this->columns[$field] ?? ucfirst(str_replace('_', ' ', $field)));
-
-		$result = $this->query(array_merge($criteria, [
-			'pageNum' => 1,
-			'limit' => 100000,
-		]));
-
-		/** @var array<string, list<float>> $byStageNums */
-		$byStageNums = [];
-		/** @var array<string, int> $byStageCounts */
-		$byStageCounts = [];
-		foreach (array_keys($this->stageOptions) as $stageKey) {
-			$byStageNums[(string) $stageKey] = [];
-			$byStageCounts[(string) $stageKey] = 0;
-		}
-
-		foreach ($result->items as $rec) {
-			$stageKey = $rec->stage !== '' ? $rec->stage : (string) $rec->getValue($this->stageField, '');
-			if ($stageKey === '') {
-				continue;
-			}
-			if (!isset($byStageNums[$stageKey])) {
-				$byStageNums[$stageKey] = [];
-				$byStageCounts[$stageKey] = 0;
-			}
-			$byStageCounts[$stageKey]++;
-			$rawVal = $rec->getValue($field);
-			if (is_int($rawVal) || is_float($rawVal) || (is_string($rawVal) && is_numeric($rawVal))) {
-				$byStageNums[$stageKey][] = (float) $rawVal;
-			}
-		}
-
-		$out = [];
-		foreach ($byStageCounts as $stageKey => $cnt) {
-			$nums = $byStageNums[$stageKey] ?? [];
-			if ($type === 'count') {
-				$out[$stageKey] = [
-					'field' => $field,
-					'type' => 'count',
-					'label' => $label,
-					'formatted' => $prefix . (string) $cnt . $suffix,
-					'raw' => $cnt,
-					'count' => $cnt,
-				];
-				continue;
-			}
-			if ($nums === []) {
-				$out[$stageKey] = [
-					'field' => $field,
-					'type' => $type,
-					'label' => $label,
-					'formatted' => $prefix . '0' . $suffix,
-					'raw' => 0,
-					'count' => $cnt,
-				];
-				continue;
-			}
-			$raw = match ($type) {
-				'sum' => array_sum($nums),
-				'avg' => array_sum($nums) / count($nums),
-				'min' => min($nums),
-				'max' => max($nums),
-			};
-			$rounded = round($raw, 2);
-			$formattedNum = floor($rounded) === $rounded
-				? number_format($rounded, 0, '.', ',')
-				: number_format($rounded, 2, '.', ',');
-
-			$out[$stageKey] = [
-				'field' => $field,
-				'type' => $type,
-				'label' => $label,
-				'formatted' => $prefix . $formattedNum . $suffix,
-				'raw' => $rounded,
-				'count' => $cnt,
-			];
-		}
-
-		return $out;
-	}
-
 	public function supportsQuickEdit(): bool
 	{
 		return $this->quickEdit;
@@ -962,22 +645,9 @@ final class ArrayDataProvider extends Wire implements
 			'title' => $cleanTitle,
 			'status' => 1,
 		];
-		if (isset($context['stage']) && (string) $context['stage'] !== '') {
-			$stageVal = (string) $context['stage'];
-			$row['stage'] = $stageVal;
-			if ($this->stageField !== '') {
-				$row[$this->stageField] = $stageVal;
-			}
-		}
-		if (isset($context['date']) && (string) $context['date'] !== '') {
-			$dateVal = (string) $context['date'];
-			$row['start_date'] = $dateVal;
-			$row['end_date'] = $dateVal;
-			if ($this->dateStartField !== '') {
-				$row[$this->dateStartField] = $dateVal;
-			}
-			if ($this->dateEndField !== '') {
-				$row[$this->dateEndField] = $dateVal;
+		foreach ($context as $ctxKey => $ctxVal) {
+			if (is_string($ctxKey) && $ctxKey !== '' && $ctxKey !== 'id' && $ctxKey !== 'title' && is_scalar($ctxVal) && (string) $ctxVal !== '') {
+				$row[$ctxKey] = (string) $ctxVal;
 			}
 		}
 		$this->items[] = $row;
@@ -1038,15 +708,6 @@ final class ArrayDataProvider extends Wire implements
 				'warning' => $this->_('Draft'),
 				default => $this->_('Published'),
 			});
-			$stage = $this->stageField !== ''
-				? (string) ($row[$this->stageField] ?? $row['stage'] ?? array_key_first($this->stageOptions) ?? '')
-				: '';
-			$startDate = $this->dateStartField !== ''
-				? (string) ($row[$this->dateStartField] ?? $row['start_date'] ?? $row['date'] ?? '')
-				: '';
-			$endDate = $this->dateEndField !== ''
-				? (string) ($row[$this->dateEndField] ?? $row['end_date'] ?? $startDate)
-				: $startDate;
 			$editUrl = (string) ($row['editUrl'] ?? ($editUrlBase !== '' ? rtrim($editUrlBase, '/') . '/?id=' . rawurlencode($id) : ''));
 
 			/** @var array<string, string> $formatted */
@@ -1118,9 +779,6 @@ final class ArrayDataProvider extends Wire implements
 				sort: (int) ($row['sort'] ?? $idx),
 				created: (int) ($row['created'] ?? 0),
 				modified: (int) ($row['modified'] ?? 0),
-				stage: $stage,
-				startDate: $startDate,
-				endDate: $endDate,
 				hasDraft: (bool) ($row['hasDraft'] ?? false),
 				raw: $row,
 				subtitle: (string) ($row['_subtitle'] ?? $row['subtitle'] ?? ''),
@@ -1176,6 +834,20 @@ final class ArrayDataProvider extends Wire implements
 		$limit = max(1, (int) ($criteria['limit'] ?? 25));
 		$editUrl = (string) ($criteria['editUrl'] ?? '');
 
+		/** @var array<string, bool>|null $idFilterMap */
+		$idFilterMap = null;
+		if (isset($criteria['ids']) && is_array($criteria['ids']) && $criteria['ids'] !== []) {
+			$idFilterMap = [];
+			foreach ($criteria['ids'] as $rawId) {
+				if (is_scalar($rawId)) {
+					$cleanId = trim((string) $rawId);
+					if ($cleanId !== '') {
+						$idFilterMap[$cleanId] = true;
+					}
+				}
+			}
+		}
+
 		$allRecords = $this->normalizeRecords($editUrl);
 		$trashCount = 0;
 		foreach ($allRecords as $rec) {
@@ -1184,7 +856,11 @@ final class ArrayDataProvider extends Wire implements
 			}
 		}
 
-		$filtered = array_filter($allRecords, static function (ReactRecord $rec) use ($search, $statusFilter, $fieldFilters, $dateFrom, $dateTo): bool {
+		$dateCol = trim((string) ($this->options['dateField'] ?? ''));
+		$filtered = array_filter($allRecords, static function (ReactRecord $rec) use ($search, $statusFilter, $fieldFilters, $dateFrom, $dateTo, $dateCol, $idFilterMap): bool {
+			if ($idFilterMap !== null && !isset($idFilterMap[$rec->id])) {
+				return false;
+			}
 			if ($statusFilter === 'trash') {
 				if (!$rec->isTrash()) {
 					return false;
@@ -1221,13 +897,14 @@ final class ArrayDataProvider extends Wire implements
 				}
 			}
 
-			$recStart = $rec->startDate;
-			$recEnd = $rec->endDate !== '' ? $rec->endDate : $recStart;
-			if ($dateFrom !== '' && ($recEnd === '' || strcmp($recEnd, $dateFrom) < 0)) {
-				return false;
-			}
-			if ($dateTo !== '' && ($recStart === '' || strcmp($recStart, $dateTo) > 0)) {
-				return false;
+			if ($dateCol !== '' && ($dateFrom !== '' || $dateTo !== '')) {
+				$recDate = substr((string) $rec->getValue($dateCol, ''), 0, 10);
+				if ($dateFrom !== '' && ($recDate === '' || strcmp($recDate, $dateFrom) < 0)) {
+					return false;
+				}
+				if ($dateTo !== '' && ($recDate === '' || strcmp($recDate, $dateTo) > 0)) {
+					return false;
+				}
 			}
 
 			return true;
@@ -1428,84 +1105,6 @@ final class ArrayDataProvider extends Wire implements
 					$clonedRows[] = $copy;
 					$affected++;
 					break;
-				case 'move_stage':
-					$targetStage = (string) ($payload['stage'] ?? '');
-					$groupField = trim((string) ($payload['groupField'] ?? ''));
-					$groupVal = (string) ($payload['groupVal'] ?? '');
-					if ($targetStage !== '') {
-						$arr[$this->stageField] = $targetStage;
-						$arr['stage'] = $targetStage;
-						if ($groupField !== '' && $groupField !== $this->stageField) {
-							$arr[$groupField] = ($groupVal === '_unassigned_' || $groupVal === '__unassigned__') ? '' : $groupVal;
-						}
-						$this->items[$idx] = $arr;
-						$affected++;
-					}
-					break;
-				case 'reschedule':
-					$startKey = $this->dateStartField !== '' ? $this->dateStartField : 'start_date';
-					$endKey = $this->dateEndField !== '' ? $this->dateEndField : 'end_date';
-					$curStart = substr((string) ($arr[$startKey] ?? $arr['start_date'] ?? $arr['date'] ?? ''), 0, 10);
-					$curEnd = substr((string) ($arr[$endKey] ?? $arr['end_date'] ?? $curStart), 0, 10);
-					$targetDate = substr(trim((string) ($payload['targetDate'] ?? $payload['startDate'] ?? '')), 0, 10);
-					$fromDate = substr(trim((string) ($payload['fromDate'] ?? '')), 0, 10);
-					$explicitEnd = substr(trim((string) ($payload['endDate'] ?? '')), 0, 10);
-					$laneField = trim((string) ($payload['laneField'] ?? ''));
-					$laneVal = (string) ($payload['laneVal'] ?? '');
-
-					if ($targetDate !== '') {
-						$newStart = $targetDate;
-						$newEnd = $explicitEnd !== '' ? $explicitEnd : $targetDate;
-						$anchorDate = $fromDate !== '' ? $fromDate : $curStart;
-						if (($explicitEnd === '' || $explicitEnd === $targetDate) && $curStart !== '' && $curEnd !== '' && $anchorDate !== '') {
-							$anchorTs = strtotime($anchorDate);
-							$targetTs = strtotime($targetDate);
-							$startTs = strtotime($curStart);
-							$endTs = strtotime($curEnd);
-							if ($anchorTs !== false && $targetTs !== false && $startTs !== false && $endTs !== false) {
-								$deltaDays = (int) round(($targetTs - $anchorTs) / 86400);
-								$sign = $deltaDays >= 0 ? "+{$deltaDays} days" : "{$deltaDays} days";
-								$shiftedStartTs = strtotime($curStart . ' ' . $sign);
-								$shiftedEndTs = strtotime($curEnd . ' ' . $sign);
-								if ($shiftedStartTs !== false && $shiftedEndTs !== false) {
-									$newStart = date('Y-m-d', $shiftedStartTs);
-									$newEnd = date('Y-m-d', $shiftedEndTs);
-								}
-							}
-						}
-						if (strcmp($newEnd, $newStart) < 0) {
-							$newEnd = $newStart;
-						}
-						$arr[$startKey] = $newStart;
-						$arr['start_date'] = $newStart;
-						$arr[$endKey] = $newEnd;
-						$arr['end_date'] = $newEnd;
-						if ($laneField !== '' && $laneVal !== '_all_') {
-							$arr[$laneField] = ($laneVal === '_unassigned_' || $laneVal === '__unassigned__') ? '' : $laneVal;
-						}
-						$this->items[$idx] = $arr;
-						$affected++;
-					}
-					break;
-				case ReactDataProviderInterface::OP_RESIZE_SPAN:
-					$startKey = $this->dateStartField !== '' ? $this->dateStartField : 'start_date';
-					$endKey = $this->dateEndField !== '' ? $this->dateEndField : 'end_date';
-					$targetStartDate = substr(trim((string) ($payload['startDate'] ?? '')), 0, 10);
-					$curStart = $targetStartDate !== ''
-						? $targetStartDate
-						: substr((string) ($arr[$startKey] ?? $arr['start_date'] ?? $arr['date'] ?? ''), 0, 10);
-					$targetEndDate = substr(trim((string) ($payload['endDate'] ?? $payload['targetEndDate'] ?? '')), 0, 10);
-					if ($targetEndDate !== '' && ($curStart === '' || strcmp($targetEndDate, $curStart) >= 0)) {
-						if ($targetStartDate !== '') {
-							$arr[$startKey] = $targetStartDate;
-							$arr['start_date'] = $targetStartDate;
-						}
-						$arr[$endKey] = $targetEndDate;
-						$arr['end_date'] = $targetEndDate;
-						$this->items[$idx] = $arr;
-						$affected++;
-					}
-					break;
 				case 'update_field':
 					$field = (string) ($payload['field'] ?? '');
 					$val = $payload['value'] ?? '';
@@ -1521,34 +1120,6 @@ final class ArrayDataProvider extends Wire implements
 						$curVal = $arr[$field] ?? false;
 						$isTruthy = $curVal === true || $curVal === 1 || $curVal === '1' || $curVal === 'true';
 						$arr[$field] = $isTruthy ? '0' : '1';
-						$this->items[$idx] = $arr;
-						$affected++;
-					}
-					break;
-				case 'shift_dates':
-					$days = (int) ($payload['days'] ?? $payload['shiftDays'] ?? 0);
-					if ($days !== 0) {
-						$sign = $days > 0 ? "+{$days} days" : "{$days} days";
-						$startKey = $this->dateStartField !== '' ? $this->dateStartField : 'start_date';
-						$endKey = $this->dateEndField !== '' ? $this->dateEndField : 'end_date';
-						$curStart = (string) ($arr[$startKey] ?? $arr['start_date'] ?? $arr['date'] ?? '');
-						$curEnd = (string) ($arr[$endKey] ?? $arr['end_date'] ?? $curStart);
-						if ($curStart !== '') {
-							$tsStart = strtotime($curStart . ' ' . $sign);
-							if ($tsStart !== false) {
-								$newStart = date('Y-m-d', $tsStart);
-								$arr[$startKey] = $newStart;
-								$arr['start_date'] = $newStart;
-							}
-						}
-						if ($curEnd !== '') {
-							$tsEnd = strtotime($curEnd . ' ' . $sign);
-							if ($tsEnd !== false) {
-								$newEnd = date('Y-m-d', $tsEnd);
-								$arr[$endKey] = $newEnd;
-								$arr['end_date'] = $newEnd;
-							}
-						}
 						$this->items[$idx] = $arr;
 						$affected++;
 					}

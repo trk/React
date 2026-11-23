@@ -15,7 +15,7 @@ interface ReactViewsProvider
 	 * @return array<string, array{
 	 *   label: string,
 	 *   icon?: string,
-	 *   layout?: 'table'|'cards'|'kanban'|'calendar',
+	 *   layout?: string,
 	 *   columns?: list<string>,
 	 *   sort?: string,
 	 *   groupBy?: string

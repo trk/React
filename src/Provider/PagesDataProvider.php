@@ -5,19 +5,35 @@ declare(strict_types=1);
 namespace Totoglu\React\Provider;
 
 use Closure;
+use ProcessWire\FieldtypeCheckbox;
+use ProcessWire\FieldtypeDatetime;
+use ProcessWire\FieldtypeLanguageInterface;
+use ProcessWire\Inputfield;
+use ProcessWire\InputfieldForm;
+use ProcessWire\InputfieldHidden;
+use ProcessWire\InputfieldSubmit;
+use ProcessWire\InputfieldWrapper;
+use ProcessWire\Language;
+use ProcessWire\Languages;
+use ProcessWire\NoticeError;
 use ProcessWire\Page;
 use ProcessWire\PageArray;
 use ProcessWire\Pageimage;
 use ProcessWire\Pageimages;
+use ProcessWire\React;
 use ProcessWire\Selectors;
+use ProcessWire\Template;
 use ProcessWire\Wire;
+use ProcessWire\WireInputData;
 use Totoglu\React\Contract\ReactDataProviderInterface;
+use Totoglu\React\Contract\ReactQuickEditProvider;
 use Totoglu\React\Contract\ReactRecordActionsProvider;
 use Totoglu\React\Contract\ReactReorderProvider;
 use Totoglu\React\Data\ReactPageResult;
 use Totoglu\React\Data\ReactRecord;
 use Totoglu\React\Icon\IconManager;
 use Totoglu\React\Icon\ReactIconValue;
+use Totoglu\React\Security\UrlSanitizer;
 
 /**
  * ProcessWire `Pages` / `PageArray` adapter implementing `ReactDataProviderInterface`.
@@ -25,8 +41,39 @@ use Totoglu\React\Icon\ReactIconValue;
  * Allows any ProcessWire selector (`pages:template=basic-page`) or `PageArray` instance to be rendered inside
  * `MarkupReactTable`, `MarkupReactCards`, or custom `MarkupReactViewport` modules.
  */
-final class PagesDataProvider extends Wire implements ReactDataProviderInterface, ReactRecordActionsProvider, ReactReorderProvider
+final class PagesDataProvider extends Wire implements ReactDataProviderInterface, ReactQuickEditProvider, ReactRecordActionsProvider, ReactReorderProvider
 {
+	/**
+	 * Reserved ProcessWire selector directives and sensitive system properties blocked from client `fieldFilters`.
+	 *
+	 * @var array<string, true>
+	 */
+	private const array RESERVED_FILTER_KEYS = [
+		'include' => true,
+		'check_access' => true,
+		'status' => true,
+		'limit' => true,
+		'start' => true,
+		'sort' => true,
+		'get_total' => true,
+		'find_all' => true,
+		'id' => true,
+		'parent' => true,
+		'parent_id' => true,
+		'has_parent' => true,
+		'template' => true,
+		'templates_id' => true,
+		'pass' => true,
+		'roles' => true,
+		'permissions' => true,
+		'email' => true,
+		'children' => true,
+		'num_children' => true,
+		'fieldgroup' => true,
+		'created_users_id' => true,
+		'modified_users_id' => true,
+	];
+
 	private string $baseSelector = 'id>1';
 
 	private int $defaultLimit = 25;
@@ -50,17 +97,6 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 	 */
 	private array $sortableColumns;
 
-	private string $stageField;
-
-	/**
-	 * @var array<string, string>
-	 */
-	private array $stageOptions;
-
-	private string $dateStartField;
-
-	private string $dateEndField;
-
 	private bool $locked;
 
 	/**
@@ -72,6 +108,8 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 	 * @var array<string, int>
 	 */
 	private array $formatterArities = [];
+
+	private ?Closure $editUrlBuilder = null;
 
 	/**
 	 * @var list<string>|array<string, bool>
@@ -115,10 +153,6 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 			'status' => $this->_('Status'),
 		];
 		$this->sortableColumns = ['title', 'name', 'created', 'modified', 'sort', 'status'];
-		$this->stageField = '';
-		$this->stageOptions = [];
-		$this->dateStartField = '';
-		$this->dateEndField = '';
 		$this->locked = false;
 		$this->applyOptions($options);
 	}
@@ -137,6 +171,11 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 				}
 			}
 			unset($options['formatters']);
+		}
+
+		if (($options['editUrlBuilder'] ?? null) instanceof Closure) {
+			$this->editUrlBuilder = $options['editUrlBuilder'];
+			unset($options['editUrlBuilder']);
 		}
 
 		$this->options = array_merge($this->options, $options);
@@ -182,27 +221,6 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 		}
 		if (is_array($options['sortableColumns'] ?? null)) {
 			$this->sortableColumns = array_values(array_map('strval', $options['sortableColumns']));
-		}
-		if (array_key_exists('stageField', $options)) {
-			$this->stageField = (string) $options['stageField'];
-			if ($this->stageField === 'status' && !array_key_exists('stageOptions', $options) && $this->stageOptions === []) {
-				$this->stageOptions = [
-					'published' => $this->_('Published'),
-					'unpublished' => $this->_('Draft'),
-					'hidden' => $this->_('Hidden'),
-				];
-			} elseif ($this->stageField === '' && !array_key_exists('stageOptions', $options)) {
-				$this->stageOptions = [];
-			}
-		}
-		if (is_array($options['stageOptions'] ?? null)) {
-			$this->stageOptions = $options['stageOptions'];
-		}
-		if (array_key_exists('dateStartField', $options)) {
-			$this->dateStartField = (string) $options['dateStartField'];
-		}
-		if (array_key_exists('dateEndField', $options)) {
-			$this->dateEndField = (string) $options['dateEndField'];
 		}
 		if (array_key_exists('locked', $options)) {
 			$this->locked = (bool) $options['locked'];
@@ -283,26 +301,6 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 		];
 	}
 
-	public function stageField(): string
-	{
-		return $this->stageField;
-	}
-
-	public function stageOptions(string $field = ''): array
-	{
-		return $this->stageOptions;
-	}
-
-	public function dateStartField(): string
-	{
-		return $this->dateStartField;
-	}
-
-	public function dateEndField(): string
-	{
-		return $this->dateEndField;
-	}
-
 	public function isLocked(): bool
 	{
 		return $this->locked;
@@ -322,6 +320,65 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 
 	public function createAction(): ?array
 	{
+		if ($this->locked) {
+			return null;
+		}
+
+		$rawAction = $this->options['createAction'] ?? null;
+		if (is_array($rawAction) && isset($rawAction['url'])) {
+			$safeUrl = UrlSanitizer::sanitizeHref((string) $rawAction['url'], true);
+			if ($safeUrl === '') {
+				return null;
+			}
+			$rawLabel = is_string($rawAction['label'] ?? null) ? trim($rawAction['label']) : '';
+			$action = [
+				'url' => $safeUrl,
+				'label' => $rawLabel !== '' ? $rawLabel : $this->_('Add New'),
+			];
+			if (array_key_exists('modal', $rawAction)) {
+				$action['modal'] = (bool) $rawAction['modal'];
+			}
+
+			return $action;
+		}
+
+		$rawParentId = $this->options['createParentId'] ?? null;
+		$parentId = is_int($rawParentId) || (is_string($rawParentId) && ctype_digit(trim($rawParentId)))
+			? (int) $rawParentId
+			: 0;
+		if ($parentId > 0) {
+			$parent = $this->wire()->pages->get($parentId);
+			if ($parent instanceof Page && $parent->id > 0 && $parent->addable()) {
+				$adminUrl = rtrim((string) ($this->wire()->config->urls->admin ?: '/processwire'), '/');
+				$addUrl = "{$adminUrl}/page/add/?parent_id={$parent->id}";
+
+				$tplOpt = $this->options['createTemplate'] ?? null;
+				$tpl = null;
+				if ($tplOpt instanceof Template) {
+					$tpl = $tplOpt;
+				} elseif (is_int($tplOpt) || (is_string($tplOpt) && trim($tplOpt) !== '')) {
+					$candidate = $this->wire()->templates->get($tplOpt);
+					if ($candidate instanceof Template) {
+						$tpl = $candidate;
+					}
+				}
+				if ($tpl instanceof Template && $tpl->id > 0) {
+					$addUrl .= '&template_id=' . $tpl->id;
+				}
+
+				$rawLabel = is_string($this->options['createLabel'] ?? null) ? trim($this->options['createLabel']) : '';
+				$action = [
+					'url' => $addUrl,
+					'label' => $rawLabel !== '' ? $rawLabel : $this->_('Add New'),
+				];
+				if (array_key_exists('createModal', $this->options)) {
+					$action['modal'] = (bool) $this->options['createModal'];
+				}
+
+				return $action;
+			}
+		}
+
 		return null;
 	}
 
@@ -460,16 +517,77 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 	}
 
 	/**
+	 * Resolve allowlisted non-reserved queryable field keys permitted inside `criteria['fieldFilters']`.
+	 *
+	 * @return array<string, true>
+	 */
+	private function resolveAllowedFilterKeys(): array
+	{
+		$candidates = [];
+		$rawFilterable = $this->options['filterableFields'] ?? null;
+		if (is_array($rawFilterable) && $rawFilterable !== []) {
+			foreach ($rawFilterable as $k => $v) {
+				if (is_int($k)) {
+					$key = is_array($v) ? (string) ($v['key'] ?? $v['name'] ?? '') : (string) $v;
+				} else {
+					$key = (string) $k;
+				}
+				if ($key !== '') {
+					$candidates[] = $key;
+				}
+			}
+		} else {
+			foreach (array_keys($this->columns) as $colKey) {
+				$candidates[] = (string) $colKey;
+			}
+		}
+
+		$fields = $this->wire()->fields;
+		/** @var array<string, true> $allowed */
+		$allowed = [];
+		foreach ($candidates as $candidate) {
+			$key = trim($candidate);
+			if ($key === '' || preg_match('/^[a-zA-Z0-9_]+$/', $key) !== 1) {
+				continue;
+			}
+			$lower = strtolower($key);
+			if (isset(self::RESERVED_FILTER_KEYS[$lower])) {
+				continue;
+			}
+			if (
+				!in_array($lower, ['title', 'name', 'created', 'modified', 'published'], true)
+				&& $fields->get($key) === null
+			) {
+				continue;
+			}
+			$allowed[$key] = true;
+		}
+
+		return $allowed;
+	}
+
+	/**
 	 * Build a sanitized ProcessWire selector string from query criteria while enforcing RBAC visibility rules.
 	 *
 	 * @param array<string, mixed> $criteria
 	 */
 	public function buildSelectorString(array $criteria = []): string
 	{
+		return implode(', ', $this->buildSelectorParts($criteria, true));
+	}
+
+	/**
+	 * Build sanitized ProcessWire selector clause fragments from query criteria.
+	 *
+	 * @param array<string, mixed> $criteria
+	 * @return list<string>
+	 */
+	private function buildSelectorParts(array $criteria = [], bool $includePagination = true): array
+	{
 		$sanitizer = $this->wire()->sanitizer;
 		$search = trim((string) ($criteria['search'] ?? ''));
 		$statusFilter = strtolower(trim((string) ($criteria['statusFilter'] ?? '')));
-		/** @var array<string, string> $fieldFilters */
+		/** @var array<string, mixed> $fieldFilters */
 		$fieldFilters = is_array($criteria['fieldFilters'] ?? null) ? $criteria['fieldFilters'] : [];
 		$dateFrom = trim((string) ($criteria['dateFrom'] ?? ''));
 		$dateTo = trim((string) ($criteria['dateTo'] ?? ''));
@@ -489,6 +607,9 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 		$canViewUnpublished = $user->isSuperuser() || $user->hasPermission('page-edit');
 
 		if ($statusFilter === 'trash' && $canViewUnpublished) {
+			$parts = $this->pageItems !== null
+				? [$this->baseSelector]
+				: $this->buildTrashScopeClauses();
 			$parts[] = 'include=trash';
 			$parts[] = 'status>=' . Page::statusTrash;
 		} elseif (($statusFilter === 'unpublished' || $statusFilter === 'draft') && $canViewUnpublished) {
@@ -506,20 +627,37 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 			$parts[] = 'status<' . Page::statusTrash;
 		}
 
+		if (isset($criteria['ids']) && is_array($criteria['ids']) && $criteria['ids'] !== []) {
+			$cleanIds = [];
+			foreach ($criteria['ids'] as $rawId) {
+				if (is_int($rawId) && $rawId > 0) {
+					$cleanIds[] = $rawId;
+				} elseif (is_string($rawId) && ctype_digit(trim($rawId)) && (int) trim($rawId) > 0) {
+					$cleanIds[] = (int) trim($rawId);
+				}
+			}
+			$cleanIds = array_values(array_unique($cleanIds));
+			$parts[] = $cleanIds !== [] ? ('id=' . implode('|', $cleanIds)) : 'id=0';
+		}
+
 		if ($search !== '') {
 			$safeSearch = $sanitizer->selectorValue($search);
 			$parts[] = "title|name%={$safeSearch}";
 		}
 
-		foreach ($fieldFilters as $fKey => $fVal) {
-			$fVal = trim((string) $fVal);
-			if ($fVal === '' || !preg_match('/^[a-zA-Z0-9_]+$/', (string) $fKey)) {
-				continue;
+		if ($fieldFilters !== []) {
+			$allowedFilterKeys = $this->resolveAllowedFilterKeys();
+			foreach ($fieldFilters as $fKey => $fVal) {
+				$cleanKey = trim((string) $fKey);
+				$cleanVal = is_scalar($fVal) ? trim((string) $fVal) : '';
+				if ($cleanKey === '' || $cleanVal === '' || !isset($allowedFilterKeys[$cleanKey])) {
+					continue;
+				}
+				$parts[] = $cleanKey . '=' . $sanitizer->selectorValue($cleanVal);
 			}
-			$parts[] = $fKey . '=' . $sanitizer->selectorValue($fVal);
 		}
 
-		$dateField = $this->dateStartField();
+		$dateField = trim((string) ($this->options['dateField'] ?? ''));
 		if ($dateFrom !== '' && preg_match('/^[a-zA-Z0-9_]+$/', $dateField)) {
 			$parts[] = $dateField . '>=' . $sanitizer->selectorValue($dateFrom);
 		}
@@ -534,11 +672,13 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 			}
 		}
 
-		$start = ($pageNum - 1) * $limit;
-		$parts[] = "start={$start}";
-		$parts[] = "limit={$limit}";
+		if ($includePagination) {
+			$start = ($pageNum - 1) * $limit;
+			$parts[] = "start={$start}";
+			$parts[] = "limit={$limit}";
+		}
 
-		return implode(', ', $parts);
+		return $parts;
 	}
 
 	public function query(array $criteria = []): ReactPageResult
@@ -547,57 +687,91 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 		$config = $this->wire()->config;
 
 		$pageNum = max(1, (int) ($criteria['pageNum'] ?? 1));
-		$limit = max(1, min(250, (int) ($criteria['limit'] ?? 25)));
-
-		$selector = $this->buildSelectorString($criteria);
-		$found = $pages->find($selector);
-		$total = $found->getTotal();
+		$fallbackLimit = isset($this->options['limit']) && (int) $this->options['limit'] > 0
+			? (int) $this->options['limit']
+			: $this->defaultLimit;
+		$limit = max(1, min(250, (int) ($criteria['limit'] ?? $fallbackLimit)));
 
 		$adminUrl = rtrim((string) ($config->urls->admin ?: '/processwire'), '/');
 		$user = $this->wire()->user;
 		$isSuperuser = (bool) $user->isSuperuser();
+		$baseParts = $this->buildSelectorParts($criteria, false);
+		/** @var list<Page> $matchedPages */
+		$matchedPages = [];
+		$total = 0;
+
+		if ($isSuperuser) {
+			$selectorParts = $baseParts;
+			$start = ($pageNum - 1) * $limit;
+			$selectorParts[] = "start={$start}";
+			$selectorParts[] = "limit={$limit}";
+			$found = $pages->find(implode(', ', $selectorParts));
+			$total = $found->getTotal();
+			foreach ($found as $p) {
+				if ($p instanceof Page && $p->id) {
+					$matchedPages[] = $p;
+				}
+			}
+		} else {
+			$sliceStart = ($pageNum - 1) * $limit;
+			$sliceEnd = $sliceStart + $limit;
+			$chunkSize = max(100, $limit);
+			$maxScan = 5000;
+			$scanOffset = 0;
+
+			while ($scanOffset < $maxScan) {
+				$chunkParts = $baseParts;
+				$chunkParts[] = "start={$scanOffset}";
+				$chunkParts[] = "limit={$chunkSize}";
+				$chunk = $pages->find(implode(', ', $chunkParts));
+				$chunkCount = $chunk->count();
+				if ($chunkCount === 0) {
+					break;
+				}
+				foreach ($chunk as $p) {
+					if (!$p instanceof Page || !$p->id) {
+						continue;
+					}
+					if (!$p->viewable() && !$p->editable()) {
+						continue;
+					}
+					if ($total >= $sliceStart && $total < $sliceEnd) {
+						$matchedPages[] = $p;
+					}
+					$total++;
+				}
+				$scanOffset += $chunkCount;
+				if ($chunkCount < $chunkSize || $scanOffset >= $chunk->getTotal()) {
+					break;
+				}
+			}
+		}
+
 		/** @var array<int, int> $depthByParentId */
 		$depthByParentId = [0 => 0];
 		$records = [];
 
-		foreach ($found as $p) {
-			if (!$p instanceof Page || !$p->id) {
-				continue;
-			}
+		foreach ($matchedPages as $p) {
 			$isViewable = $p->viewable();
-			if (!$isSuperuser && !$isViewable && !$p->editable()) {
-				continue;
-			}
 			$bitStatus = ReactRecord::STATUS_PUBLISHED;
 			$variant = 'success';
 			$label = $this->_('Published');
-			$stage = 'published';
 
 			if ($p->isTrash()) {
 				$bitStatus = ReactRecord::STATUS_TRASH;
 				$variant = 'danger';
 				$label = $this->_('Trash');
-				$stage = 'trash';
 			} elseif ($p->isUnpublished()) {
 				$bitStatus = ReactRecord::STATUS_DRAFT;
 				$variant = 'warning';
 				$label = $this->_('Draft');
-				$stage = 'unpublished';
 			} elseif ($p->isHidden()) {
 				$bitStatus = ReactRecord::STATUS_HIDDEN;
 				$variant = 'warning';
 				$label = $this->_('Hidden');
-				$stage = 'hidden';
 			}
 			if ($p->isLocked()) {
 				$bitStatus |= ReactRecord::STATUS_LOCKED;
-			}
-
-			if ($this->stageField !== '' && $this->stageField !== 'status') {
-				$customStage = $p->get($this->stageField);
-				if (is_scalar($customStage) && (string) $customStage !== '') {
-					$stage = (string) $customStage;
-				}
 			}
 
 			$values = [];
@@ -710,14 +884,12 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 				}
 			}
 
-			$startDate = $this->normalizePageDate($p, $this->dateStartField, (int) $p->created);
-			$endDate = $this->normalizePageDate($p, $this->dateEndField, (int) $p->modified);
-			if ($endDate === '' || $endDate < $startDate) {
-				$endDate = $startDate;
-			}
-
 			$parentId = (int) $p->parent_id;
 			$parentCount = $depthByParentId[$parentId] ??= $p->parents()->count();
+
+			$recordEditUrl = $this->editUrlBuilder instanceof Closure
+				? UrlSanitizer::sanitizeHref((string) ($this->editUrlBuilder)($p), true)
+				: "{$adminUrl}/page/edit/?id={$p->id}";
 
 			$records[] = new ReactRecord(
 				id: (string) $p->id,
@@ -728,15 +900,12 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 				statusLabel: $label,
 				values: $values,
 				formatted: $formatted,
-				editUrl: "{$adminUrl}/page/edit/?id={$p->id}",
+				editUrl: $recordEditUrl,
 				viewUrl: $isViewable ? (string) $p->url : '',
 				depth: max(0, $parentCount - 1),
 				sort: (int) $p->sort,
 				created: (int) $p->created,
 				modified: (int) $p->modified,
-				stage: $stage,
-				startDate: $startDate,
-				endDate: $endDate,
 				hasDraft: false,
 				raw: $p,
 				subtitle: $recordSubtitle,
@@ -747,12 +916,65 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 			);
 		}
 
+		$trashCount = 0;
+		$canViewUnpublished = $user->isSuperuser() || $user->hasPermission('page-edit');
+		if ($canViewUnpublished) {
+			if ($this->pageItems !== null) {
+				foreach ($this->pageItems as $itemPage) {
+					if (
+						$itemPage instanceof Page
+						&& $itemPage->id > 1
+						&& $itemPage->isTrash()
+						&& !$this->isProtectedSystemPage($itemPage)
+						&& ($isSuperuser || $itemPage->viewable() || $itemPage->editable())
+					) {
+						$trashCount++;
+					}
+				}
+			} elseif ($isSuperuser) {
+				$trashParts = $this->buildTrashScopeClauses();
+				$trashParts[] = 'include=trash';
+				$trashParts[] = 'status>=' . Page::statusTrash;
+				$trashCount = $pages->count(implode(', ', $trashParts));
+			} else {
+				$trashBaseParts = $this->buildTrashScopeClauses();
+				$trashBaseParts[] = 'include=trash';
+				$trashBaseParts[] = 'status>=' . Page::statusTrash;
+				$trashScanOffset = 0;
+				$trashChunkSize = 250;
+				while ($trashScanOffset < 5000) {
+					$trashParts = $trashBaseParts;
+					$trashParts[] = "start={$trashScanOffset}";
+					$trashParts[] = "limit={$trashChunkSize}";
+					$trashChunk = $pages->find(implode(', ', $trashParts));
+					$trashChunkCount = $trashChunk->count();
+					if ($trashChunkCount === 0) {
+						break;
+					}
+					foreach ($trashChunk as $tp) {
+						if (
+							$tp instanceof Page
+							&& $tp->id > 1
+							&& !$this->isProtectedSystemPage($tp)
+							&& ($tp->viewable() || $tp->editable())
+						) {
+							$trashCount++;
+						}
+					}
+					$trashScanOffset += $trashChunkCount;
+					if ($trashChunkCount < $trashChunkSize || $trashScanOffset >= $trashChunk->getTotal()) {
+						break;
+					}
+				}
+			}
+		}
+
 		return new ReactPageResult(
 			items: $records,
 			total: $total,
 			pageNum: $pageNum,
 			limit: $limit,
-			trashCount: 0,
+			trashCount: $trashCount,
 		);
 	}
 
@@ -802,10 +1024,60 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 
 	public function mutate(string $operation, array $ids, array $payload = []): int
 	{
-		if ($this->locked || $ids === [] || (bool) $this->wire()->config->demo) {
+		if ($this->locked || (bool) $this->wire()->config->demo) {
 			return 0;
 		}
 		$pages = $this->wire()->pages;
+
+		if ($operation === ReactDataProviderInterface::OP_EMPTY_TRASH) {
+			$user = $this->wire()->user;
+			if (!$user->isSuperuser() && !$user->hasPermission('page-delete')) {
+				return 0;
+			}
+			$deleted = 0;
+			if ($this->pageItems !== null) {
+				foreach ($this->pageItems as $candidate) {
+					if (
+						$candidate instanceof Page
+						&& $candidate->id > 1
+						&& $candidate->isTrash()
+						&& !$this->isProtectedSystemPage($candidate)
+						&& $candidate->deleteable()
+					) {
+						$pages->delete($candidate, true);
+						$deleted++;
+					}
+				}
+
+				return $deleted;
+			}
+
+			$trashParts = $this->buildTrashScopeClauses();
+			$trashParts[] = 'include=trash';
+			$trashParts[] = 'status>=' . Page::statusTrash;
+			$trashParts[] = 'limit=100';
+			foreach ($pages->findMany(implode(', ', $trashParts)) as $candidate) {
+				if (
+					$candidate instanceof Page
+					&& $candidate->id > 1
+					&& $candidate->isTrash()
+					&& !$this->isProtectedSystemPage($candidate)
+					&& $candidate->deleteable()
+				) {
+					$pages->delete($candidate, true);
+					$deleted++;
+				}
+			}
+			if ($deleted > 0) {
+				$pages->uncacheAll();
+			}
+
+			return $deleted;
+		}
+
+		if ($ids === []) {
+			return 0;
+		}
 
 		$affected = 0;
 		foreach ($ids as $idx => $rawId) {
@@ -893,75 +1165,50 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 					$pages->sort($p, $idx);
 					$affected++;
 					break;
-				case 'move_stage':
-					$stage = (string) ($payload['stage'] ?? '');
-					$groupField = trim((string) ($payload['groupField'] ?? ''));
-					$groupVal = (string) ($payload['groupVal'] ?? '');
-					if ($this->stageField === 'status') {
-						if ($stage === 'published') {
-							if (!$p->publishable()) {
-								break;
-							}
-							$p->removeStatus(Page::statusUnpublished);
-							$p->removeStatus(Page::statusHidden);
-						} elseif ($stage === 'unpublished' || $stage === 'draft') {
-							$p->addStatus(Page::statusUnpublished);
-						} elseif ($stage === 'hidden') {
-							$p->addStatus(Page::statusHidden);
-						}
-						$pages->save($p, ['quiet' => true]);
-						$affected++;
-					} elseif ($stage !== '' && $this->canWriteField($p, $this->stageField)) {
-						$p->setAndSave($this->stageField, $stage);
-						$affected++;
-					}
-					if ($groupField !== '' && $groupField !== $this->stageField && $this->canWriteField($p, $groupField)) {
-						$p->setAndSave($groupField, ($groupVal === '_unassigned_' || $groupVal === '__unassigned__') ? '' : $groupVal);
-					}
-					break;
-				case 'reschedule':
-					$startDate = (string) ($payload['startDate'] ?? $payload['targetDate'] ?? '');
-					$endDate = (string) ($payload['endDate'] ?? '');
-					$laneField = trim((string) ($payload['laneField'] ?? ''));
-					$laneVal = (string) ($payload['laneVal'] ?? '');
-					$changed = false;
-					if ($startDate !== '' && $this->canWriteField($p, $this->dateStartField)) {
-						$p->setAndSave($this->dateStartField, $startDate);
-						$changed = true;
-					}
-					if ($endDate !== '' && $this->dateEndField !== '' && $this->dateEndField !== $this->dateStartField && $this->canWriteField($p, $this->dateEndField)) {
-						$p->setAndSave($this->dateEndField, $endDate);
-						$changed = true;
-					}
-					if ($laneField !== '' && $laneVal !== '_all_' && $this->canWriteField($p, $laneField)) {
-						$p->setAndSave($laneField, ($laneVal === '_unassigned_' || $laneVal === '__unassigned__') ? '' : $laneVal);
-						$changed = true;
-					}
-					if ($changed) {
-						$affected++;
-					}
-					break;
-				case ReactDataProviderInterface::OP_RESIZE_SPAN:
-					$targetStartDate = trim((string) ($payload['startDate'] ?? ''));
-					$targetEndDate = trim((string) ($payload['endDate'] ?? $payload['targetEndDate'] ?? ''));
-					$changed = false;
-					if ($targetStartDate !== '' && $this->dateStartField !== '' && $this->canWriteField($p, $this->dateStartField)) {
-						$p->setAndSave($this->dateStartField, $targetStartDate);
-						$changed = true;
-					}
-					$curStart = $targetStartDate !== '' ? $targetStartDate : $this->normalizePageDate($p, $this->dateStartField, 0);
-					if ($targetEndDate !== '' && $this->dateEndField !== '' && $this->canWriteField($p, $this->dateEndField) && ($curStart === '' || strcmp($targetEndDate, $curStart) >= 0)) {
-						$p->setAndSave($this->dateEndField, $targetEndDate);
-						$changed = true;
-					}
-					if ($changed) {
-						$affected++;
-					}
-					break;
 				case 'update_field':
 					$field = (string) ($payload['field'] ?? '');
 					if ($field !== '' && $this->canWriteField($p, $field, true)) {
-						$p->setAndSave($field, $payload['value'] ?? '');
+						$rawVal = $payload['value'] ?? '';
+						$fieldObj = $p->getField($field);
+						$fieldTypeObj = $fieldObj?->type;
+						$fieldTypeClass = $fieldTypeObj !== null ? $fieldTypeObj->className() : '';
+						$langs = $this->wire()->languages;
+						if (is_array($rawVal) && $fieldTypeObj instanceof FieldtypeLanguageInterface && $langs instanceof Languages) {
+							foreach ($rawVal as $langKey => $langVal) {
+								$targetLang = is_int($langKey) || ctype_digit($langKey)
+									? $langs->get((int) $langKey)
+									: $langs->get($langKey);
+								if ($targetLang instanceof Language && $targetLang->id > 0 && $targetLang->editable() && is_scalar($langVal)) {
+									$p->setLanguageValue($targetLang, $field, (string) $langVal);
+								}
+							}
+							$pages->save($p, ['quiet' => true]);
+						} elseif ($fieldTypeObj instanceof FieldtypeLanguageInterface && is_scalar($rawVal) && $langs instanceof Languages) {
+							$defLang = $langs->getDefault();
+							if ($defLang instanceof Language && $defLang->id > 0 && $defLang->editable()) {
+								$p->setLanguageValue($defLang, $field, (string) $rawVal);
+								$pages->save($p, ['quiet' => true]);
+							} else {
+								$p->setAndSave($field, (string) $rawVal);
+							}
+						} elseif ($fieldTypeObj instanceof FieldtypeCheckbox || $fieldTypeClass === 'FieldtypeToggle') {
+							$boolStr = is_bool($rawVal)
+								? ($rawVal ? '1' : '0')
+								: strtolower(trim(is_scalar($rawVal) ? (string) $rawVal : ''));
+							$p->setAndSave($field, in_array($boolStr, ['1', 'true', 'yes', 'on'], true) ? 1 : 0);
+						} elseif ($fieldTypeObj instanceof FieldtypeDatetime && is_string($rawVal)) {
+							$trimmedDate = trim($rawVal);
+							if ($trimmedDate === '') {
+								$p->setAndSave($field, '');
+							} elseif (ctype_digit($trimmedDate)) {
+								$p->setAndSave($field, (int) $trimmedDate);
+							} else {
+								$parsedTs = strtotime(str_replace('T', ' ', $trimmedDate));
+								$p->setAndSave($field, $parsedTs !== false ? $parsedTs : $trimmedDate);
+							}
+						} else {
+							$p->setAndSave($field, $rawVal);
+						}
 						$affected++;
 					}
 					break;
@@ -974,29 +1221,11 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 						$affected++;
 					}
 					break;
-				case 'shift_dates':
-					$days = (int) ($payload['days'] ?? $payload['shiftDays'] ?? 0);
-					if ($days !== 0 && $this->dateStartField !== '') {
-						$sign = $days > 0 ? "+{$days} days" : "{$days} days";
-						$changed = false;
-						foreach (array_unique(array_filter([$this->dateStartField, $this->dateEndField])) as $dField) {
-							if ($this->canWriteField($p, $dField)) {
-								$curDate = $this->normalizePageDate($p, $dField, 0);
-								if ($curDate !== '') {
-									$ts = strtotime($curDate . ' ' . $sign);
-									if ($ts !== false) {
-										$p->setAndSave($dField, date('Y-m-d', $ts));
-										$changed = true;
-									}
-								}
-							}
-						}
-						if ($changed) {
-							$affected++;
-						}
-					}
-					break;
 			}
+		}
+
+		if ($affected > 0) {
+			$pages->uncacheAll();
 		}
 
 		return $affected;
@@ -1098,29 +1327,404 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 		return $page->hasField($clean) && $page->editable($clean);
 	}
 
-	private function normalizePageDate(Page $page, string $field, int $fallbackTimestamp): string
+	public function supportsQuickEdit(): bool
 	{
-		if ($field === 'created') {
-			return (int) $page->created > 0 ? date('Y-m-d', (int) $page->created) : '';
+		return !$this->locked;
+	}
+
+	public function createQuickRecord(string $title, array $context = []): ?string
+	{
+		return null;
+	}
+
+	/**
+	 * Build a `SchemaForm` payload from the page's actual ProcessWire `Inputfield` tree
+	 * (`$page->getInputfields()`) so Quick Edit renders native multi-language tabs, textareas,
+	 * selects, toggles, relations, media, and rich-text controls.
+	 *
+	 * @param array{editUrl?: string, errors?: array<string, string>} $context
+	 * @return array{
+	 *   title: string,
+	 *   formSchema: array<string, mixed>,
+	 *   scriptAssets: list<string>,
+	 *   styleAssets: list<string>,
+	 *   editUrl: string
+	 * }|null
+	 */
+	public function resolveQuickEditForm(string $recordId, array $context = []): ?array
+	{
+		if ($this->locked || $recordId === '__new__' || !ctype_digit($recordId)) {
+			return null;
 		}
-		if ($field === 'modified') {
-			return (int) $page->modified > 0 ? date('Y-m-d', (int) $page->modified) : '';
+
+		$p = $this->wire()->pages->get((int) $recordId);
+		if (!$p instanceof Page || !$p->id || !$this->matchesBaseScope($p) || $this->isProtectedSystemPage($p) || !$p->editable()) {
+			return null;
 		}
-		if ($field !== '') {
-			$raw = $page->getUnformatted($field);
-			if (is_int($raw) || (is_string($raw) && ctype_digit($raw))) {
-				$ts = (int) $raw;
-				if ($ts > 0) {
-					return date('Y-m-d', $ts);
-				}
-			} elseif (is_string($raw) && trim($raw) !== '') {
-				$ts = strtotime(trim($raw));
-				if ($ts !== false) {
-					return date('Y-m-d', $ts);
+
+		/** @var array<string, string> $errors */
+		$errors = [];
+		if (isset($context['errors']) && is_array($context['errors'])) {
+			foreach ($context['errors'] as $errField => $errMsg) {
+				if (is_string($errField) && $errField !== '' && is_scalar($errMsg)) {
+					$errors[$errField] = trim((string) $errMsg);
 				}
 			}
 		}
 
-		return $fallbackTimestamp > 0 ? date('Y-m-d', $fallbackTimestamp) : '';
+		$built = $this->buildQuickEditPageForm($p, true, $errors);
+		$formSchema = React::instance($this)->serializeForm($built['form'], [
+			'errors' => $errors,
+			'dirtyGuard' => false,
+		]);
+		$formSchema['submits'] = [];
+		$formSchema['dirtyGuard'] = false;
+
+		$adminUrl = rtrim((string) ($this->wire()->config->urls->admin ?: '/processwire'), '/');
+		$recordEditUrl = $this->editUrlBuilder instanceof Closure
+			? UrlSanitizer::sanitizeHref((string) ($this->editUrlBuilder)($p), true)
+			: "{$adminUrl}/page/edit/?id={$p->id}";
+
+		return [
+			'title' => (string) ($p->title ?: $p->name),
+			'formSchema' => $formSchema,
+			'scriptAssets' => $built['scriptAssets'],
+			'styleAssets' => $built['styleAssets'],
+			'editUrl' => $recordEditUrl,
+		];
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function saveQuickEdit(string $id, array $input): array
+	{
+		$config = $this->wire()->config;
+		if ($this->locked || (bool) $config->demo) {
+			return ['ok' => false, 'message' => $this->_('Quick edit is locked.')];
+		}
+		if (!ctype_digit($id)) {
+			return ['ok' => false, 'message' => $this->_('Invalid page identifier.')];
+		}
+
+		$pages = $this->wire()->pages;
+		$p = $pages->get((int) $id);
+		if (!$p instanceof Page || !$p->id || !$this->matchesBaseScope($p) || $this->isProtectedSystemPage($p) || !$p->editable()) {
+			return ['ok' => false, 'message' => $this->_('Page is protected or not editable.')];
+		}
+
+		if (!empty($input['_rw_quick_edit_form'])) {
+			$postData = $input;
+			unset($postData['_rw_quick_edit_form']);
+			$built = $this->buildQuickEditPageForm($p, false, []);
+			$wireInput = new WireInputData($postData);
+			$built['form']->processInput($wireInput);
+
+			/** @var array<string, string> $errors */
+			$errors = [];
+			$this->collectQuickEditErrors($built['form'], $errors);
+			$this->clearWireErrorNotices();
+			if ($errors !== []) {
+				return [
+					'ok' => false,
+					'message' => $this->_('Please fix the highlighted errors.'),
+					'errors' => $errors,
+				];
+			}
+
+			$languages = $this->wire()->languages;
+			$prevOf = $p->of();
+			$p->of(false);
+			try {
+				foreach ($built['fields'] as $fieldName => $inputfield) {
+					if (!$inputfield->isChanged()) {
+						continue;
+					}
+					if (!$this->canWriteField($p, $fieldName, true) || !$p->editable($fieldName, false)) {
+						continue;
+					}
+					if ($languages instanceof Languages && $inputfield->getSetting('useLanguages')) {
+						$valObj = $p->get($fieldName);
+						if (is_object($valObj) && method_exists($valObj, 'setFromInputfield')) {
+							$cloned = clone $valObj;
+							$cloned->setFromInputfield($inputfield);
+							$p->set($fieldName, $cloned);
+						} else {
+							$p->set($fieldName, $inputfield->val());
+						}
+					} else {
+						$p->set($fieldName, $inputfield->val());
+					}
+				}
+				$pages->save($p);
+				$pages->uncacheAll();
+			} finally {
+				$p->of($prevOf);
+			}
+
+			return [
+				'ok' => true,
+				'message' => $this->_('Page updated.'),
+			];
+		}
+
+		/** @var array<string, mixed> $validated */
+		$validated = [];
+		foreach ($input as $fKey => $fVal) {
+			if (!is_string($fKey) || $fKey === '' || str_starts_with($fKey, '_')) {
+				continue;
+			}
+			if (!$this->canWriteField($p, $fKey, true)) {
+				return ['ok' => false, 'message' => $this->_('Field is not editable.')];
+			}
+			$validated[$fKey] = $fVal;
+		}
+
+		foreach ($validated as $fKey => $fVal) {
+			$this->mutate(ReactDataProviderInterface::OP_UPDATE_FIELD, [$id], [
+				'field' => $fKey,
+				'value' => $fVal,
+			]);
+		}
+
+		return [
+			'ok' => true,
+			'message' => $this->_('Page updated.'),
+		];
+	}
+
+	/**
+	 * Build a filtered `InputfieldForm` containing editable content fields for `$p`, optionally warming field assets.
+	 *
+	 * @param array<string, string> $errors
+	 * @return array{
+	 *   form: InputfieldForm,
+	 *   fields: array<string, Inputfield>,
+	 *   scriptAssets: list<string>,
+	 *   styleAssets: list<string>
+	 * }
+	 */
+	private function buildQuickEditPageForm(Page $p, bool $warmAssets, array $errors = []): array
+	{
+		$modules = $this->wire()->modules;
+		$config = $this->wire()->config;
+
+		/** @var InputfieldForm $form */
+		$form = $modules->get('InputfieldForm');
+		$form->attr('id', 'rw_quick_edit_page_' . $p->id);
+		$form->attr('name', 'rw_quick_edit_page_' . $p->id);
+		$form->attr('method', 'post');
+		$form->set('protectCSRF', false);
+		$form->set('columnWidthSpacing', (int) $config->inputfieldColumnWidthSpacing);
+
+		/** @var array<string, Inputfield> $editableFields */
+		$editableFields = [];
+		$prevOf = $p->of();
+		$p->of(false);
+		try {
+			$pageFields = $p->getInputfields();
+			if ($pageFields instanceof InputfieldWrapper) {
+				$this->pruneQuickEditInputfields($pageFields, $p, $editableFields);
+				foreach ($pageFields->children() as $child) {
+					if (!$child instanceof Inputfield) {
+						continue;
+					}
+					$pageFields->remove($child);
+					$form->add($child);
+				}
+			}
+			$form->resetTrackChanges(true);
+		} finally {
+			$p->of($prevOf);
+		}
+
+		foreach ($errors as $errField => $errMessage) {
+			$targetField = $form->getChildByName($errField);
+			if ($targetField instanceof Inputfield) {
+				$targetField->getErrors(true);
+				$targetField->error($errMessage);
+			}
+		}
+		if ($errors !== []) {
+			$this->clearWireErrorNotices();
+		}
+
+		$scriptAssets = [];
+		$styleAssets = [];
+		if ($warmAssets) {
+			$beforeScripts = [];
+			foreach ($config->scripts as $s) {
+				$beforeScripts[(string) $s] = true;
+			}
+			$beforeStyles = [];
+			foreach ($config->styles as $s) {
+				$beforeStyles[(string) $s] = true;
+			}
+
+			$form->renderReady(null, false);
+			foreach ($form->getAll(['withWrappers' => true]) as $child) {
+				if ($child instanceof Inputfield) {
+					$child->renderReady($form, false);
+				}
+			}
+
+			foreach ($config->scripts as $s) {
+				$url = (string) $s;
+				if (!isset($beforeScripts[$url]) && self::isQuickEditDynamicAsset($url)) {
+					$scriptAssets[] = $url;
+				}
+			}
+			foreach ($config->styles as $s) {
+				$url = (string) $s;
+				if (!isset($beforeStyles[$url]) && self::isQuickEditDynamicAsset($url)) {
+					$styleAssets[] = $url;
+				}
+			}
+		}
+
+		return [
+			'form' => $form,
+			'fields' => $editableFields,
+			'scriptAssets' => array_values(array_unique($scriptAssets)),
+			'styleAssets' => array_values(array_unique($styleAssets)),
+		];
+	}
+
+	/**
+	 * Recursively remove system/protected/non-editable fields and empty wrappers from `$wrapper`.
+	 *
+	 * @param array<string, Inputfield> $editableFields
+	 */
+	private function pruneQuickEditInputfields(InputfieldWrapper $wrapper, Page $p, array &$editableFields): void
+	{
+		$blocked = [
+			'id',
+			'pass',
+			'roles',
+			'permissions',
+			'template',
+			'templates_id',
+			'parent',
+			'parent_id',
+			'status',
+			'created',
+			'modified',
+			'created_users_id',
+			'modified_users_id',
+			'delete_page',
+			'sortfield',
+			'sortfield_reverse',
+			'_pw_page_name',
+			'_page_meta',
+		];
+
+		foreach ($wrapper->children() as $child) {
+			if (!$child instanceof Inputfield) {
+				continue;
+			}
+			$rawName = $child->attr('name');
+			$name = is_scalar($rawName) ? trim((string) $rawName) : '';
+			$lowerName = strtolower($name);
+			if (
+				$child instanceof InputfieldSubmit
+				|| $child instanceof InputfieldHidden
+				|| strtolower($child->className()) === 'inputfieldbutton'
+				|| ($name !== '' && (
+					in_array($lowerName, $blocked, true)
+					|| str_starts_with($lowerName, 'submit_')
+					|| str_starts_with($lowerName, '_after_submit_')
+				))
+			) {
+				$wrapper->remove($child);
+				continue;
+			}
+
+			if ($child instanceof InputfieldWrapper) {
+				$this->pruneQuickEditInputfields($child, $p, $editableFields);
+				if ($child->children()->count() === 0) {
+					$wrapper->remove($child);
+				}
+				continue;
+			}
+
+			if ($name === '' || !$p->editable($name, false) || !$this->canWriteField($p, $name, true)) {
+				$wrapper->remove($child);
+				continue;
+			}
+
+			$child->resetTrackChanges(true);
+			$editableFields[$name] = $child;
+		}
+	}
+
+	/**
+	 * @param array<string, string> $errors
+	 */
+	private function collectQuickEditErrors(InputfieldWrapper $wrapper, array &$errors): void
+	{
+		foreach ($wrapper->children() as $child) {
+			if (!$child instanceof Inputfield) {
+				continue;
+			}
+			if ($child instanceof InputfieldWrapper) {
+				$this->collectQuickEditErrors($child, $errors);
+			}
+			$fieldErrors = $child->getErrors(true);
+			if ($fieldErrors !== []) {
+				$rawName = $child->attr('name');
+				$name = is_scalar($rawName) ? trim((string) $rawName) : '';
+				if ($name !== '') {
+					$errors[$name] = implode(' ', array_map('strval', $fieldErrors));
+				}
+			}
+		}
+	}
+
+	private function clearWireErrorNotices(): void
+	{
+		$notices = $this->wire()->notices;
+		if ($notices === null) {
+			return;
+		}
+		foreach ($notices as $notice) {
+			if ($notice instanceof NoticeError) {
+				$notices->remove($notice);
+			}
+		}
+	}
+
+	private static function isQuickEditDynamicAsset(string $url): bool
+	{
+		return str_contains($url, '/site/modules/')
+			&& preg_match('~/(?:ReactInertia|ReactViewports)\.(?:js|css)(?:$|\?)~i', $url) !== 1;
+	}
+
+	/**
+	 * Build selector clauses for trashed pages by stripping parent/status constraints
+	 * that change when ProcessWire moves a trashed page under `/trash/`.
+	 *
+	 * @return list<string>
+	 */
+	private function buildTrashScopeClauses(): array
+	{
+		$clauses = [];
+		$rawSelector = trim($this->baseSelector);
+		if ($rawSelector !== '') {
+			try {
+				$selectors = new Selectors($rawSelector);
+				foreach ($selectors as $sel) {
+					$field = is_array($sel->field) ? implode('|', $sel->field) : (string) $sel->field;
+					$lower = strtolower(trim($field));
+					if (in_array($lower, ['parent', 'parent_id', 'has_parent', 'status', 'limit', 'start', 'sort', 'include'], true)) {
+						continue;
+					}
+					$clauses[] = (string) $sel;
+				}
+			} catch (\Throwable) {
+				$clauses[] = $rawSelector;
+			}
+		}
+
+		return $clauses;
 	}
 }

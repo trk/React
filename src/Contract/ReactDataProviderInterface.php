@@ -21,15 +21,11 @@ interface ReactDataProviderInterface
 	public const OP_LOCK = 'lock';
 	public const OP_UNLOCK = 'unlock';
 	public const OP_REORDER = 'reorder';
-	public const OP_MOVE_STAGE = 'move_stage';
-	public const OP_RESCHEDULE = 'reschedule';
 	public const OP_UPDATE_FIELD = 'update_field';
-	public const OP_SHIFT_DATES = 'shift_dates';
 	public const OP_EMPTY_TRASH = 'empty_trash';
 	public const OP_TOGGLE_STATUS = 'toggle_status';
 	public const OP_TOGGLE_FIELD = 'toggle_field';
 	public const OP_MOVE = 'move';
-	public const OP_RESIZE_SPAN = 'resize_span';
 
 	/**
 	 * Unique provider descriptor (e.g., `'pages:template=basic-page'`, `'array:queues'`).
@@ -63,28 +59,6 @@ interface ReactDataProviderInterface
 	public function statusOptions(): array;
 
 	/**
-	 * Field key used for Kanban stages (e.g., `'status'` or a select field name).
-	 */
-	public function stageField(): string;
-
-	/**
-	 * Kanban board stage columns (`stageValue => stageLabel`).
-	 *
-	 * @return array<string, string>
-	 */
-	public function stageOptions(string $field = ''): array;
-
-	/**
-	 * Field key used for Calendar event start date.
-	 */
-	public function dateStartField(): string;
-
-	/**
-	 * Field key used for Calendar event end date.
-	 */
-	public function dateEndField(): string;
-
-	/**
 	 * Whether mutations and bulk checkboxes are locked/read-only.
 	 */
 	public function isLocked(): bool;
@@ -112,9 +86,10 @@ interface ReactDataProviderInterface
 	/**
 	 * Execute a row or bulk mutation on the given record IDs.
 	 *
-	 * Supported operations: `'publish'`, `'draft'`, `'trash'`, `'restore'`, `'delete'`,
-	 * `'duplicate'`, `'lock'`, `'unlock'`, `'reorder'`, `'move_stage'`, `'reschedule'`,
-	 * `'update_field'`, `'shift_dates'`.
+	 * Core operations: `'publish'`, `'draft'`, `'trash'`, `'restore'`, `'delete'`,
+	 * `'duplicate'`, `'lock'`, `'unlock'`, `'reorder'`, `'update_field'`,
+	 * `'toggle_status'`, `'toggle_field'`, `'move'`, `'empty_trash'`.
+	 * Additional extension operations may be dispatched by pluggable viewport modes.
 	 *
 	 * @param list<string> $ids
 	 * @param array<string, mixed> $payload

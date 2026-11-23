@@ -27,7 +27,7 @@ class MarkupReactTable extends MarkupReactViewport
 			'summary' => __('Interactive data table with search, filters, inline editing, bulk actions, and pagination.', __FILE__),
 			'author' => 'Iskender TOTOGLU @trk @ukyo',
 			'icon' => 'table',
-			'singular' => true,
+			'singular' => false,
 			'autoload' => false,
 			'requires' => [
 				'PHP>=8.4',

@@ -35,13 +35,19 @@ interface ReactFieldSchemaProvider
 	public function availableColumns(): array;
 
 	/**
-	 * Columns eligible for inline editing in `MarkupReactTable` rows.
+	 * Columns eligible for inline editing in `MarkupReactTable` rows and Quick Edit sheets.
 	 *
 	 * @return array<string, array{
-	 *   type: 'select'|'text'|'number'|'date'|'email'|'url'|'toggle'|'boolean',
+	 *   type: 'select'|'radios'|'text'|'textarea'|'markdown'|'number'|'range'|'date'|'datetime-local'|'time'|'email'|'url'|'tel'|'color'|'toggle'|'checkbox'|'boolean',
 	 *   label?: string,
 	 *   options?: array<string, string>,
-	 *   step?: string
+	 *   step?: string,
+	 *   min?: string,
+	 *   max?: string,
+	 *   rows?: int,
+	 *   monospace?: bool,
+	 *   placeholder?: string,
+	 *   required?: bool
 	 * }>
 	 */
 	public function inlineEditableFields(): array;

@@ -9,7 +9,6 @@ use ProcessWire\PageArray;
 use ProcessWire\React;
 use Totoglu\Inertia\MarkupInertia;
 use Totoglu\React\Contract\ReactBulkFieldsProvider;
-use Totoglu\React\Contract\ReactCalendarProvider;
 use Totoglu\React\Contract\ReactDataProviderInterface;
 use Totoglu\React\Contract\ReactExportProvider;
 use Totoglu\React\Contract\ReactFieldSchemaProvider;
@@ -18,6 +17,7 @@ use Totoglu\React\Contract\ReactRecordActionsProvider;
 use Totoglu\React\Contract\ReactReorderProvider;
 use Totoglu\React\Contract\ReactSummaryProvider;
 use Totoglu\React\Contract\ReactViewsProvider;
+use Totoglu\React\Data\ReactPageResult;
 use Totoglu\React\Data\ReactRecord;
 use Totoglu\React\Inertia\InteractWithReactTranslations;
 use Totoglu\React\Security\UrlSanitizer;
@@ -174,7 +174,7 @@ abstract class MarkupReactViewport extends MarkupInertia
 	public array $savedViews = [];
 
 	/**
-	 * Active viewport layout mode (`table`, `cards`, `kanban`, `calendar`).
+	 * Active viewport layout mode (`table`, `cards`, or a registered pluggable mode).
 	 */
 	public string $viewMode = 'table';
 
@@ -212,30 +212,32 @@ abstract class MarkupReactViewport extends MarkupInertia
 	public array $summaryCards = [];
 
 	/**
-	 * Kanban stage grouping field and stage definitions.
+	 * Active pluggable mode state bag serialized to `modeState` and forwarded to delegates.
+	 *
+	 * @var array<string, mixed>
 	 */
-	public string $groupByField = '';
+	public array $modeState = [];
 
 	/**
-	 * @var array<string, array{label: string, variant?: string, limit?: int}>
+	 * Cached hydrated peer delegates keyed by normalized mode.
+	 *
+	 * @var array<string, self>
 	 */
-	public array $stages = [];
+	private array $resolvedModeDelegates = [];
 
 	/**
-	 * Calendar date field, end date field, active month/year, and sub-view (`month`, `week`, `agenda`, `timeline`).
-	 */
-	public string $dateField = '';
-	public string $endDateField = '';
-	public int $month = 0;
-	public int $year = 0;
-	public string $calendarView = 'month';
-
-	/**
-	 * Quick-Edit slide-over drawer / modal state.
+	 * Quick-Edit modal state.
 	 */
 	public bool $quickEditEnabled = true;
 	public string $quickEditUrl = '';
 	public string $quickEditRecordId = '';
+
+	/**
+	 * Field-level validation errors from the most recent Quick Edit submission.
+	 *
+	 * @var array<string, string>
+	 */
+	private array $quickEditErrors = [];
 
 	/**
 	 * Export & drag-and-drop reorder flags.
@@ -282,7 +284,7 @@ abstract class MarkupReactViewport extends MarkupInertia
 	}
 
 	/**
-	 * Default viewport layout mode (`table`, `cards`, `kanban`, `calendar`).
+	 * Default viewport layout mode (`table`, `cards`, or custom mode).
 	 */
 	protected function defaultViewMode(): string
 	{
@@ -290,11 +292,253 @@ abstract class MarkupReactViewport extends MarkupInertia
 	}
 
 	/**
-	 * Return the active viewport layout mode (`table`, `cards`, `kanban`, `calendar`).
+	 * Return the active viewport layout mode.
 	 */
 	public function viewportMode(): string
 	{
 		return $this->viewMode;
+	}
+
+	/**
+	 * Whether this viewport mode supports the given data provider.
+	 */
+	public function modeSupportsProvider(ReactDataProviderInterface $provider): bool
+	{
+		return true;
+	}
+
+	/**
+	 * Extra mutating action names owned by this pluggable mode that require POST + CSRF validation.
+	 *
+	 * @return list<string>
+	 */
+	public function modeMutatingActions(): array
+	{
+		return [];
+	}
+
+	/**
+	 * All extra mutating action names active for this viewport and its current mode delegate.
+	 *
+	 * @return list<string>
+	 */
+	public function allMutatingActions(): array
+	{
+		$delegate = $this->resolveModeDelegate();
+
+		return array_values(array_unique(array_merge(
+			$this->modeMutatingActions(),
+			$delegate !== null ? $delegate->modeMutatingActions() : [],
+		)));
+	}
+
+	/**
+	 * Mutable state keys accepted from client round-trips for this pluggable mode.
+	 *
+	 * @return list<string>
+	 */
+	public function modeMutableStateKeys(): array
+	{
+		return [];
+	}
+
+	/**
+	 * All mutable state keys accepted for this viewport and its current or registered mode delegates.
+	 *
+	 * @return list<string>
+	 */
+	public function allMutableStateKeys(): array
+	{
+		$keys = $this->modeMutableStateKeys();
+		$delegate = $this->resolveModeDelegate();
+		if ($delegate !== null) {
+			$keys = array_merge($keys, $delegate->modeMutableStateKeys());
+		}
+
+		return array_values(array_unique($keys));
+	}
+
+	/**
+	 * Extra mode-specific properties to include inside the signed HMAC state envelope.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function modeSignedState(): array
+	{
+		return [];
+	}
+
+	/**
+	 * Restore mode-specific properties from decoded state/modeState envelopes.
+	 *
+	 * @param array<string, mixed> $state
+	 */
+	public function applyModeSignedState(array $state): void
+	{
+	}
+
+	/**
+	 * Export volatile runtime state from a peer mode delegate back to `$modeState`.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function modeStateExport(): array
+	{
+		return [];
+	}
+
+	/**
+	 * Configure mode-specific defaults or provider metadata during `loadFromProvider()`.
+	 */
+	public function modeConfigureOptions(ReactDataProviderInterface $provider): void
+	{
+	}
+
+	/**
+	 * Override effective query limit for this pluggable mode when loading records.
+	 */
+	public function modeQueryLimit(int $defaultLimit): int
+	{
+		return max(1, $defaultLimit);
+	}
+
+	/**
+	 * Override record loading for this pluggable mode, or return `null` to run standard `$provider->query($criteria)`.
+	 *
+	 * @param array<string, mixed> $criteria
+	 */
+	public function modeLoadRecords(ReactDataProviderInterface $provider, array $criteria): ?ReactPageResult
+	{
+		return null;
+	}
+
+	/**
+	 * Execute a mode-owned action. Return `null` when unhandled so standard viewport actions run.
+	 *
+	 * @param array<string, mixed> $payload
+	 * @return array{handled: bool, notice?: string, noticeType?: string, error?: string, refreshMetadata?: bool}|null
+	 */
+	public function modeExecuteAction(string $action, array $payload, ?ReactDataProviderInterface $provider): ?array
+	{
+		return null;
+	}
+
+	/**
+	 * Enrich serialized `modeState` props sent to React for this pluggable mode.
+	 *
+	 * @param list<array<string, mixed>> $records
+	 * @return array<string, mixed>
+	 */
+	public function modeInertiaData(?ReactDataProviderInterface $provider, array $records): array
+	{
+		return [];
+	}
+
+	/**
+	 * Hydrate this peer delegate instance from the parent/host viewport state.
+	 */
+	public function hydrateFromPeer(self $source): void
+	{
+		$this->componentId = $source->componentId;
+		$this->provider = $source->provider;
+		$this->providerOptions = $source->providerOptions;
+		$this->title = $source->title;
+		$this->items = $source->items;
+		$this->columns = $source->columns;
+		$this->filters = $source->filters;
+		$this->filterValues = $source->filterValues;
+		$this->statusFilter = $source->statusFilter;
+		$this->dateFrom = $source->dateFrom;
+		$this->dateTo = $source->dateTo;
+		$this->bulkActions = $source->bulkActions;
+		$this->rowActions = $source->rowActions;
+		$this->inlineEditableFields = $source->inlineEditableFields;
+		$this->searchQuery = $source->searchQuery;
+		$this->sortField = $source->sortField;
+		$this->sortDirection = $source->sortDirection;
+		$this->groupBy = $source->groupBy;
+		$this->pageNum = $source->pageNum;
+		$this->limit = $source->limit;
+		$this->total = $source->total;
+		$this->totalPages = $source->totalPages;
+		$this->trashCount = $source->trashCount;
+		$this->selectedIds = $source->selectedIds;
+		$this->hiddenColumns = $source->hiddenColumns;
+		$this->views = $source->views;
+		$this->activeView = $source->activeView;
+		$this->savedViews = $source->savedViews;
+		$this->viewMode = $source->viewMode;
+		$this->allowedViewModes = $source->allowedViewModes;
+		$this->explicitViewModes = $source->explicitViewModes;
+		$this->createActions = $source->createActions;
+		$this->toolbarActions = $source->toolbarActions;
+		$this->summaryCards = $source->summaryCards;
+		$this->quickEditEnabled = $source->quickEditEnabled;
+		$this->quickEditUrl = $source->quickEditUrl;
+		$this->quickEditRecordId = $source->quickEditRecordId;
+		$this->reorderEnabled = $source->reorderEnabled;
+		$this->locked = $source->locked;
+		$this->editUrl = $source->editUrl;
+		$this->records = $source->records;
+		$this->reactRecords = $source->reactRecords;
+		$this->modeState = $source->modeState;
+		$this->dataProvider = $source->resolveDataProvider();
+
+		foreach ($source->providerOptions as $optKey => $optVal) {
+			if (is_string($optKey) && property_exists($this, $optKey) && !property_exists(self::class, $optKey)) {
+				$this->{$optKey} = $optVal;
+			}
+		}
+		foreach ($source->modeState as $stateKey => $stateVal) {
+			if (is_string($stateKey) && property_exists($this, $stateKey) && !property_exists(self::class, $stateKey)) {
+				$this->{$stateKey} = $stateVal;
+			}
+		}
+		if ($source->modeState !== []) {
+			$this->applyModeSignedState($source->modeState);
+		}
+	}
+
+	/**
+	 * Resolve and hydrate the installed pluggable delegate viewport for `$mode` (or active `$this->viewMode`).
+	 */
+	protected function resolveModeDelegate(?string $mode = null): ?self
+	{
+		$cleanMode = strtolower(trim($mode ?? $this->viewMode));
+		if (
+			$cleanMode === ''
+			|| in_array($cleanMode, ['table', 'cards'], true)
+			|| $cleanMode === strtolower(trim($this->defaultViewMode()))
+		) {
+			return null;
+		}
+
+		$registered = $this->react()->getRegisteredViewportModes();
+		$modName = trim((string) ($registered[$cleanMode]['module'] ?? ''));
+		if ($modName === '' || !$this->wire()->modules->isInstalled($modName)) {
+			return null;
+		}
+
+		if (isset($this->resolvedModeDelegates[$cleanMode])) {
+			$delegate = $this->resolvedModeDelegates[$cleanMode];
+			$delegate->hydrateFromPeer($this);
+
+			return $delegate;
+		}
+
+		try {
+			$delegate = $this->react()->viewport($cleanMode);
+		} catch (\Throwable) {
+			return null;
+		}
+		if (get_class($delegate) === get_class($this)) {
+			return null;
+		}
+
+		$delegate->hydrateFromPeer($this);
+		$this->resolvedModeDelegates[$cleanMode] = $delegate;
+
+		return $delegate;
 	}
 
 	/**
@@ -438,28 +682,6 @@ abstract class MarkupReactViewport extends MarkupInertia
 	}
 
 	/**
-	 * Shift calendar start/end dates by `$days` across multiple records.
-	 *
-	 * @param list<string> $ids
-	 * @return array<string, mixed>
-	 */
-	public function bulkShiftDates(int $days, array $ids = []): array
-	{
-		$targetIds = $ids !== [] ? $ids : $this->selectedIds;
-		$provider = $this->resolveDataProvider();
-		if ($days !== 0 && $targetIds !== [] && $provider !== null && !$provider->isLocked()) {
-			$modified = $provider->mutate(ReactDataProviderInterface::OP_SHIFT_DATES, $targetIds, [
-				'days' => $days,
-			]);
-			$this->noticeMessage = sprintf($this->_('Shifted dates on %d record(s).'), $modified);
-			$this->refreshProviderMetadataAfterMutation($provider);
-		}
-		$this->loadFromProvider();
-
-		return $this->toInertiaProp();
-	}
-
-	/**
 	 * Inline update a single field on a record.
 	 *
 	 * @return array<string, mixed>
@@ -510,62 +732,6 @@ abstract class MarkupReactViewport extends MarkupInertia
 			'rowAction' => ReactDataProviderInterface::OP_MOVE,
 			'id' => $id,
 			'direction' => $direction,
-		]);
-	}
-
-	/**
-	 * Move a record to a new Kanban stage via the bound provider.
-	 *
-	 * @return array<string, mixed>
-	 */
-	public function moveStage(string $id, string $stage, ?int $position = null, string $groupField = '', string $groupVal = ''): array
-	{
-		return $this->executeAction('move_stage', [
-			'id' => $id,
-			'stage' => $stage,
-			'position' => $position,
-			'groupField' => $groupField,
-			'groupVal' => $groupVal,
-		]);
-	}
-
-	/**
-	 * Reschedule a calendar record to a new start date (and optional resource lane) via the bound provider.
-	 *
-	 * @return array<string, mixed>
-	 */
-	public function moveCalendarDate(
-		string $id,
-		string $newDate,
-		string $fromDate = '',
-		string $laneField = '',
-		string $laneVal = '',
-	): array {
-		return $this->executeAction('reschedule', [
-			'id' => $id,
-			'targetDate' => $newDate,
-			'startDate' => $newDate,
-			'date' => $newDate,
-			'fromDate' => $fromDate,
-			'laneField' => $laneField,
-			'laneVal' => $laneVal,
-		]);
-	}
-
-	/**
-	 * Resize a multi-day calendar record span (`endDate` or `startDate` .. `endDate`) via the bound provider.
-	 *
-	 * @return array<string, mixed>
-	 */
-	public function resizeCalendarSpan(string $id, string $newStartOrEndDate, string $newEndDate = ''): array
-	{
-		$targetEnd = $newEndDate !== '' ? $newEndDate : $newStartOrEndDate;
-
-		return $this->executeAction('resize_span', [
-			'id' => $id,
-			'startDate' => $newEndDate !== '' ? $newStartOrEndDate : '',
-			'endDate' => $targetEnd,
-			'targetEndDate' => $targetEnd,
 		]);
 	}
 
@@ -665,13 +831,8 @@ abstract class MarkupReactViewport extends MarkupInertia
 		$this->createActions = [];
 		$this->toolbarActions = [];
 		$this->summaryCards = [];
-		$this->groupByField = '';
-		$this->stages = [];
-		$this->dateField = '';
-		$this->endDateField = '';
-		$this->month = 0;
-		$this->year = 0;
-		$this->calendarView = 'month';
+		$this->modeState = [];
+		$this->resolvedModeDelegates = [];
 		$this->quickEditEnabled = true;
 		$this->quickEditUrl = '';
 		$this->quickEditRecordId = '';
@@ -752,6 +913,9 @@ abstract class MarkupReactViewport extends MarkupInertia
 			}
 			if (property_exists($this, $key)) {
 				$this->{$key} = $value;
+				if ($key === 'modeState' && is_array($value)) {
+					$this->applyModeSignedState($value);
+				}
 			} else {
 				$this->providerOptions[$key] = $value;
 			}
@@ -1082,25 +1246,14 @@ abstract class MarkupReactViewport extends MarkupInertia
 			$this->toolbarActions = array_values($providerToolbarActions);
 		}
 
-		if ($this->groupByField === '') {
-			$this->groupByField = $provider->stageField();
-		}
-		if ($this->stages === [] && $this->groupByField !== '') {
-			foreach ($provider->stageOptions($this->groupByField) as $sKey => $sLabel) {
-				$this->stages[(string) $sKey] = [
-					'label' => (string) $sLabel,
-					'variant' => 'neutral',
-				];
-			}
-		}
-		if ($this->dateField === '') {
-			$this->dateField = $provider->dateStartField();
-		}
-		if ($this->endDateField === '') {
-			$this->endDateField = $provider->dateEndField();
+		$this->modeConfigureOptions($provider);
+		$delegate = $this->resolveModeDelegate();
+		if ($delegate !== null) {
+			$delegate->modeConfigureOptions($provider);
+			$this->modeState = array_replace($this->modeState, $delegate->modeStateExport());
 		}
 
-		// Determine allowed view modes based on provider capabilities and installed modules
+		// Determine allowed view modes based on registered contracts, mode delegates, and installed modules
 		$this->allowedViewModes = $this->resolveAvailableViewModes();
 
 		$criteria = $this->buildQueryCriteria();
@@ -1116,25 +1269,10 @@ abstract class MarkupReactViewport extends MarkupInertia
 			}
 		}
 
-		if ($this->viewMode === 'calendar' && $provider instanceof ReactCalendarProvider) {
-			$month = $this->month >= 1 && $this->month <= 12 ? $this->month : (int) date('n');
-			$year = $this->year >= 1970 && $this->year <= 2100 ? $this->year : (int) date('Y');
-			$startIso = sprintf('%04d-%02d-01', $year, $month);
-			$daysInMonth = (int) date('t', mktime(0, 0, 0, $month, 1, $year) ?: time());
-			$endIso = sprintf('%04d-%02d-%02d', $year, $month, $daysInMonth);
-			$windowRecords = $provider->queryWindow($criteria, $startIso, $endIso);
-			$this->reactRecords = $windowRecords;
-			$this->records = array_map(
-				fn(ReactRecord $r): array => $this->serializeReactRecord($r),
-				$windowRecords
-			);
-			$this->total = count($this->records);
-			$this->totalPages = 1;
-
-			return;
-		}
-
-		$result = $provider->query($criteria);
+		$modeResult = $delegate !== null
+			? $delegate->modeLoadRecords($provider, $criteria)
+			: $this->modeLoadRecords($provider, $criteria);
+		$result = $modeResult ?? $provider->query($criteria);
 		$this->reactRecords = $result->items;
 		$this->records = array_map(
 			fn(ReactRecord $r): array => $this->serializeReactRecord($r),
@@ -1147,37 +1285,44 @@ abstract class MarkupReactViewport extends MarkupInertia
 	}
 
 	/**
-	 * Resolve the active Kanban stage grouping field from viewport config or bound provider.
+	 * Determine whether a registered pluggable mode supports the active provider.
+	 *
+	 * @param array{module?: string, contract?: string, icon?: string, label?: string} $meta
 	 */
-	protected function stageField(): string
+	private function isRegisteredModeEligible(string $mode, array $meta, ?ReactDataProviderInterface $provider): bool
 	{
-		if ($this->groupByField !== '') {
-			return $this->groupByField;
+		$modules = $this->wire()->modules;
+		$modName = trim((string) ($meta['module'] ?? ''));
+		if ($modName === '' || !$modules->isInstalled($modName)) {
+			return false;
+		}
+		if ($provider === null) {
+			return true;
 		}
 
-		return $this->resolveDataProvider()?->stageField() ?? '';
+		$contract = trim((string) ($meta['contract'] ?? ''));
+		if ($contract !== '') {
+			if (!interface_exists($contract) || !$provider instanceof $contract) {
+				return false;
+			}
+		}
+
+		$delegate = strtolower(trim($this->defaultViewMode())) === $mode
+			? $this
+			: $this->resolveModeDelegate($mode);
+
+		return $delegate === null || $delegate->modeSupportsProvider($provider);
 	}
 
 	/**
-	 * Resolve the active Calendar start date field from viewport config or bound provider.
-	 */
-	protected function dateStartField(): string
-	{
-		if ($this->dateField !== '') {
-			return $this->dateField;
-		}
-
-		return $this->resolveDataProvider()?->dateStartField() ?? '';
-	}
-
-	/**
-	 * Resolve available viewport layout modes gated by provider capabilities and installed viewport modules.
+	 * Resolve available viewport layout modes gated by provider contracts and installed viewport modules.
 	 *
 	 * @return list<string>
 	 */
 	protected function resolveAvailableViewModes(): array
 	{
 		$modules = $this->wire()->modules;
+		$provider = $this->resolveDataProvider();
 		$registered = $this->react()->getRegisteredViewportModes();
 
 		if ($this->explicitViewModes && $this->allowedViewModes !== []) {
@@ -1192,17 +1337,7 @@ abstract class MarkupReactViewport extends MarkupInertia
 					continue;
 				}
 				if (isset($registered[$cleanMode])) {
-					$modName = (string) ($registered[$cleanMode]['module'] ?? '');
-					$capability = (string) ($registered[$cleanMode]['capability'] ?? '');
-					if ($modName === '' || !$modules->isInstalled($modName)) {
-						continue;
-					}
-					$capSatisfied = match ($capability) {
-						'stage' => $this->stageField() !== '',
-						'dateStart' => $this->dateStartField() !== '',
-						default => true,
-					};
-					if ($capSatisfied) {
+					if ($this->isRegisteredModeEligible($cleanMode, $registered[$cleanMode], $provider)) {
 						$pinned[] = $cleanMode;
 					}
 					continue;
@@ -1218,44 +1353,20 @@ abstract class MarkupReactViewport extends MarkupInertia
 		$modes = ['table', 'cards'];
 
 		foreach ($registered as $regMode => $meta) {
-			$modName = (string) ($meta['module'] ?? '');
-			$capability = (string) ($meta['capability'] ?? '');
-			if ($modName === '' || !$modules->isInstalled($modName)) {
-				continue;
-			}
-			$capSatisfied = match ($capability) {
-				'stage' => $this->stageField() !== '',
-				'dateStart' => $this->dateStartField() !== '',
-				default => true,
-			};
-			if ($capSatisfied && !in_array($regMode, $modes, true)) {
+			if ($this->isRegisteredModeEligible($regMode, $meta, $provider) && !in_array($regMode, $modes, true)) {
 				$modes[] = $regMode;
 			}
 		}
 
 		foreach ($this->allowedViewModes as $customMode) {
 			$cleanMode = strtolower(trim((string) $customMode));
-			if ($cleanMode === '') {
-				continue;
-			}
-			if (in_array($cleanMode, $modes, true)) {
+			if ($cleanMode === '' || in_array($cleanMode, $modes, true)) {
 				continue;
 			}
 			if (isset($registered[$cleanMode])) {
-				$modName = (string) ($registered[$cleanMode]['module'] ?? '');
-				$capability = (string) ($registered[$cleanMode]['capability'] ?? '');
-				if ($modName === '' || !$modules->isInstalled($modName)) {
-					continue;
+				if ($this->isRegisteredModeEligible($cleanMode, $registered[$cleanMode], $provider)) {
+					$modes[] = $cleanMode;
 				}
-				$capSatisfied = match ($capability) {
-					'stage' => $this->stageField() !== '',
-					'dateStart' => $this->dateStartField() !== '',
-					default => true,
-				};
-				if (!$capSatisfied) {
-					continue;
-				}
-				$modes[] = $cleanMode;
 				continue;
 			}
 			if ($modules->isInstalled((string) $customMode)) {
@@ -1267,25 +1378,85 @@ abstract class MarkupReactViewport extends MarkupInertia
 	}
 
 	/**
+	 * Resolve allowlisted client filter keys declared via filters, `providerOptions['filterableFields']`,
+	 * column `filterable`/`filter` schemas, or `ReactFieldSchemaProvider::filterableFields()`.
+	 *
+	 * @return array<string, true>
+	 */
+	protected function resolveAllowedClientFilterKeys(): array
+	{
+		/** @var array<string, true> $allowed */
+		$allowed = ['status' => true];
+
+		foreach (array_keys($this->filters) as $filterKey) {
+			$clean = trim((string) $filterKey);
+			if ($clean !== '') {
+				$allowed[$clean] = true;
+			}
+		}
+
+		$rawFilterable = $this->providerOptions['filterableFields'] ?? null;
+		if (is_array($rawFilterable)) {
+			foreach ($rawFilterable as $k => $v) {
+				$key = is_int($k)
+					? (is_array($v) ? (string) ($v['key'] ?? $v['name'] ?? '') : (string) $v)
+					: (string) $k;
+				$clean = trim($key);
+				if ($clean !== '') {
+					$allowed[$clean] = true;
+				}
+			}
+		}
+
+		foreach ($this->columns as $colKey => $colDef) {
+			if (is_array($colDef) && (!empty($colDef['filterable']) || !empty($colDef['filter']))) {
+				$clean = trim((string) $colKey);
+				if ($clean !== '') {
+					$allowed[$clean] = true;
+				}
+			}
+		}
+
+		$provider = $this->resolveDataProvider();
+		if ($provider instanceof ReactFieldSchemaProvider) {
+			foreach ($provider->filterableFields() as $fKey => $fDef) {
+				$clean = is_int($fKey)
+					? (is_array($fDef) ? trim((string) ($fDef['key'] ?? $fDef['name'] ?? '')) : trim((string) $fDef))
+					: trim((string) $fKey);
+				if ($clean !== '') {
+					$allowed[$clean] = true;
+				}
+			}
+		}
+
+		return $allowed;
+	}
+
+	/**
 	 * Build the `$criteria` array expected by `ReactDataProviderInterface::query()`.
 	 *
 	 * @return array<string, mixed>
 	 */
 	protected function buildQueryCriteria(): array
 	{
+		$allowedFilterKeys = $this->resolveAllowedClientFilterKeys();
+		$filteredValues = [];
 		$fieldFilters = [];
 		$statusFilter = $this->statusFilter;
 
 		foreach ($this->filterValues as $k => $v) {
-			if ($v === '' || $v === null) {
+			$cleanKey = trim((string) $k);
+			if ($cleanKey === '' || !isset($allowedFilterKeys[$cleanKey]) || $v === '' || $v === null) {
 				continue;
 			}
-			if ($k === 'status') {
+			$filteredValues[$cleanKey] = $v;
+			if ($cleanKey === 'status') {
 				$statusFilter = (string) $v;
 			} else {
-				$fieldFilters[(string) $k] = (string) $v;
+				$fieldFilters[$cleanKey] = (string) $v;
 			}
 		}
+		$this->filterValues = $filteredValues;
 
 		$sortBy = $this->sortField !== ''
 			? ($this->sortDirection === 'desc' ? '-' . $this->sortField : $this->sortField)
@@ -1297,10 +1468,14 @@ abstract class MarkupReactViewport extends MarkupInertia
 				$preset = $this->savedViews[$savedKey] ?? null;
 				if (is_array($preset)) {
 					foreach (($preset['filters'] ?? []) as $pk => $pv) {
-						if ($pk === 'status') {
+						$cleanPk = trim((string) $pk);
+						if ($cleanPk === '' || !isset($allowedFilterKeys[$cleanPk])) {
+							continue;
+						}
+						if ($cleanPk === 'status') {
 							$statusFilter = $statusFilter !== '' ? $statusFilter : (string) $pv;
-						} elseif (!isset($fieldFilters[$pk])) {
-							$fieldFilters[(string) $pk] = (string) $pv;
+						} elseif (!isset($fieldFilters[$cleanPk])) {
+							$fieldFilters[$cleanPk] = (string) $pv;
 						}
 					}
 				}
@@ -1318,9 +1493,10 @@ abstract class MarkupReactViewport extends MarkupInertia
 			}
 		}
 
-		$effectiveLimit = $this->viewMode === 'kanban' || $this->viewMode === 'calendar'
-			? max($this->limit, 500)
-			: max(1, $this->limit);
+		$delegate = $this->resolveModeDelegate();
+		$effectiveLimit = $delegate !== null
+			? $delegate->modeQueryLimit($this->limit)
+			: $this->modeQueryLimit($this->limit);
 
 		return [
 			'search' => $this->searchQuery,
@@ -1355,9 +1531,6 @@ abstract class MarkupReactViewport extends MarkupInertia
 			'_statusLabel' => $record->statusLabel,
 			'_editUrl' => $record->editUrl,
 			'_viewUrl' => $record->viewUrl,
-			'_stage' => $record->stage,
-			'_startDate' => $record->startDate,
-			'_endDate' => $record->endDate,
 			'_subtitle' => $record->subtitle,
 			'_hasDraft' => $record->hasDraft,
 			'hasDraft' => $record->hasDraft,
@@ -1379,21 +1552,14 @@ abstract class MarkupReactViewport extends MarkupInertia
 		if ($record->cells !== []) {
 			$row['_cells'] = $record->cells;
 		}
+		if ($record->meta !== []) {
+			$row['_meta'] = $record->meta;
+		}
 
 		foreach ($record->formatted as $colKey => $formattedVal) {
 			if (!array_key_exists($colKey, $row)) {
 				$row[$colKey] = $formattedVal;
 			}
-		}
-
-		if ($this->groupByField !== '' && !isset($row[$this->groupByField]) && $record->stage !== '') {
-			$row[$this->groupByField] = $record->stage;
-		}
-		if ($this->dateField !== '' && !isset($row[$this->dateField]) && $record->startDate !== '') {
-			$row[$this->dateField] = $record->startDate;
-		}
-		if ($this->endDateField !== '' && !isset($row[$this->endDateField]) && $record->endDate !== '') {
-			$row[$this->endDateField] = $record->endDate;
 		}
 
 		return $row;
@@ -1572,57 +1738,9 @@ abstract class MarkupReactViewport extends MarkupInertia
 	}
 
 	/**
-	 * Validate `field`, `groupField`, and `laneField` inside `move_stage`, `reschedule`, and `resize_span` payloads.
-	 *
-	 * @param array<string, mixed> $mutationPayload
-	 */
-	private function validateStageAndLanePayload(
-		string $op,
-		array $mutationPayload,
-		?ReactDataProviderInterface $provider,
-	): bool {
-		if ($op === ReactDataProviderInterface::OP_MOVE_STAGE) {
-			$effectiveStageField = $this->stageField();
-			$field = trim((string) ($mutationPayload['field'] ?? ''));
-			$groupField = trim((string) ($mutationPayload['groupField'] ?? ''));
-			if (
-				$field !== ''
-				&& $field !== $effectiveStageField
-				&& $field !== $this->groupByField
-				&& !$this->isFieldEditable($field)
-			) {
-				return false;
-			}
-			if (
-				$groupField !== ''
-				&& $groupField !== $this->groupBy
-				&& $groupField !== $effectiveStageField
-				&& !($provider instanceof ReactCalendarProvider && $groupField === $provider->laneField())
-				&& !$this->isFieldEditable($groupField)
-			) {
-				return false;
-			}
-		}
-
-		if ($op === ReactDataProviderInterface::OP_RESCHEDULE || $op === ReactDataProviderInterface::OP_RESIZE_SPAN) {
-			$laneField = trim((string) ($mutationPayload['laneField'] ?? ''));
-			if (
-				$laneField !== ''
-				&& !($provider instanceof ReactCalendarProvider && $laneField === $provider->laneField())
-				&& $laneField !== $this->groupBy
-				&& !$this->isFieldEditable($laneField)
-			) {
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	/**
 	 * Execute an interactive viewport action (`search`, `filter`, `sort`, `page`, `bulk_action`,
-	 * `row_action`, `update_field`, `toggle_field`, `move_stage`, `reorder`, `reschedule`,
-	 * `resize_span`, `save_quick_edit`, `export`, etc.) and reload the viewport state.
+	 * `row_action`, `update_field`, `toggle_field`, `reorder`, `save_quick_edit`, `export`,
+	 * or pluggable mode actions) and reload the viewport state.
 	 *
 	 * @param array<string, mixed> $payload
 	 * @return array<string, mixed> Updated Inertia viewport prop payload
@@ -1644,8 +1762,32 @@ abstract class MarkupReactViewport extends MarkupInertia
 		}
 		$isLocked = $this->locked || ($provider !== null && $provider->isLocked());
 		$store = $this->preferenceStore();
+		$refreshModeMetadata = false;
 
-		switch ($action) {
+		$delegate = $this->resolveModeDelegate();
+		$modeResult = $delegate !== null
+			? $delegate->modeExecuteAction($action, $payload, $provider)
+			: $this->modeExecuteAction($action, $payload, $provider);
+
+		if (is_array($modeResult) && !empty($modeResult['handled'])) {
+			if (isset($modeResult['error']) && is_string($modeResult['error']) && $modeResult['error'] !== '') {
+				$actionError = $modeResult['error'];
+				$this->noticeMessage = $actionError;
+				$this->noticeType = 'error';
+			} else {
+				if (isset($modeResult['notice']) && is_string($modeResult['notice']) && $modeResult['notice'] !== '') {
+					$this->noticeMessage = $modeResult['notice'];
+					$this->noticeType = (string) ($modeResult['noticeType'] ?? 'success');
+				}
+				if (!empty($modeResult['refreshMetadata'])) {
+					$refreshModeMetadata = true;
+				}
+			}
+			if ($delegate !== null) {
+				$this->modeState = array_replace($this->modeState, $delegate->modeStateExport());
+			}
+		} else {
+			switch ($action) {
 			case 'fetch':
 			case 'refresh':
 				break;
@@ -1657,25 +1799,42 @@ abstract class MarkupReactViewport extends MarkupInertia
 				break;
 
 			case 'filter':
+				$allowedFilterKeys = $this->resolveAllowedClientFilterKeys();
 				if (isset($payload['filters']) && is_array($payload['filters'])) {
 					foreach ($payload['filters'] as $k => $v) {
-						if (!is_string($k) || $k === '') {
+						if (!is_string($k)) {
+							continue;
+						}
+						$cleanKey = trim($k);
+						if ($cleanKey === '' || !isset($allowedFilterKeys[$cleanKey])) {
 							continue;
 						}
 						if ($v === '' || $v === null) {
-							unset($this->filterValues[$k]);
+							unset($this->filterValues[$cleanKey]);
+							if ($cleanKey === 'status') {
+								$this->statusFilter = '';
+							}
 						} else {
-							$this->filterValues[$k] = $v;
+							$this->filterValues[$cleanKey] = $v;
+							if ($cleanKey === 'status') {
+								$this->statusFilter = trim((string) $v);
+							}
 						}
 					}
 				} else {
 					$key = trim((string) ($payload['key'] ?? ''));
-					$val = $payload['value'] ?? '';
-					if ($key !== '') {
-						if ($val === '') {
+					$val = $payload['value'] ?? null;
+					if ($key !== '' && isset($allowedFilterKeys[$key])) {
+						if ($val === '' || $val === null) {
 							unset($this->filterValues[$key]);
+							if ($key === 'status') {
+								$this->statusFilter = '';
+							}
 						} else {
 							$this->filterValues[$key] = $val;
+							if ($key === 'status') {
+								$this->statusFilter = trim((string) $val);
+							}
 						}
 					}
 				}
@@ -1765,7 +1924,17 @@ abstract class MarkupReactViewport extends MarkupInertia
 					$savedKey = substr($this->activeView, 6);
 					$preset = $this->savedViews[$savedKey] ?? null;
 					if (is_array($preset)) {
-						$this->filterValues = is_array($preset['filters'] ?? null) ? $preset['filters'] : [];
+						$allowedFilterKeys = $this->resolveAllowedClientFilterKeys();
+						$filteredPreset = [];
+						if (is_array($preset['filters'] ?? null)) {
+							foreach ($preset['filters'] as $pk => $pv) {
+								$cleanPk = trim((string) $pk);
+								if ($cleanPk !== '' && isset($allowedFilterKeys[$cleanPk])) {
+									$filteredPreset[$cleanPk] = $pv;
+								}
+							}
+						}
+						$this->filterValues = $filteredPreset;
 						$this->searchQuery = (string) ($preset['searchQuery'] ?? '');
 						if (!empty($preset['sortField'])) {
 							$this->sortField = (string) $preset['sortField'];
@@ -1783,6 +1952,12 @@ abstract class MarkupReactViewport extends MarkupInertia
 			case 'save_view':
 				$label = trim((string) ($payload['label'] ?? ''));
 				if ($label !== '' && $store !== null) {
+					$allowedFilterKeys = $this->resolveAllowedClientFilterKeys();
+					$this->filterValues = array_filter(
+						$this->filterValues,
+						static fn(mixed $val, mixed $key): bool => is_string($key) && isset($allowedFilterKeys[trim($key)]),
+						ARRAY_FILTER_USE_BOTH,
+					);
 					$store->savePreset($this, $label, $label);
 					$prefs = $store->load($this);
 					$this->savedViews = is_array($prefs['savedViews'] ?? null) ? $prefs['savedViews'] : [];
@@ -1851,11 +2026,6 @@ abstract class MarkupReactViewport extends MarkupInertia
 					$this->noticeMessage = $actionError;
 					$this->noticeType = 'error';
 					break;
-				} elseif (!$this->validateStageAndLanePayload($bulkKey, $mutationPayload, $provider)) {
-					$actionError = 'Field is not editable';
-					$this->noticeMessage = $actionError;
-					$this->noticeType = 'error';
-					break;
 				}
 
 				if ($bulkKey !== '' && $ids !== [] && $provider !== null) {
@@ -1888,11 +2058,6 @@ abstract class MarkupReactViewport extends MarkupInertia
 					}
 				} elseif (($actionKey === ReactDataProviderInterface::OP_REORDER || $actionKey === ReactDataProviderInterface::OP_MOVE) && !$this->reorderEnabled) {
 					$actionError = 'Reordering is not enabled';
-					$this->noticeMessage = $actionError;
-					$this->noticeType = 'error';
-					break;
-				} elseif (!$this->validateStageAndLanePayload($actionKey, $payload, $provider)) {
-					$actionError = 'Field is not editable';
 					$this->noticeMessage = $actionError;
 					$this->noticeType = 'error';
 					break;
@@ -1990,35 +2155,6 @@ abstract class MarkupReactViewport extends MarkupInertia
 				}
 				break;
 
-			case 'move_stage':
-				if ($isLocked) {
-					$actionError = 'Viewport is locked';
-					$this->noticeMessage = $actionError;
-					$this->noticeType = 'error';
-					break;
-				}
-				$id = trim((string) ($payload['id'] ?? ''));
-				$stage = trim((string) ($payload['stage'] ?? ''));
-				$effectiveStageField = $this->stageField();
-				$field = trim((string) ($payload['field'] ?? $this->groupByField));
-				if (!$this->validateStageAndLanePayload(ReactDataProviderInterface::OP_MOVE_STAGE, $payload, $provider)) {
-					$actionError = 'Field is not editable';
-					$this->noticeMessage = $actionError;
-					$this->noticeType = 'error';
-					break;
-				}
-				$position = isset($payload['position']) ? (int) $payload['position'] : null;
-				if ($id !== '' && $stage !== '' && $provider !== null) {
-					$provider->mutate(ReactDataProviderInterface::OP_MOVE_STAGE, [$id], array_replace($payload, [
-						'field' => $field !== '' ? $field : ($effectiveStageField !== '' ? $effectiveStageField : 'stage'),
-						'stage' => $stage,
-						'position' => $position,
-					]));
-					$this->noticeMessage = $this->_('Updated stage.');
-					$this->noticeType = 'success';
-				}
-				break;
-
 			case 'reorder':
 				if ($isLocked) {
 					$actionError = 'Viewport is locked';
@@ -2042,80 +2178,6 @@ abstract class MarkupReactViewport extends MarkupInertia
 				}
 				break;
 
-			case 'set_calendar_view':
-			case 'navigate_month':
-				$month = (int) ($payload['month'] ?? ($this->month > 0 ? $this->month : (int) date('n')));
-				$year = (int) ($payload['year'] ?? ($this->year > 0 ? $this->year : (int) date('Y')));
-				$dir = (string) ($payload['direction'] ?? '');
-				if ($dir === 'prev') {
-					$month--;
-					if ($month < 1) {
-						$month = 12;
-						$year--;
-					}
-				} elseif ($dir === 'next') {
-					$month++;
-					if ($month > 12) {
-						$month = 1;
-						$year++;
-					}
-				} elseif ($dir === 'today') {
-					$month = (int) date('n');
-					$year = (int) date('Y');
-				}
-				$this->month = max(1, min(12, $month));
-				$this->year = max(1970, min(2100, $year));
-				if (isset($payload['calendarView']) && in_array($payload['calendarView'], ['month', 'week', 'agenda', 'timeline'], true)) {
-					$this->calendarView = (string) $payload['calendarView'];
-				}
-				break;
-
-			case 'reschedule':
-			case 'resize_span':
-				if ($isLocked) {
-					$actionError = 'Viewport is locked';
-					$this->noticeMessage = $actionError;
-					$this->noticeType = 'error';
-					break;
-				}
-				$checkOp = $action === 'resize_span'
-					? ReactDataProviderInterface::OP_RESIZE_SPAN
-					: ReactDataProviderInterface::OP_RESCHEDULE;
-				if (!$this->validateStageAndLanePayload($checkOp, $payload, $provider)) {
-					$actionError = 'Field is not editable';
-					$this->noticeMessage = $actionError;
-					$this->noticeType = 'error';
-					break;
-				}
-				$id = trim((string) ($payload['id'] ?? ''));
-				$startDate = trim((string) ($payload['startDate'] ?? $payload['targetDate'] ?? $payload['date'] ?? ''));
-				$endDate = isset($payload['endDate']) && is_string($payload['endDate']) ? trim($payload['endDate']) : $startDate;
-				$dateRequired = $action === 'resize_span' ? $endDate : $startDate;
-				if ($id !== '' && $dateRequired !== '' && $provider !== null) {
-					$mutationOp = $action === 'resize_span'
-						? ReactDataProviderInterface::OP_RESIZE_SPAN
-						: ReactDataProviderInterface::OP_RESCHEDULE;
-					try {
-						$provider->mutate($mutationOp, [$id], array_replace($payload, [
-							'startDate' => $startDate,
-							'targetDate' => $startDate,
-							'endDate' => $endDate !== '' ? $endDate : $startDate,
-							'targetEndDate' => $endDate !== '' ? $endDate : $startDate,
-							'date' => $startDate,
-						]));
-						$this->noticeMessage = $action === 'resize_span'
-							? $this->_('Updated item dates.')
-							: $this->_('Rescheduled item.');
-						$this->noticeType = 'success';
-					} catch (\ProcessWire\WirePermissionException $e) {
-						throw $e;
-					} catch (\ProcessWire\WireException $e) {
-						$this->noticeMessage = $e->getMessage();
-						$this->noticeType = 'error';
-					}
-				}
-				break;
-
 			case 'open_quick_edit':
 				if (!$this->quickEditEnabled || $isLocked) {
 					$actionError = $isLocked ? 'Viewport is locked' : 'Quick edit is not enabled';
@@ -2124,10 +2186,30 @@ abstract class MarkupReactViewport extends MarkupInertia
 					break;
 				}
 				$this->quickEditRecordId = trim((string) ($payload['id'] ?? ''));
+				$this->quickEditErrors = [];
 				break;
 
 			case 'close_quick_edit':
 				$this->quickEditRecordId = '';
+				$this->quickEditErrors = [];
+				break;
+
+			case 'empty_trash':
+				if ($isLocked) {
+					$actionError = 'Viewport is locked';
+					$this->noticeMessage = $actionError;
+					$this->noticeType = 'error';
+					break;
+				}
+				if ($provider !== null) {
+					$deletedCount = $provider->mutate(ReactDataProviderInterface::OP_EMPTY_TRASH, ['__all__']);
+					$this->selectedIds = [];
+					$this->pageNum = 1;
+					$this->noticeMessage = $deletedCount > 0
+						? sprintf($this->_('Emptied trash (%d record(s) deleted).'), $deletedCount)
+						: $this->_('Trash is already empty.');
+					$this->noticeType = 'success';
+				}
 				break;
 
 			case 'save_quick_edit':
@@ -2138,40 +2220,104 @@ abstract class MarkupReactViewport extends MarkupInertia
 					break;
 				}
 				$id = trim((string) ($payload['id'] ?? $this->quickEditRecordId));
-				$values = isset($payload['values']) && is_array($payload['values']) ? $payload['values'] : [];
-				if ($id !== '' && $values !== [] && $provider !== null) {
-					foreach ($values as $fKey => $fVal) {
-						if (!is_string($fKey) || $fKey === '' || str_starts_with($fKey, '_')) {
-							continue;
-						}
-						if (!$this->isFieldEditable($fKey, true)) {
+				$submitted = isset($payload['formData']) && is_array($payload['formData'])
+					? $payload['formData']
+					: (isset($payload['values']) && is_array($payload['values']) ? $payload['values'] : []);
+				$isFullForm = !empty($submitted['_rw_quick_edit_form']);
+				if ($id !== '' && $submitted !== [] && $provider !== null) {
+					$this->quickEditRecordId = $id;
+					$hasFormProvider = method_exists($provider, 'resolveQuickEditForm');
+
+					if (
+						$hasFormProvider
+						&& $isFullForm
+						&& $provider instanceof ReactQuickEditProvider
+						&& $provider->supportsQuickEdit()
+					) {
+						$result = $provider->saveQuickEdit($id, $submitted);
+					} else {
+						$quickEditSpec = $this->resolveQuickEditState($provider);
+						$schemaMeta = is_array($quickEditSpec['formSchema'] ?? null)
+							? $this->extractQuickEditSchemaFieldMeta($quickEditSpec['formSchema'])
+							: ['editable' => [], 'checkboxes' => [], 'useLanguages' => []];
+
+						/** @var array<string, mixed> $cleanValues */
+						$cleanValues = [];
+						foreach ($submitted as $fKey => $fVal) {
+							if (!is_string($fKey) || $fKey === '' || str_starts_with($fKey, '_')) {
+								continue;
+							}
+							if ($isFullForm && preg_match('/^(.+)__(\d+)$/', $fKey, $langMatch) === 1) {
+								$baseField = $langMatch[1];
+								$langIdKey = $langMatch[2];
+								if (!empty($schemaMeta['useLanguages'][$baseField])) {
+									if (!isset($cleanValues[$baseField]) || !is_array($cleanValues[$baseField])) {
+										$cleanValues[$baseField] = [];
+									}
+									$cleanValues[$baseField][$langIdKey] = $fVal;
+									continue;
+								}
+							}
+							if (isset($schemaMeta['editable'][$fKey]) || $this->isFieldEditable($fKey, true)) {
+								if ($isFullForm && !empty($schemaMeta['useLanguages'][$fKey])) {
+									$existingMap = isset($cleanValues[$fKey]) && is_array($cleanValues[$fKey])
+										? $cleanValues[$fKey]
+										: [];
+									$existingMap['default'] = $fVal;
+									$cleanValues[$fKey] = $existingMap;
+								} else {
+									$cleanValues[$fKey] = $fVal;
+								}
+								continue;
+							}
 							$actionError = 'Field is not editable';
 							$this->noticeMessage = $actionError;
 							$this->noticeType = 'error';
 							break 2;
 						}
+
+						if ($isFullForm && !$hasFormProvider) {
+							foreach ($schemaMeta['checkboxes'] as $checkboxField) {
+								if (!array_key_exists($checkboxField, $cleanValues)) {
+									$cleanValues[$checkboxField] = 0;
+								}
+							}
+						}
+
+						if ($provider instanceof ReactQuickEditProvider && $provider->supportsQuickEdit()) {
+							$result = $provider->saveQuickEdit($id, $cleanValues);
+						} else {
+							foreach ($cleanValues as $fKey => $fVal) {
+								$provider->mutate(ReactDataProviderInterface::OP_UPDATE_FIELD, [$id], [
+									'field' => $fKey,
+									'value' => $fVal,
+								]);
+							}
+							$result = [
+								'ok' => true,
+								'message' => $this->_('Record updated.'),
+							];
+						}
 					}
 
-					if ($provider instanceof ReactQuickEditProvider && $provider->supportsQuickEdit()) {
-						$result = $provider->saveQuickEdit($id, $values);
-						$this->noticeMessage = (string) ($result['message'] ?? $this->_('Record updated.'));
-						$this->noticeType = ($result['ok'] ?? true) ? 'success' : 'error';
-						if (($result['ok'] ?? true) === true) {
-							$this->quickEditRecordId = '';
-						}
-					} else {
-						foreach ($values as $fKey => $fVal) {
-							if (!is_string($fKey) || $fKey === '' || str_starts_with($fKey, '_')) {
-								continue;
-							}
-							$provider->mutate(ReactDataProviderInterface::OP_UPDATE_FIELD, [$id], [
-								'field' => $fKey,
-								'value' => $fVal,
-							]);
-						}
-						$this->noticeMessage = $this->_('Record updated.');
-						$this->noticeType = 'success';
+					$isSavedOk = ($result['ok'] ?? true) === true;
+					$this->noticeMessage = (string) (
+						$result['message'] ?? ($isSavedOk ? $this->_('Record updated.') : $this->_('Unable to update record.'))
+					);
+					$this->noticeType = $isSavedOk ? 'success' : 'error';
+					if ($isSavedOk) {
 						$this->quickEditRecordId = '';
+						$this->quickEditErrors = [];
+					} else {
+						$actionError = $this->noticeMessage;
+						$rawErrors = is_array($result['errors'] ?? null) ? $result['errors'] : [];
+						$normalizedErrors = [];
+						foreach ($rawErrors as $errField => $errMessage) {
+							if (is_string($errField) && $errField !== '' && is_scalar($errMessage) && trim((string) $errMessage) !== '') {
+								$normalizedErrors[$errField] = trim((string) $errMessage);
+							}
+						}
+						$this->quickEditErrors = $normalizedErrors;
 					}
 				}
 				break;
@@ -2195,13 +2341,25 @@ abstract class MarkupReactViewport extends MarkupInertia
 
 			case 'export':
 				$format = strtolower(trim((string) ($payload['format'] ?? 'csv')));
+				$exportIds = [];
+				if (isset($payload['ids']) && is_array($payload['ids'])) {
+					foreach ($payload['ids'] as $rawExportId) {
+						if (is_scalar($rawExportId)) {
+							$cleanExportId = trim((string) $rawExportId);
+							if ($cleanExportId !== '') {
+								$exportIds[] = $cleanExportId;
+							}
+						}
+					}
+					$exportIds = array_values(array_unique($exportIds));
+				}
 				$allowedExportFormats = array_map('strtolower', $this->exportFormats);
 				if (
 					$this->exportEnabled
 					&& $provider !== null
 					&& ($allowedExportFormats === [] || in_array($format, $allowedExportFormats, true))
 				) {
-					$exported = $this->generateExportPayload($provider, $format);
+					$exported = $this->generateExportPayload($provider, $format, $exportIds);
 					$this->downloadFilename = $exported['filename'];
 					$this->downloadContent = $exported['content'];
 					$this->downloadMime = $exported['mime'];
@@ -2209,19 +2367,20 @@ abstract class MarkupReactViewport extends MarkupInertia
 					$this->noticeType = 'success';
 				}
 				break;
+			}
 		}
 
 		$mutatingMetadataActions = [
 			'row_action',
 			'bulk_action',
 			'toolbar_action',
+			'empty_trash',
 			'quick_create',
 			'save_quick_edit',
 			'toggle_field',
 			'update_field',
-			'move_stage',
 		];
-		if ($provider !== null && $actionError === '' && in_array($action, $mutatingMetadataActions, true)) {
+		if ($provider !== null && $actionError === '' && ($refreshModeMetadata || in_array($action, $mutatingMetadataActions, true))) {
 			$this->refreshProviderMetadataAfterMutation($provider);
 		}
 
@@ -2265,17 +2424,24 @@ abstract class MarkupReactViewport extends MarkupInertia
 		$rowActionsMap = [];
 		if ($provider instanceof ReactRecordActionsProvider) {
 			foreach ($this->reactRecords as $reactRec) {
-				$rowActionsMap[$reactRec->id] = $provider->recordActions($reactRec);
+				$actions = $provider->recordActions($reactRec);
+				if ($this->locked) {
+					$actions = array_values(array_filter(
+						$actions,
+						static fn(array $act): bool => isset($act['href']) && trim($act['href']) !== ''
+					));
+				}
+				$rowActionsMap[$reactRec->id] = $actions;
 			}
 		}
 
 		$quickEdit = $this->resolveQuickEditState($provider);
-		$kanbanStages = $this->viewMode === 'kanban' || $this->stages !== []
-			? $this->resolveKanbanStages($provider)
-			: [];
-		$calendarState = $this->viewMode === 'calendar' || $this->month > 0
-			? $this->resolveCalendarState($provider)
-			: null;
+		$delegate = $this->resolveModeDelegate();
+		$computedModeData = $delegate !== null
+			? $delegate->modeInertiaData($provider, $this->records)
+			: $this->modeInertiaData($provider, $this->records);
+		$modeStatePayload = array_replace($this->modeState, $computedModeData);
+		$viewModeMeta = $this->resolveViewModeMeta();
 
 		$csrfName = '';
 		$csrfValue = '';
@@ -2285,6 +2451,27 @@ abstract class MarkupReactViewport extends MarkupInertia
 			$csrfValue = (string) $csrf->getTokenValue();
 		} catch (\Throwable) {
 			// Ignore if session CSRF is unavailable in CLI
+		}
+
+		$activeStatusFilter = strtolower(trim((string) ($this->filterValues['status'] ?? $this->statusFilter)));
+		$isTrashView = $activeStatusFilter === 'trash';
+		$supportsTrash = isset($this->filters['status']['options'])
+			&& is_array($this->filters['status']['options'])
+			&& array_key_exists('trash', $this->filters['status']['options']);
+		$effectiveBulkActions = $this->bulkActions;
+		if ($isTrashView && !$this->locked && $effectiveBulkActions !== []) {
+			$effectiveBulkActions = [
+				ReactDataProviderInterface::OP_RESTORE => [
+					'label' => $this->_('Restore'),
+					'icon' => 'arrow-back-up',
+				],
+				ReactDataProviderInterface::OP_DELETE => [
+					'label' => $this->_('Delete Permanently'),
+					'icon' => 'trash-2',
+					'variant' => 'danger',
+					'confirm' => $this->_('Permanently delete selected records? This cannot be undone.'),
+				],
+			];
 		}
 
 		$rootUrl = rtrim((string) ($this->wire()->config->urls->root ?: '/'), '/');
@@ -2303,6 +2490,8 @@ abstract class MarkupReactViewport extends MarkupInertia
 			'provider' => $this->provider,
 			'viewMode' => $this->viewMode,
 			'allowedViewModes' => array_values($this->allowedViewModes),
+			'viewModeMeta' => $viewModeMeta,
+			'modeState' => $modeStatePayload,
 			'viewScripts' => $this->resolveViewScriptsMap(),
 			'viewStyles' => $this->resolveViewStylesMap(),
 			'columns' => $this->columns,
@@ -2311,7 +2500,7 @@ abstract class MarkupReactViewport extends MarkupInertia
 			'records' => $this->records,
 			'filters' => $this->filters,
 			'filterValues' => $this->filterValues,
-			'bulkActions' => $this->bulkActions,
+			'bulkActions' => $effectiveBulkActions,
 			'bulkFieldSchemas' => $bulkFieldSchemas,
 			'rowActions' => $this->rowActions,
 			'rowActionsByRecord' => $rowActionsMap,
@@ -2328,6 +2517,8 @@ abstract class MarkupReactViewport extends MarkupInertia
 			'total' => $this->total,
 			'totalPages' => $this->totalPages,
 			'trashCount' => $this->trashCount,
+			'isTrashView' => $isTrashView,
+			'supportsTrash' => $supportsTrash,
 			'selectedIds' => array_values(array_map('strval', $this->selectedIds)),
 			'selectable' => $this->selectable && !$this->locked,
 			'locked' => $this->locked,
@@ -2357,11 +2548,6 @@ abstract class MarkupReactViewport extends MarkupInertia
 			'emptyIcon' => $this->emptyIcon,
 			'emptyActionLabel' => $this->emptyActionLabel,
 			'emptyActionUrl' => $this->emptyActionUrl,
-			'groupByField' => $this->groupByField,
-			'stages' => $kanbanStages,
-			'dateField' => $this->dateField,
-			'endDateField' => $this->endDateField,
-			'calendar' => $calendarState,
 			'notice' => $this->noticeMessage !== '' ? [
 				'message' => $this->noticeMessage,
 				'type' => $this->noticeType,
@@ -2426,6 +2612,9 @@ abstract class MarkupReactViewport extends MarkupInertia
 			}
 		}
 
+		$delegate = $this->resolveModeDelegate();
+		$modeSigned = $delegate !== null ? $delegate->modeSignedState() : $this->modeSignedState();
+
 		$envelope = [
 			'viewportClass' => $this->className(),
 			'componentId' => $this->componentId,
@@ -2441,10 +2630,7 @@ abstract class MarkupReactViewport extends MarkupInertia
 			'allowedViewModes' => array_values($this->allowedViewModes),
 			'explicitViewModes' => $this->explicitViewModes,
 			'groupBy' => $this->groupBy,
-			'groupByField' => $this->groupByField,
-			'stages' => $this->stages,
-			'dateField' => $this->dateField,
-			'endDateField' => $this->endDateField,
+			'modeState' => array_replace($this->modeState, $modeSigned),
 			'limit' => $this->limit,
 			'selectable' => $this->selectable,
 			'locked' => $this->locked,
@@ -2514,7 +2700,40 @@ abstract class MarkupReactViewport extends MarkupInertia
 	private static array $viewStylesCache = [];
 
 	/**
-	 * Map each allowed viewport mode (`table`, `cards`, `kanban`, `calendar`, etc.)
+	 * Resolve toolbar metadata (`icon`, `label`) for allowed and registered viewport layout modes.
+	 *
+	 * @return array<string, array{icon: string, label: string}>
+	 */
+	protected function resolveViewModeMeta(): array
+	{
+		$metaMap = [
+			'table' => [
+				'icon' => 'table',
+				'label' => $this->_('Table'),
+			],
+			'cards' => [
+				'icon' => 'layout-grid',
+				'label' => $this->_('Cards'),
+			],
+		];
+
+		$registered = $this->react()->getRegisteredViewportModes();
+		foreach ($registered as $modeKey => $reg) {
+			$icon = trim((string) ($reg['icon'] ?? ''));
+			$label = trim((string) ($reg['label'] ?? ''));
+			if ($icon !== '' || $label !== '') {
+				$metaMap[$modeKey] = [
+					'icon' => $icon !== '' ? $icon : 'layout-grid',
+					'label' => $label !== '' ? $label : ucfirst($modeKey),
+				];
+			}
+		}
+
+		return $metaMap;
+	}
+
+	/**
+	 * Map each allowed viewport mode (`table`, `cards`, or registered custom modes)
 	 * to its standalone script asset URLs so `<DataViewport />` can load view modes on demand.
 	 *
 	 * @return array<string, list<string>>
@@ -2525,7 +2744,7 @@ abstract class MarkupReactViewport extends MarkupInertia
 	}
 
 	/**
-	 * Map each allowed viewport mode (`table`, `cards`, `kanban`, `calendar`, etc.)
+	 * Map each allowed viewport mode (`table`, `cards`, or registered custom modes)
 	 * to its standalone stylesheet asset URLs so dynamically switched view modes load their delta CSS on demand.
 	 *
 	 * @return array<string, list<string>>
@@ -2673,9 +2892,16 @@ abstract class MarkupReactViewport extends MarkupInertia
 	}
 
 	/**
-	 * Resolve Quick-Edit schema and values when a record is open in the drawer/modal.
+	 * Resolve Quick-Edit SchemaForm payload when a record is open in the Quick Edit modal.
 	 *
-	 * @return array{recordId: string, record: array<string, mixed>, fields: array<string, array<string, mixed>>}|null
+	 * @return array{
+	 *   recordId: string,
+	 *   title: string,
+	 *   formSchema: array<string, mixed>,
+	 *   scriptAssets?: list<string>,
+	 *   styleAssets?: list<string>,
+	 *   editUrl?: string
+	 * }|null
 	 */
 	protected function resolveQuickEditState(?ReactDataProviderInterface $provider): ?array
 	{
@@ -2683,22 +2909,61 @@ abstract class MarkupReactViewport extends MarkupInertia
 			return null;
 		}
 
+		if ($provider !== null && method_exists($provider, 'resolveQuickEditForm')) {
+			$providerForm = $provider->resolveQuickEditForm($this->quickEditRecordId, [
+				'editUrl' => $this->editUrl,
+				'errors' => $this->quickEditErrors,
+			]);
+			if (is_array($providerForm) && isset($providerForm['formSchema']) && is_array($providerForm['formSchema'])) {
+				/** @var array<string, mixed> $formSchema */
+				$formSchema = $providerForm['formSchema'];
+				$formSchema['submits'] = [];
+				$formSchema['dirtyGuard'] = false;
+
+				$spec = [
+					'recordId' => $this->quickEditRecordId,
+					'title' => (string) ($providerForm['title'] ?? $this->quickEditRecordId),
+					'formSchema' => $formSchema,
+				];
+				if (!empty($providerForm['scriptAssets']) && is_array($providerForm['scriptAssets'])) {
+					$spec['scriptAssets'] = array_values(array_map('strval', $providerForm['scriptAssets']));
+				}
+				if (!empty($providerForm['styleAssets']) && is_array($providerForm['styleAssets'])) {
+					$spec['styleAssets'] = array_values(array_map('strval', $providerForm['styleAssets']));
+				}
+				$resolvedEditUrl = trim((string) ($providerForm['editUrl'] ?? ''));
+				if ($resolvedEditUrl !== '') {
+					$spec['editUrl'] = $resolvedEditUrl;
+				}
+
+				return $spec;
+			}
+		}
+
 		$editableMap = $this->inlineEditableFields;
 		if ($provider instanceof ReactFieldSchemaProvider) {
 			$editableMap = array_replace($provider->inlineEditableFields(), $editableMap);
 		}
 
+		$extraMetaKeys = ['rows', 'step', 'min', 'max', 'placeholder', 'required', 'monospace'];
 		$fields = [];
 		foreach ($this->columns as $colKey => $colDef) {
 			if ($colKey === 'id') {
 				continue;
 			}
-			$fields[(string) $colKey] = [
+			$spec = [
 				'label' => (string) ($colDef['label'] ?? $colKey),
 				'type' => (string) ($colDef['type'] ?? 'text'),
 				'options' => is_array($colDef['options'] ?? null) ? $colDef['options'] : [],
-				'editable' => (bool) ($colDef['editable'] ?? isset($editableMap[$colKey])),
+				'editable' => (bool) ($colDef['editable'] ?? ($colKey === 'title' || isset($editableMap[$colKey]))),
+				'useLanguages' => (bool) ($colDef['useLanguages'] ?? false),
 			];
+			foreach ($extraMetaKeys as $metaKey) {
+				if (array_key_exists($metaKey, $colDef)) {
+					$spec[$metaKey] = $colDef[$metaKey];
+				}
+			}
+			$fields[(string) $colKey] = $spec;
 		}
 
 		foreach ($editableMap as $fKey => $fDef) {
@@ -2706,16 +2971,26 @@ abstract class MarkupReactViewport extends MarkupInertia
 				continue;
 			}
 			$existing = $fields[(string) $fKey] ?? [];
-			$fields[(string) $fKey] = [
+			$spec = [
 				'label' => (string) ($fDef['label'] ?? $existing['label'] ?? ucfirst(str_replace('_', ' ', (string) $fKey))),
 				'type' => (string) ($fDef['type'] ?? $existing['type'] ?? 'text'),
 				'options' => is_array($fDef['options'] ?? null)
 					? $fDef['options']
 					: (is_array($existing['options'] ?? null) ? $existing['options'] : []),
 				'editable' => true,
+				'useLanguages' => (bool) ($fDef['useLanguages'] ?? $existing['useLanguages'] ?? false),
 			];
+			foreach ($extraMetaKeys as $metaKey) {
+				if (array_key_exists($metaKey, $fDef)) {
+					$spec[$metaKey] = $fDef[$metaKey];
+				} elseif (array_key_exists($metaKey, $existing)) {
+					$spec[$metaKey] = $existing[$metaKey];
+				}
+			}
+			$fields[(string) $fKey] = $spec;
 		}
 
+		$targetRecord = null;
 		if ($this->quickEditRecordId === '__new__') {
 			if (!isset($fields['title'])) {
 				$fields = array_replace([
@@ -2724,193 +2999,156 @@ abstract class MarkupReactViewport extends MarkupInertia
 						'type' => 'text',
 						'options' => [],
 						'editable' => true,
+						'useLanguages' => false,
 					],
 				], $fields);
 			}
-
-			$blankRecord = ['id' => '__new__', 'title' => ''];
+			$targetRecord = ['id' => '__new__', 'title' => ''];
 			foreach (array_keys($fields) as $fKey) {
-				$blankRecord[(string) $fKey] = '';
+				$targetRecord[(string) $fKey] = '';
 			}
-
-			return [
-				'recordId' => '__new__',
-				'record' => $blankRecord,
-				'fields' => $fields,
-			];
-		}
-
-		foreach ($this->records as $row) {
-			if ((string) ($row['id'] ?? '') === $this->quickEditRecordId) {
-				return [
-					'recordId' => $this->quickEditRecordId,
-					'record' => $row,
-					'fields' => $fields,
-				];
-			}
-		}
-
-		return null;
-	}
-
-	/**
-	 * Resolve Kanban stage columns and grouped records.
-	 *
-	 * @return list<array{key: string, label: string, variant: string, limit: int, count: int, summary?: string, records: list<array<string, mixed>>}>
-	 */
-	protected function resolveKanbanStages(?ReactDataProviderInterface $provider = null): array
-	{
-		$field = $this->groupByField !== '' ? $this->groupByField : 'stage';
-		$stageDefs = $this->stages;
-
-		if ($stageDefs === [] && $provider !== null) {
-			foreach ($provider->stageOptions($field) as $optKey => $optLabel) {
-				$stageDefs[(string) $optKey] = [
-					'label' => (string) $optLabel,
-					'variant' => 'neutral',
-				];
-			}
-		}
-
-		if ($stageDefs === []) {
+		} else {
 			foreach ($this->records as $row) {
-				$val = trim((string) ($row['_stage'] ?? $row[$field] ?? 'default'));
-				$key = $val !== '' ? $val : 'default';
-				if (!isset($stageDefs[$key])) {
-					$stageDefs[$key] = [
-						'label' => ucfirst(str_replace(['_', '-'], ' ', $key)),
-						'variant' => 'neutral',
-					];
+				if ((string) ($row['id'] ?? '') === $this->quickEditRecordId) {
+					/** @var array<string, mixed> $typedRow */
+					$typedRow = $row;
+					$targetRecord = $typedRow;
+					break;
 				}
 			}
 		}
 
-		$stageSummaries = $provider instanceof ReactSummaryProvider
-			? $provider->computeStageSummaries($this->buildQueryCriteria())
-			: [];
+		if ($targetRecord === null) {
+			return null;
+		}
 
-		/** @var array<string, array{key: string, label: string, variant: string, limit: int, count: int, summary?: string, records: list<array<string, mixed>>}> $grouped */
-		$grouped = [];
-		foreach ($stageDefs as $stageKey => $def) {
-			$sk = (string) $stageKey;
-			$grouped[$sk] = [
-				'key' => $sk,
-				'label' => (string) ($def['label'] ?? $sk),
-				'variant' => (string) ($def['variant'] ?? 'neutral'),
-				'limit' => (int) ($def['limit'] ?? 0),
-				'count' => 0,
-				'summary' => isset($stageSummaries[$sk]['formatted']) ? (string) $stageSummaries[$sk]['formatted'] : '',
-				'records' => [],
+		$editableFields = array_filter($fields, static fn(array $fSpec): bool => !empty($fSpec['editable']));
+		$targetFields = $editableFields !== [] ? $editableFields : $fields;
+
+		$definitions = [];
+		$values = [];
+		foreach ($targetFields as $fKey => $fSpec) {
+			$rawType = strtolower(trim((string) ($fSpec['type'] ?? 'text')));
+			$mappedType = $rawType === 'boolean' ? 'checkbox' : ($rawType !== '' ? $rawType : 'text');
+			$def = [
+				'name' => (string) $fKey,
+				'label' => (string) ($fSpec['label'] ?? $fKey),
+				'type' => $mappedType,
+				'options' => is_array($fSpec['options'] ?? null) ? $fSpec['options'] : [],
+				'useLanguages' => !empty($fSpec['useLanguages']),
 			];
-		}
-
-		foreach ($this->records as $row) {
-			$stageVal = (string) ($row['_stage'] ?? $row[$field] ?? '');
-			if (!isset($grouped[$stageVal])) {
-				$firstKey = array_key_first($grouped);
-				if ($firstKey === null || !isset($grouped[$firstKey])) {
-					$fallbackKey = $stageVal !== '' ? $stageVal : 'default';
-					$grouped[$fallbackKey] = [
-						'key' => $fallbackKey,
-						'label' => ucfirst($fallbackKey),
-						'variant' => 'neutral',
-						'limit' => 0,
-						'count' => 1,
-						'summary' => '',
-						'records' => [$row],
-					];
-				} else {
-					$grouped[$firstKey]['records'][] = $row;
-					$grouped[$firstKey]['count']++;
+			foreach ($extraMetaKeys as $metaKey) {
+				if (array_key_exists($metaKey, $fSpec)) {
+					$def[$metaKey] = $fSpec[$metaKey];
 				}
-				continue;
 			}
-			$grouped[$stageVal]['records'][] = $row;
-			$grouped[$stageVal]['count']++;
+			$rawVal = $targetRecord[$fKey] ?? '';
+			$values[(string) $fKey] = $rawVal;
+			$definitions[] = $def;
 		}
 
-		return array_values($grouped);
+		$safeFormSuffix = preg_replace('/[^a-zA-Z0-9_-]/', '_', $this->quickEditRecordId) ?: 'record';
+		$formSchema = React::instance($this)->serializeFormDefinitions($definitions, [
+			'id' => 'rw_quick_edit_' . $safeFormSuffix,
+			'dirtyGuard' => false,
+			'values' => $values,
+			'errors' => $this->quickEditErrors,
+		]);
+		$formSchema['submits'] = [];
+		$formSchema['dirtyGuard'] = false;
+
+		$rawTitle = $this->quickEditRecordId === '__new__'
+			? $this->_('New Item')
+			: ($targetRecord['title'] ?? $targetRecord['label'] ?? $targetRecord['name'] ?? $this->quickEditRecordId);
+		if (is_array($rawTitle)) {
+			$firstScalar = reset($rawTitle);
+			$titleText = is_scalar($firstScalar) ? trim((string) $firstScalar) : $this->quickEditRecordId;
+		} elseif (is_scalar($rawTitle)) {
+			$titleText = trim((string) $rawTitle);
+		} else {
+			$titleText = $this->quickEditRecordId;
+		}
+
+		$spec = [
+			'recordId' => $this->quickEditRecordId,
+			'title' => $titleText !== '' ? $titleText : $this->quickEditRecordId,
+			'formSchema' => $formSchema,
+		];
+		$recordEditUrl = UrlSanitizer::sanitizeHref((string) ($targetRecord['_editUrl'] ?? $targetRecord['editUrl'] ?? ''), true);
+		if ($recordEditUrl !== '') {
+			$spec['editUrl'] = $recordEditUrl;
+		}
+
+		return $spec;
 	}
 
 	/**
-	 * Resolve Calendar month/year metadata, conflicts, lanes, and date-indexed events.
+	 * Extract editable field names, checkbox field names, and multi-language field flags from a serialized SchemaForm.
 	 *
-	 * @return array<string, mixed>
+	 * @param array<string, mixed> $formSchema
+	 * @return array{editable: array<string, true>, checkboxes: list<string>, useLanguages: array<string, true>}
 	 */
-	protected function resolveCalendarState(?ReactDataProviderInterface $provider = null): array
+	private function extractQuickEditSchemaFieldMeta(array $formSchema): array
 	{
-		$month = $this->month >= 1 && $this->month <= 12 ? $this->month : (int) date('n');
-		$year = $this->year >= 1970 && $this->year <= 2100 ? $this->year : (int) date('Y');
-		$firstDayTs = mktime(0, 0, 0, $month, 1, $year) ?: time();
-		$daysInMonth = (int) date('t', $firstDayTs);
-		$firstDayOfWeek = (int) date('N', $firstDayTs);
-		$monthLabel = date('F Y', $firstDayTs);
+		$editable = [];
+		$checkboxes = [];
+		$useLanguages = [];
 
-		$field = $this->dateField !== '' ? $this->dateField : 'start_date';
-		$endField = $this->endDateField;
-		$eventsByDate = [];
-		$conflicts = $provider instanceof ReactCalendarProvider ? $provider->conflicts($this->reactRecords) : [];
-
-		foreach ($this->records as $row) {
-			$rawStart = trim((string) ($row['_startDate'] ?? $row[$field] ?? $row['created'] ?? ''));
-			if ($rawStart === '') {
-				continue;
-			}
-			$startTs = is_numeric($rawStart) ? (int) $rawStart : strtotime($rawStart);
-			if ($startTs === false || $startTs <= 0) {
-				continue;
-			}
-
-			$startDate = date('Y-m-d', $startTs);
-			$endDate = $startDate;
-			$rawEnd = trim((string) ($row['_endDate'] ?? ($endField !== '' ? ($row[$endField] ?? '') : '')));
-			if ($rawEnd !== '') {
-				$endTs = is_numeric($rawEnd) ? (int) $rawEnd : strtotime($rawEnd);
-				if ($endTs !== false && $endTs >= $startTs) {
-					$endDate = date('Y-m-d', $endTs);
+		$walk = static function (array $items) use (&$walk, &$editable, &$checkboxes, &$useLanguages): void {
+			foreach ($items as $item) {
+				if (!is_array($item)) {
+					continue;
+				}
+				if (isset($item['fields']) && is_array($item['fields'])) {
+					$walk($item['fields']);
+				}
+				if (isset($item['children']) && is_array($item['children'])) {
+					$walk($item['children']);
+				}
+				$name = trim((string) ($item['name'] ?? ''));
+				if ($name === '' || ($item['kind'] ?? 'control') !== 'control') {
+					continue;
+				}
+				if (empty($item['disabled']) && empty($item['readOnly'])) {
+					$editable[$name] = true;
+				}
+				if (!empty($item['useLanguages'])) {
+					$useLanguages[$name] = true;
+				}
+				$type = strtolower(trim((string) ($item['type'] ?? 'text')));
+				if (in_array($type, ['checkbox', 'boolean', 'switch'], true)) {
+					$checkboxes[] = $name;
 				}
 			}
+		};
 
-			$recId = (string) ($row['id'] ?? '');
-			$cursorTs = strtotime($startDate) ?: $startTs;
-			$limitTs = min(strtotime($endDate) ?: $startTs, $cursorTs + (60 * 86400));
-			while ($cursorTs <= $limitTs) {
-				$dayKey = date('Y-m-d', $cursorTs);
-				$eventsByDate[$dayKey][] = array_replace($row, [
-					'_startDate' => $startDate,
-					'_endDate' => $endDate,
-					'_isMultiDay' => $startDate !== $endDate,
-					'_hasConflict' => !empty($conflicts[$recId]),
-				]);
-				$cursorTs = strtotime('+1 day', $cursorTs) ?: ($limitTs + 1);
-			}
+		if (isset($formSchema['fields']) && is_array($formSchema['fields'])) {
+			$walk($formSchema['fields']);
+		}
+		if (isset($formSchema['tabs']) && is_array($formSchema['tabs'])) {
+			$walk($formSchema['tabs']);
 		}
 
 		return [
-			'month' => $month,
-			'year' => $year,
-			'monthLabel' => $monthLabel,
-			'calendarView' => $this->calendarView,
-			'dateField' => $field,
-			'endDateField' => $endField,
-			'daysInMonth' => $daysInMonth,
-			'firstDayOfWeek' => $firstDayOfWeek,
-			'eventsByDate' => $eventsByDate,
-			'laneField' => $provider instanceof ReactCalendarProvider ? $provider->laneField() : '',
-			'laneOptions' => $provider instanceof ReactCalendarProvider ? $provider->laneOptions() : [],
-			'conflicts' => $conflicts,
+			'editable' => $editable,
+			'checkboxes' => array_values(array_unique($checkboxes)),
+			'useLanguages' => $useLanguages,
 		];
 	}
 
 	/**
-	 * Generate CSV or JSON export content for the active filter set.
+	 * Generate CSV or JSON export content for the active filter set or selected record IDs.
 	 *
+	 * @param list<string> $ids
 	 * @return array{filename: string, content: string, mime: string}
 	 */
-	protected function generateExportPayload(ReactDataProviderInterface $provider, string $format): array
+	protected function generateExportPayload(ReactDataProviderInterface $provider, string $format, array $ids = []): array
 	{
 		$exportFormat = in_array($format, ['csv', 'json'], true) ? $format : 'csv';
 		$criteria = $this->buildQueryCriteria();
+		if ($ids !== []) {
+			$criteria['ids'] = $ids;
+		}
 
 		if ($provider instanceof ReactExportProvider) {
 			$exported = $provider->export($exportFormat, $criteria);
