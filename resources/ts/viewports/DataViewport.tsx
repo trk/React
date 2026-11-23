@@ -27,6 +27,7 @@ import {
 	subscribeViewportRegistry,
 } from './ViewportRegistry';
 import { ViewportToolbar } from './ViewportToolbar';
+import { ViewportExportControl } from './viewportShared';
 
 export type {
 	ViewportColumn,
@@ -36,8 +37,7 @@ export type {
 	ViewportCreateAction,
 	ViewportToolbarAction,
 	ViewportSummaryCard,
-	ViewportKanbanStage,
-	ViewportCalendarState,
+	ViewportModeMeta,
 	ViewportState,
 	RenderCellOptions,
 	ViewportCanvasProps,
@@ -95,6 +95,7 @@ export const DataViewport: React.FC<ViewportState | Record<string, unknown>> = (
 		[rawInitialProps]
 	);
 	const [state, setState] = useState<ViewportState>(initialProps);
+	const prevInitialPropsRef = useRef<ViewportState>(initialProps);
 	const [busy, setBusy] = useState(false);
 	const [searchInput, setSearchInput] = useState(initialProps.searchQuery || '');
 	const searchInputRef = useRef(searchInput);
@@ -102,17 +103,14 @@ export const DataViewport: React.FC<ViewportState | Record<string, unknown>> = (
 	const rootRef = useRef<HTMLDivElement | null>(null);
 	const searchFieldRef = useRef<HTMLInputElement | null>(null);
 	const [editingCell, setEditingCell] = useState<{ id: string; field: string; value: string } | null>(null);
-	const [quickEditValues, setQuickEditValues] = useState<Record<string, unknown>>({});
-	const [, setRegistryVersion] = useState(0);
 	const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const dispatchSeqRef = useRef(0);
 
-	useEffect(() => {
-		const onRegister = () => setRegistryVersion((v) => v + 1);
-		const unsubLocal = subscribeViewportRegistry(onRegister);
+	const subscribeViewportStore = useCallback((onStoreChange: () => void) => {
+		const unsubLocal = subscribeViewportRegistry(onStoreChange);
 		const unsubscribeRuntime =
 			typeof window !== 'undefined' && typeof window.ReactWorkspaceRuntime?.subscribeViewportModes === 'function'
-				? window.ReactWorkspaceRuntime.subscribeViewportModes(onRegister)
+				? window.ReactWorkspaceRuntime.subscribeViewportModes(onStoreChange)
 				: undefined;
 		return () => {
 			unsubLocal();
@@ -135,17 +133,25 @@ export const DataViewport: React.FC<ViewportState | Record<string, unknown>> = (
 	}, [state.viewMode, state.viewScripts, state.viewStyles]);
 
 	useEffect(() => {
+		const prev = prevInitialPropsRef.current;
+		if (
+			prev === initialProps ||
+			(prev.componentId === initialProps.componentId &&
+				prev.stateToken === initialProps.stateToken &&
+				prev.records === initialProps.records &&
+				prev.viewMode === initialProps.viewMode &&
+				prev.searchQuery === initialProps.searchQuery &&
+				prev.page === initialProps.page &&
+				prev.activeView === initialProps.activeView &&
+				prev.isTrashView === initialProps.isTrashView &&
+				prev.trashCount === initialProps.trashCount)
+		) {
+			return;
+		}
+		prevInitialPropsRef.current = initialProps;
 		setState(initialProps);
 		setSearchInput(initialProps.searchQuery || '');
 	}, [initialProps]);
-
-	useEffect(() => {
-		if (state.quickEdit?.record) {
-			setQuickEditValues({ ...state.quickEdit.record });
-		} else {
-			setQuickEditValues({});
-		}
-	}, [state.quickEdit]);
 
 	useEffect(() => {
 		if (state.download && state.download.content && typeof window !== 'undefined') {
@@ -210,9 +216,7 @@ export const DataViewport: React.FC<ViewportState | Record<string, unknown>> = (
 							hiddenColumns: state.hiddenColumns,
 							activeView: state.activeView,
 							viewMode: state.viewMode,
-							month: state.calendar?.month,
-							year: state.calendar?.year,
-							calendarView: state.calendar?.calendarView,
+							modeState: state.modeState,
 							quickEditRecordId: state.quickEditRecordId,
 						},
 					},
@@ -338,7 +342,7 @@ export const DataViewport: React.FC<ViewportState | Record<string, unknown>> = (
 		danger: boolean;
 	} | null>(null);
 	const [pendingActionConfirm, setPendingActionConfirm] = useState<{
-		actionType: 'row_action' | 'toolbar_action';
+		actionType: 'row_action' | 'toolbar_action' | 'empty_trash';
 		key: string;
 		recordId?: string;
 		label: string;
@@ -365,7 +369,11 @@ export const DataViewport: React.FC<ViewportState | Record<string, unknown>> = (
 	);
 
 	const activeViewMode = (state.viewMode || 'table').toLowerCase();
-	const ActiveCanvas = getViewport(activeViewMode);
+	const ActiveCanvas = React.useSyncExternalStore(
+		subscribeViewportStore,
+		() => getViewport(activeViewMode),
+		() => getViewport(activeViewMode)
+	);
 	const bulkEntries = Object.entries(state.bulkActions || {});
 	const selectedCount = (state.selectedIds || []).length;
 
@@ -520,7 +528,61 @@ export const DataViewport: React.FC<ViewportState | Record<string, unknown>> = (
 				onRequestToolbarConfirm={setPendingActionConfirm}
 			/>
 
-			{selectedCount > 0 && bulkEntries.length > 0 && (
+			{state.isTrashView && (
+				<div
+					data-rw-viewport-trash-bar=""
+					className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/8 px-4 py-2.5 text-xs"
+				>
+					<div className="flex items-center gap-2 text-foreground">
+						<DynamicIcon name="trash-2" className="size-4 text-destructive shrink-0" />
+						<span className="font-medium">
+							{t(
+								'viewport.viewingTrash',
+								{ count: state.trashCount ?? 0 },
+								'Viewing Trash ({count}) — use row actions or bulk selection to Restore or Delete Permanently.'
+							)}
+						</span>
+					</div>
+					<div className="flex flex-wrap items-center gap-2">
+						<Button
+							type="button"
+							variant="outline"
+							size="xs"
+							icon="arrow-left"
+							disabled={busy}
+							onClick={() => void dispatch('filter', { key: 'status', value: '' })}
+						>
+							{t('viewport.backToActive', 'Back to Active Items')}
+						</Button>
+						{!state.locked && (state.trashCount ?? 0) > 0 ? (
+							<Button
+								type="button"
+								variant="destructive"
+								size="xs"
+								icon="trash-x"
+								disabled={busy}
+								onClick={() =>
+									setPendingActionConfirm({
+										actionType: 'empty_trash',
+										key: 'empty_trash',
+										label: t('viewport.emptyTrash', 'Empty Trash'),
+										confirm: t(
+											'viewport.emptyTrashConfirm',
+											{ count: state.trashCount ?? 0 },
+											'Permanently delete all {count} trashed record(s)? This cannot be undone.'
+										),
+										danger: true,
+									})
+								}
+							>
+								{t('viewport.emptyTrash', 'Empty Trash')}
+							</Button>
+						) : null}
+					</div>
+				</div>
+			)}
+
+			{selectedCount > 0 && (bulkEntries.length > 0 || Boolean(state.exportEnabled)) && (
 				<div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2">
 					<div className="flex items-center gap-2 text-xs font-medium">
 						<Badge variant="default">{t('viewport.selectedCount', { count: selectedCount }, '{count} selected')}</Badge>
@@ -559,6 +621,9 @@ export const DataViewport: React.FC<ViewportState | Record<string, unknown>> = (
 								{bDef.label}
 							</Button>
 						))}
+						{state.exportEnabled ? (
+							<ViewportExportControl state={state} busy={busy} dispatch={dispatch} selectedOnly />
+						) : null}
 					</div>
 				</div>
 			)}
@@ -668,7 +733,9 @@ export const DataViewport: React.FC<ViewportState | Record<string, unknown>> = (
 					onConfirm={() => {
 						const target = pendingActionConfirm;
 						setPendingActionConfirm(null);
-						if (target.actionType === 'toolbar_action') {
+						if (target.actionType === 'empty_trash') {
+							void dispatch('empty_trash');
+						} else if (target.actionType === 'toolbar_action') {
 							void dispatch('toolbar_action', { toolbarAction: target.key });
 						} else if (target.recordId) {
 							void dispatch('row_action', { rowAction: target.key, id: target.recordId });
@@ -680,15 +747,13 @@ export const DataViewport: React.FC<ViewportState | Record<string, unknown>> = (
 			<ViewportQuickEditSheet
 				quickEdit={state.quickEdit}
 				busy={busy}
-				values={quickEditValues}
-				onChangeValues={setQuickEditValues}
 				onClose={() => {
 					void dispatch('close_quick_edit');
 				}}
-				onSave={() => {
+				onSave={(formData) => {
 					void dispatch('save_quick_edit', {
 						id: state.quickEdit?.recordId,
-						values: quickEditValues,
+						formData,
 					});
 				}}
 			/>

@@ -224,12 +224,12 @@ export const DataCardsCanvas: React.FC<ViewportCanvasProps> = ({
 										{secondaryCols.length > 0 && (
 											<dl className="grid grid-cols-2 gap-x-3 gap-y-2">
 												{secondaryCols.map(([colKey, colDef]) => (
-													<div key={colKey} className="min-w-0">
+													<div key={colKey} className="min-w-0 overflow-hidden">
 														<dt className="truncate text-[11px] text-muted-foreground">
 															{colDef.label}
 														</dt>
-														<dd className="mt-0.5 min-w-0 font-medium text-foreground">
-															{renderCellValue(record, colKey, colDef)}
+														<dd className="mt-0.5 min-w-0 truncate font-medium text-foreground [&_a]:max-w-full [&_a]:truncate [&_button]:max-w-full [&_button]:truncate">
+															{renderCellValue(record, colKey, { ...colDef, align: 'left' })}
 														</dd>
 													</div>
 												))}

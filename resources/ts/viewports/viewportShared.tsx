@@ -2,7 +2,16 @@ import React from 'react';
 import { t } from '../lib/i18n';
 import { visitSameModuleHref, withWorkspaceShellUrl } from '../lib/inertia-bridge';
 import { DynamicIcon, sanitizeHref } from '../lib/utils';
-import { DropdownMenu, type DropdownMenuItem } from '../ui';
+import {
+	Badge,
+	Button,
+	DropdownMenu,
+	Menu,
+	MenuContent,
+	MenuItem,
+	MenuTrigger,
+	type DropdownMenuItem,
+} from '../ui';
 import type { ViewportState } from './DataViewport';
 
 export interface ViewportLinkProps extends Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> {
@@ -118,5 +127,120 @@ export function renderViewportCreateTrigger(
 			<DynamicIcon name="plus" className="size-3.5" aria-hidden="true" />
 			<span>{label}</span>
 		</ViewportLink>
+	);
+}
+
+export interface ViewportExportControlProps {
+	state: ViewportState;
+	busy: boolean;
+	dispatch: (action: string, payload?: Record<string, unknown>) => Promise<void>;
+	selectedOnly?: boolean;
+}
+
+export function isViewportFiltered(state: ViewportState): boolean {
+	const hasSearch = typeof state.searchQuery === 'string' && state.searchQuery.trim() !== '';
+	const hasActiveView = Boolean(state.activeView && state.activeView !== 'all');
+	const hasFilterValue = Boolean(
+		state.filterValues &&
+			Object.values(state.filterValues).some(
+				(val) => val !== undefined && val !== null && String(val).trim() !== ''
+			)
+	);
+	return hasSearch || hasActiveView || hasFilterValue;
+}
+
+export function ViewportExportControl({
+	state,
+	busy,
+	dispatch,
+	selectedOnly = false,
+}: ViewportExportControlProps): React.ReactElement {
+	const selectedIds = Array.isArray(state.selectedIds) ? state.selectedIds : [];
+	const selectedCount = selectedIds.length;
+	const filtered = isViewportFiltered(state);
+	const formats = Array.from(
+		new Set(
+			(Array.isArray(state.exportFormats) && state.exportFormats.length > 0
+				? state.exportFormats
+				: ['csv']
+			)
+				.map((fmt) => String(fmt || '').trim().toLowerCase())
+				.filter(Boolean)
+		)
+	);
+	const resolvedFormats = formats.length > 0 ? formats : ['csv'];
+
+	const scope = selectedOnly ? 'selected' : filtered ? 'filtered' : 'all';
+	const label = selectedOnly
+		? t('viewport.exportSelected', { count: selectedCount }, 'Export Selected ({count})')
+		: filtered
+			? t('viewport.exportFiltered', 'Export Filtered')
+			: t('viewport.exportAll', 'Export All');
+
+	const showTotalBadge = !selectedOnly && typeof state.total === 'number' && state.total >= 0;
+	const triggerExport = (format: string) => {
+		const payload: Record<string, unknown> = { format };
+		if (selectedOnly && selectedIds.length > 0) {
+			payload.ids = selectedIds;
+		}
+		void dispatch('export', payload);
+	};
+
+	if (resolvedFormats.length <= 1) {
+		return (
+			<Button
+				type="button"
+				variant="outline"
+				size={selectedOnly ? 'xs' : 'sm'}
+				icon="download"
+				disabled={busy}
+				data-rw-viewport-export={scope}
+				className="shrink-0"
+				onClick={() => triggerExport(resolvedFormats[0] || 'csv')}
+			>
+				<span>{label}</span>
+				{showTotalBadge ? (
+					<Badge variant="muted" mono className="ml-0.5 px-1.5 py-0 text-[10px]">
+						{state.total}
+					</Badge>
+				) : null}
+			</Button>
+		);
+	}
+
+	return (
+		<Menu>
+			<MenuTrigger asChild>
+				<Button
+					type="button"
+					variant="outline"
+					size={selectedOnly ? 'xs' : 'sm'}
+					icon="download"
+					disabled={busy}
+					data-rw-viewport-export={scope}
+					className="shrink-0"
+				>
+					<span>{label}</span>
+					{showTotalBadge ? (
+						<Badge variant="muted" mono className="ml-0.5 px-1.5 py-0 text-[10px]">
+							{state.total}
+						</Badge>
+					) : null}
+					<DynamicIcon name="chevron-down" className="size-3 opacity-80" aria-hidden="true" />
+				</Button>
+			</MenuTrigger>
+			<MenuContent align="end">
+				{resolvedFormats.map((fmt) => (
+					<MenuItem
+						key={fmt}
+						data-rw-viewport-export-format={fmt}
+						onClick={() => triggerExport(fmt)}
+					>
+						<DynamicIcon name="download" className="size-3.5 text-muted-foreground" aria-hidden="true" />
+						<span>{t('viewport.exportAsFormat', { format: fmt.toUpperCase() }, 'Export {format}')}</span>
+					</MenuItem>
+				))}
+			</MenuContent>
+		</Menu>
 	);
 }

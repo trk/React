@@ -406,24 +406,35 @@ export function renderViewportCellValue({
 			rel={isExternal ? 'noopener noreferrer' : undefined}
 			title={showFullTitleTooltip ? displayStr : undefined}
 			className={cn(
-				'inline-flex min-w-0 items-center gap-1 hover:text-primary hover:underline',
+				'inline-flex max-w-full min-w-0 items-center gap-1 hover:text-primary hover:underline',
 				isPrimaryCol ? 'font-medium text-foreground' : 'text-primary',
 				textModifierClasses
 			)}
 		>
-			<span className={cn(cssTruncate && 'truncate')}>{truncatedLabel}</span>
+			<span className={cn(cssTruncate ? 'truncate' : 'min-w-0 break-words')}>{truncatedLabel}</span>
 			{isExternal ? <DynamicIcon name="external-link" className="size-3 shrink-0 opacity-70" /> : null}
 		</ViewportLink>
 	) : (
 		<span
 			title={showFullTitleTooltip ? displayStr : undefined}
-			className={cn(isPrimaryCol && 'font-medium text-foreground', textModifierClasses)}
+			className={cn(isPrimaryCol && 'font-medium text-foreground', !cssTruncate && 'min-w-0 break-words', textModifierClasses)}
 		>
 			{truncatedLabel}
 		</span>
 	);
 
-	const showPrimaryRow = !(thumb && (displayStr === '' || displayStr === '—') && badges.length === 0 && copyValue === '');
+	const hideEmptyDashForBadges =
+		!isPrimaryCol &&
+		!resolvedHref &&
+		cellObj?.label === '' &&
+		(displayStr === '' || displayStr === '—') &&
+		badges.length > 0;
+	const showPrimaryRow = !(
+		thumb &&
+		(displayStr === '' || displayStr === '—') &&
+		badges.length === 0 &&
+		copyValue === ''
+	);
 
 	return (
 		<div
@@ -448,14 +459,14 @@ export function renderViewportCellValue({
 			{showPrimaryRow || hasSubtitle ? (
 				<div
 					className={cn(
-						'min-w-0',
+						'min-w-0 flex-1',
 						colDef.align === 'right' && 'text-right',
 						colDef.align === 'center' && 'text-center'
 					)}
 				>
 					{showPrimaryRow ? (
 						<div className={cn('flex flex-wrap items-center gap-1.5 min-w-0', justifyCls)}>
-							{primaryNode}
+							{hideEmptyDashForBadges ? null : primaryNode}
 							{locked ? (
 								<span title="Locked" className="inline-flex shrink-0 text-muted-foreground">
 									<DynamicIcon name="lock" className="size-3.5" />

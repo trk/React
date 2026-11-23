@@ -5,7 +5,12 @@ import { Badge, Button, Input, Select } from '../ui';
 import type { ViewportFilter, ViewportPillOption, ViewportState } from './types';
 import { ViewportPillStrip } from './ViewportPillStrip';
 import { ensureViewportModeScriptLoaded, ensureViewportModeStylesLoaded, getViewport } from './ViewportRegistry';
-import { renderViewportCreateTrigger, ViewportLink } from './viewportShared';
+import {
+	isViewportFiltered,
+	renderViewportCreateTrigger,
+	ViewportExportControl,
+	ViewportLink,
+} from './viewportShared';
 
 export interface ViewportToolbarProps {
 	state: ViewportState;
@@ -69,17 +74,30 @@ export function ViewportToolbar({
 	const viewsEntries = Object.entries(state.views || {});
 	const savedViewsEntries = Object.entries(state.savedViews || {});
 	const filterEntries: Array<[string, ViewportFilter]> = Object.entries(state.filters || {});
-	const showSavedViewsBar =
+	const isInlinePillViewsMode = state.saveViewEnabled === false && viewsEntries.length > 0;
+	const inlineViewPillItems: ViewportPillOption[] = isInlinePillViewsMode
+		? viewsEntries.map(([vKey, vDef]) => ({
+				key: vKey,
+				label: vDef.label,
+				count: vDef.count,
+				icon: vDef.icon,
+			}))
+		: [];
+	const nonAllViewEntries = viewsEntries.filter(([vKey]) => vKey !== 'all');
+	const showViewSelect = !isInlinePillViewsMode && nonAllViewEntries.length > 0;
+	const showSaveViewControl =
 		state.saveViewEnabled !== false && (viewsEntries.length > 0 || savedViewsEntries.length > 0);
-	const inlineViewPillItems: ViewportPillOption[] =
-		state.saveViewEnabled === false && viewsEntries.length > 0
-			? viewsEntries.map(([vKey, vDef]) => ({
-					key: vKey,
-					label: vDef.label,
-					count: vDef.count,
-					icon: vDef.icon,
-				}))
-			: [];
+	const allViewDef = state.views?.all;
+	const activeViewKey = state.activeView || 'all';
+	const isSavedViewActive = activeViewKey.startsWith('saved:');
+	const activeSavedViewLabel = isSavedViewActive
+		? state.savedViews?.[activeViewKey.slice(6)]?.label || activeViewKey.slice(6)
+		: '';
+	const viewSelectValue = isSavedViewActive
+		? '__saved__'
+		: activeViewKey !== 'all' && Boolean(state.views?.[activeViewKey])
+			? activeViewKey
+			: 'all';
 	const pillFilterEntries =
 		state.showFilterBar !== false
 			? filterEntries.filter(([, fDef]) => fDef.display === 'pills')
@@ -88,105 +106,18 @@ export function ViewportToolbar({
 		state.showFilterBar !== false
 			? filterEntries.filter(([, fDef]) => fDef.display !== 'pills')
 			: [];
-	const hasResetButton = Boolean(
-		state.searchQuery || (state.filterValues && Object.keys(state.filterValues).length > 0)
-	);
+	const selectedCount = Array.isArray(state.selectedIds) ? state.selectedIds.length : 0;
+	const hasResetButton = isViewportFiltered(state);
 	const hasPillFilters = inlineViewPillItems.length > 0 || pillFilterEntries.length > 0;
 	const hasLeftFilters =
-		hasPillFilters || selectFilterEntries.length > 0 || hasResetButton;
+		hasPillFilters ||
+		showViewSelect ||
+		selectFilterEntries.length > 0 ||
+		savedViewsEntries.length > 0 ||
+		hasResetButton;
 
 	return (
 		<>
-			{/* Views & Saved Presets Bar */}
-			{showSavedViewsBar && (
-				<div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2">
-					<div className="flex flex-wrap items-center gap-1">
-						{viewsEntries.map(([vKey, vDef]) => {
-							const isActive = (state.activeView || 'all') === vKey;
-							return (
-								<Button
-									key={vKey}
-									variant={isActive ? 'default' : 'ghost'}
-									size="xs"
-									icon={vDef.icon}
-									onClick={() => dispatch('select_view', { view: vKey })}
-								>
-									<span>{vDef.label}</span>
-									{vDef.count !== undefined && (
-										<Badge variant={isActive ? 'secondary' : 'muted'} className="ml-1 px-1.5 py-0">
-											{vDef.count}
-										</Badge>
-									)}
-								</Button>
-							);
-						})}
-						{savedViewsEntries.map(([sKey, sDef]) => {
-							const fullKey = `saved:${sKey}`;
-							const isActive = state.activeView === fullKey;
-							return (
-								<div key={fullKey} className="inline-flex items-center gap-0.5">
-									<Button
-										variant={isActive ? 'default' : 'outline'}
-										size="xs"
-										icon="bookmark"
-										onClick={() => dispatch('select_view', { view: fullKey })}
-									>
-										{sDef.label}
-									</Button>
-									<button
-										type="button"
-										onClick={() => onRequestDeleteView({ key: fullKey, label: sDef.label })}
-										className="inline-flex min-h-6 min-w-6 pointer-coarse:min-h-9 pointer-coarse:min-w-9 items-center justify-center rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive cursor-pointer"
-										aria-label={t('viewport.deleteSavedView', 'Delete saved view')}
-										title={t('viewport.deleteSavedView', 'Delete saved view')}
-									>
-										<DynamicIcon name="x" className="size-3" />
-									</button>
-								</div>
-							);
-						})}
-					</div>
-
-					<div className="flex items-center gap-1.5">
-						{showSaveViewInput ? (
-							<div className="flex items-center gap-1">
-								<Input
-									aria-label={t('viewport.presetNamePlaceholder', 'Preset name...')}
-									value={newViewLabel}
-									onChange={(e) => setNewViewLabel(e.target.value)}
-									placeholder={t('viewport.presetNamePlaceholder', 'Preset name...')}
-									className="h-7 w-36 text-xs"
-								/>
-								<Button
-									size="xs"
-									onClick={() => {
-										if (newViewLabel.trim()) {
-											void dispatch('save_view', { label: newViewLabel.trim() });
-											setNewViewLabel('');
-											setShowSaveViewInput(false);
-										}
-									}}
-								>
-									{t('common.save', 'Save')}
-								</Button>
-								<Button variant="ghost" size="xs" onClick={() => setShowSaveViewInput(false)}>
-									{t('common.cancel', 'Cancel')}
-								</Button>
-							</div>
-						) : (
-							<Button
-								variant="ghost"
-								size="xs"
-								icon="bookmark-plus"
-								onClick={() => setShowSaveViewInput(true)}
-							>
-								{t('viewport.saveView', 'Save View')}
-							</Button>
-						)}
-					</div>
-				</div>
-			)}
-
 			{/* Primary Toolbar & Filter Bar */}
 			{state.showToolbar !== false && (
 				<div
@@ -213,6 +144,38 @@ export function ViewportToolbar({
 										void dispatch('select_view', { view: vKey });
 									}}
 								/>
+							)}
+
+							{showViewSelect && (
+								<Select
+									aria-label={t('viewport.filterViews', 'Filter view')}
+									data-rw-viewport-view-select=""
+									value={viewSelectValue}
+									onChange={(e) => {
+										const nextView = e.target.value;
+										if (nextView && nextView !== '__saved__') {
+											void dispatch('select_view', { view: nextView });
+										}
+									}}
+									className="h-8 w-full shrink-0 text-xs sm:w-auto sm:min-w-32 sm:max-w-52"
+								>
+									<option value="all">
+										{allViewDef?.label ||
+											`${t('viewport.filterViews', 'Filter view')}: ${t('common.all', 'All')}`}
+										{allViewDef?.count !== undefined ? ` (${allViewDef.count})` : ''}
+									</option>
+									{nonAllViewEntries.map(([vKey, vDef]) => (
+										<option key={vKey} value={vKey}>
+											{vDef.label}
+											{vDef.count !== undefined ? ` (${vDef.count})` : ''}
+										</option>
+									))}
+									{isSavedViewActive && (
+										<option value="__saved__" disabled hidden>
+											{activeSavedViewLabel}
+										</option>
+									)}
+								</Select>
 							)}
 
 							{pillFilterEntries.map(([fKey, fDef]) => {
@@ -261,8 +224,36 @@ export function ViewportToolbar({
 								</Select>
 							))}
 
+							{savedViewsEntries.map(([sKey, sDef]) => {
+								const fullKey = `saved:${sKey}`;
+								const isActive = state.activeView === fullKey;
+								return (
+									<div key={fullKey} className="inline-flex shrink-0 items-center gap-0.5">
+										<Button
+											type="button"
+											variant={isActive ? 'default' : 'outline'}
+											size="xs"
+											icon="bookmark"
+											onClick={() => dispatch('select_view', { view: fullKey })}
+										>
+											{sDef.label}
+										</Button>
+										<button
+											type="button"
+											onClick={() => onRequestDeleteView({ key: fullKey, label: sDef.label })}
+											className="inline-flex min-h-6 min-w-6 pointer-coarse:min-h-9 pointer-coarse:min-w-9 items-center justify-center rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive cursor-pointer"
+											aria-label={t('viewport.deleteSavedView', 'Delete saved view')}
+											title={t('viewport.deleteSavedView', 'Delete saved view')}
+										>
+											<DynamicIcon name="x" className="size-3" />
+										</button>
+									</div>
+								);
+							})}
+
 							{hasResetButton && (
 								<Button
+									type="button"
 									variant="ghost"
 									size="xs"
 									icon="rotate-ccw"
@@ -282,6 +273,62 @@ export function ViewportToolbar({
 							hasLeftFilters ? 'sm:ml-auto sm:w-auto' : 'sm:flex-1'
 						)}
 					>
+						{showSaveViewControl && (
+							<div className="flex shrink-0 items-center gap-1.5" data-rw-viewport-save-view="">
+								{showSaveViewInput ? (
+									<form
+										onSubmit={(e) => {
+											e.preventDefault();
+											if (newViewLabel.trim()) {
+												void dispatch('save_view', { label: newViewLabel.trim() });
+												setNewViewLabel('');
+												setShowSaveViewInput(false);
+											}
+										}}
+										className="flex items-center gap-1"
+									>
+										<Input
+											aria-label={t('viewport.presetNamePlaceholder', 'Preset name...')}
+											value={newViewLabel}
+											onChange={(e) => setNewViewLabel(e.target.value)}
+											onKeyDown={(e) => {
+												if (e.key === 'Escape') {
+													e.stopPropagation();
+													setShowSaveViewInput(false);
+												}
+											}}
+											placeholder={t('viewport.presetNamePlaceholder', 'Preset name...')}
+											className="h-8 w-36 text-xs"
+											autoFocus
+										/>
+										<Button type="submit" size="sm" disabled={busy || !newViewLabel.trim()}>
+											{t('common.save', 'Save')}
+										</Button>
+										<Button
+											type="button"
+											variant="ghost"
+											size="sm"
+											onClick={() => setShowSaveViewInput(false)}
+										>
+											{t('common.cancel', 'Cancel')}
+										</Button>
+									</form>
+								) : (
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										icon="bookmark-plus"
+										className="shrink-0"
+										disabled={busy}
+										onClick={() => setShowSaveViewInput(true)}
+									>
+										{t('viewport.saveView', 'Save View')}
+									</Button>
+								)}
+							</div>
+						)}
+
 						<form
 							onSubmit={(e) => {
 								e.preventDefault();
@@ -321,14 +368,15 @@ export function ViewportToolbar({
 							<div className="inline-flex shrink-0 items-center rounded-md border border-border bg-card p-0.5">
 								{state.allowedViewModes.map((mode) => {
 									const isActive = state.viewMode === mode;
+									const meta = state.viewModeMeta?.[mode];
 									const iconName =
-										mode === 'table'
+										meta?.icon ||
+										(mode === 'table'
 											? 'table'
 											: mode === 'cards'
 												? 'layout-grid'
-												: mode === 'kanban'
-													? 'columns'
-													: 'calendar';
+												: 'layout-grid');
+									const modeLabel = meta?.label || mode;
 									const preloadMode = () => {
 										const target = mode.toLowerCase();
 										if (state.viewStyles?.[target]?.length) {
@@ -357,14 +405,16 @@ export function ViewportToolbar({
 											)}
 										>
 											<DynamicIcon name={iconName} className="size-3.5" />
-											<span>{mode}</span>
+											<span>{modeLabel}</span>
 										</button>
 									);
 								})}
 							</div>
 						)}
 
-						{state.columnPickerEnabled !== false && Object.keys(state.columns || {}).length > 1 && (
+						{state.columnPickerEnabled !== false &&
+							(!state.viewMode || state.viewMode === 'table' || state.viewMode === 'cards') &&
+							Object.keys(state.columns || {}).length > 1 && (
 							<div ref={columnPickerRef} className="relative shrink-0">
 								<Button
 									variant="outline"
@@ -411,15 +461,37 @@ export function ViewportToolbar({
 							</div>
 						)}
 
-						{state.exportEnabled && (
+						{state.exportEnabled && selectedCount === 0 && (
+							<ViewportExportControl state={state} busy={busy} dispatch={dispatch} />
+						)}
+
+						{state.supportsTrash && ((state.trashCount ?? 0) > 0 || state.isTrashView) && (
 							<Button
-								variant="outline"
+								type="button"
+								variant={state.isTrashView ? 'destructive' : 'outline'}
 								size="sm"
-								icon="download"
+								icon="trash-2"
+								disabled={busy}
+								aria-pressed={Boolean(state.isTrashView)}
+								data-rw-viewport-trash-toggle=""
 								className="shrink-0"
-								onClick={() => dispatch('export', { format: 'csv' })}
+								onClick={() =>
+									void dispatch('filter', {
+										key: 'status',
+										value: state.isTrashView ? '' : 'trash',
+									})
+								}
 							>
-								{t('common.export', 'Export')}
+								<span>{t('viewport.trash', 'Trash')}</span>
+								{(state.trashCount ?? 0) > 0 ? (
+									<Badge
+										variant={state.isTrashView ? 'secondary' : 'muted'}
+										mono
+										className="ml-0.5 px-1.5 py-0 text-[10px]"
+									>
+										{state.trashCount}
+									</Badge>
+								) : null}
 							</Button>
 						)}
 

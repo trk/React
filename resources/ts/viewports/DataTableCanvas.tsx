@@ -146,7 +146,7 @@ export const DataTableCanvas: React.FC<ViewportCanvasProps> = ({
 											type="button"
 											onClick={() => dispatch('sort', { field: colKey })}
 											className={cn(
-												'inline-flex items-center gap-1 hover:text-foreground cursor-pointer',
+												'inline-flex items-center gap-1 uppercase tracking-wider hover:text-foreground cursor-pointer',
 												colDef.align === 'right' && 'ml-auto'
 											)}
 										>
@@ -170,7 +170,10 @@ export const DataTableCanvas: React.FC<ViewportCanvasProps> = ({
 							);
 						})}
 						{hasAnyRowActions && (
-							<th scope="col" className="w-16 px-3 py-2 text-right align-middle whitespace-nowrap">
+							<th
+								scope="col"
+								className="sticky right-0 z-10 w-16 border-l border-border/60 bg-muted px-3 py-2 text-right align-middle whitespace-nowrap shadow-[-8px_0_12px_-8px_rgb(0_0_0/0.25)]"
+							>
 								{t('common.actions', 'Actions')}
 							</th>
 						)}
@@ -195,7 +198,7 @@ export const DataTableCanvas: React.FC<ViewportCanvasProps> = ({
 								key={recordId}
 								{...(canReorder ? tableSortable.getItemProps(record) : {})}
 								className={cn(
-									'transition-colors hover:bg-muted/35',
+									'group transition-colors hover:bg-muted/35',
 									isSelected && 'bg-primary/5',
 									busy && 'opacity-70'
 								)}
@@ -260,7 +263,10 @@ export const DataTableCanvas: React.FC<ViewportCanvasProps> = ({
 								{hasAnyRowActions && (
 									<td
 										data-valign={auxDataValign}
-										className={cn('px-3 py-2 text-right whitespace-nowrap', auxValignClass)}
+										className={cn(
+											'sticky right-0 z-10 border-l border-border/60 bg-card px-3 py-2 text-right whitespace-nowrap shadow-[-8px_0_12px_-8px_rgb(0_0_0/0.2)] transition-colors group-hover:bg-muted',
+											auxValignClass
+										)}
 									>
 										<DropdownMenu
 											items={menuItems}

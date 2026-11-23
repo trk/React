@@ -76,34 +76,18 @@ export interface ViewportSummaryCard {
 	filter?: Record<string, unknown>;
 }
 
-export interface ViewportKanbanStage {
-	key: string;
-	label: string;
-	variant?: string;
-	limit?: number;
-	count: number;
-	records: Array<Record<string, unknown>>;
-}
-
-export interface ViewportCalendarState {
-	month: number;
-	year: number;
-	monthLabel: string;
-	calendarView: 'month' | 'week' | 'agenda' | 'timeline' | string;
-	dateField: string;
-	endDateField: string;
-	daysInMonth: number;
-	firstDayOfWeek: number;
-	eventsByDate: Record<string, Array<Record<string, unknown>>>;
-	laneField?: string;
-	laneOptions?: Record<string, string>;
-	conflicts?: Record<string, boolean>;
-}
-
 export interface ViewportQuickEditSpec {
 	recordId: string;
-	record: Record<string, unknown>;
-	fields: Record<string, { label: string; type?: string; options?: Record<string, string> }>;
+	title: string;
+	formSchema: Record<string, unknown>;
+	scriptAssets?: string[];
+	styleAssets?: string[];
+	editUrl?: string;
+}
+
+export interface ViewportModeMeta {
+	icon?: string;
+	label?: string;
 }
 
 export interface ViewportState {
@@ -120,6 +104,8 @@ export interface ViewportState {
 	provider?: string;
 	viewMode: string;
 	allowedViewModes?: string[];
+	viewModeMeta?: Record<string, ViewportModeMeta>;
+	modeState?: Record<string, unknown>;
 	viewScripts?: Record<string, string[]>;
 	viewStyles?: Record<string, string[]>;
 	columns: Record<string, ViewportColumn>;
@@ -145,6 +131,9 @@ export interface ViewportState {
 	limit?: number;
 	total?: number;
 	totalPages?: number;
+	trashCount?: number;
+	isTrashView?: boolean;
+	supportsTrash?: boolean;
 	selectedIds?: string[];
 	selectable?: boolean;
 	dense?: boolean;
@@ -175,11 +164,6 @@ export interface ViewportState {
 	emptyIcon?: string;
 	emptyActionLabel?: string;
 	emptyActionUrl?: string;
-	groupByField?: string;
-	stages?: ViewportKanbanStage[];
-	dateField?: string;
-	endDateField?: string;
-	calendar?: ViewportCalendarState | null;
 	notice?: {
 		message: string;
 		type: 'success' | 'error' | 'warning' | 'info' | string;
