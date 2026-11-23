@@ -17,6 +17,8 @@ namespace ProcessWire;
  * @var string $locale
  * @var string $title
  * @var string $themeMode
+ * @var string|null $shellLayout
+ * @var bool|null $sidebarCollapsed
  * @var bool|null $useInputFocus
  * @var string $colorSchemeCss
  * @var string $themeCss
@@ -49,13 +51,21 @@ $reactInst = $this->wire()->fuel->get('react');
 $launcherPathAttr = $reactInst instanceof React
 	? (string) (parse_url($reactInst->resolveLauncherUrl(), PHP_URL_PATH) ?: '')
 	: '';
+$rawShellLayout = is_string($shellLayout ?? null)
+	? strtolower(trim((string) $shellLayout))
+	: ($reactInst instanceof React ? $reactInst->resolveEffectiveShellLayout($this->wire()->user) : 'topbar');
+$resolvedShellLayout = preg_match('/^[a-z0-9_-]{1,40}$/', $rawShellLayout) === 1 ? $rawShellLayout : 'topbar';
+$resolvedSidebarCollapsed = isset($sidebarCollapsed)
+	? (bool) $sidebarCollapsed
+	: ($reactInst instanceof React ? $reactInst->resolveSidebarCollapsed($this->wire()->user) : false);
+$sidebarCollapsedAttr = $resolvedSidebarCollapsed ? 'true' : 'false';
 $uikitFontDir = rtrim((string) $this->wire()->config->paths->modules, '/') . '/AdminTheme/AdminThemeUikit/themes/default/fonts';
 $uikitFontUrlBase = is_dir($uikitFontDir)
 	? rtrim((string) $this->wire()->config->urls->modules, '/') . '/AdminTheme/AdminThemeUikit/themes/default/fonts'
 	: '';
 ?>
 <!DOCTYPE html>
-<html lang="<?= $safeLocale ?>" class="<?= $sanitizer->entities($htmlThemeClass) ?>" data-theme-mode="<?= $sanitizer->entities($resolvedThemeMode) ?>" data-rw-shell-mode="workspace" data-rw-admin-root="<?= $sanitizer->entities($adminRootAttr) ?>" data-rw-launcher-path="<?= $sanitizer->entities($launcherPathAttr) ?>">
+<html lang="<?= $safeLocale ?>" class="<?= $sanitizer->entities($htmlThemeClass) ?>" data-theme-mode="<?= $sanitizer->entities($resolvedThemeMode) ?>" data-rw-shell-mode="workspace" data-rw-shell-layout="<?= $sanitizer->entities($resolvedShellLayout) ?>" data-rw-sidebar-collapsed="<?= $sidebarCollapsedAttr ?>" data-rw-admin-root="<?= $sanitizer->entities($adminRootAttr) ?>" data-rw-launcher-path="<?= $sanitizer->entities($launcherPathAttr) ?>">
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -86,11 +96,16 @@ $uikitFontUrlBase = is_dir($uikitFontDir)
 	<script>
 		(function () {
 			try {
-				var mode = document.documentElement.getAttribute('data-theme-mode') || 'system';
+				var d = document.documentElement;
+				var mode = d.getAttribute('data-theme-mode') || 'system';
 				var isDark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-				document.documentElement.classList.toggle('dark', isDark);
-				document.documentElement.classList.toggle('light', !isDark);
+				d.classList.toggle('dark', isDark);
+				d.classList.toggle('light', !isDark);
 				localStorage.setItem('react-workspace-theme-mode', mode);
+				var layout = d.getAttribute('data-rw-shell-layout') || 'topbar';
+				var collapsed = d.getAttribute('data-rw-sidebar-collapsed') === 'true' ? 'true' : 'false';
+				d.setAttribute('data-rw-shell-layout', layout);
+				d.setAttribute('data-rw-sidebar-collapsed', collapsed);
 			} catch (e) {}
 		})();
 	</script>

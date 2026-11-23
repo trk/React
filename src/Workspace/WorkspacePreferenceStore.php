@@ -13,14 +13,44 @@ use Totoglu\React\Theme\ThemePreset;
  * File-backed per-user Workspace & Dashboard preference store (`site/assets/cache/React/workspaces/{user-id}.json`).
  *
  * Persists user-specific workspace favorites, widget ordering, hidden widgets, widget column sizes,
- * theme mode (`light`/`dark`/`system`), and theme color preset override, and self-heals when modules
- * or widgets are uninstalled or permissions change.
+ * theme mode (`light`/`dark`/`system`), theme color preset override, shell layout override,
+ * and sidebar collapse state, and self-heals when modules or widgets are uninstalled or permissions change.
  */
 final class WorkspacePreferenceStore extends Wire
 {
 	private const CACHE_FOLDER = 'React/workspaces';
 	private const int MAX_ID_LENGTH = 128;
 	private const int MAX_PREF_ITEMS = 500;
+	private const string SHELL_LAYOUT_PATTERN = '/^[a-z0-9_-]{1,40}$/';
+
+	/**
+	 * Canonical default per-user workspace preference payload.
+	 *
+	 * @var array{
+	 *     userId: int,
+	 *     favorites: list<string>,
+	 *     widgetOrder: list<string>,
+	 *     hiddenWidgets: list<string>,
+	 *     widgetSizes: array<string, string>,
+	 *     themeMode: string,
+	 *     themePreset: string,
+	 *     shellLayout: string,
+	 *     sidebarCollapsed: bool,
+	 *     updatedAt: string
+	 * }
+	 */
+	public const array DEFAULT_PREFERENCES = [
+		'userId' => 0,
+		'favorites' => [],
+		'widgetOrder' => [],
+		'hiddenWidgets' => [],
+		'widgetSizes' => [],
+		'themeMode' => '',
+		'themePreset' => '',
+		'shellLayout' => '',
+		'sidebarCollapsed' => false,
+		'updatedAt' => '',
+	];
 
 	/**
 	 * Resolve the directory path where per-user JSON files are stored (`site/assets/cache/React/workspaces/`).
@@ -56,22 +86,17 @@ final class WorkspacePreferenceStore extends Wire
 	 *     widgetSizes: array<string, string>,
 	 *     themeMode: string,
 	 *     themePreset: string,
+	 *     shellLayout: string,
+	 *     sidebarCollapsed: bool,
 	 *     updatedAt: string
 	 * }
 	 */
 	public function load(?User $user = null): array
 	{
 		$userId = $this->resolveUserId($user);
-		$defaults = [
+		$defaults = array_merge(self::DEFAULT_PREFERENCES, [
 			'userId' => $userId,
-			'favorites' => [],
-			'widgetOrder' => [],
-			'hiddenWidgets' => [],
-			'widgetSizes' => [],
-			'themeMode' => '',
-			'themePreset' => '',
-			'updatedAt' => '',
-		];
+		]);
 
 		if ($userId <= 0) {
 			return $defaults;
@@ -100,6 +125,8 @@ final class WorkspacePreferenceStore extends Wire
 			'widgetSizes' => $this->normalizeSizeMap($decoded['widgetSizes'] ?? []),
 			'themeMode' => $this->normalizeThemeModeValue($decoded['themeMode'] ?? ''),
 			'themePreset' => $this->normalizeThemePresetValue($decoded['themePreset'] ?? ''),
+			'shellLayout' => $this->normalizeShellLayoutValue($decoded['shellLayout'] ?? ''),
+			'sidebarCollapsed' => $this->normalizeSidebarCollapsedValue($decoded['sidebarCollapsed'] ?? false),
 			'updatedAt' => is_string($decoded['updatedAt'] ?? null) ? $decoded['updatedAt'] : '',
 		];
 	}
@@ -122,6 +149,8 @@ final class WorkspacePreferenceStore extends Wire
 	 *     widgetSizes: array<string, string>,
 	 *     themeMode: string,
 	 *     themePreset: string,
+	 *     shellLayout: string,
+	 *     sidebarCollapsed: bool,
 	 *     updatedAt: string
 	 * }
 	 */
@@ -152,6 +181,8 @@ final class WorkspacePreferenceStore extends Wire
 					'widgetSizes' => $prefs['widgetSizes'],
 					'themeMode' => $prefs['themeMode'],
 					'themePreset' => $prefs['themePreset'],
+					'shellLayout' => $prefs['shellLayout'],
+					'sidebarCollapsed' => $prefs['sidebarCollapsed'],
 				]);
 			}
 
@@ -163,6 +194,8 @@ final class WorkspacePreferenceStore extends Wire
 				'widgetSizes' => $prefs['widgetSizes'],
 				'themeMode' => $prefs['themeMode'],
 				'themePreset' => $prefs['themePreset'],
+				'shellLayout' => $prefs['shellLayout'],
+				'sidebarCollapsed' => $prefs['sidebarCollapsed'],
 				'updatedAt' => $prefs['updatedAt'],
 			];
 		}
@@ -206,6 +239,8 @@ final class WorkspacePreferenceStore extends Wire
 				'widgetSizes' => $widgetSizes,
 				'themeMode' => $prefs['themeMode'],
 				'themePreset' => $prefs['themePreset'],
+				'shellLayout' => $prefs['shellLayout'],
+				'sidebarCollapsed' => $prefs['sidebarCollapsed'],
 			]);
 		}
 
@@ -225,6 +260,8 @@ final class WorkspacePreferenceStore extends Wire
 			'widgetSizes' => $widgetSizes,
 			'themeMode' => $prefs['themeMode'],
 			'themePreset' => $prefs['themePreset'],
+			'shellLayout' => $prefs['shellLayout'],
+			'sidebarCollapsed' => $prefs['sidebarCollapsed'],
 			'updatedAt' => $prefs['updatedAt'],
 		];
 	}
@@ -351,7 +388,41 @@ final class WorkspacePreferenceStore extends Wire
 	}
 
 	/**
-	 * Bulk-update multiple preference keys at once (`favorites`, `widgetOrder`, `hiddenWidgets`, `widgetSizes`, `themeMode`, `themePreset`).
+	 * Save the per-user shell layout override (or `''` to revert to site default) in `{user-id}.json`.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function setShellLayout(string $layout, ?User $user = null): array
+	{
+		$prefs = $this->load($user);
+		if ($prefs['userId'] <= 0) {
+			return $prefs;
+		}
+
+		return $this->write($prefs['userId'], array_merge($prefs, [
+			'shellLayout' => $this->normalizeShellLayoutValue($layout),
+		]));
+	}
+
+	/**
+	 * Save the per-user sidebar collapsed state in `{user-id}.json`.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function setSidebarCollapsed(bool $collapsed, ?User $user = null): array
+	{
+		$prefs = $this->load($user);
+		if ($prefs['userId'] <= 0) {
+			return $prefs;
+		}
+
+		return $this->write($prefs['userId'], array_merge($prefs, [
+			'sidebarCollapsed' => $collapsed,
+		]));
+	}
+
+	/**
+	 * Bulk-update multiple preference keys at once (`favorites`, `widgetOrder`, `hiddenWidgets`, `widgetSizes`, `themeMode`, `themePreset`, `shellLayout`, `sidebarCollapsed`).
 	 *
 	 * @param array<string, mixed> $updates
 	 * @return array<string, mixed>
@@ -381,6 +452,12 @@ final class WorkspacePreferenceStore extends Wire
 		if (array_key_exists('themePreset', $updates)) {
 			$prefs['themePreset'] = $this->normalizeThemePresetValue($updates['themePreset']);
 		}
+		if (array_key_exists('shellLayout', $updates)) {
+			$prefs['shellLayout'] = $this->normalizeShellLayoutValue($updates['shellLayout']);
+		}
+		if (array_key_exists('sidebarCollapsed', $updates)) {
+			$prefs['sidebarCollapsed'] = $this->normalizeSidebarCollapsedValue($updates['sidebarCollapsed']);
+		}
 
 		return $this->write($prefs['userId'], $prefs);
 	}
@@ -399,7 +476,9 @@ final class WorkspacePreferenceStore extends Wire
 	 *         favorites: list<string>,
 	 *         widgetOrder: list<string>,
 	 *         hiddenWidgets: list<string>,
-	 *         widgetSizes: array<string, string>
+	 *         widgetSizes: array<string, string>,
+	 *         shellLayout: string,
+	 *         sidebarCollapsed: bool
 	 *     }
 	 * }
 	 */
@@ -415,6 +494,8 @@ final class WorkspacePreferenceStore extends Wire
 				'widgetOrder' => $reconciled['widgetOrder'],
 				'hiddenWidgets' => $reconciled['hiddenWidgets'],
 				'widgetSizes' => $reconciled['widgetSizes'],
+				'shellLayout' => $reconciled['shellLayout'],
+				'sidebarCollapsed' => $reconciled['sidebarCollapsed'],
 			],
 		];
 	}
@@ -440,6 +521,15 @@ final class WorkspacePreferenceStore extends Wire
 				break;
 			}
 		}
+		if (
+			!$hasRecognized
+			&& (
+				(array_key_exists('shellLayout', $layout) && is_string($layout['shellLayout']))
+				|| (array_key_exists('sidebarCollapsed', $layout) && is_bool($layout['sidebarCollapsed']))
+			)
+		) {
+			$hasRecognized = true;
+		}
 
 		if (!$hasRecognized) {
 			throw new \InvalidArgumentException('Invalid dashboard layout preset JSON: expected layout keys (favorites, widgetOrder, hiddenWidgets, or widgetSizes).');
@@ -451,6 +541,12 @@ final class WorkspacePreferenceStore extends Wire
 			'hiddenWidgets' => array_key_exists('hiddenWidgets', $layout) ? $this->normalizeIdList($layout['hiddenWidgets']) : [],
 			'widgetSizes' => array_key_exists('widgetSizes', $layout) ? $this->normalizeSizeMap($layout['widgetSizes']) : [],
 		];
+		if (array_key_exists('shellLayout', $layout)) {
+			$updates['shellLayout'] = $this->normalizeShellLayoutValue($layout['shellLayout']);
+		}
+		if (array_key_exists('sidebarCollapsed', $layout)) {
+			$updates['sidebarCollapsed'] = $this->normalizeSidebarCollapsedValue($layout['sidebarCollapsed']);
+		}
 
 		return $this->savePreferences($updates, $user);
 	}
@@ -468,16 +564,9 @@ final class WorkspacePreferenceStore extends Wire
 			@unlink($path);
 		}
 
-		return [
+		return array_merge(self::DEFAULT_PREFERENCES, [
 			'userId' => $userId,
-			'favorites' => [],
-			'widgetOrder' => [],
-			'hiddenWidgets' => [],
-			'widgetSizes' => [],
-			'themeMode' => '',
-			'themePreset' => '',
-			'updatedAt' => '',
-		];
+		]);
 	}
 
 	/**
@@ -516,6 +605,8 @@ final class WorkspacePreferenceStore extends Wire
 	 *     widgetSizes: array<string, string>,
 	 *     themeMode: string,
 	 *     themePreset: string,
+	 *     shellLayout: string,
+	 *     sidebarCollapsed: bool,
 	 *     updatedAt: string
 	 * }
 	 */
@@ -529,6 +620,8 @@ final class WorkspacePreferenceStore extends Wire
 			'widgetSizes' => $this->normalizeSizeMap($data['widgetSizes'] ?? []),
 			'themeMode' => $this->normalizeThemeModeValue($data['themeMode'] ?? ''),
 			'themePreset' => $this->normalizeThemePresetValue($data['themePreset'] ?? ''),
+			'shellLayout' => $this->normalizeShellLayoutValue($data['shellLayout'] ?? ''),
+			'sidebarCollapsed' => $this->normalizeSidebarCollapsedValue($data['sidebarCollapsed'] ?? false),
 			'updatedAt' => gmdate('c'),
 		];
 
@@ -670,5 +763,23 @@ final class WorkspacePreferenceStore extends Wire
 		$preset = ThemePreset::tryFrom($norm);
 
 		return $preset !== null ? $preset->value : '';
+	}
+
+	private function normalizeShellLayoutValue(mixed $raw): string
+	{
+		if (!is_string($raw)) {
+			return '';
+		}
+		$norm = strtolower(trim($raw));
+		if ($norm === '' || $norm === 'default') {
+			return '';
+		}
+
+		return preg_match(self::SHELL_LAYOUT_PATTERN, $norm) === 1 ? $norm : '';
+	}
+
+	private function normalizeSidebarCollapsedValue(mixed $raw): bool
+	{
+		return is_bool($raw) ? $raw : false;
 	}
 }

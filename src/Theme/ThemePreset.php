@@ -15,11 +15,10 @@ enum ThemePreset: string
 	case Native = 'native';
 	case Neutral = 'neutral';
 	case Slate = 'slate';
+	case Stone = 'stone';
 	case Ocean = 'ocean';
-	case Emerald = 'emerald';
-	case Violet = 'violet';
-	case Rose = 'rose';
-	case Amber = 'amber';
+	case Indigo = 'indigo';
+	case Teal = 'teal';
 	case Custom = 'custom';
 
 	/**
@@ -41,30 +40,21 @@ enum ThemePreset: string
 			self::Native, self::Custom => ['light' => [], 'dark' => []],
 			self::Neutral => self::neutralBase(),
 			self::Slate => self::slateBase(),
+			self::Stone => self::stoneBase(),
 			self::Ocean => self::withAccent(
-				self::neutralBase(),
-				['oklch(0.546 0.245 262.881)', 'oklch(0.985 0 0)'],
-				['oklch(0.623 0.214 259.815)', 'oklch(0.985 0 0)']
+				self::slateBase(),
+				['oklch(0.49 0.155 256)', 'oklch(0.985 0.003 248)'],
+				['oklch(0.68 0.148 252)', 'oklch(0.145 0.032 262)']
 			),
-			self::Emerald => self::withAccent(
-				self::neutralBase(),
-				['oklch(0.596 0.145 163.225)', 'oklch(0.985 0 0)'],
-				['oklch(0.696 0.17 162.48)', 'oklch(0.205 0 0)']
+			self::Indigo => self::withAccent(
+				self::slateBase(),
+				['oklch(0.475 0.16 272)', 'oklch(0.985 0.003 264)'],
+				['oklch(0.695 0.142 272)', 'oklch(0.145 0.032 265)']
 			),
-			self::Violet => self::withAccent(
-				self::neutralBase(),
-				['oklch(0.541 0.281 293.009)', 'oklch(0.985 0 0)'],
-				['oklch(0.606 0.25 292.717)', 'oklch(0.985 0 0)']
-			),
-			self::Rose => self::withAccent(
-				self::neutralBase(),
-				['oklch(0.586 0.253 17.585)', 'oklch(0.985 0 0)'],
-				['oklch(0.645 0.246 16.439)', 'oklch(0.985 0 0)']
-			),
-			self::Amber => self::withAccent(
-				self::neutralBase(),
-				['oklch(0.769 0.188 70.08)', 'oklch(0.205 0 0)'],
-				['oklch(0.769 0.188 70.08)', 'oklch(0.205 0 0)']
+			self::Teal => self::withAccent(
+				self::slateBase(),
+				['oklch(0.485 0.078 202)', 'oklch(0.985 0.003 202)'],
+				['oklch(0.715 0.105 200)', 'oklch(0.145 0.024 204)']
 			),
 		};
 	}
@@ -95,6 +85,8 @@ enum ThemePreset: string
 				'border' => 'oklch(0.922 0 0)',
 				'input' => 'oklch(0.922 0 0)',
 				'ring' => 'oklch(0.708 0 0)',
+				'sidebar' => 'oklch(0.985 0 0)',
+				'sidebar-accent' => 'oklch(0.955 0 0)',
 				'radius' => '0.625rem',
 			],
 			'dark' => [
@@ -117,6 +109,8 @@ enum ThemePreset: string
 				'border' => 'oklch(1 0 0 / 10%)',
 				'input' => 'oklch(1 0 0 / 15%)',
 				'ring' => 'oklch(0.556 0 0)',
+				'sidebar' => 'oklch(0.178 0 0)',
+				'sidebar-accent' => 'oklch(0.245 0 0)',
 			],
 		];
 	}
@@ -147,6 +141,8 @@ enum ThemePreset: string
 				'border' => 'oklch(0.929 0.013 255.508)',
 				'input' => 'oklch(0.929 0.013 255.508)',
 				'ring' => 'oklch(0.704 0.04 256.788)',
+				'sidebar' => 'oklch(0.984 0.003 247.858)',
+				'sidebar-accent' => 'oklch(0.948 0.009 250)',
 				'radius' => '0.625rem',
 			],
 			'dark' => [
@@ -169,6 +165,64 @@ enum ThemePreset: string
 				'border' => 'oklch(1 0 0 / 10%)',
 				'input' => 'oklch(1 0 0 / 15%)',
 				'ring' => 'oklch(0.551 0.027 264.364)',
+				'sidebar' => 'oklch(0.175 0.042 265.2)',
+				'sidebar-accent' => 'oklch(0.248 0.041 262)',
+			],
+		];
+	}
+
+	/**
+	 * @return array{light: array<string, string>, dark: array<string, string>}
+	 */
+	private static function stoneBase(): array
+	{
+		return [
+			'light' => [
+				'background' => 'oklch(0.992 0.002 84.5)',
+				'foreground' => 'oklch(0.147 0.004 49.25)',
+				'card' => 'oklch(1 0 0)',
+				'card-foreground' => 'oklch(0.147 0.004 49.25)',
+				'popover' => 'oklch(1 0 0)',
+				'popover-foreground' => 'oklch(0.147 0.004 49.25)',
+				'primary' => 'oklch(0.216 0.006 56.043)',
+				'primary-foreground' => 'oklch(0.985 0.001 106.423)',
+				'secondary' => 'oklch(0.968 0.004 78)',
+				'secondary-foreground' => 'oklch(0.216 0.006 56.043)',
+				'muted' => 'oklch(0.968 0.004 78)',
+				'muted-foreground' => 'oklch(0.515 0.013 58.071)',
+				'accent' => 'oklch(0.968 0.004 78)',
+				'accent-foreground' => 'oklch(0.216 0.006 56.043)',
+				'destructive' => 'oklch(0.577 0.245 27.325)',
+				'destructive-foreground' => 'oklch(0.985 0.001 106.423)',
+				'border' => 'oklch(0.923 0.006 67)',
+				'input' => 'oklch(0.923 0.006 67)',
+				'ring' => 'oklch(0.709 0.01 56.259)',
+				'sidebar' => 'oklch(0.982 0.003 80)',
+				'sidebar-accent' => 'oklch(0.948 0.005 74)',
+				'radius' => '0.625rem',
+			],
+			'dark' => [
+				'background' => 'oklch(0.147 0.004 49.25)',
+				'foreground' => 'oklch(0.985 0.001 106.423)',
+				'card' => 'oklch(0.216 0.006 56.043)',
+				'card-foreground' => 'oklch(0.985 0.001 106.423)',
+				'popover' => 'oklch(0.216 0.006 56.043)',
+				'popover-foreground' => 'oklch(0.985 0.001 106.423)',
+				'primary' => 'oklch(0.923 0.003 48.717)',
+				'primary-foreground' => 'oklch(0.216 0.006 56.043)',
+				'secondary' => 'oklch(0.268 0.007 34.298)',
+				'secondary-foreground' => 'oklch(0.985 0.001 106.423)',
+				'muted' => 'oklch(0.268 0.007 34.298)',
+				'muted-foreground' => 'oklch(0.709 0.01 56.259)',
+				'accent' => 'oklch(0.268 0.007 34.298)',
+				'accent-foreground' => 'oklch(0.985 0.001 106.423)',
+				'destructive' => 'oklch(0.704 0.191 22.216)',
+				'destructive-foreground' => 'oklch(0.985 0.001 106.423)',
+				'border' => 'oklch(1 0 0 / 10%)',
+				'input' => 'oklch(1 0 0 / 15%)',
+				'ring' => 'oklch(0.553 0.013 58.071)',
+				'sidebar' => 'oklch(0.182 0.005 52)',
+				'sidebar-accent' => 'oklch(0.248 0.007 42)',
 			],
 		];
 	}

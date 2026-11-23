@@ -23,6 +23,16 @@ abstract class ProcessReact extends ProcessInertia implements Module
 	use InteractWithReact;
 
 	/**
+	 * Guard core `Process::init()` asset auto-discovery against anonymous PHP classes containing NUL bytes (`\0`).
+	 */
+	public function init(): void
+	{
+		if (!str_contains(static::class, "\0")) {
+			parent::init();
+		}
+	}
+
+	/**
 	 * Normalize classic AdminTheme flyout navigation JSON so root/Overview items
 	 * always emit a clickable root URL instead of an empty string (`""`).
 	 *
@@ -45,9 +55,13 @@ abstract class ProcessReact extends ProcessInertia implements Module
 
 		$config = $this->wire()->config;
 		if ((bool) $config->ajax && !headers_sent()) {
-			header('Content-Type: application/json');
+			header('Content-Type: application/json; charset=utf-8');
+			header('X-Content-Type-Options: nosniff');
 		}
 
-		return (string) json_encode($data);
+		return (string) json_encode(
+			$data,
+			JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+		);
 	}
 }

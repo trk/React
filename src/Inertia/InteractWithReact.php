@@ -425,9 +425,13 @@ trait InteractWithReact
 		}
 
 		if ($this instanceof Wire && (bool) $this->wire()->config->ajax && !headers_sent()) {
-			header('Content-Type: application/json');
+			header('Content-Type: application/json; charset=utf-8');
+			header('X-Content-Type-Options: nosniff');
 		}
 
-		return (string) json_encode($data);
+		return (string) json_encode(
+			$data,
+			JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+		);
 	}
 }

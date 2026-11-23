@@ -6,6 +6,7 @@ namespace ProcessWire;
 
 use Totoglu\React\Contract\ReactDataProviderInterface;
 use Totoglu\React\Form\FormSchemaSerializer;
+use Totoglu\React\Form\ReactControlRegistry;
 use Totoglu\React\Hook\FieldIntegrationHooks;
 use Totoglu\React\Http\ReactGatewayRouter;
 use Totoglu\React\I18n\TranslationCatalogService;
@@ -23,7 +24,10 @@ use Totoglu\React\Theme\ThemePreset;
 use Totoglu\React\Theme\ThemeTokenParser;
 use Totoglu\React\Tiptap\TiptapMediaLinkGateway;
 use Totoglu\React\Viewport\MarkupReactViewport;
+use Totoglu\React\Workspace\CommandSearchRegistry;
 use Totoglu\React\Workspace\EditPresenceStore;
+use Totoglu\React\Workspace\ShellLayout;
+use Totoglu\React\Workspace\ShellLayoutRegistry;
 use Totoglu\React\Workspace\WorkspaceDefinition;
 use Totoglu\React\Workspace\WorkspaceLauncherProcess;
 use Totoglu\React\Workspace\WorkspacePreferenceStore;
@@ -50,6 +54,9 @@ use Totoglu\React\Workspace\WorkspaceWidgetRegistry;
  * @method void registerRelationResources(RelationResourceRegistry $registry)
  * @method void initRelationRegistry(RelationResourceRegistry $registry)
  * @method void registerMediaHosts(MediaGateway $mediaGateway)
+ * @method void registerShellLayouts(ShellLayoutRegistry $registry)
+ * @method void registerCommandSearch(CommandSearchRegistry $registry)
+ * @method void registerViewportModes()
  * @method array<string, mixed> translations()
  * @method void install()
  * @method void uninstall()
@@ -58,20 +65,35 @@ class React extends WireData implements Module, ConfigurableModule
 {
 	public const int VERSION = 20;
 
+	/** @var list<string> */
+	public const array CAPABILITIES = [
+		'workspace',
+		'icons',
+		'commandSearch',
+		'providers',
+		'relations',
+		'media',
+		'viewportModes',
+	];
+
 	/** @var array<string, WorkspaceDefinition> */
 	private static array $sharedWorkspaces = [];
 
 	/** @var array<string, WorkspaceWidgetDefinition> */
 	private static array $sharedWidgets = [];
 
-	/** @var array<string, array{module: string, capability: string}> */
+	/** @var array<string, array{module: string, contract: string, icon: string, label: string}> */
 	private static array $sharedViewportModes = [];
 
 	/** @var array<string, list<string>> */
 	private static array $moduleAssetUrlCache = [];
+	/** @var array<int, list<string>> */
+	private static array $deferredModuleHooks = [];
 
 	private ?WorkspaceRegistry $workspaceRegistry = null;
 	private ?WorkspaceWidgetRegistry $widgetRegistry = null;
+	private ?ShellLayoutRegistry $shellLayoutRegistry = null;
+	private ?CommandSearchRegistry $commandSearchRegistry = null;
 	private ?WorkspacePreferenceStore $preferenceStore = null;
 	private ?EditPresenceStore $presenceStore = null;
 	private ?ProviderRegistry $providerRegistry = null;
@@ -81,6 +103,7 @@ class React extends WireData implements Module, ConfigurableModule
 	private ?MediaGateway $mediaGateway = null;
 	private ?TiptapMediaLinkGateway $tiptapGateway = null;
 	private ?FormSchemaSerializer $formSerializer = null;
+	private ?ReactControlRegistry $controlRegistry = null;
 	private ?IconManager $iconManager = null;
 	private ?ThemeManager $themeManager = null;
 	private ?ReactGatewayRouter $gatewayRouter = null;
@@ -89,13 +112,25 @@ class React extends WireData implements Module, ConfigurableModule
 	private ?string $cachedLauncherUrl = null;
 	private ?string $cachedLauncherAdminUrl = null;
 	private ?bool $workspaceHubEnabledOverride = null;
-	/** @var array<string, array{module: string, capability: string}> */
+	/** @var array<string, array{module: string, contract: string, icon: string, label: string}> */
 	private array $registeredViewportModes = [];
+	/** @var list<string> */
+	private array $urlHookIds = [];
+	private bool $hooksRegistered = false;
 	private bool $workspacesResolved = false;
 	private bool $widgetsResolved = false;
+	private bool $shellLayoutsResolved = false;
+	private bool $commandSearchResolved = false;
 	private bool $providersResolved = false;
 	private bool $relationsResolved = false;
 	private bool $mediaHostsResolved = false;
+	private bool $viewportModesResolved = false;
+	/** @var array<string, list<string>>|null */
+	private ?array $capabilityModulesIndex = null;
+	/** @var array<string, bool> */
+	private array $pulledCapabilities = [];
+	/** @var array<string, bool> */
+	private array $pulledCapabilityModules = [];
 
 	/**
 	 * @return array<string, mixed>
@@ -146,6 +181,7 @@ class React extends WireData implements Module, ConfigurableModule
 			'defaultTheme' => 'system',
 			'themePreset' => 'native',
 			'themeCustomTokens' => '',
+			'defaultShellLayout' => ShellLayout::Topbar->value,
 			'enableKeyboardShortcuts' => true,
 			'adminReturnLabel' => 'Panel',
 			'useReactMediaFields' => false,
@@ -248,6 +284,7 @@ class React extends WireData implements Module, ConfigurableModule
 	 */
 	public function gateway(): ReactGatewayRouter
 	{
+		$this->hooks()->register();
 		if ($this->gatewayRouter === null) {
 			$this->gatewayRouter = new ReactGatewayRouter($this);
 			$this->wire($this->gatewayRouter);
@@ -330,15 +367,70 @@ class React extends WireData implements Module, ConfigurableModule
 		$wire = $this->wire();
 		$wire->set('react', $this);
 
-		$wire->addHook('/_react/viewport', $this, 'handleViewportRequest');
-		$wire->addHook('/_react/workspace-prefs', $this, 'handleWorkspacePrefsRequest');
-		$wire->addHook('/_react/presence', $this, 'handlePresenceRequest');
-		$wire->addHook('/_react/relation', $this, 'handleRelationRequest');
-		$wire->addHook('/_react/media', $this, 'handleMediaRequest');
-		$wire->addHook('/_react/tiptap', $this, 'handleTiptapRequest');
-		$wire->addHook('/_react/icons', $this, 'handleIconsRequest');
+		if (!$this->hooksRegistered) {
+			$this->hooksRegistered = true;
+			$this->urlHookIds = [
+				(string) $wire->addHook('/_react/viewport', $this, 'handleViewportRequest'),
+				(string) $wire->addHook('/_react/workspace-prefs', $this, 'handleWorkspacePrefsRequest'),
+				(string) $wire->addHook('/_react/presence', $this, 'handlePresenceRequest'),
+				(string) $wire->addHook('/_react/relation', $this, 'handleRelationRequest'),
+				(string) $wire->addHook('/_react/media', $this, 'handleMediaRequest'),
+				(string) $wire->addHook('/_react/tiptap', $this, 'handleTiptapRequest'),
+				(string) $wire->addHook('/_react/icons', $this, 'handleIconsRequest'),
+				(string) $wire->addHook('/_react/command-search', $this, 'handleCommandSearchRequest'),
+			];
+		}
 
-		$this->hooks()->register();
+		if ($this->shouldRegisterFieldHooks()) {
+			$this->hooks()->register();
+		}
+	}
+
+	/**
+	 * Determine whether ProcessWire field/template/admin-icon hooks should register on the current request.
+	 */
+	public function shouldRegisterFieldHooks(?string $requestPath = null, ?bool $isCli = null): bool
+	{
+		$wire = $this->wire();
+		$config = $wire->config;
+		$cli = $isCli ?? ((bool) $config->cli || PHP_SAPI === 'cli');
+		if ($cli) {
+			return true;
+		}
+
+		$adminTemplates = $config->adminTemplates;
+		$adminTemplateNames = is_array($adminTemplates) && $adminTemplates !== []
+			? array_map('strval', $adminTemplates)
+			: ['admin'];
+
+		$page = $wire->page;
+		if (
+			$page instanceof Page
+			&& $page->template instanceof Template
+			&& in_array($page->template->name, $adminTemplateNames, true)
+		) {
+			return true;
+		}
+
+		$rawPath = $requestPath;
+		if ($rawPath === null) {
+			$parsed = parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
+			$rawPath = is_string($parsed) ? $parsed : '';
+		}
+		$normalizedPath = $rawPath !== '' ? rtrim($rawPath, '/') . '/' : '';
+		if ($normalizedPath === '') {
+			return false;
+		}
+
+		$adminUrl = rtrim((string) ($config->urls->admin ?: '/processwire/'), '/') . '/';
+		if (str_starts_with($normalizedPath, $adminUrl)) {
+			return true;
+		}
+
+		$rootPrefix = rtrim((string) ($config->urls->root ?: '/'), '/');
+		$reactGatewayPrefix = ($rootPrefix === '' ? '' : $rootPrefix) . '/_react/';
+
+		return str_starts_with($normalizedPath, $reactGatewayPrefix);
 	}
 
 	/**
@@ -346,7 +438,7 @@ class React extends WireData implements Module, ConfigurableModule
 	 */
 	public function isExecutingProcessController(): bool
 	{
-		return $this->hooks()->isExecutingProcessController();
+		return $this->fieldHooks !== null && $this->fieldHooks->isExecutingProcessController();
 	}
 
 	/**
@@ -543,6 +635,20 @@ class React extends WireData implements Module, ConfigurableModule
 	}
 
 	/**
+	 * Return the `ReactControlRegistry` singleton bridging classic `Inputfield` controls (`rwControl`)
+	 * to standalone React control islands, `Setup > Fields` configuration panels, and `FieldtypeText` formatters.
+	 */
+	public function controls(): ReactControlRegistry
+	{
+		if ($this->controlRegistry === null) {
+			$this->controlRegistry = new ReactControlRegistry($this);
+			$this->wire($this->controlRegistry);
+		}
+
+		return $this->controlRegistry;
+	}
+
+	/**
 	 * Determine whether `MediaGateway` has already run `registerMediaHosts` discovery hooks on this instance.
 	 */
 	public function isMediaHostsResolved(): bool
@@ -557,13 +663,16 @@ class React extends WireData implements Module, ConfigurableModule
 	 */
 	public static function deferMediaHostRegistration(Wire $module, callable $registrar): void
 	{
-		$module->addHookAfter('React::registerMediaHosts', static function (HookEvent $event) use ($registrar): void {
-			$react = $event->object;
-			$gateway = $event->arguments(0);
-			if ($react instanceof self && $gateway instanceof MediaGateway) {
-				$registrar($gateway, $react);
-			}
-		});
+		self::$deferredModuleHooks[spl_object_id($module)][] = (string) $module->addHookAfter(
+			'React::registerMediaHosts',
+			static function (HookEvent $event) use ($registrar): void {
+				$react = $event->object;
+				$gateway = $event->arguments(0);
+				if ($react instanceof self && $gateway instanceof MediaGateway) {
+					$registrar($gateway, $react);
+				}
+			},
+		);
 
 		$existing = $module->wire()->fuel->get('react');
 		if ($existing instanceof self && $existing->isMediaHostsResolved()) {
@@ -593,8 +702,11 @@ class React extends WireData implements Module, ConfigurableModule
 		}
 
 		if (!$this->mediaHostsResolved) {
-			$this->mediaHostsResolved = true;
-			$this->registerMediaHosts($gateway);
+			$this->pullCapabilities('media');
+			if (!$this->isMediaHostsResolved()) {
+				$this->mediaHostsResolved = true;
+				$this->registerMediaHosts($gateway);
+			}
 		}
 
 		return $gateway;
@@ -665,10 +777,17 @@ class React extends WireData implements Module, ConfigurableModule
 
 	public function ready(): void
 	{
-		$page = $this->wire()->page;
-		if (!$page instanceof Page || !$page->template instanceof Template || $page->template->name !== 'admin') {
+		$wire = $this->wire();
+		$page = $wire->page;
+		$adminTemplates = $wire->config->adminTemplates;
+		$adminTemplateNames = is_array($adminTemplates) && $adminTemplates !== []
+			? array_map('strval', $adminTemplates)
+			: ['admin'];
+		if (!$page instanceof Page || !$page->template instanceof Template || !in_array($page->template->name, $adminTemplateNames, true)) {
 			return;
 		}
+
+		$this->hooks()->register();
 
 		$adminTheme = $this->wire()->adminTheme;
 		if ($adminTheme instanceof AdminTheme) {
@@ -685,11 +804,14 @@ class React extends WireData implements Module, ConfigurableModule
 	}
 
 	/**
-	 * Register a pluggable viewport layout mode (`kanban`, `calendar`, etc.) backed by an installed module.
+	 * Register a pluggable viewport layout mode backed by an installed module.
 	 *
-	 * @param string $capability Optional provider capability gate (`'stage'`, `'dateStart'`, or `''`)
+	 * @param string $mode Normalized layout mode key
+	 * @param string $moduleName Target ProcessWire `MarkupReactViewport` module class name
+	 * @param string $providerContract Optional FQCN of a provider contract interface required for automatic mode eligibility
+	 * @param array{icon?: string, label?: string} $meta Optional toolbar display metadata (`icon`, `label`)
 	 */
-	public function registerViewportMode(string $mode, string $moduleName, string $capability = ''): void
+	public function registerViewportMode(string $mode, string $moduleName, string $providerContract = '', array $meta = []): void
 	{
 		$cleanMode = strtolower(trim($mode));
 		$cleanModule = trim($moduleName);
@@ -699,22 +821,68 @@ class React extends WireData implements Module, ConfigurableModule
 		if (str_starts_with($cleanModule, 'ProcessWire\\')) {
 			$cleanModule = substr($cleanModule, strlen('ProcessWire\\'));
 		}
-		$cleanCap = in_array($capability, ['stage', 'dateStart', ''], true) ? $capability : '';
+		$cleanContract = ltrim(trim($providerContract), '\\');
 		$entry = [
 			'module' => $cleanModule,
-			'capability' => $cleanCap,
+			'contract' => $cleanContract,
+			'icon' => is_string($meta['icon'] ?? null) ? trim($meta['icon']) : '',
+			'label' => is_string($meta['label'] ?? null) ? trim($meta['label']) : '',
 		];
 		$this->registeredViewportModes[$cleanMode] = $entry;
 		self::$sharedViewportModes[$cleanMode] = $entry;
 	}
 
 	/**
-	 * Return all registered pluggable viewport layout modes (`mode => ['module' => ..., 'capability' => ...]`).
+	 * Determine whether pluggable viewport modes have already run `React::registerViewportModes` hooks on this instance.
+	 */
+	public function isViewportModesResolved(): bool
+	{
+		return $this->viewportModesResolved;
+	}
+
+	/**
+	 * Defer a module's pluggable viewport layout mode registration until `getRegisteredViewportModes()` is requested.
 	 *
-	 * @return array<string, array{module: string, capability: string}>
+	 * @param callable(self): void $registrar
+	 */
+	public static function deferViewportModeRegistration(Wire $module, callable $registrar): void
+	{
+		self::$deferredModuleHooks[spl_object_id($module)][] = (string) $module->addHookAfter(
+			'React::registerViewportModes',
+			static function (HookEvent $event) use ($registrar): void {
+				$react = $event->object;
+				if ($react instanceof self) {
+					$registrar($react);
+				}
+			},
+		);
+
+		$existing = $module->wire()->fuel->get('react');
+		if ($existing instanceof self && $existing->isViewportModesResolved()) {
+			$registrar($existing);
+		}
+	}
+
+	/**
+	 * Hookable lifecycle method for modules to register pluggable viewport layout modes.
+	 */
+	public function ___registerViewportModes(): void {}
+
+	/**
+	 * Return all registered pluggable viewport layout modes.
+	 *
+	 * @return array<string, array{module: string, contract: string, icon: string, label: string}>
 	 */
 	public function getRegisteredViewportModes(): array
 	{
+		if (!$this->viewportModesResolved) {
+			$this->pullCapabilities('viewportModes');
+			if (!$this->isViewportModesResolved()) {
+				$this->viewportModesResolved = true;
+				$this->registerViewportModes();
+			}
+		}
+
 		return array_replace(self::$sharedViewportModes, $this->registeredViewportModes);
 	}
 
@@ -934,6 +1102,19 @@ class React extends WireData implements Module, ConfigurableModule
 	}
 
 	/**
+	 * Detach any deferred registration hooks previously attached for a module via `defer*Registration()`.
+	 */
+	public static function forgetDeferredRegistrations(Wire $module): void
+	{
+		$key = spl_object_id($module);
+		$hookIds = self::$deferredModuleHooks[$key] ?? [];
+		if ($hookIds !== []) {
+			$module->removeHook($hookIds);
+			unset(self::$deferredModuleHooks[$key]);
+		}
+	}
+
+	/**
 	 * Defer a module's workspace and dashboard widget registration until `workspaces()` or `widgets()` is requested.
 	 *
 	 * @param callable(self): void|null $workspaceRegistrar
@@ -944,22 +1125,29 @@ class React extends WireData implements Module, ConfigurableModule
 		?callable $workspaceRegistrar = null,
 		?callable $widgetRegistrar = null,
 	): void {
+		$key = spl_object_id($module);
 		if ($workspaceRegistrar !== null) {
-			$module->addHookAfter('React::registerWorkspaces', static function (HookEvent $event) use ($workspaceRegistrar): void {
-				$react = $event->object;
-				if ($react instanceof self) {
-					$workspaceRegistrar($react);
-				}
-			});
+			self::$deferredModuleHooks[$key][] = (string) $module->addHookAfter(
+				'React::registerWorkspaces',
+				static function (HookEvent $event) use ($workspaceRegistrar): void {
+					$react = $event->object;
+					if ($react instanceof self) {
+						$workspaceRegistrar($react);
+					}
+				},
+			);
 		}
 
 		if ($widgetRegistrar !== null) {
-			$module->addHookAfter('React::registerWidgets', static function (HookEvent $event) use ($widgetRegistrar): void {
-				$react = $event->object;
-				if ($react instanceof self) {
-					$widgetRegistrar($react);
-				}
-			});
+			self::$deferredModuleHooks[$key][] = (string) $module->addHookAfter(
+				'React::registerWidgets',
+				static function (HookEvent $event) use ($widgetRegistrar): void {
+					$react = $event->object;
+					if ($react instanceof self) {
+						$widgetRegistrar($react);
+					}
+				},
+			);
 		}
 
 		$existing = $module->wire()->fuel->get('react');
@@ -971,6 +1159,117 @@ class React extends WireData implements Module, ConfigurableModule
 				$widgetRegistrar($existing);
 			}
 		}
+	}
+
+	/**
+	 * Return cached capability module map (`[capability => list<moduleName>]`) using `Modules::getModuleInfo('*')`
+	 * (`moduleInfoCache`) without including or instantiating capability module PHP files.
+	 *
+	 * @return array<string, list<string>>
+	 */
+	public function discoverCapabilityModules(): array
+	{
+		if ($this->capabilityModulesIndex !== null) {
+			return $this->capabilityModulesIndex;
+		}
+
+		$index = [];
+		foreach (self::CAPABILITIES as $cap) {
+			$index[$cap] = [];
+		}
+
+		$modules = $this->wire()->modules;
+		$allInfo = $modules->getModuleInfo('*');
+
+		if (!is_array($allInfo)) {
+			return $this->capabilityModulesIndex = $index;
+		}
+
+		foreach ($allInfo as $info) {
+			if (!is_array($info)) {
+				continue;
+			}
+			$modName = isset($info['name']) && is_string($info['name']) ? trim($info['name']) : '';
+			if ($modName === '' || $modName === 'React' || !$modules->isInstalled($modName)) {
+				continue;
+			}
+			$caps = $info['reactCapabilities'] ?? null;
+			if (!is_array($caps)) {
+				continue;
+			}
+			foreach ($caps as $cap) {
+				if (!is_string($cap)) {
+					continue;
+				}
+				$cleanCap = trim($cap);
+				if (!isset($index[$cleanCap])) {
+					continue;
+				}
+				if (!in_array($modName, $index[$cleanCap], true)) {
+					$index[$cleanCap][] = $modName;
+				}
+			}
+		}
+
+		foreach ($index as $cap => $modNames) {
+			sort($modNames);
+			$index[$cap] = $modNames;
+		}
+
+		return $this->capabilityModulesIndex = $index;
+	}
+
+	/**
+	 * Lazily load installed modules declaring `$capability` in `getModuleInfo()['reactCapabilities']`.
+	 * Uses `noPermissionCheck => true, noInstall => true, noThrow => true` so unprivileged admin or guest
+	 * contexts never trigger `WirePermissionException`, while registries still enforce per-item RBAC.
+	 *
+	 * @return list<string> Module class names instantiated/pulled during this call
+	 */
+	public function pullCapabilities(string $capability): array
+	{
+		$cleanCap = trim($capability);
+		if ($cleanCap === '' || !in_array($cleanCap, self::CAPABILITIES, true)) {
+			return [];
+		}
+		if (isset($this->pulledCapabilities[$cleanCap])) {
+			return [];
+		}
+		$this->pulledCapabilities[$cleanCap] = true;
+
+		$modules = $this->wire()->modules;
+		$candidates = $this->discoverCapabilityModules()[$cleanCap] ?? [];
+		$pulled = [];
+
+		foreach ($candidates as $moduleName) {
+			if (isset($this->pulledCapabilityModules[$moduleName])) {
+				continue;
+			}
+			$this->pulledCapabilityModules[$moduleName] = true;
+			if (!$modules->isInstalled($moduleName)) {
+				continue;
+			}
+			$mod = $modules->getModule($moduleName, [
+				'noPermissionCheck' => true,
+				'noInstall' => true,
+				'noThrow' => true,
+			]);
+			if ($mod instanceof Module) {
+				$pulled[] = $moduleName;
+			}
+		}
+
+		return $pulled;
+	}
+
+	/**
+	 * Reset cached capability discovery and pull-state flags (used on uninstall or cache refresh).
+	 */
+	public function resetCapabilityCache(): void
+	{
+		$this->capabilityModulesIndex = null;
+		$this->pulledCapabilities = [];
+		$this->pulledCapabilityModules = [];
 	}
 
 	/**
@@ -987,15 +1286,18 @@ class React extends WireData implements Module, ConfigurableModule
 		}
 
 		if (!$this->workspacesResolved) {
-			$this->workspacesResolved = true;
-			foreach (self::$sharedWorkspaces as $sharedDef) {
-				$registry->register($sharedDef);
-			}
-			$this->initWorkspaceRegistry($registry);
-			$this->registerWorkspaces($registry);
-			foreach ($this->getWorkspaceDefinitions() as $def) {
-				if ($def instanceof WorkspaceDefinition || is_array($def)) {
-					$registry->register($def);
+			$this->pullCapabilities('workspace');
+			if (!$this->isWorkspacesResolved()) {
+				$this->workspacesResolved = true;
+				foreach (self::$sharedWorkspaces as $sharedDef) {
+					$registry->register($sharedDef);
+				}
+				$this->initWorkspaceRegistry($registry);
+				$this->registerWorkspaces($registry);
+				foreach ($this->getWorkspaceDefinitions() as $def) {
+					if ($def instanceof WorkspaceDefinition || is_array($def)) {
+						$registry->register($def);
+					}
 				}
 			}
 		}
@@ -1051,15 +1353,18 @@ class React extends WireData implements Module, ConfigurableModule
 		}
 
 		if (!$this->widgetsResolved) {
-			$this->widgetsResolved = true;
-			foreach (self::$sharedWidgets as $sharedWidget) {
-				$registry->register($sharedWidget);
-			}
-			$this->initWidgetRegistry($registry);
-			$this->registerWidgets($registry);
-			foreach ($this->getWidgetDefinitions() as $def) {
-				if ($def instanceof WorkspaceWidgetDefinition || is_array($def)) {
-					$registry->register($def);
+			$this->pullCapabilities('workspace');
+			if (!$this->isWidgetsResolved()) {
+				$this->widgetsResolved = true;
+				foreach (self::$sharedWidgets as $sharedWidget) {
+					$registry->register($sharedWidget);
+				}
+				$this->initWidgetRegistry($registry);
+				$this->registerWidgets($registry);
+				foreach ($this->getWidgetDefinitions() as $def) {
+					if ($def instanceof WorkspaceWidgetDefinition || is_array($def)) {
+						$registry->register($def);
+					}
 				}
 			}
 		}
@@ -1102,6 +1407,189 @@ class React extends WireData implements Module, ConfigurableModule
 	}
 
 	/**
+	 * Determine whether the `ShellLayoutRegistry` has already run `React::registerShellLayouts` hooks on this instance.
+	 */
+	public function isShellLayoutsResolved(): bool
+	{
+		return $this->shellLayoutsResolved;
+	}
+
+	/**
+	 * Defer a module's custom shell layout registration until `shellLayouts()` is requested.
+	 *
+	 * @param callable(ShellLayoutRegistry, self): void $registrar
+	 */
+	public static function deferShellLayoutRegistration(Wire $module, callable $registrar): void
+	{
+		self::$deferredModuleHooks[spl_object_id($module)][] = (string) $module->addHookAfter(
+			'React::registerShellLayouts',
+			static function (HookEvent $event) use ($registrar): void {
+				$react = $event->object;
+				$registry = $event->arguments(0);
+				if ($react instanceof self && $registry instanceof ShellLayoutRegistry) {
+					$registrar($registry, $react);
+				}
+			},
+		);
+
+		$existing = $module->wire()->fuel->get('react');
+		if ($existing instanceof self && $existing->isShellLayoutsResolved()) {
+			$registrar($existing->shellLayouts(), $existing);
+		}
+	}
+
+	/**
+	 * Hookable lifecycle method for modules to register custom workspace shell layouts.
+	 */
+	public function ___registerShellLayouts(ShellLayoutRegistry $registry): void {}
+
+	/**
+	 * Return the `ShellLayoutRegistry` singleton and trigger `React::registerShellLayouts` once.
+	 */
+	public function shellLayouts(): ShellLayoutRegistry
+	{
+		if ($this->shellLayoutRegistry === null) {
+			$registry = new ShellLayoutRegistry();
+			$this->wire($registry);
+			$this->shellLayoutRegistry = $registry;
+		} else {
+			$registry = $this->shellLayoutRegistry;
+		}
+
+		if (!$this->shellLayoutsResolved) {
+			$this->shellLayoutsResolved = true;
+			$this->registerShellLayouts($registry);
+		}
+
+		return $registry;
+	}
+
+	/**
+	 * Determine whether the `CommandSearchRegistry` has already run `React::registerCommandSearch` hooks on this instance.
+	 */
+	public function isCommandSearchResolved(): bool
+	{
+		return $this->commandSearchResolved;
+	}
+
+	/**
+	 * Defer a module's command palette search provider registration until `commandSearch()` is requested.
+	 *
+	 * @param callable(CommandSearchRegistry, self): void $registrar
+	 */
+	public static function deferCommandSearchRegistration(Wire $module, callable $registrar): void
+	{
+		self::$deferredModuleHooks[spl_object_id($module)][] = (string) $module->addHookAfter(
+			'React::registerCommandSearch',
+			static function (HookEvent $event) use ($registrar): void {
+				$react = $event->object;
+				$registry = $event->arguments(0);
+				if ($react instanceof self && $registry instanceof CommandSearchRegistry) {
+					$registrar($registry, $react);
+				}
+			},
+		);
+
+		$existing = $module->wire()->fuel->get('react');
+		if ($existing instanceof self && $existing->isCommandSearchResolved()) {
+			$registrar($existing->commandSearch(), $existing);
+		}
+	}
+
+	/**
+	 * Hookable lifecycle method for modules to register command palette search providers.
+	 */
+	public function ___registerCommandSearch(CommandSearchRegistry $registry): void {}
+
+	/**
+	 * Return the `CommandSearchRegistry` singleton and trigger `React::registerCommandSearch` once.
+	 */
+	public function commandSearch(): CommandSearchRegistry
+	{
+		if ($this->commandSearchRegistry === null) {
+			$registry = new CommandSearchRegistry();
+			$this->wire($registry);
+			$this->commandSearchRegistry = $registry;
+		} else {
+			$registry = $this->commandSearchRegistry;
+		}
+
+		if (!$this->commandSearchResolved) {
+			$this->pullCapabilities('commandSearch');
+			if (!$this->isCommandSearchResolved()) {
+				$this->commandSearchResolved = true;
+				$this->registerCommandSearch($registry);
+			}
+		}
+
+		return $registry;
+	}
+
+	/**
+	 * Resolve the site-wide default shell layout ID configured on the `React` module.
+	 */
+	public function siteDefaultShellLayout(): string
+	{
+		$raw = $this->get('defaultShellLayout');
+		$candidate = is_string($raw) ? strtolower(trim($raw)) : '';
+		$registry = $this->shellLayouts();
+		if ($candidate !== '' && $registry->has($candidate)) {
+			return $candidate;
+		}
+
+		return $registry->defaultId();
+	}
+
+	/**
+	 * Resolve the user's personal shell layout override from `{user-id}.json`
+	 * (empty string when inheriting the site-wide default).
+	 */
+	public function userShellLayoutOverride(?User $user = null): string
+	{
+		$resolvedUser = $user ?? $this->wire()->user;
+		if (!AccessGuard::isAuthenticatedOrSuperuser($resolvedUser)) {
+			return '';
+		}
+
+		$prefs = $this->workspacePreferences()->load($resolvedUser);
+		$rawLayout = strtolower(trim((string) ($prefs['shellLayout'] ?? '')));
+		if ($rawLayout === '' || $rawLayout === 'default') {
+			return '';
+		}
+
+		return $this->shellLayouts()->has($rawLayout) ? $rawLayout : '';
+	}
+
+	/**
+	 * Resolve the effective shell layout ID for `$user`, preferring their personal override
+	 * and falling back to `siteDefaultShellLayout()`.
+	 */
+	public function resolveEffectiveShellLayout(?User $user = null): string
+	{
+		$override = $this->userShellLayoutOverride($user);
+		if ($override !== '') {
+			return $override;
+		}
+
+		return $this->siteDefaultShellLayout();
+	}
+
+	/**
+	 * Resolve whether `$user` prefers the sidebar shell layout collapsed into icon-rail mode.
+	 */
+	public function resolveSidebarCollapsed(?User $user = null): bool
+	{
+		$resolvedUser = $user ?? $this->wire()->user;
+		if (!AccessGuard::isAuthenticatedOrSuperuser($resolvedUser)) {
+			return false;
+		}
+
+		$prefs = $this->workspacePreferences()->load($resolvedUser);
+
+		return (bool) ($prefs['sidebarCollapsed'] ?? false);
+	}
+
+	/**
 	 * Return the file-backed per-user `WorkspacePreferenceStore`.
 	 */
 	public function workspacePreferences(): WorkspacePreferenceStore
@@ -1121,7 +1609,23 @@ class React extends WireData implements Module, ConfigurableModule
 
 	/**
 	 * @param array<string, mixed> $requestPayload
-	 * @return array{ok: bool, status?: int, error?: string, preferences?: array<string, mixed>, themeMode?: string, themePreset?: string, themeCss?: string, preset?: array<string, mixed>}
+	 * @return array{
+	 *     ok: bool,
+	 *     status?: int,
+	 *     error?: string,
+	 *     preferences?: array<string, mixed>,
+	 *     themeMode?: string,
+	 *     themePreset?: string,
+	 *     userThemePreset?: string,
+	 *     siteDefaultThemePreset?: string,
+	 *     themeCss?: string,
+	 *     shellLayout?: string,
+	 *     userShellLayout?: string,
+	 *     siteDefaultShellLayout?: string,
+	 *     sidebarCollapsed?: bool,
+	 *     availableShellLayouts?: list<array<string, mixed>>,
+	 *     preset?: array<string, mixed>
+	 * }
 	 */
 	public function handleWorkspacePrefsAction(array $requestPayload, bool $enforceCsrf = false, ?User $user = null): array
 	{
@@ -1215,9 +1719,12 @@ class React extends WireData implements Module, ConfigurableModule
 		}
 
 		if (!$this->providersResolved) {
-			$this->providersResolved = true;
-			$this->initProviderRegistry($registry);
-			$this->registerProviders($registry);
+			$this->pullCapabilities('providers');
+			if (!$this->isProvidersResolved()) {
+				$this->providersResolved = true;
+				$this->initProviderRegistry($registry);
+				$this->registerProviders($registry);
+			}
 		}
 
 		return $registry;
@@ -1233,13 +1740,16 @@ class React extends WireData implements Module, ConfigurableModule
 	 */
 	public static function deferProviderRegistration(Wire $module, callable $registrar): void
 	{
-		$module->addHookAfter('React::registerProviders', static function (HookEvent $event) use ($registrar): void {
-			$react = $event->object;
-			$registry = $event->arguments(0);
-			if ($react instanceof self && $registry instanceof ProviderRegistry) {
-				$registrar($registry, $react);
-			}
-		});
+		self::$deferredModuleHooks[spl_object_id($module)][] = (string) $module->addHookAfter(
+			'React::registerProviders',
+			static function (HookEvent $event) use ($registrar): void {
+				$react = $event->object;
+				$registry = $event->arguments(0);
+				if ($react instanceof self && $registry instanceof ProviderRegistry) {
+					$registrar($registry, $react);
+				}
+			},
+		);
 
 		$existing = $module->wire()->fuel->get('react');
 		if ($existing instanceof self && $existing->isProvidersResolved()) {
@@ -1303,6 +1813,20 @@ class React extends WireData implements Module, ConfigurableModule
 		return $this->gateway()->handleIconsAction($params);
 	}
 
+	public function handleCommandSearchRequest(HookEvent $event): string
+	{
+		return $this->gateway()->handleCommandSearchRequest($event);
+	}
+
+	/**
+	 * @param array<string, mixed> $params
+	 * @return array<string, mixed>
+	 */
+	public function handleCommandSearchAction(array $params, ?User $user = null): array
+	{
+		return $this->gateway()->handleCommandSearchAction($params, $user);
+	}
+
 	public function isRelationsResolved(): bool
 	{
 		return $this->relationsResolved;
@@ -1313,13 +1837,16 @@ class React extends WireData implements Module, ConfigurableModule
 	 */
 	public static function deferRelationRegistration(Wire $module, callable $registrar): void
 	{
-		$module->addHookAfter('React::registerRelationResources', static function (HookEvent $event) use ($registrar): void {
-			$react = $event->object;
-			$registry = $event->arguments(0);
-			if ($react instanceof self && $registry instanceof RelationResourceRegistry) {
-				$registrar($registry, $react);
-			}
-		});
+		self::$deferredModuleHooks[spl_object_id($module)][] = (string) $module->addHookAfter(
+			'React::registerRelationResources',
+			static function (HookEvent $event) use ($registrar): void {
+				$react = $event->object;
+				$registry = $event->arguments(0);
+				if ($react instanceof self && $registry instanceof RelationResourceRegistry) {
+					$registrar($registry, $react);
+				}
+			},
+		);
 
 		$existing = $module->wire()->fuel->get('react');
 		if ($existing instanceof self && $existing->isRelationsResolved()) {
@@ -1341,9 +1868,12 @@ class React extends WireData implements Module, ConfigurableModule
 		}
 
 		if (!$this->relationsResolved) {
-			$this->relationsResolved = true;
-			$this->initRelationRegistry($registry);
-			$this->registerRelationResources($registry);
+			$this->pullCapabilities('relations');
+			if (!$this->isRelationsResolved()) {
+				$this->relationsResolved = true;
+				$this->initRelationRegistry($registry);
+				$this->registerRelationResources($registry);
+			}
 		}
 
 		return $registry;
@@ -1404,13 +1934,26 @@ class React extends WireData implements Module, ConfigurableModule
 		return IslandMarkup::render($component, $props);
 	}
 
-	public function ___install(): void
-	{
-	}
+	public function ___install(): void {}
 
 	public function ___uninstall(): void
 	{
 		$w = $this->wire();
+		if ($this->urlHookIds !== []) {
+			$w->removeHook($this->urlHookIds);
+			$this->urlHookIds = [];
+		}
+		$this->hooksRegistered = false;
+		if ($this->fieldHooks !== null) {
+			$this->fieldHooks->unregister();
+		}
+		foreach (self::$deferredModuleHooks as $hookIds) {
+			if ($hookIds !== []) {
+				$w->removeHook($hookIds);
+			}
+		}
+		self::$deferredModuleHooks = [];
+
 		$w->session->removeFor('ReactViewPrefs', true);
 		$db = $w->database;
 		try {
@@ -1426,11 +1969,11 @@ class React extends WireData implements Module, ConfigurableModule
 		$assetsPath = (string) $w->config->paths->assets;
 		if ($assetsPath !== '') {
 			$iconCssDir = rtrim($assetsPath, '/') . '/vector-icons';
-			if (is_dir($iconCssDir)) {
+			if (!is_link(rtrim($iconCssDir, '/\\')) && is_dir($iconCssDir)) {
 				$files->rmdir($iconCssDir, true);
 			}
 			$cacheRootDir = rtrim($assetsPath, '/') . '/cache/React';
-			if (is_dir($cacheRootDir)) {
+			if (!is_link(rtrim($cacheRootDir, '/\\')) && is_dir($cacheRootDir)) {
 				$files->rmdir($cacheRootDir, true);
 			}
 		}
@@ -1439,13 +1982,12 @@ class React extends WireData implements Module, ConfigurableModule
 		self::$sharedViewportModes = [];
 		self::$moduleAssetUrlCache = [];
 		$this->registeredViewportModes = [];
-		$this->providerRegistry = null;
-		$this->relationRegistry = null;
 		$this->relationStateSigner = null;
 		$this->tokenCodec = null;
 		$this->mediaGateway = null;
 		$this->mediaHostsResolved = false;
 		$this->formSerializer = null;
+		$this->controlRegistry = null;
 		$this->iconManager = null;
 		$this->themeManager = null;
 		$this->gatewayRouter = null;
@@ -1455,7 +1997,19 @@ class React extends WireData implements Module, ConfigurableModule
 		$this->cachedLauncherAdminUrl = null;
 		$this->workspaceHubEnabledOverride = null;
 		$this->workspaceRegistry = null;
+		$this->workspacesResolved = false;
 		$this->widgetRegistry = null;
+		$this->widgetsResolved = false;
+		$this->providerRegistry = null;
+		$this->providersResolved = false;
+		$this->relationRegistry = null;
+		$this->relationsResolved = false;
+		$this->shellLayoutRegistry = null;
+		$this->shellLayoutsResolved = false;
+		$this->commandSearchRegistry = null;
+		$this->commandSearchResolved = false;
+		$this->viewportModesResolved = false;
+		$this->resetCapabilityCache();
 		$this->preferenceStore = null;
 		$this->presenceStore = null;
 		$w->fuel->remove('react');
@@ -1563,11 +2117,17 @@ class React extends WireData implements Module, ConfigurableModule
 			'adminUrl' => $adminUrl,
 			'adminReturnLabel' => $this->resolveAdminReturnLabel($user),
 			'shellMode' => $shellMode,
+			'shellLayout' => $this->resolveEffectiveShellLayout($user),
+			'userShellLayout' => $this->userShellLayoutOverride($user),
+			'siteDefaultShellLayout' => $this->siteDefaultShellLayout(),
+			'sidebarCollapsed' => $this->resolveSidebarCollapsed($user),
+			'availableShellLayouts' => $this->shellLayouts()->toArray(),
 			'launcherComponent' => $hubActive ? 'ReactWorkspace/WorkspaceLauncher' : '',
 			'launcherUrl' => $launcherUrl,
 			'launcherScripts' => $launcherScripts,
 			'prefsEndpoint' => $rootUrl . '/_react/workspace-prefs',
 			'presenceEndpoint' => $rootUrl . '/_react/presence',
+			'commandSearchEndpoint' => $rootUrl . '/_react/command-search',
 			'themeMode' => $themeMode,
 			'themePreset' => $themeService->activePreset($user)->value,
 			'userThemePreset' => $themeService->userPresetOverride($user),
@@ -1757,6 +2317,8 @@ class React extends WireData implements Module, ConfigurableModule
 			'locale' => $locale,
 			'title' => $title,
 			'themeMode' => $themeMode,
+			'shellLayout' => $this->resolveEffectiveShellLayout($user),
+			'sidebarCollapsed' => $this->resolveSidebarCollapsed($user),
 			'useInputFocus' => $this->theme()->resolveAdminUseInputFocus(),
 			'colorSchemeCss' => $this->theme()->resolveAdminColorSchemeCss(),
 			'themeCss' => $this->theme()->resolveThemeTokenCss($user),
@@ -1783,6 +2345,7 @@ class React extends WireData implements Module, ConfigurableModule
 			'dark' => $this->_('Dark Mode'),
 		]);
 		$theme->val((string) ($this->get('defaultTheme') ?: 'system'));
+		$theme->set('rwControl', 'segmented');
 		$theme->columnWidth = 50;
 		$inputfields->add($theme);
 
@@ -1796,11 +2359,10 @@ class React extends WireData implements Module, ConfigurableModule
 			ThemePreset::Native->value => $this->_('ProcessWire Native (Admin Color Scheme)'),
 			ThemePreset::Neutral->value => $this->_('Neutral'),
 			ThemePreset::Slate->value => $this->_('Slate'),
+			ThemePreset::Stone->value => $this->_('Stone'),
 			ThemePreset::Ocean->value => $this->_('Ocean'),
-			ThemePreset::Emerald->value => $this->_('Emerald'),
-			ThemePreset::Violet->value => $this->_('Violet'),
-			ThemePreset::Rose->value => $this->_('Rose'),
-			ThemePreset::Amber->value => $this->_('Amber'),
+			ThemePreset::Indigo->value => $this->_('Indigo'),
+			ThemePreset::Teal->value => $this->_('Teal'),
 			ThemePreset::Custom->value => $this->_('Custom Theme Tokens'),
 		]);
 		$themePreset->val($this->theme()->siteDefaultPreset()->value);
@@ -1823,6 +2385,19 @@ class React extends WireData implements Module, ConfigurableModule
 			$customTokens->error($this->_('Custom theme tokens must define at least --background, --foreground, --primary, and --primary-foreground. The native admin theme is used until they are valid.'));
 		}
 		$inputfields->add($customTokens);
+
+		/** @var InputfieldSelect $defaultShellLayout */
+		$defaultShellLayout = $modules->get('InputfieldSelect');
+		$defaultShellLayout->attr('name', 'defaultShellLayout');
+		$defaultShellLayout->label = $this->_('Default Shell Layout');
+		$defaultShellLayout->description = $this->_('Default workspace navigation shell layout applied across React workspaces when a user has not selected a personal layout override in their account menu.');
+		$defaultShellLayout->required = true;
+		foreach ($this->shellLayouts()->all() as $layoutMeta) {
+			$defaultShellLayout->addOption($layoutMeta['id'], $layoutMeta['label']);
+		}
+		$defaultShellLayout->val($this->siteDefaultShellLayout());
+		$defaultShellLayout->columnWidth = 50;
+		$inputfields->add($defaultShellLayout);
 
 		/** @var InputfieldCheckbox $shortcuts */
 		$shortcuts = $modules->get('InputfieldCheckbox');

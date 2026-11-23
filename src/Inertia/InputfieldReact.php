@@ -58,6 +58,18 @@ abstract class InputfieldReact extends InputfieldInertia
 	}
 
 	/**
+	 * Enqueue Inertia/React assets and guard `Inputfield::renderReady()` against anonymous PHP classes (`\0` in class name).
+	 */
+	public function renderReady(?Inputfield $parent = null, $renderValueMode = false): bool
+	{
+		if (str_contains(static::class, "\0")) {
+			return $this->enqueueInertiaIslandAssets();
+		}
+
+		return parent::renderReady($parent, (bool) $renderValueMode);
+	}
+
+	/**
 	 * Provide `ReactInertia.js` and `ReactInertia.css` (plus module assets) so
 	 * `PageResponse` and classic `InputfieldInertia::renderReady()` inject them automatically.
 	 *

@@ -20,7 +20,7 @@ use Totoglu\React\Viewport\MarkupReactViewport;
  * ReactGatewayRouter
  *
  * Handles `/_react/*` HTTP JSON/multipart endpoints (`viewport`, `workspace-prefs`,
- * `presence`, `relation`, `media`, `tiptap`, `icons`) with bounded JSON parsing,
+ * `presence`, `relation`, `media`, `tiptap`, `icons`, `command-search`) with bounded JSON parsing,
  * ProcessWire CSRF enforcement, signed HMAC state verification, and RBAC scoping.
  */
 final class ReactGatewayRouter extends Wire
@@ -37,7 +37,8 @@ final class ReactGatewayRouter extends Wire
 	];
 
 	/**
-	 * Actions on `/_react/viewport` that mutate server state or user preferences and require CSRF validation.
+	 * Core actions on `/_react/viewport` that mutate server state or user preferences and require CSRF validation.
+	 * Pluggable viewport modes can declare additional mutating actions via `MarkupReactViewport::modeMutatingActions()`.
 	 *
 	 * @var list<string>
 	 */
@@ -45,12 +46,10 @@ final class ReactGatewayRouter extends Wire
 		'bulk_action',
 		'row_action',
 		'toolbar_action',
+		'empty_trash',
 		'update_field',
 		'toggle_field',
-		'move_stage',
 		'reorder',
-		'reschedule',
-		'resize_span',
 		'quick_create',
 		'save_quick_edit',
 		'save_view',
@@ -62,6 +61,25 @@ final class ReactGatewayRouter extends Wire
 		'switch_view_mode',
 		'select_view',
 		'reset_filters',
+	];
+
+	/**
+	 * Base client state keys accepted on `/_react/viewport` round-trips.
+	 *
+	 * @var list<string>
+	 */
+	private const array BASE_MUTABLE_STATE_KEYS = [
+		'searchQuery',
+		'filterValues',
+		'sortField',
+		'sortDirection',
+		'page',
+		'limit',
+		'selectedIds',
+		'hiddenColumns',
+		'activeView',
+		'viewMode',
+		'quickEditRecordId',
 	];
 
 	public function __construct(private React $react)
@@ -166,7 +184,10 @@ final class ReactGatewayRouter extends Wire
 		unset($response['status']);
 		http_response_code($status);
 
-		return (string) json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+		return (string) json_encode(
+			$response,
+			JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+		);
 	}
 
 	/**
@@ -242,7 +263,17 @@ final class ReactGatewayRouter extends Wire
 
 		$payload['_requestMethod'] = strtoupper(trim((string) ($_SERVER['REQUEST_METHOD'] ?? 'POST')));
 
-		return $this->respondJson($this->handleViewportAction($payload, true));
+		try {
+			return $this->respondJson($this->handleViewportAction($payload, true));
+		} catch (WirePermissionException $e) {
+			$msg = trim($e->getMessage());
+
+			return $this->respondJson([
+				'ok' => false,
+				'status' => 403,
+				'error' => $msg !== '' ? $msg : $this->_('Access denied.'),
+			]);
+		}
 	}
 
 	/**
@@ -322,40 +353,68 @@ final class ReactGatewayRouter extends Wire
 		$clientState = isset($requestPayload['state']) && is_array($requestPayload['state'])
 			? $requestPayload['state']
 			: [];
-		$allowedMutableStateKeys = [
-			'searchQuery',
-			'filterValues',
-			'sortField',
-			'sortDirection',
-			'page',
-			'limit',
-			'selectedIds',
-			'hiddenColumns',
-			'activeView',
-			'viewMode',
-			'month',
-			'year',
-			'calendarView',
-			'quickEditRecordId',
-		];
+		if (array_key_exists('viewMode', $clientState)) {
+			$candidateMode = strtolower(trim((string) $clientState['viewMode']));
+			$allowedModes = is_array($envelope['allowedViewModes'] ?? null) ? $envelope['allowedViewModes'] : ['table', 'cards'];
+			if ($candidateMode !== '' && in_array($candidateMode, $allowedModes, true)) {
+				$viewport->viewMode = $candidateMode;
+			}
+		}
+
+		$modeMutatingActions = $viewport->allMutatingActions();
+		if (in_array($action, $modeMutatingActions, true)) {
+			$reqMethod = strtoupper(trim((string) ($requestPayload['_requestMethod'] ?? (PHP_SAPI !== 'cli' ? ($_SERVER['REQUEST_METHOD'] ?? '') : ''))));
+			if ($reqMethod !== '' && $reqMethod !== 'POST') {
+				return [
+					'ok' => false,
+					'status' => 405,
+					'error' => 'Method not allowed. POST required.',
+				];
+			}
+			if ((bool) $this->wire()->config->demo) {
+				return [
+					'ok' => false,
+					'status' => 403,
+					'error' => 'Mutations are disabled in demo mode.',
+				];
+			}
+			if ($enforceCsrf && !$this->verifyRequestCsrf($requestPayload)) {
+				return [
+					'ok' => false,
+					'status' => 419,
+					'error' => 'CSRF token validation failed.',
+				];
+			}
+		}
+
+		$candidateState = $clientState;
+		if (isset($clientState['modeState']) && is_array($clientState['modeState'])) {
+			$candidateState = array_replace($clientState['modeState'], $clientState);
+		}
+		$allowedMutableStateKeys = array_values(array_unique(array_merge(
+			self::BASE_MUTABLE_STATE_KEYS,
+			$viewport->allMutableStateKeys()
+		)));
 		$safeClientState = [];
+		$safeModeState = [];
 		foreach ($allowedMutableStateKeys as $stateKey) {
-			if (array_key_exists($stateKey, $clientState)) {
-				if ($stateKey === 'page') {
-					$safeClientState['pageNum'] = max(1, (int) $clientState[$stateKey]);
-				} elseif ($stateKey === 'viewMode') {
-					$candidateMode = strtolower(trim((string) $clientState[$stateKey]));
-					$allowedModes = is_array($envelope['allowedViewModes'] ?? null) ? $envelope['allowedViewModes'] : ['table', 'cards'];
-					if ($candidateMode !== '' && in_array($candidateMode, $allowedModes, true)) {
-						$safeClientState['viewMode'] = $candidateMode;
-					}
-				} else {
-					$safeClientState[$stateKey] = $clientState[$stateKey];
-				}
+			if (!array_key_exists($stateKey, $candidateState) || $stateKey === 'viewMode') {
+				continue;
+			}
+			if ($stateKey === 'page') {
+				$safeClientState['pageNum'] = max(1, (int) $candidateState[$stateKey]);
+			} elseif (property_exists($viewport, $stateKey)) {
+				$safeClientState[$stateKey] = $candidateState[$stateKey];
+			} else {
+				$safeModeState[$stateKey] = $candidateState[$stateKey];
 			}
 		}
 		if ($safeClientState !== []) {
 			$viewport->fill($safeClientState);
+		}
+		if ($safeModeState !== []) {
+			$viewport->modeState = array_replace($viewport->modeState, $safeModeState);
+			$viewport->applyModeSignedState($viewport->modeState);
 		}
 
 		try {
@@ -421,7 +480,23 @@ final class ReactGatewayRouter extends Wire
 	 * Execute a workspace preference action and return the reconciled preference state.
 	 *
 	 * @param array<string, mixed> $requestPayload
-	 * @return array{ok: bool, status?: int, error?: string, preferences?: array<string, mixed>, themeMode?: string, themePreset?: string, userThemePreset?: string, siteDefaultThemePreset?: string, themeCss?: string, preset?: array<string, mixed>}
+	 * @return array{
+	 *     ok: bool,
+	 *     status?: int,
+	 *     error?: string,
+	 *     preferences?: array<string, mixed>,
+	 *     themeMode?: string,
+	 *     themePreset?: string,
+	 *     userThemePreset?: string,
+	 *     siteDefaultThemePreset?: string,
+	 *     themeCss?: string,
+	 *     shellLayout?: string,
+	 *     userShellLayout?: string,
+	 *     siteDefaultShellLayout?: string,
+	 *     sidebarCollapsed?: bool,
+	 *     availableShellLayouts?: list<array<string, mixed>>,
+	 *     preset?: array<string, mixed>
+	 * }
 	 */
 	public function handleWorkspacePrefsAction(array $requestPayload, bool $enforceCsrf = false, ?User $user = null): array
 	{
@@ -467,6 +542,8 @@ final class ReactGatewayRouter extends Wire
 			'import_layout',
 			'set_theme_mode',
 			'set_theme_preset',
+			'set_shell_layout',
+			'set_sidebar_collapsed',
 		];
 		if (!in_array($action, $allowedPrefActions, true)) {
 			return [
@@ -561,6 +638,42 @@ final class ReactGatewayRouter extends Wire
 				}
 				$store->setThemePreset($preset->value, $resolvedUser);
 			}
+		} elseif ($action === 'set_shell_layout') {
+			$rawLayoutInput = array_key_exists('shellLayout', $requestPayload)
+				? $requestPayload['shellLayout']
+				: ($requestPayload['layout'] ?? '');
+			if (!is_string($rawLayoutInput)) {
+				return [
+					'ok' => false,
+					'status' => 422,
+					'error' => 'Invalid shellLayout value.',
+				];
+			}
+			$rawLayout = strtolower(trim($rawLayoutInput));
+			if ($rawLayout === '' || $rawLayout === 'default') {
+				$store->setShellLayout('', $resolvedUser);
+			} elseif (!$this->react->shellLayouts()->has($rawLayout)) {
+				return [
+					'ok' => false,
+					'status' => 422,
+					'error' => 'Invalid shellLayout value.',
+				];
+			} else {
+				$store->setShellLayout($rawLayout, $resolvedUser);
+			}
+		} elseif ($action === 'set_sidebar_collapsed') {
+			$rawCollapsed = array_key_exists('collapsed', $requestPayload)
+				? $requestPayload['collapsed']
+				: ($requestPayload['sidebarCollapsed'] ?? null);
+			$collapsed = $this->parseStrictBool($rawCollapsed);
+			if ($collapsed === null) {
+				return [
+					'ok' => false,
+					'status' => 422,
+					'error' => 'Invalid collapsed value.',
+				];
+			}
+			$store->setSidebarCollapsed($collapsed, $resolvedUser);
 		} elseif ($action !== 'export_layout') {
 			match ($action) {
 				'toggle_favorite' => $store->toggleFavorite((string) ($requestPayload['workspaceId'] ?? ''), $resolvedUser),
@@ -581,9 +694,14 @@ final class ReactGatewayRouter extends Wire
 			};
 		}
 
-		$isThemeOnlyAction = $action === 'set_theme_mode' || $action === 'set_theme_preset';
+		$isLightweightPrefAction = in_array($action, [
+			'set_theme_mode',
+			'set_theme_preset',
+			'set_shell_layout',
+			'set_sidebar_collapsed',
+		], true);
 		$themeService = $this->react->theme();
-		if ($isThemeOnlyAction) {
+		if ($isLightweightPrefAction) {
 			$accessibleWorkspaces = [];
 			$accessibleWidgets = null;
 			$reconciled = $store->load($resolvedUser);
@@ -602,6 +720,11 @@ final class ReactGatewayRouter extends Wire
 			'userThemePreset' => $themeService->userPresetOverride($resolvedUser),
 			'siteDefaultThemePreset' => $themeService->siteDefaultPreset()->value,
 			'themeCss' => $themeService->resolveThemeTokenCss($resolvedUser),
+			'shellLayout' => $this->react->resolveEffectiveShellLayout($resolvedUser),
+			'userShellLayout' => $this->react->userShellLayoutOverride($resolvedUser),
+			'siteDefaultShellLayout' => $this->react->siteDefaultShellLayout(),
+			'sidebarCollapsed' => $this->react->resolveSidebarCollapsed($resolvedUser),
+			'availableShellLayouts' => $this->react->shellLayouts()->toArray(),
 		];
 
 		if ($action === 'export_layout') {
@@ -609,6 +732,34 @@ final class ReactGatewayRouter extends Wire
 		}
 
 		return $response;
+	}
+
+	private function parseStrictBool(mixed $value): ?bool
+	{
+		if (is_bool($value)) {
+			return $value;
+		}
+		if (is_int($value)) {
+			if ($value === 1) {
+				return true;
+			}
+			if ($value === 0) {
+				return false;
+			}
+
+			return null;
+		}
+		if (is_string($value)) {
+			$norm = strtolower(trim($value));
+			if ($norm === 'true' || $norm === '1') {
+				return true;
+			}
+			if ($norm === 'false' || $norm === '0') {
+				return false;
+			}
+		}
+
+		return null;
 	}
 
 	/**
@@ -968,7 +1119,7 @@ final class ReactGatewayRouter extends Wire
 
 			if ($action === 'o2m_list') {
 				$targetRes = strtolower(trim((string) ($config['targetResource'] ?? $activeResource)));
-				$ownerId = $config['ownerId'] ?? ($requestPayload['ownerId'] ?? '');
+				$ownerId = $config['ownerId'] ?? '';
 				$foreignField = trim((string) ($config['foreignField'] ?? ''));
 				if (!$registry->has($targetRes) || $ownerId === '' || $ownerId === 0 || $foreignField === '') {
 					return ['ok' => true, 'status' => 200, 'items' => [], 'total' => 0, 'hasMore' => false];
@@ -977,7 +1128,7 @@ final class ReactGatewayRouter extends Wire
 					is_int($ownerId) ? $ownerId : (string) $ownerId,
 					$foreignField,
 					[
-						'q' => trim((string) ($requestPayload['q'] ?? '')),
+						'q' => mb_substr(trim((string) ($requestPayload['q'] ?? '')), 0, 250),
 						'page' => max(1, (int) ($requestPayload['page'] ?? 1)),
 						'limit' => max(1, min(100, (int) ($requestPayload['limit'] ?? $config['limit'] ?? 25))),
 					],
@@ -1065,6 +1216,14 @@ final class ReactGatewayRouter extends Wire
 				'ok' => false,
 				'status' => 400,
 				'error' => sprintf('Unsupported relation action "%s".', $action),
+			];
+		} catch (WirePermissionException $e) {
+			$msg = trim($e->getMessage());
+
+			return [
+				'ok' => false,
+				'status' => 403,
+				'error' => $msg !== '' ? $msg : $this->_('Access denied.'),
 			];
 		} catch (\Throwable $e) {
 			$isClientException = $e instanceof WireException
@@ -1234,5 +1393,69 @@ final class ReactGatewayRouter extends Wire
 		$res['status'] = 200;
 
 		return $res;
+	}
+
+	/**
+	 * Handle read-only command palette record search requests sent to `/_react/command-search`.
+	 */
+	public function handleCommandSearchRequest(HookEvent $event): string
+	{
+		$input = $this->wire()->input;
+		$get = $input->get->getArray();
+		$payload = is_array($get) ? $get : [];
+		if (!array_key_exists('q', $payload)) {
+			$rawQ = $input->get('q');
+			if ($rawQ !== null) {
+				$payload['q'] = $rawQ;
+			}
+		}
+		$payload['_requestMethod'] = strtoupper(trim((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')));
+
+		return $this->respondJson($this->handleCommandSearchAction($payload), 'no-store, private');
+	}
+
+	/**
+	 * Execute an RBAC-scoped read-only `/_react/command-search` query.
+	 *
+	 * @param array<string, mixed> $params
+	 * @return array<string, mixed>
+	 */
+	public function handleCommandSearchAction(array $params, ?User $user = null): array
+	{
+		$resolvedUser = $user ?? $this->wire()->user;
+		if (
+			!AccessGuard::isAuthenticatedOrSuperuser($resolvedUser)
+			|| (!React::checkAccess(['user' => $resolvedUser]) && !$resolvedUser->hasPermission('page-edit'))
+		) {
+			return [
+				'ok' => false,
+				'status' => 403,
+				'error' => 'Workspace or page edit access required.',
+			];
+		}
+
+		$reqMethod = strtoupper(trim((string) ($params['_requestMethod'] ?? 'GET')));
+		if ($reqMethod !== '' && $reqMethod !== 'GET' && $reqMethod !== 'HEAD') {
+			return [
+				'ok' => false,
+				'status' => 405,
+				'error' => 'Method not allowed. GET required.',
+			];
+		}
+
+		$rawQuery = $params['q'] ?? '';
+		$queryStr = is_string($rawQuery) || is_numeric($rawQuery) ? (string) $rawQuery : '';
+		$cleanQuery = mb_substr(trim($queryStr), 0, 80, 'UTF-8');
+		$limit = is_numeric($params['limit'] ?? null) ? (int) $params['limit'] : 16;
+		$perProviderLimit = is_numeric($params['perProviderLimit'] ?? null) ? (int) $params['perProviderLimit'] : 5;
+
+		$items = $this->react->commandSearch()->search($cleanQuery, $resolvedUser, $limit, $perProviderLimit);
+
+		return [
+			'ok' => true,
+			'status' => 200,
+			'query' => $cleanQuery,
+			'items' => $items,
+		];
 	}
 }

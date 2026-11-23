@@ -13,6 +13,7 @@ use ProcessWire\Process;
 use ProcessWire\React;
 use Totoglu\Inertia\PageResponse;
 use Totoglu\Inertia\Support\PropResolver;
+use Totoglu\React\Workspace\ShellLayoutRegistry;
 
 /**
  * EmbeddedAdminPageResponse
@@ -95,6 +96,15 @@ final class EmbeddedAdminPageResponse extends PageResponse
 			? (string) $viewData['themeMode']
 			: $react->theme()->resolveEffectiveThemeMode($wire->user);
 		$resolvedThemeMode = in_array($themeMode, ['light', 'dark', 'system'], true) ? $themeMode : 'system';
+		$rawShellLayout = is_string($viewData['shellLayout'] ?? null)
+			? strtolower(trim((string) $viewData['shellLayout']))
+			: $react->resolveEffectiveShellLayout($wire->user);
+		$resolvedShellLayout = preg_match(ShellLayoutRegistry::ID_PATTERN, $rawShellLayout) === 1
+			? $rawShellLayout
+			: $react->shellLayouts()->defaultId();
+		$resolvedSidebarCollapsed = array_key_exists('sidebarCollapsed', $viewData)
+			? (bool) $viewData['sidebarCollapsed']
+			: $react->resolveSidebarCollapsed($wire->user);
 		$colorSchemeCss = is_string($viewData['colorSchemeCss'] ?? null)
 			? (string) $viewData['colorSchemeCss']
 			: $react->theme()->resolveAdminColorSchemeCss();
@@ -102,6 +112,8 @@ final class EmbeddedAdminPageResponse extends PageResponse
 		$launcherPathAttr = (string) (parse_url($react->resolveLauncherUrl(), PHP_URL_PATH) ?: '');
 
 		$safeThemeJson = (string) json_encode($resolvedThemeMode, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES);
+		$safeShellLayoutJson = (string) json_encode($resolvedShellLayout, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES);
+		$safeSidebarCollapsedJson = (string) json_encode($resolvedSidebarCollapsed ? 'true' : 'false', JSON_HEX_TAG | JSON_UNESCAPED_SLASHES);
 		$safeAdminRootJson = (string) json_encode($adminRootAttr, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES);
 		$safeLauncherPathJson = (string) json_encode($launcherPathAttr, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES);
 
@@ -110,7 +122,7 @@ final class EmbeddedAdminPageResponse extends PageResponse
 			$safeCss = (string) preg_replace('~<\s*/\s*style~i', '<\\/style', $colorSchemeCss);
 			$headFragments[] = '<style id="pw-color-scheme-tokens">' . $safeCss . '</style>';
 		}
-		$headFragments[] = '<script>(function(){try{var d=document.documentElement;d.setAttribute("data-rw-shell-mode","admin");d.setAttribute("data-rw-admin-root",' . $safeAdminRootJson . ');d.setAttribute("data-rw-launcher-path",' . $safeLauncherPathJson . ');var m=' . $safeThemeJson . ';d.setAttribute("data-theme-mode",m);var dark=m==="dark"||(m==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);d.classList.toggle("dark",dark);d.classList.toggle("light",!dark);}catch(e){}})();</script>';
+		$headFragments[] = '<script>(function(){try{var d=document.documentElement;d.setAttribute("data-rw-shell-mode","admin");d.setAttribute("data-rw-shell-layout",' . $safeShellLayoutJson . ');d.setAttribute("data-rw-sidebar-collapsed",' . $safeSidebarCollapsedJson . ');d.setAttribute("data-rw-admin-root",' . $safeAdminRootJson . ');d.setAttribute("data-rw-launcher-path",' . $safeLauncherPathJson . ');var m=' . $safeThemeJson . ';d.setAttribute("data-theme-mode",m);var dark=m==="dark"||(m==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);d.classList.toggle("dark",dark);d.classList.toggle("light",!dark);}catch(e){}})();</script>';
 
 		$adminTheme = $wire->adminTheme;
 		if ($adminTheme instanceof AdminTheme) {

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Totoglu\React\Security;
 
+use ProcessWire\ProcessWire;
+
 /**
  * Strict URL protocol allowlist sanitizer for server-serialized navigation, action, and asset links.
  */
@@ -47,7 +49,8 @@ final class UrlSanitizer
 			if (preg_match('/^https?:\/\/[^\/\\\\]/i', $trimmed) !== 1) {
 				return '';
 			}
-			if ($allowBareRelative && (string) parse_url($trimmed, PHP_URL_HOST) === '') {
+			$host = parse_url($trimmed, PHP_URL_HOST);
+			if (!is_string($host) || trim($host) === '') {
 				return '';
 			}
 
@@ -95,6 +98,64 @@ final class UrlSanitizer
 
 		$safe = self::sanitizeHref($trimmed);
 		if ($safe === '' || str_starts_with($safe, '#') || preg_match('/^(?:mailto:|tel:)/i', $safe) === 1) {
+			return '';
+		}
+
+		return $safe;
+	}
+
+	/**
+	 * Restrict a URL to safe site-relative paths (`/`, `./`, `../`) or same-origin HTTP(S) URLs.
+	 * Rejects `javascript:`, `data:`, `mailto:`, `tel:`, `#` fragments, protocol-relative (`//`) URLs,
+	 * userinfo credentials, and external hosts.
+	 */
+	public static function sanitizeSameOriginUrl(string $url, string $currentHost = '', ?bool $isHttps = null): string
+	{
+		$safe = self::sanitizeHref($url);
+		if ($safe === '' || str_starts_with($safe, '#') || preg_match('/^(?:mailto:|tel:)/i', $safe) === 1) {
+			return '';
+		}
+
+		if (str_starts_with($safe, '/') || str_starts_with($safe, './') || str_starts_with($safe, '../')) {
+			return $safe;
+		}
+
+		$parts = parse_url($safe);
+		if (!is_array($parts) || empty($parts['scheme']) || empty($parts['host'])) {
+			return '';
+		}
+		if (isset($parts['user']) || isset($parts['pass'])) {
+			return '';
+		}
+
+		$scheme = strtolower((string) $parts['scheme']);
+		if ($scheme !== 'http' && $scheme !== 'https') {
+			return '';
+		}
+
+		$resolvedHost = strtolower(trim($currentHost));
+		$resolvedHttps = $isHttps;
+		if ($resolvedHost === '') {
+			$pw = ProcessWire::getCurrentInstance();
+			if ($pw instanceof ProcessWire) {
+				$config = $pw->wire()->config;
+				$resolvedHost = strtolower(trim((string) ($config->httpHost ?: '')));
+				if ($resolvedHttps === null) {
+					$resolvedHttps = (bool) $config->https;
+				}
+			}
+		}
+
+		if ($resolvedHost === '') {
+			return '';
+		}
+
+		$targetHost = strtolower((string) $parts['host']) . (isset($parts['port']) ? ':' . (int) $parts['port'] : '');
+		if ($targetHost !== $resolvedHost) {
+			return '';
+		}
+
+		if ($resolvedHttps === true && $scheme !== 'https') {
 			return '';
 		}
 
