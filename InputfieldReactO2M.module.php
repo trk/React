@@ -25,7 +25,7 @@ class InputfieldReactO2M extends AbstractInputfieldReactRelation
 	{
 		return [
 			'title' => __('React Relation (O2M — Reverse / Incoming)', __FILE__),
-			'version' => 20,
+			'version' => 30,
 			'summary' => __('Display and manage records linking back to this item (as a table, cards, or list), with quick create, link, and unlink actions.', __FILE__),
 			'author' => 'Iskender TOTOGLU @trk @ukyo',
 			'icon' => 'exchange',

@@ -29,7 +29,7 @@ class InputfieldReactM2O extends AbstractInputfieldReactRelation implements Inpu
 	{
 		return [
 			'title' => __('React Relation (M2O — Single)', __FILE__),
-			'version' => 20,
+			'version' => 30,
 			'summary' => __('Select a single related record using a dropdown, radio cards, searchable autocomplete, tree picker, or slide-out browser.', __FILE__),
 			'author' => 'Iskender TOTOGLU @trk @ukyo',
 			'icon' => 'link',

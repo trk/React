@@ -27,7 +27,7 @@ class InputfieldReactFile extends InputfieldFile implements InertiaSerializable
 	{
 		return [
 			'title' => __('React File', __FILE__),
-			'version' => 20,
+			'version' => 30,
 			'summary' => __('File upload and management field supporting drag-and-drop, reordering, file replacement, multi-language descriptions, tags, and custom details.', __FILE__),
 			'author' => 'Iskender TOTOGLU @trk @ukyo',
 			'icon' => 'file-text-o',

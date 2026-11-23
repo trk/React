@@ -62,7 +62,7 @@ class MarkupReactTab extends InputfieldFieldset implements InertiaSerializable
 	{
 		return [
 			'title' => __('React Tab Viewport & Container', __FILE__),
-			'version' => 20,
+			'version' => 30,
 			'summary' => __('Organize fields and panels into accessible tabs (line, segmented, or vertical layout).', __FILE__),
 			'author' => 'Iskender TOTOGLU @trk @ukyo',
 			'icon' => 'folder-o',

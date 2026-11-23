@@ -23,7 +23,7 @@ class MarkupReactTable extends MarkupReactViewport
 	{
 		return [
 			'title' => __('React Table Viewport', __FILE__),
-			'version' => 20,
+			'version' => 30,
 			'summary' => __('Interactive data table with search, filters, inline editing, bulk actions, and pagination.', __FILE__),
 			'author' => 'Iskender TOTOGLU @trk @ukyo',
 			'icon' => 'table',

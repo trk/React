@@ -30,7 +30,7 @@ class TextformatterTiptapMiniBlocks extends Textformatter implements Module
 		return [
 			'title' => __('Tiptap Mini-Blocks Renderer', __FILE__),
 			'summary' => __('Renders inline content blocks from the Tiptap rich text editor using templates in ./site/templates/tiptap/.', __FILE__),
-			'version' => 20,
+			'version' => 30,
 			'author' => 'Iskender TOTOGLU @trk @ukyo',
 			'icon' => 'cubes',
 			'requires' => [
