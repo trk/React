@@ -2,92 +2,33 @@ import { execFileSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { resolveKanbanMove, type KanbanColumnSpec } from '../../resources/ts/engines/dnd/helpers';
+import { moveArrayItem } from '../../resources/ts/engines/dnd/helpers';
 import {
 	addDaysIso,
 	buildMonthMatrix,
+	buildTimeSlots,
 	buildWeekDays,
+	compareTimeStrings,
 	diffDaysIso,
 	formatDisplayDate,
 	formatIsoDate,
+	formatIsoDateTime,
+	formatIsoTime,
+	formatTimeString,
+	getDefaultDateRangePresets,
 	parseIsoDate,
+	parseIsoDateTime,
+	parseTimeString,
 } from '../../resources/ts/engines/calendar/dateUtils';
 
 const THIS_DIR = dirname(fileURLToPath(import.meta.url));
 const MODULE_DIR = resolve(THIS_DIR, '../..');
 
-interface TestCard {
-	id: string;
-	title: string;
-}
-
 describe('Phase 3 isolated engines (ReactGrid, ReactDnd, ReactCalendar)', () => {
-	it('resolves Kanban within-column reorders, cross-column item drops, empty-column drops, and no-ops immutably', () => {
-		const initial: KanbanColumnSpec<TestCard>[] = [
-			{
-				id: 'todo',
-				items: [
-					{ id: 'c1', title: 'First' },
-					{ id: 'c2', title: 'Second' },
-				],
-			},
-			{
-				id: 'doing',
-				items: [{ id: 'c3', title: 'Third' }],
-			},
-			{
-				id: 'done',
-				items: [],
-			},
-		];
-
-		// Within-column reorder
-		const sameCol = resolveKanbanMove(initial, (c) => c.id, 'c1', 'c2');
-		expect(sameCol).not.toBeNull();
-		expect(sameCol?.columns[0]?.items.map((c) => c.id)).toEqual(['c2', 'c1']);
-		expect(sameCol?.event).toEqual({
-			itemId: 'c1',
-			fromColumnId: 'todo',
-			toColumnId: 'todo',
-			fromIndex: 0,
-			toIndex: 1,
-			sameColumn: true,
-		});
-		// Original array preserved
-		expect(initial[0]?.items.map((c) => c.id)).toEqual(['c1', 'c2']);
-
-		// Cross-column move onto specific item
-		const crossItem = resolveKanbanMove(initial, (c) => c.id, 'c2', 'c3');
-		expect(crossItem).not.toBeNull();
-		expect(crossItem?.columns[0]?.items.map((c) => c.id)).toEqual(['c1']);
-		expect(crossItem?.columns[1]?.items.map((c) => c.id)).toEqual(['c2', 'c3']);
-		expect(crossItem?.event).toEqual({
-			itemId: 'c2',
-			fromColumnId: 'todo',
-			toColumnId: 'doing',
-			fromIndex: 1,
-			toIndex: 0,
-			sameColumn: false,
-		});
-
-		// Cross-column move onto empty column container
-		const emptyContainer = resolveKanbanMove(initial, (c) => c.id, 'c3', 'done');
-		expect(emptyContainer).not.toBeNull();
-		expect(emptyContainer?.columns[1]?.items).toEqual([]);
-		expect(emptyContainer?.columns[2]?.items.map((c) => c.id)).toEqual(['c3']);
-		expect(emptyContainer?.event).toEqual({
-			itemId: 'c3',
-			fromColumnId: 'doing',
-			toColumnId: 'done',
-			fromIndex: 0,
-			toIndex: 0,
-			sameColumn: false,
-		});
-
-		// Same-ID drop and unknown IDs produce null
-		expect(resolveKanbanMove(initial, (c) => c.id, 'c1', 'c1')).toBeNull();
-		expect(resolveKanbanMove(initial, (c) => c.id, 'missing', 'c1')).toBeNull();
-		expect(resolveKanbanMove(initial, (c) => c.id, 'c1', 'missing')).toBeNull();
+	it('moves array items immutably for sortable list reordering', () => {
+		const initial = ['a', 'b', 'c'];
+		expect(moveArrayItem(initial, 0, 2)).toEqual(['b', 'c', 'a']);
+		expect(initial).toEqual(['a', 'b', 'c']);
 	});
 
 	it('provides accurate ISO date parsing, arithmetic, month matrices, and week grids in dateUtils', () => {
@@ -119,6 +60,38 @@ describe('Phase 3 isolated engines (ReactGrid, ReactDnd, ReactCalendar)', () => 
 
 		expect(formatDisplayDate('2026-04-15', 'yyyy/MM/dd')).toBe('2026/04/15');
 		expect(formatDisplayDate(null, 'yyyy/MM/dd')).toBe('');
+
+		// Time, DateTime & Preset helpers
+		expect(parseTimeString('14:30')).toEqual({ hours: 14, minutes: 30, seconds: 0 });
+		expect(parseTimeString('2:05:09 PM')).toEqual({ hours: 14, minutes: 5, seconds: 9 });
+		expect(parseTimeString('12:00 AM')).toEqual({ hours: 0, minutes: 0, seconds: 0 });
+		expect(parseTimeString('12:15 PM')).toEqual({ hours: 12, minutes: 15, seconds: 0 });
+		expect(parseTimeString('25:99')).toBeNull();
+		expect(parseTimeString('')).toBeNull();
+
+		expect(formatIsoTime({ hours: 9, minutes: 5, seconds: 7 })).toBe('09:05');
+		expect(formatIsoTime('2:05:09 PM', true)).toBe('14:05:09');
+		expect(formatTimeString('14:30', { hourFormat: '12h' })).toBe('02:30 PM');
+		expect(formatTimeString('00:05:09', { hourFormat: '12h', showSeconds: true })).toBe('12:05:09 AM');
+
+		expect(compareTimeStrings('08:30', '14:00')).toBe(-1);
+		expect(compareTimeStrings('14:00', '14:00')).toBe(0);
+		expect(compareTimeStrings('18:45', '09:15')).toBe(1);
+
+		const parsedDt = parseIsoDateTime('2026-11-21T14:30:45');
+		expect(parsedDt).not.toBeNull();
+		expect(formatIsoDateTime(parsedDt?.date, parsedDt?.time)).toBe('2026-11-21 14:30');
+		expect(formatIsoDateTime('2026-11-21', '14:30:45', { separator: 'T', showSeconds: true })).toBe('2026-11-21T14:30:45');
+		expect(parseIsoDateTime('2026-11-21T25:99')).toBeNull();
+
+		const slots = buildTimeSlots(30, '09:00', '10:30');
+		expect(slots).toEqual(['09:00', '09:30', '10:00', '10:30']);
+
+		const presets = getDefaultDateRangePresets();
+		expect(presets.map((p) => p.id)).toEqual(['today', 'last7', 'last30', 'thisMonth', 'lastMonth']);
+		const last7 = presets[1]?.getRange(new Date(2026, 10, 21));
+		expect(formatIsoDate(last7?.from)).toBe('2026-11-15');
+		expect(formatIsoDate(last7?.to)).toBe('2026-11-21');
 	});
 
 	it('hydrates Grid, Dnd, and Calendar proxies under strict CSP without eval or inline CSS in core', () => {
@@ -198,7 +171,6 @@ const initial = {
 	calendarLoadedBefore: rt.Calendar.isLoaded(),
 	lazyDataGrid: rt.Grid.DataGrid,
 	lazySortableList: rt.Dnd.SortableListCanvas,
-	lazyKanban: rt.Dnd.KanbanBoardDnd,
 	lazyTree: rt.Dnd.SortableTreeCanvas,
 	lazyCalendar: rt.Calendar.Calendar,
 	lazyDatePicker: rt.Calendar.DatePicker,
@@ -230,7 +202,6 @@ console.log(JSON.stringify({
 		calendarLoadedBefore: initial.calendarLoadedBefore,
 		lazyDataGridIsFn: typeof initial.lazyDataGrid === 'function',
 		lazySortableListIsFn: typeof initial.lazySortableList === 'function',
-		lazyKanbanIsFn: typeof initial.lazyKanban === 'function',
 		lazyTreeIsFn: typeof initial.lazyTree === 'function',
 		lazyCalendarIsFn: typeof initial.lazyCalendar === 'function',
 		lazyDatePickerIsFn: typeof initial.lazyDatePicker === 'function',
@@ -245,12 +216,15 @@ console.log(JSON.stringify({
 	hasUseTable: typeof rt.Grid.useTable === 'function',
 	hasUseVirtualizer: typeof rt.Grid.useVirtualizer === 'function',
 	sortableListReplaced: typeof rt.Dnd.SortableListCanvas === 'function' && rt.Dnd.SortableListCanvas !== initial.lazySortableList,
-	kanbanReplaced: typeof rt.Dnd.KanbanBoardDnd === 'function' && rt.Dnd.KanbanBoardDnd !== initial.lazyKanban,
 	treeReplaced: typeof rt.Dnd.SortableTreeCanvas === 'function' && rt.Dnd.SortableTreeCanvas !== initial.lazyTree,
 	hasDndContext: Boolean(rt.Dnd.DndContext),
 	calendarReplaced: typeof rt.Calendar.Calendar === 'function' && rt.Calendar.Calendar !== initial.lazyCalendar,
 	datePickerReplaced: typeof rt.Calendar.DatePicker === 'function' && rt.Calendar.DatePicker !== initial.lazyDatePicker,
 	dateRangePickerReplaced: typeof rt.Calendar.DateRangePicker === 'function' && rt.Calendar.DateRangePicker !== initial.lazyDateRangePicker,
+	hasTimePicker: typeof rt.Calendar.TimePicker === 'function',
+	hasTimePickerPanel: typeof rt.Calendar.TimePickerPanel === 'function',
+	hasDateTimePicker: typeof rt.Calendar.DateTimePicker === 'function',
+	hasDateTimePickerPanel: typeof rt.Calendar.DateTimePickerPanel === 'function',
 	hasDayPicker: typeof rt.Calendar.DayPicker === 'function',
 	isoFormatted: typeof rt.Calendar.formatIsoDate === 'function' ? rt.Calendar.formatIsoDate('2026-04-15') : '',
 }));
@@ -271,12 +245,15 @@ console.log(JSON.stringify({
 			hasUseTable: boolean;
 			hasUseVirtualizer: boolean;
 			sortableListReplaced: boolean;
-			kanbanReplaced: boolean;
 			treeReplaced: boolean;
 			hasDndContext: boolean;
 			calendarReplaced: boolean;
 			datePickerReplaced: boolean;
 			dateRangePickerReplaced: boolean;
+			hasTimePicker: boolean;
+			hasTimePickerPanel: boolean;
+			hasDateTimePicker: boolean;
+			hasDateTimePickerPanel: boolean;
 			hasDayPicker: boolean;
 			isoFormatted: string;
 		};
@@ -288,7 +265,6 @@ console.log(JSON.stringify({
 			calendarLoadedBefore: false,
 			lazyDataGridIsFn: true,
 			lazySortableListIsFn: true,
-			lazyKanbanIsFn: true,
 			lazyTreeIsFn: true,
 			lazyCalendarIsFn: true,
 			lazyDatePickerIsFn: true,
@@ -303,12 +279,15 @@ console.log(JSON.stringify({
 		expect(result.hasUseTable).toBe(true);
 		expect(result.hasUseVirtualizer).toBe(true);
 		expect(result.sortableListReplaced).toBe(true);
-		expect(result.kanbanReplaced).toBe(true);
 		expect(result.treeReplaced).toBe(true);
 		expect(result.hasDndContext).toBe(true);
 		expect(result.calendarReplaced).toBe(true);
 		expect(result.datePickerReplaced).toBe(true);
 		expect(result.dateRangePickerReplaced).toBe(true);
+		expect(result.hasTimePicker).toBe(true);
+		expect(result.hasTimePickerPanel).toBe(true);
+		expect(result.hasDateTimePicker).toBe(true);
+		expect(result.hasDateTimePickerPanel).toBe(true);
 		expect(result.hasDayPicker).toBe(true);
 		expect(result.isoFormatted).toBe('2026-04-15');
 	});

@@ -87,11 +87,11 @@ test.describe('ProcessReactWorkspace Comprehensive Subsystems E2E (Viewports, Me
 		await expect(vp).toContainText('Alpha Flagship');
 
 		// 3. Switch Table -> Cards (`MarkupReactCards` canvas) -> Table via `/_react/viewport`
-		await vp.getByRole('button', { name: 'cards', exact: true }).click();
+		await vp.getByRole('button', { name: 'Cards', exact: true }).click();
 		await expect(vp).toHaveAttribute('data-viewport-mode', 'cards');
 		await expect(vp).toContainText('Alpha Flagship');
 
-		await vp.getByRole('button', { name: 'table', exact: true }).click();
+		await vp.getByRole('button', { name: 'Table', exact: true }).click();
 		await expect(vp).toHaveAttribute('data-viewport-mode', 'table');
 
 		// 4. Save named preset view (`save_view`) and delete it (`delete_view`)
@@ -692,7 +692,7 @@ test.describe('ProcessReactWorkspace Comprehensive Subsystems E2E (Viewports, Me
 			expect(requestedDistUrls.some((u) => u.includes('MarkupReactTable.js'))).toBe(true);
 			expect(requestedDistUrls.some((u) => u.includes('MarkupReactCards.js'))).toBe(false);
 
-			await isoVp.getByRole('button', { name: 'cards', exact: true }).click();
+			await isoVp.getByRole('button', { name: 'Cards', exact: true }).click();
 			await expect(isoVp).toHaveAttribute('data-viewport-mode', 'cards');
 			await expect(isoVp.locator('[data-rw-viewport-table]')).toHaveCount(0);
 			await expect(isoVp).toContainText('Beta Cruiser');

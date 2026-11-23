@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use ProcessWire\Field;
+use ProcessWire\Fieldgroup;
 use ProcessWire\HookEvent;
 use ProcessWire\Inputfield;
 use ProcessWire\InputfieldMarkup;
@@ -16,6 +18,7 @@ use ProcessWire\MarkupReactTab;
 use ProcessWire\Page;
 use ProcessWire\React;
 use ProcessWire\Role;
+use ProcessWire\Template;
 use ProcessWire\User;
 use ProcessWire\WireException;
 use Totoglu\React\Contract\ReactDataProviderInterface;
@@ -25,6 +28,7 @@ use Totoglu\React\Provider\ArrayDataProvider;
 use Totoglu\React\Provider\PagesDataProvider;
 use Totoglu\React\Relation\RelationStateSigner;
 use Totoglu\React\Security\SignedTokenCodec;
+use Totoglu\React\Security\UrlSanitizer;
 use Totoglu\React\Viewport\MarkupReactViewport;
 use Totoglu\React\Viewport\ReactViewPreferenceStore;
 use Totoglu\React\Workspace\WorkspaceDefinition;
@@ -67,47 +71,62 @@ test('ProcessReactWorkspace exposes registerViewportMode and getRegisteredViewpo
 	expect($viewportSrc)->not->toContain("'MarkupReact' .")
 		->and($viewportSrc)->not->toContain('"MarkupReact" .');
 
-	$workspace->registerViewportMode('timeline_test', 'MarkupReactTable', 'dateStart');
-	$workspace->registerViewportMode('board_test', 'MarkupReactCards', 'stage');
+	$workspace->registerViewportMode('reorder_mode', 'MarkupReactTable', \Totoglu\React\Contract\ReactReorderProvider::class, [
+		'icon' => 'columns',
+		'label' => 'Ordered',
+	]);
+	$workspace->registerViewportMode('summary_mode', 'MarkupReactCards', \Totoglu\React\Contract\ReactSummaryProvider::class);
 	$workspace->registerViewportMode('matrix_test', 'MarkupReactTable', '');
 	$workspace->registerViewportMode('missing_mod_mode', 'NonExistentViewportModXyz', '');
 
 	$registered = $workspace->getRegisteredViewportModes();
-	expect($registered)->toHaveKey('timeline_test')
-		->and($registered['timeline_test'])->toBe(['module' => 'MarkupReactTable', 'capability' => 'dateStart'])
-		->and($registered['board_test'])->toBe(['module' => 'MarkupReactCards', 'capability' => 'stage'])
-		->and($registered['matrix_test'])->toBe(['module' => 'MarkupReactTable', 'capability' => '']);
+	expect($registered)->toHaveKey('reorder_mode')
+		->and($registered['reorder_mode'])->toBe([
+			'module' => 'MarkupReactTable',
+			'contract' => \Totoglu\React\Contract\ReactReorderProvider::class,
+			'icon' => 'columns',
+			'label' => 'Ordered',
+		])
+		->and($registered['summary_mode']['module'])->toBe('MarkupReactCards')
+		->and($registered['matrix_test']['module'])->toBe('MarkupReactTable');
 
-	// Provider without stageField or dateStartField only gets table, cards, and capability='' installed mode
-	$plainTable = $workspace->configureTable([
-		['id' => '1', 'title' => 'Plain Item'],
-	], [
-		'stageField' => '',
-		'dateStartField' => '',
-	]);
+	// Provider without ReactReorderProvider or ReactSummaryProvider only gets table, cards, and contract='' installed modes
+	$plainProvider = new class extends \ProcessWire\Wire implements ReactDataProviderInterface {
+		public function id(): string { return 'plain:seam'; }
+		public function title(): string { return 'Plain'; }
+		public function columns(): array { return ['title' => 'Title']; }
+		public function sortableColumns(): array { return []; }
+		public function statusOptions(): array { return []; }
+		public function isLocked(): bool { return false; }
+		public function mutate(string $operation, array $ids, array $payload = []): int { return 0; }
+		public function query(array $criteria = []): \Totoglu\React\Data\ReactPageResult {
+			return new \Totoglu\React\Data\ReactPageResult([
+				new \Totoglu\React\Data\ReactRecord(id: '1', title: 'Plain Item'),
+			], 1, 1, 25);
+		}
+	};
+	wire($plainProvider);
+	$plainTable = $workspace->configureTable($plainProvider);
 	$plainProp = $plainTable->toInertiaProp();
 	expect($plainProp['allowedViewModes'])->toContain('table', 'cards', 'matrix_test')
-		->and($plainProp['allowedViewModes'])->not->toContain('board_test')
-		->and($plainProp['allowedViewModes'])->not->toContain('timeline_test')
+		->and($plainProp['allowedViewModes'])->not->toContain('reorder_mode')
+		->and($plainProp['allowedViewModes'])->not->toContain('summary_mode')
 		->and($plainProp['allowedViewModes'])->not->toContain('missing_mod_mode');
 
-	// Provider with stageField + dateStartField enables capability-gated registered modes
+	// Provider implementing ReactReorderProvider + ReactSummaryProvider enables contract-gated registered modes and emits viewModeMeta
 	$richProvider = new ArrayDataProvider(
 		id: 'array:mode_seam_test',
 		items: [
-			['id' => '1', 'title' => 'Scheduled Card', 'stage' => 'todo', 'start_date' => '2026-11-12'],
-		],
-		options: [
-			'stageField' => 'stage',
-			'dateStartField' => 'start_date',
+			['id' => '1', 'title' => 'Ordered Card'],
 		],
 	);
 	wire($richProvider);
 	$richTable = $workspace->configureTable($richProvider);
 	$richTable->mount();
 	$richProp = $richTable->toInertiaProp();
-	expect($richProp['allowedViewModes'])->toContain('table', 'cards', 'board_test', 'timeline_test', 'matrix_test')
-		->and($richProp['allowedViewModes'])->not->toContain('missing_mod_mode');
+	expect($richProp['allowedViewModes'])->toContain('table', 'cards', 'reorder_mode', 'summary_mode', 'matrix_test')
+		->and($richProp['allowedViewModes'])->not->toContain('missing_mod_mode')
+		->and($richProp['viewModeMeta']['reorder_mode'])->toBe(['icon' => 'columns', 'label' => 'Ordered']);
 });
 
 test('SignedTokenCodec, MarkupReactViewport, and RelationStateSigner reject weak userAuthSalt and enforce iat + 24h TTL', function (): void {
@@ -605,33 +624,31 @@ test('Server-side URL protocol sanitization and JSON_HEX_TAG | JSON_HEX_AMP prot
 		->and($reactInputValHtml)->toContain('\u003C');
 });
 
-test('Calendar OP_RESIZE_SPAN mutates dates in ArrayDataProvider and PagesDataProvider, FormSchemaSerializer extracts hidden inputs, and dead methods are removed', function (): void {
-	// 1. OP_RESIZE removed, OP_RESIZE_SPAN handled in ArrayDataProvider
+test('Removed viewport-specific OP_* constants stay absent from React core contracts, FormSchemaSerializer extracts hidden inputs, and dead methods are removed', function (): void {
+	// 1. Removed mode-specific OP_* constants stay off ReactDataProviderInterface while OP_UPDATE_FIELD stays functional
 	expect(defined(ReactDataProviderInterface::class . '::OP_RESIZE'))->toBeFalse()
-		->and(ReactDataProviderInterface::OP_RESIZE_SPAN)->toBe('resize_span');
+		->and(defined(ReactDataProviderInterface::class . '::OP_RESIZE_SPAN'))->toBeFalse()
+		->and(defined(ReactDataProviderInterface::class . '::OP_MOVE_STAGE'))->toBeFalse()
+		->and(defined(ReactDataProviderInterface::class . '::OP_RESCHEDULE'))->toBeFalse()
+		->and(defined(ReactDataProviderInterface::class . '::OP_SHIFT_DATES'))->toBeFalse()
+		->and(ReactDataProviderInterface::OP_UPDATE_FIELD)->toBe('update_field');
 
 	$arrayProvider = new ArrayDataProvider(
-		id: 'array:resize_span_test',
+		id: 'array:update_field_test',
 		items: [
 			[
 				'id' => 'ev_1',
 				'title' => 'Conference',
-				'start_date' => '2026-11-10',
-				'end_date' => '2026-11-12',
 			],
-		],
-		options: [
-			'dateStartField' => 'start_date',
-			'dateEndField' => 'end_date',
 		],
 	);
 	wire($arrayProvider);
-	$modified = $arrayProvider->mutate(ReactDataProviderInterface::OP_RESIZE_SPAN, ['ev_1'], [
-		'startDate' => '2026-11-10',
-		'endDate' => '2026-11-15',
+	$modified = $arrayProvider->mutate(ReactDataProviderInterface::OP_UPDATE_FIELD, ['ev_1'], [
+		'field' => 'title',
+		'value' => 'Updated Conference',
 	]);
 	expect($modified)->toBe(1)
-		->and($arrayProvider->findById('ev_1')?->endDate)->toBe('2026-11-15');
+		->and($arrayProvider->findById('ev_1')?->title)->toBe('Updated Conference');
 
 	// 2. FormSchemaSerializer extracts deduplicated hidden inputs from InputfieldMarkup HTML
 	$wrapper = new InputfieldWrapper();
@@ -1313,17 +1330,17 @@ test('PagesDataProvider protects core system pages from destructive or status-di
 			}
 		}
 
-		// Verify MarkupReactViewport enforces viewport-level locked, quickEditEnabled, exportFormats, and move_stage/reschedule field allowlists
+		// Verify MarkupReactViewport enforces viewport-level locked, quickEditEnabled, exportFormats, and field editability allowlists
 		$vpSecProvider = new \Totoglu\React\Provider\ArrayDataProvider(
 			id: 'array:vp_sec_guards',
 			items: [
-				['id' => 'row_1', 'title' => 'Alpha', 'stage' => 'todo', 'secret' => 'keep', 'start_date' => '2026-11-01', 'end_date' => '2026-11-02'],
+				['id' => 'row_1', 'title' => 'Alpha', 'label_note' => 'note', 'secret' => 'keep'],
 			],
 			options: [
-				'columns' => ['title' => 'Title', 'stage' => 'Stage'],
-				'stageField' => 'stage',
-				'dateStartField' => 'start_date',
-				'dateEndField' => 'end_date',
+				'columns' => ['title' => 'Title', 'label_note' => 'Note'],
+				'inlineEditableFields' => [
+					'label_note' => ['type' => 'text', 'label' => 'Note'],
+				],
 				'exportFormats' => ['csv'],
 			],
 		);
@@ -1334,8 +1351,8 @@ test('PagesDataProvider protects core system pages from destructive or status-di
 		$lockedMutateRes = $ws->handleViewportAction([
 			'_requestMethod' => 'POST',
 			'stateToken' => $lockedVpToken,
-			'action' => 'move_stage',
-			'payload' => ['id' => 'row_1', 'stage' => 'done'],
+			'action' => 'update_field',
+			'payload' => ['id' => 'row_1', 'field' => 'label_note', 'value' => 'tamper'],
 		], false);
 		expect($lockedMutateRes['ok'])->toBeFalse()
 			->and($lockedMutateRes['error'])->toBe('Viewport is locked');
@@ -1355,44 +1372,34 @@ test('PagesDataProvider protects core system pages from destructive or status-di
 		expect($quickEditBlocked['ok'])->toBeFalse()
 			->and($quickEditBlocked['error'])->toBe('Quick edit is not enabled');
 
-		$stageGroupTamper = $ws->handleViewportAction([
+		$fieldTamper = $ws->handleViewportAction([
 			'_requestMethod' => 'POST',
 			'stateToken' => $guardedVpToken,
-			'action' => 'move_stage',
-			'payload' => ['id' => 'row_1', 'stage' => 'done', 'groupField' => 'secret', 'groupVal' => 'pwned'],
+			'action' => 'update_field',
+			'payload' => ['id' => 'row_1', 'field' => 'secret', 'value' => 'pwned'],
 		], false);
-		expect($stageGroupTamper['ok'])->toBeFalse()
-			->and($stageGroupTamper['error'])->toBe('Field is not editable')
+		expect($fieldTamper['ok'])->toBeFalse()
+			->and($fieldTamper['error'])->toBe('Field is not editable')
 			->and($vpSecProvider->findById('row_1')?->values['secret'])->toBe('keep');
 
-		$laneTamper = $ws->handleViewportAction([
-			'_requestMethod' => 'POST',
-			'stateToken' => $guardedVpToken,
-			'action' => 'reschedule',
-			'payload' => ['id' => 'row_1', 'startDate' => '2026-11-05', 'laneField' => 'secret', 'laneVal' => 'pwned'],
-		], false);
-		expect($laneTamper['ok'])->toBeFalse()
-			->and($laneTamper['error'])->toBe('Field is not editable')
-			->and($vpSecProvider->findById('row_1')?->values['secret'])->toBe('keep');
-
-		$rowMoveStageTamper = $ws->handleViewportAction([
+		$rowTamper = $ws->handleViewportAction([
 			'_requestMethod' => 'POST',
 			'stateToken' => $guardedVpToken,
 			'action' => 'row_action',
-			'payload' => ['id' => 'row_1', 'rowAction' => 'move_stage', 'stage' => 'done', 'groupField' => 'secret', 'groupVal' => 'pwned'],
+			'payload' => ['id' => 'row_1', 'rowAction' => 'update_field', 'field' => 'secret', 'value' => 'pwned'],
 		], false);
-		expect($rowMoveStageTamper['ok'])->toBeFalse()
-			->and($rowMoveStageTamper['error'])->toBe('Field is not editable')
+		expect($rowTamper['ok'])->toBeFalse()
+			->and($rowTamper['error'])->toBe('Field is not editable')
 			->and($vpSecProvider->findById('row_1')?->values['secret'])->toBe('keep');
 
-		$bulkRescheduleTamper = $ws->handleViewportAction([
+		$bulkTamper = $ws->handleViewportAction([
 			'_requestMethod' => 'POST',
 			'stateToken' => $guardedVpToken,
 			'action' => 'bulk_action',
-			'payload' => ['bulkAction' => 'reschedule', 'ids' => ['row_1'], 'fields' => ['startDate' => '2026-11-05', 'laneField' => 'secret', 'laneVal' => 'pwned']],
+			'payload' => ['bulkAction' => 'update_field', 'ids' => ['row_1'], 'fields' => ['field' => 'secret', 'value' => 'pwned']],
 		], false);
-		expect($bulkRescheduleTamper['ok'])->toBeFalse()
-			->and($bulkRescheduleTamper['error'])->toBe('Field is not editable')
+		expect($bulkTamper['ok'])->toBeFalse()
+			->and($bulkTamper['error'])->toBe('Field is not editable')
 			->and($vpSecProvider->findById('row_1')?->values['secret'])->toBe('keep');
 
 		$pageRelAdapter = $ws->relations()->get('page');
@@ -1508,6 +1515,406 @@ test('PagesDataProvider protects core system pages from destructive or status-di
 	} finally {
 		if ($prevUser instanceof User && $prevUser->id > 0) {
 			wire('users')->setCurrentUser($prevUser);
+		}
+	}
+});
+
+test('PagesDataProvider and MarkupReactViewport block selector directive injection and prevent non-superuser restricted total count leaks', function (): void {
+	$pw = wire();
+	$modules = $pw->modules;
+	$fields = $pw->fields;
+	$fieldgroups = $pw->fieldgroups;
+	$templates = $pw->templates;
+	$pages = $pw->pages;
+	$users = $pw->users;
+	/** @var React $workspace */
+	$workspace = wire('react');
+
+	$suffix = substr(bin2hex(random_bytes(4)), 0, 8);
+	$tagFieldName = 'rw_sec_tag_' . $suffix;
+	$openTplName = 'rw_open_tpl_' . $suffix;
+	$lockedTplName = 'rw_locked_tpl_' . $suffix;
+	$editorUserName = 'rw_sec_editor_' . $suffix;
+	$editorRoleName = 'rw_sec_role_' . $suffix;
+
+	$tagField = null;
+	$openFg = null;
+	$lockedFg = null;
+	$openTpl = null;
+	$lockedTpl = null;
+	$editorUser = null;
+	$editorRole = null;
+	$createdPages = [];
+	$prevUser = $users->getCurrentUser();
+
+	try {
+		$tagField = new Field();
+		$tagField->type = $modules->get('FieldtypeText');
+		$tagField->name = $tagFieldName;
+		$tagField->label = 'Security Tag';
+		$fields->save($tagField);
+
+		$openFg = new Fieldgroup();
+		$openFg->name = $openTplName;
+		$openFg->add($fields->get('title'));
+		$openFg->add($tagField);
+		$fieldgroups->save($openFg);
+
+		$openTpl = new Template();
+		$openTpl->name = $openTplName;
+		$openTpl->fieldgroup = $openFg;
+		$templates->save($openTpl);
+
+		$lockedFg = new Fieldgroup();
+		$lockedFg->name = $lockedTplName;
+		$lockedFg->add($fields->get('title'));
+		$lockedFg->add($tagField);
+		$fieldgroups->save($lockedFg);
+
+		$lockedTpl = new Template();
+		$lockedTpl->name = $lockedTplName;
+		$lockedTpl->fieldgroup = $lockedFg;
+		$lockedTpl->useRoles = 1;
+		$lockedTpl->setRoles([]);
+		$templates->save($lockedTpl);
+
+		$editorRole = $pw->roles->add($editorRoleName);
+		$pageEditPerm = $pw->permissions->get('page-edit');
+		if ($pageEditPerm && $pageEditPerm->id) {
+			$editorRole->addPermission($pageEditPerm);
+		}
+		$pw->roles->save($editorRole);
+
+		$openTpl->useRoles = 1;
+		$guestRole = $pw->roles->get('guest');
+		$openRoles = [$editorRole];
+		if ($guestRole && $guestRole->id) {
+			$openRoles[] = $guestRole;
+		}
+		$openTpl->setRoles($openRoles, 'view');
+		$openTpl->setRoles([$editorRole], 'edit');
+		$templates->save($openTpl);
+
+		$editorUser = $users->add($editorUserName);
+		$editorUser->addRole('guest');
+		$editorUser->addRole($editorRole);
+		$users->save($editorUser);
+
+		// Create 2 restricted pages BEFORE 2 open pages so chunking/pagination ordering is non-trivial
+		foreach ([$lockedTpl, $lockedTpl, $openTpl, $openTpl] as $idx => $pTpl) {
+			$p = new Page();
+			$p->template = $pTpl;
+			$p->parent = $pages->get(1);
+			$p->name = "sec-item-{$idx}-{$suffix}";
+			$p->title = "Sec Item {$idx}";
+			$p->set($tagFieldName, $idx < 3 ? 'alpha' : 'beta');
+			$pages->save($p);
+			$createdPages[] = $p;
+		}
+
+		$providerId = 'pages:template=' . $openTplName . '|' . $lockedTplName;
+		$providerOptions = [
+			'columns' => ['title' => 'Title', $tagFieldName => 'Tag', 'status' => 'Status'],
+			'sortableColumns' => ['title', 'id'],
+			'filterableFields' => [
+				$tagFieldName => [
+					'label' => 'Security Tag',
+					'type' => 'select',
+					'options' => ['alpha' => 'Alpha', 'beta' => 'Beta'],
+				],
+			],
+		];
+
+		$provider = new PagesDataProvider('template=' . $openTplName . '|' . $lockedTplName, $providerOptions);
+		wire($provider);
+		$workspace->providers()->register($providerId, $provider);
+
+		// Switch to non-superuser lacking access to $lockedTpl
+		$users->setCurrentUser($editorUser);
+
+		// 1. Direct buildSelectorString() strips reserved directives and system fields while keeping allowlisted fields
+		$builtSelector = $provider->buildSelectorString([
+			'fieldFilters' => [
+				'check_access' => '0',
+				'include' => 'all',
+				'limit' => '0',
+				'start' => '0',
+				'template' => $lockedTplName,
+				'email' => 'admin@example.com',
+				'pass' => 'secret',
+				$tagFieldName => 'alpha',
+			],
+		]);
+		expect($builtSelector)->toContain($tagFieldName . '=alpha')
+			->and($builtSelector)->not->toContain('check_access=0')
+			->and($builtSelector)->not->toContain('include=all')
+			->and($builtSelector)->not->toContain('limit=0')
+			->and($builtSelector)->not->toContain('email=')
+			->and($builtSelector)->not->toContain('pass=');
+
+		// 2. Non-superuser query returns ONLY viewable/editable pages and never leaks restricted total count
+		$unfilteredRes = $provider->query(['limit' => 1, 'pageNum' => 1, 'sortBy' => 'id']);
+		expect($unfilteredRes->total)->toBe(2)
+			->and($unfilteredRes->items)->toHaveCount(1)
+			->and($unfilteredRes->items[0]->title)->toBe('Sec Item 2');
+
+		// 3. MarkupReactViewport ignores client-injected filterValues & action=filter keys, counts only accessible pages,
+		//    allows declared filters, and preserves server-signed view presets
+		$vp = $workspace->configureTable($provider, [
+			'filters' => [
+				$tagFieldName => [
+					'label' => 'Tag',
+					'type' => 'select',
+					'options' => ['alpha' => 'Alpha', 'beta' => 'Beta'],
+				],
+			],
+			'views' => [
+				'alpha_preset' => [
+					'label' => 'Alpha Only',
+					'fieldFilters' => [$tagFieldName => 'alpha'],
+				],
+			],
+		]);
+		$stateToken = (string) ($vp->toInertiaProp()['stateToken'] ?? '');
+
+		$injectedStateRes = $workspace->handleViewportAction([
+			'stateToken' => $stateToken,
+			'action' => 'fetch',
+			'state' => [
+				'filterValues' => [
+					'check_access' => '0',
+					'include' => 'all',
+					'limit' => '0',
+					'template' => $lockedTplName,
+					'email' => 'x@y.z',
+					$tagFieldName => 'alpha',
+				],
+			],
+		]);
+		expect($injectedStateRes['ok'])->toBeTrue()
+			->and($injectedStateRes['viewport']['total'])->toBe(1)
+			->and($injectedStateRes['viewport']['records'][0]['title'])->toBe('Sec Item 2')
+			->and($injectedStateRes['viewport']['filterValues'])->toBe([$tagFieldName => 'alpha']);
+
+		$injectedFilterRes = $workspace->handleViewportAction([
+			'stateToken' => $stateToken,
+			'action' => 'filter',
+			'payload' => [
+				'filters' => [
+					'include' => 'all',
+					'check_access' => '0',
+					$tagFieldName => 'beta',
+				],
+			],
+		]);
+		expect($injectedFilterRes['ok'])->toBeTrue()
+			->and($injectedFilterRes['viewport']['total'])->toBe(1)
+			->and($injectedFilterRes['viewport']['records'][0]['title'])->toBe('Sec Item 3')
+			->and($injectedFilterRes['viewport']['filterValues'])->toBe([$tagFieldName => 'beta']);
+
+		$csrf = $pw->session->CSRF;
+		$signedViewRes = $workspace->handleViewportAction([
+			'stateToken' => $stateToken,
+			'action' => 'select_view',
+			'payload' => ['view' => 'alpha_preset'],
+			'_requestMethod' => 'POST',
+			(string) $csrf->getTokenName() => (string) $csrf->getTokenValue(),
+		], true);
+		expect($signedViewRes['ok'])->toBeTrue()
+			->and($signedViewRes['viewport']['total'])->toBe(1)
+			->and($signedViewRes['viewport']['records'][0]['title'])->toBe('Sec Item 2');
+	} finally {
+		if ($prevUser instanceof User && $prevUser->id > 0) {
+			$users->setCurrentUser($prevUser);
+		}
+		foreach (array_reverse($createdPages) as $p) {
+			if ($p->id > 0) {
+				try {
+					$pages->delete($p, true);
+				} catch (\Throwable) {
+				}
+			}
+		}
+		$classesDir = rtrim((string) wire('config')->paths->classes, '/') . '/';
+		foreach ([$openTpl, $lockedTpl] as $t) {
+			if ($t instanceof Template && $t->id > 0) {
+				$pascal = str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', (string) $t->name)));
+				try {
+					$templates->delete($t);
+				} catch (\Throwable) {
+				}
+				$classFile = $classesDir . $pascal . 'Page.php';
+				if (is_file($classFile)) {
+					unlink($classFile);
+				}
+			}
+		}
+		foreach ([$openFg, $lockedFg] as $g) {
+			if ($g instanceof Fieldgroup && $g->id > 0) {
+				try {
+					$fieldgroups->delete($g);
+				} catch (\Throwable) {
+				}
+			}
+		}
+		if ($tagField instanceof Field && $tagField->id > 0) {
+			try {
+				$fields->delete($tagField);
+			} catch (\Throwable) {
+			}
+		}
+		if ($editorUser instanceof User && $editorUser->id > 0) {
+			try {
+				$users->delete($editorUser, true);
+			} catch (\Throwable) {
+			}
+		}
+		if ($editorRole instanceof Role && $editorRole->id > 0) {
+			try {
+				$pw->roles->delete($editorRole);
+			} catch (\Throwable) {
+			}
+		}
+	}
+});
+
+test('MediaGateway::executeTransform masks raw exceptions when debug=false and UrlSanitizer rejects empty hosts when allowBareRelative=false', function (): void {
+	expect(UrlSanitizer::sanitizeHref('https://:80/', false))->toBe('')
+		->and(UrlSanitizer::sanitizeHref('https://', false))->toBe('')
+		->and(UrlSanitizer::sanitizeHref('http://:8080/path', false))->toBe('')
+		->and(UrlSanitizer::sanitizeHref('https://example.com:8080/ok', false))->toBe('https://example.com:8080/ok');
+
+	$pw = wire();
+	$modules = $pw->modules;
+	$fields = $pw->fields;
+	$fieldgroups = $pw->fieldgroups;
+	$templates = $pw->templates;
+	$pages = $pw->pages;
+	/** @var React $workspace */
+	$workspace = wire('react');
+
+	$suffix = substr(bin2hex(random_bytes(4)), 0, 8);
+	$imgFieldName = 'rw_mg_mask_img_' . $suffix;
+	$tplName = 'rw_mg_mask_tpl_' . $suffix;
+	$imgField = null;
+	$fg = null;
+	$tpl = null;
+	$hostPage = null;
+	$tmpDir = sys_get_temp_dir() . '/rw_mg_mask_' . $suffix;
+	mkdir($tmpDir, 0777, true);
+	$prevDebug = (bool) $pw->config->debug;
+
+	try {
+		$imgField = new Field();
+		$imgField->type = $modules->get('FieldtypeImage');
+		$imgField->name = $imgFieldName;
+		$imgField->label = 'Media Image';
+		$imgField->set('extensions', 'png');
+		$fields->save($imgField);
+
+		$fg = new Fieldgroup();
+		$fg->name = $tplName;
+		$fg->add($fields->get('title'));
+		$fg->add($imgField);
+		$fieldgroups->save($fg);
+
+		$tpl = new Template();
+		$tpl->name = $tplName;
+		$tpl->fieldgroup = $fg;
+		$templates->save($tpl);
+
+		$hostPage = new Page();
+		$hostPage->template = $tpl;
+		$hostPage->parent = $pages->get(1);
+		$hostPage->name = 'mg-mask-host-' . $suffix;
+		$hostPage->title = 'Media Mask Host';
+		$pages->save($hostPage);
+
+		$pngPath = $tmpDir . '/sample.png';
+		$gd = imagecreatetruecolor(32, 24);
+		$fill = imagecolorallocate($gd, 80, 120, 200);
+		imagefilledrectangle($gd, 0, 0, 32, 24, $fill);
+		imagepng($gd, $pngPath);
+
+		$hostPage->of(false);
+		$hostPage->getUnformatted($imgFieldName)->add($pngPath);
+		$hostPage->save($imgFieldName);
+		$savedImg = $hostPage->getUnformatted($imgFieldName)->first();
+		expect($savedImg)->not->toBeNull();
+		// Overwrite persisted disk image with unrecognized binary bytes so ImageSizer throws a WireException during rotate
+		file_put_contents((string) $savedImg->filename(), 'corrupt-binary-data');
+
+		$token = $workspace->media()->sign([
+			'kind' => 'page',
+			'isImage' => true,
+			'pageId' => (int) $hostPage->id,
+			'rootPageId' => (int) $hostPage->id,
+			'fieldName' => $imgFieldName,
+			'extensions' => ['png'],
+		], (int) $pw->user->id);
+
+		$csrf = $pw->session->CSRF;
+		$payload = [
+			'action' => 'transform',
+			'mediaToken' => $token,
+			'operation' => 'rotate',
+			'degrees' => 90,
+			'targetName' => 'sample.png',
+			'_requestMethod' => 'POST',
+			(string) $csrf->getTokenName() => (string) $csrf->getTokenValue(),
+		];
+
+		$pw->config->debug = false;
+		$maskedRes = $workspace->handleMediaAction($payload, true);
+		expect($maskedRes['ok'])->toBeFalse()
+			->and($maskedRes['status'])->toBe(500)
+			->and($maskedRes['error'])->toBe('Image transformation failed.')
+			->and((string) $maskedRes['error'])->not->toContain('not a recognized image');
+
+		$pw->config->debug = true;
+		$debugRes = $workspace->handleMediaAction($payload, true);
+		expect($debugRes['ok'])->toBeFalse()
+			->and($debugRes['status'])->toBe(500)
+			->and((string) $debugRes['error'])->toContain('not a recognized image');
+	} finally {
+		$pw->config->debug = $prevDebug;
+		if ($hostPage instanceof Page && $hostPage->id > 0) {
+			try {
+				$pages->delete($hostPage, true);
+			} catch (\Throwable) {
+			}
+		}
+		$classesDir = rtrim((string) wire('config')->paths->classes, '/') . '/';
+		if ($tpl instanceof Template && $tpl->id > 0) {
+			$pascal = str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', (string) $tpl->name)));
+			try {
+				$templates->delete($tpl);
+			} catch (\Throwable) {
+			}
+			$classFile = $classesDir . $pascal . 'Page.php';
+			if (is_file($classFile)) {
+				unlink($classFile);
+			}
+		}
+		if ($fg instanceof Fieldgroup && $fg->id > 0) {
+			try {
+				$fieldgroups->delete($fg);
+			} catch (\Throwable) {
+			}
+		}
+		if ($imgField instanceof Field && $imgField->id > 0) {
+			try {
+				$fields->delete($imgField);
+			} catch (\Throwable) {
+			}
+		}
+		if (is_dir($tmpDir)) {
+			foreach (glob($tmpDir . '/*') ?: [] as $f) {
+				if (is_file($f)) {
+					unlink($f);
+				}
+			}
+			rmdir($tmpDir);
 		}
 	}
 });

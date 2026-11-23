@@ -86,13 +86,23 @@ afterEach(function (): void {
 			}
 		}
 	}
+	$classesDir = rtrim((string) wire('config')->paths->classes, '/') . '/';
 	foreach (array_reverse($this->cleanupTemplates ?? []) as $tpl) {
 		if ($tpl instanceof Template && $tpl->id > 0) {
+			$tplName = (string) $tpl->name;
+			$isSystem = (bool) ($tpl->flags & Template::flagSystem);
+			$pascal = str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $tplName)));
 			try {
 				$tpl->flags = Template::flagSystemOverride;
 				$tpl->flags = 0;
 				wire('templates')->delete($tpl);
 			} catch (\Throwable) {
+			}
+			if (!$isSystem) {
+				$classFile = $classesDir . $pascal . 'Page.php';
+				if (is_file($classFile)) {
+					unlink($classFile);
+				}
 			}
 		}
 	}
@@ -710,8 +720,9 @@ test('MediaGateway blocks SVG by default on empty image extensions and rejects X
 		'extensions' => [],
 	], (int) wire('user')->id);
 
+	$cleanSvgContent = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#0ea5e9"/></svg>';
 	$cleanSvg = $tmpDir . '/clean-logo.svg';
-	file_put_contents($cleanSvg, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#0ea5e9"/></svg>');
+	file_put_contents($cleanSvg, $cleanSvgContent);
 
 	$blockedDefaultSvg = $gateway->handleAction(
 		['action' => 'upload', 'mediaToken' => $defaultToken],
@@ -747,6 +758,9 @@ test('MediaGateway blocks SVG by default on empty image extensions and rejects X
 		expect($res['ok'])->toBeFalse()
 			->and($res['status'])->toBe(422);
 	}
+
+	// Re-create the temp upload file since WireUpload unlinks invalid ajax temp files during the rejected upload above
+	file_put_contents($cleanSvg, $cleanSvgContent);
 
 	$allowedCleanSvg = $gateway->handleAction(
 		['action' => 'upload', 'mediaToken' => $svgToken],
@@ -1039,17 +1053,20 @@ test('MediaGateway enforces field-level RBAC without unscoped editable bypass an
 	wire('fieldgroups')->save($hostFg);
 	$this->cleanupFieldgroups[] = $hostFg;
 
-	$editorRole = wire('roles')->add('rw-rep-editor-' . $suffix);
-	$editorRole->addPermission('page-view');
-	$editorRole->addPermission('page-edit');
-	wire('roles')->save($editorRole);
-
-	$editorUser = wire('users')->add('rw-rep-user-' . $suffix);
-	$editorUser->pass = 'Str0ngPass!' . $suffix;
-	$editorUser->addRole($editorRole);
-	wire('users')->save($editorUser);
+	$editorRole = null;
+	$editorUser = null;
 
 	try {
+		$editorRole = wire('roles')->add('rw-rep-editor-' . $suffix);
+		$editorRole->addPermission('page-view');
+		$editorRole->addPermission('page-edit');
+		wire('roles')->save($editorRole);
+
+		$editorUser = wire('users')->add('rw-rep-user-' . $suffix);
+		$editorUser->pass = 'Str0ngPass!' . $suffix;
+		$editorUser->addRole($editorRole);
+		wire('users')->save($editorUser);
+
 		$hostTpl = new Template();
 		$hostTpl->name = $hostFg->name;
 		$hostTpl->fieldgroup = $hostFg;
@@ -1131,13 +1148,22 @@ test('MediaGateway enforces field-level RBAC without unscoped editable bypass an
 	} finally {
 		$superUser = wire('users')->get((int) (wire('config')->superUserPageID ?: 41));
 		if ($superUser instanceof User && $superUser->id > 0) {
-			wire('users')->setCurrentUser($superUser);
+			try {
+				wire('users')->setCurrentUser($superUser);
+			} catch (\Throwable) {
+			}
 		}
-		if ($editorUser->id > 0) {
-			wire('users')->delete($editorUser);
+		if ($editorUser instanceof User && $editorUser->id > 0) {
+			try {
+				wire('users')->delete($editorUser);
+			} catch (\Throwable) {
+			}
 		}
-		if ($editorRole->id > 0) {
-			wire('roles')->delete($editorRole);
+		if ($editorRole instanceof \ProcessWire\Role && $editorRole->id > 0) {
+			try {
+				wire('roles')->delete($editorRole);
+			} catch (\Throwable) {
+			}
 		}
 	}
 });

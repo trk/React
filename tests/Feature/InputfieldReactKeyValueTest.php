@@ -310,17 +310,35 @@ test('Page lifecycle with TextformatterEntities and Inertia ScalarFieldDataProvi
 		$reloaded->of(false);
 		expect($reloaded->getUnformatted($fieldName))->toBe('{"default":"Standard Preset","0":"Fallback"}');
 	} finally {
+		$classesDir = rtrim((string) wire('config')->paths->classes, '/') . '/';
 		if ($testPage instanceof Page && $testPage->id > 0) {
-			$pages->delete($testPage, true);
+			try {
+				$pages->delete($testPage, true);
+			} catch (\Throwable) {
+			}
 		}
 		if ($tpl instanceof Template && $tpl->id > 0) {
-			$templates->delete($tpl);
+			$pascal = str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', (string) $tpl->name)));
+			try {
+				$templates->delete($tpl);
+			} catch (\Throwable) {
+			}
+			$classFile = $classesDir . $pascal . 'Page.php';
+			if (is_file($classFile)) {
+				unlink($classFile);
+			}
 		}
 		if ($fg instanceof Fieldgroup && $fg->id > 0) {
-			$fieldgroups->delete($fg);
+			try {
+				$fieldgroups->delete($fg);
+			} catch (\Throwable) {
+			}
 		}
 		if ($kvField instanceof Field && $kvField->id > 0) {
-			$fields->delete($kvField);
+			try {
+				$fields->delete($kvField);
+			} catch (\Throwable) {
+			}
 		}
 	}
 });
@@ -451,30 +469,57 @@ test('isBlockedKey, validateRegexPattern ReDoS protection, TSV parsing, config f
 				'port' => 'Thunderbolt 5',
 			]);
 	} finally {
+		$classesDir = rtrim((string) wire('config')->paths->classes, '/') . '/';
 		if ($hostPage instanceof Page && $hostPage->id > 0) {
-			$pages->delete($hostPage, true);
+			try {
+				$pages->delete($hostPage, true);
+			} catch (\Throwable) {
+			}
 		}
 		if ($hostTpl instanceof Template && $hostTpl->id > 0) {
-			$templates->delete($hostTpl);
+			$pascal = str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', (string) $hostTpl->name)));
+			try {
+				$templates->delete($hostTpl);
+			} catch (\Throwable) {
+			}
+			$classFile = $classesDir . $pascal . 'Page.php';
+			if (is_file($classFile)) {
+				unlink($classFile);
+			}
 		}
 		if ($hostFg instanceof Fieldgroup && $hostFg->id > 0) {
-			$fieldgroups->delete($hostFg);
+			try {
+				$fieldgroups->delete($hostFg);
+			} catch (\Throwable) {
+			}
 		}
+		$repTplCleanup = $templates->get("repeater_{$repFieldName}");
+		$repFgCleanup = $fieldgroups->get("repeater_{$repFieldName}");
 		if ($repField instanceof Field && $repField->id > 0) {
-			$repTplCleanup = $templates->get("repeater_{$repFieldName}");
-			$repFgCleanup = $fieldgroups->get("repeater_{$repFieldName}");
-			$fields->delete($repField);
-			if ($repTplCleanup instanceof Template && $repTplCleanup->id > 0) {
+			try {
+				$fields->delete($repField);
+			} catch (\Throwable) {
+			}
+		}
+		if ($repTplCleanup instanceof Template && $repTplCleanup->id > 0) {
+			try {
 				$repTplCleanup->flags = Template::flagSystemOverride;
 				$repTplCleanup->flags = 0;
 				$templates->delete($repTplCleanup);
+			} catch (\Throwable) {
 			}
-			if ($repFgCleanup instanceof Fieldgroup && $repFgCleanup->id > 0) {
+		}
+		if ($repFgCleanup instanceof Fieldgroup && $repFgCleanup->id > 0) {
+			try {
 				$fieldgroups->delete($repFgCleanup);
+			} catch (\Throwable) {
 			}
 		}
 		if ($subKvField instanceof Field && $subKvField->id > 0) {
-			$fields->delete($subKvField);
+			try {
+				$fields->delete($subKvField);
+			} catch (\Throwable) {
+			}
 		}
 	}
 });

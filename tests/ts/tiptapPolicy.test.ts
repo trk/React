@@ -60,6 +60,18 @@ describe('Tiptap Content Policy & CSS Sanitizer', () => {
 		expect(clean.toLowerCase()).not.toContain('expression(');
 		expect(clean.toLowerCase()).not.toContain('-moz-binding');
 		expect(clean.toLowerCase()).not.toContain('javascript:');
+
+		const nestedBreakout = sanitizeExtraCss('body{color:red} <<//style><img src=x onerror=alert(1)>');
+		expect(nestedBreakout).toContain('body{color:red}');
+		expect(nestedBreakout.toLowerCase()).not.toContain('</style');
+		expect(nestedBreakout.toLowerCase()).not.toContain('<img');
+		expect(nestedBreakout).not.toContain('<');
+
+		const multiLayerBreakout = sanitizeExtraCss('a{color:blue} <<<///style><script>alert(2)</script>');
+		expect(multiLayerBreakout).toContain('a{color:blue}');
+		expect(multiLayerBreakout.toLowerCase()).not.toContain('<script');
+		expect(multiLayerBreakout.toLowerCase()).not.toContain('</style');
+		expect(multiLayerBreakout).not.toContain('<');
 	});
 
 	it('validates ProcessWire link/image/anchor helpers in CorePwExtensions', async () => {

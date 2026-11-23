@@ -458,16 +458,16 @@ describe('Runtime Utilities, Formula Engine, i18n, Sortable Tree & Media Helpers
 		const { AppShell } = await import('../../resources/ts/layout/AppShell');
 		const { withWorkspaceShellUrl } = await import('../../resources/ts/lib/inertia-bridge');
 
-		expect(withWorkspaceShellUrl('/processwire/setup/wire-seo/', true)).toBe(
-			'/processwire/setup/wire-seo/?ws=1'
+		expect(withWorkspaceShellUrl('/processwire/setup/seo/', true)).toBe(
+			'/processwire/setup/seo/?ws=1'
 		);
-		expect(withWorkspaceShellUrl('/processwire/setup/wire-seo/edit/?type=redirects#top', true)).toBe(
-			'/processwire/setup/wire-seo/edit/?type=redirects&ws=1#top'
+		expect(withWorkspaceShellUrl('/processwire/setup/seo/edit/?type=redirects#top', true)).toBe(
+			'/processwire/setup/seo/edit/?type=redirects&ws=1#top'
 		);
 		expect(withWorkspaceShellUrl('/processwire/workspace/', true)).toBe('/processwire/workspace/');
 		expect(withWorkspaceShellUrl('/processwire/', true)).toBe('/processwire/');
-		expect(withWorkspaceShellUrl('/processwire/setup/wire-seo/?export=csv', true)).toBe(
-			'/processwire/setup/wire-seo/?export=csv'
+		expect(withWorkspaceShellUrl('/processwire/setup/seo/?export=csv', true)).toBe(
+			'/processwire/setup/seo/?export=csv'
 		);
 
 		const baseWorkspace = {
@@ -483,8 +483,8 @@ describe('Runtime Utilities, Formula Engine, i18n, Sortable Tree & Media Helpers
 				description: 'Search settings',
 				icon: 'line-chart',
 				category: 'Marketing',
-				url: '/processwire/setup/wire-seo/',
-				permission: 'wire-seo-admin',
+				url: '/processwire/setup/seo/',
+				permission: 'seo-admin',
 				order: 10,
 				badge: '',
 				stats: [],
@@ -508,7 +508,7 @@ describe('Runtime Utilities, Formula Engine, i18n, Sortable Tree & Media Helpers
 		expect(adminModeHtml).toContain('data-rw-app-shell="admin"');
 		expect(adminModeHtml).not.toContain('data-rw-admin-return');
 		expect(adminModeHtml).toContain('data-rw-open-in-workspace');
-		expect(adminModeHtml).toContain('href="/processwire/setup/wire-seo/?ws=1"');
+		expect(adminModeHtml).toContain('href="/processwire/setup/seo/?ws=1"');
 		expect(adminModeHtml).toContain('data-rw-app-main=""');
 
 		const standaloneNoHubHtml = renderToStaticMarkup(
@@ -673,6 +673,191 @@ describe('Runtime Utilities, Formula Engine, i18n, Sortable Tree & Media Helpers
 			})
 		);
 		expect(dirtyRecordHeaderHtml).toContain('data-rw-record-status="dirty"');
+	});
+
+	it('renders selection-aware Export controls and wide SchemaForm Quick Edit modal with external form submit', async () => {
+		const { DataViewport } = await import('../../resources/ts/viewports/DataViewport');
+		const { ViewportQuickEditSheet } = await import('../../resources/ts/viewports/ViewportQuickEditSheet');
+		const { SchemaForm } = await import('../../resources/ts/fields/SchemaForm');
+
+		const baseViewportProps = {
+			componentId: 'vp_export_scope_test',
+			title: 'Articles',
+			viewMode: 'table' as const,
+			columns: { title: { label: 'Title' }, status: { label: 'Status' } },
+			records: [
+				{ id: 'rec-1', title: 'Alpha', status: 'Published' },
+				{ id: 'rec-2', title: 'Beta', status: 'Published' },
+			],
+			total: 12,
+			exportEnabled: true,
+			exportFormats: ['csv', 'json'],
+			supportsTrash: true,
+			trashCount: 4,
+			isTrashView: true,
+			filters: {
+				status: {
+					label: 'Status',
+					type: 'select' as const,
+					options: { published: 'Published', trash: 'Trash' },
+				},
+			},
+			filterValues: { status: 'trash' },
+		};
+
+		const filteredExportHtml = renderToStaticMarkup(React.createElement(DataViewport, baseViewportProps));
+		expect(filteredExportHtml).toContain('data-rw-viewport-trash-toggle=""');
+		expect(filteredExportHtml).toContain('data-rw-viewport-trash-bar=""');
+		expect(filteredExportHtml).toContain('Back to Active Items');
+		expect(filteredExportHtml).toContain('Empty Trash');
+		expect(filteredExportHtml).toContain('data-rw-viewport-export="filtered"');
+		expect(filteredExportHtml).toContain('Export Filtered');
+		expect(filteredExportHtml).not.toContain('data-rw-viewport-export="selected"');
+
+		const unfilteredAllExportHtml = renderToStaticMarkup(
+			React.createElement(DataViewport, {
+				...baseViewportProps,
+				isTrashView: false,
+				filterValues: {},
+				searchQuery: '',
+				activeView: 'all',
+				selectedIds: [],
+			})
+		);
+		expect(unfilteredAllExportHtml).toContain('data-rw-viewport-export="all"');
+		expect(unfilteredAllExportHtml).toContain('Export All');
+
+		const selectedExportHtml = renderToStaticMarkup(
+			React.createElement(DataViewport, {
+				...baseViewportProps,
+				selectedIds: ['rec-1', 'rec-2'],
+			})
+		);
+		expect(selectedExportHtml).toContain('data-rw-viewport-export="selected"');
+		expect(selectedExportHtml).toContain('Export Selected (2)');
+		expect(selectedExportHtml).not.toContain('data-rw-viewport-export="filtered"');
+
+		const quickEditHtml = renderToStaticMarkup(
+			React.createElement(ViewportQuickEditSheet, {
+				ssrFallback: true,
+				busy: false,
+				schemaFormComponent: SchemaForm,
+				quickEdit: {
+					recordId: 'rec-1',
+					title: 'English Title',
+					editUrl: '/processwire/page/edit/?id=101',
+					formSchema: {
+						id: 'qe-form-rec-1',
+						fields: [
+							{
+								kind: 'control',
+								type: 'text',
+								name: 'title',
+								id: 'Inputfield_title',
+								label: 'Title',
+								value: 'English Title',
+								useLanguages: true,
+								languages: [
+									{ id: 1010, name: 'default', title: 'English', isDefault: true, editable: true, inputName: 'title', inputId: 'Inputfield_title', value: 'English Title' },
+									{ id: 1011, name: 'tr', title: 'Türkçe', isDefault: false, editable: true, inputName: 'title__1011', inputId: 'Inputfield_title__1011', value: 'Turkce Baslik' },
+								],
+							},
+							{
+								kind: 'control',
+								type: 'textarea',
+								name: 'excerpt',
+								id: 'Inputfield_excerpt',
+								label: 'Excerpt',
+								rows: 6,
+								value: "Line 1\nLine 2",
+								useLanguages: true,
+								languages: [
+									{ id: 1010, name: 'default', title: 'English', isDefault: true, editable: true, inputName: 'excerpt', inputId: 'Inputfield_excerpt', value: "Line 1\nLine 2" },
+									{ id: 1011, name: 'tr', title: 'Türkçe', isDefault: false, editable: true, inputName: 'excerpt__1011', inputId: 'Inputfield_excerpt__1011', value: "Satir 1\nSatir 2" },
+								],
+							},
+							{
+								kind: 'control',
+								type: 'select',
+								name: 'category',
+								id: 'Inputfield_category',
+								label: 'Category',
+								value: 'a',
+								options: [
+									{ value: 'a', label: 'Alpha' },
+									{ value: 'b', label: 'Beta' },
+								],
+							},
+							{
+								kind: 'control',
+								type: 'radios',
+								name: 'priority',
+								id: 'Inputfield_priority',
+								label: 'Priority',
+								value: 'high',
+								options: [
+									{ value: 'low', label: 'Low' },
+									{ value: 'high', label: 'High' },
+								],
+							},
+							{
+								kind: 'control',
+								type: 'toggle',
+								name: 'active',
+								id: 'Inputfield_active',
+								label: 'Active',
+								value: '1',
+								options: [
+									{ value: '1', label: 'Yes' },
+									{ value: '0', label: 'No' },
+								],
+							},
+							{
+								kind: 'control',
+								type: 'number',
+								inputType: 'number',
+								name: 'count',
+								id: 'Inputfield_count',
+								label: 'Count',
+								step: '1',
+								value: '5',
+							},
+							{
+								kind: 'control',
+								type: 'date',
+								inputType: 'date',
+								name: 'pub_date',
+								id: 'Inputfield_pub_date',
+								label: 'Publish Date',
+								value: '2026-11-22',
+							},
+						],
+					},
+				},
+				onClose: () => {},
+				onSave: () => {},
+			})
+		);
+		expect(quickEditHtml).toContain('data-rw-modal-dialog=""');
+		expect(quickEditHtml).toContain('data-rw-quick-edit-dialog=""');
+		expect(quickEditHtml).toContain('max-w-3xl');
+		expect(quickEditHtml).toContain('data-rw-lang-tabs=""');
+		expect(quickEditHtml).toContain('English');
+		expect(quickEditHtml).toContain('Türkçe');
+		expect(quickEditHtml).toContain('Quick Edit: English Title');
+		expect(quickEditHtml).toContain('data-rw-quick-edit-full-link=""');
+		expect(quickEditHtml).toContain('Open Full Editor');
+		expect(quickEditHtml).toContain('form="qe-form-rec-1"');
+		expect(quickEditHtml).not.toContain('[object Object]');
+		expect(quickEditHtml).toContain('<textarea');
+		expect(quickEditHtml).toContain('rows="6"');
+		expect(quickEditHtml).toContain('Line 1\nLine 2');
+		expect(quickEditHtml).toContain('<select');
+		expect(quickEditHtml).toContain('role="radiogroup"');
+		expect(quickEditHtml).toContain('data-rw-control="toggle"');
+		expect(quickEditHtml).toContain('type="number"');
+		expect(quickEditHtml).toContain('data-rw-datetime-trigger=""');
+		expect(quickEditHtml).toContain('value="2026-11-22"');
 	});
 
 	it('preserves media filenames across extractSchemaInitialValues and keeps dependent conditions unlocked', () => {

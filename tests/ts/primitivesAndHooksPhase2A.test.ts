@@ -336,11 +336,10 @@ describe('Phase 2A Modular Primitives, PortalRoot & Shared Hooks', () => {
 			'native',
 			'neutral',
 			'slate',
+			'stone',
 			'ocean',
-			'emerald',
-			'violet',
-			'rose',
-			'amber',
+			'indigo',
+			'teal',
 			'custom',
 		]);
 

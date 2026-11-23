@@ -1,4 +1,8 @@
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
+import { TextField, toSafeHtmlPatternAttr } from '../../resources/ts/fields/controls/TextField';
+import { ToggleField } from '../../resources/ts/fields/controls/ToggleField';
 import {
 	evaluateCondition,
 	evaluateShowIfCondition,
@@ -320,5 +324,226 @@ describe('SchemaForm Valibot Validation & Conditional Engine', () => {
 		expect(disabledClearsRequired.disabled).toBe(true);
 		expect(disabledClearsRequired.required).toBe(false);
 		expect(validateFieldWithValibot(stateField, '', { ...values, locked: '1' })).toBeNull();
+	});
+
+	it('validates daterange required, partial completeness, invalid dates, ordering, and min/max bounds', () => {
+		const rangeField: SchemaFieldDefinition = {
+			kind: 'control',
+			type: 'daterange',
+			name: 'booking_window',
+			label: 'Booking Window',
+			required: true,
+			min: '2026-11-01',
+			max: '2026-12-31',
+		};
+
+		expect(validateFieldWithValibot(rangeField, '', { booking_window: '' })).toContain('required');
+		expect(
+			validateFieldWithValibot(rangeField, { from: '', to: '' }, { booking_window: { from: '', to: '' } })
+		).toContain('required');
+		expect(
+			validateFieldWithValibot(rangeField, { from: '2026-11-15', to: '' }, { booking_window: { from: '2026-11-15', to: '' } })
+		).toContain('both');
+		expect(
+			validateFieldWithValibot(
+				rangeField,
+				{ from: '2026-02-30', to: '2026-11-22' },
+				{ booking_window: { from: '2026-02-30', to: '2026-11-22' } }
+			)
+		).toContain('valid dates');
+		expect(
+			validateFieldWithValibot(
+				rangeField,
+				{ from: '2026-11-25', to: '2026-11-20' },
+				{ booking_window: { from: '2026-11-25', to: '2026-11-20' } }
+			)
+		).toContain('on or after the start date');
+		expect(
+			validateFieldWithValibot(
+				rangeField,
+				{ from: '2026-10-20', to: '2026-11-10' },
+				{ booking_window: { from: '2026-10-20', to: '2026-11-10' } }
+			)
+		).toContain('2026-11-01');
+		expect(
+			validateFieldWithValibot(
+				rangeField,
+				{ from: '2026-11-10', to: '2027-01-05' },
+				{ booking_window: { from: '2026-11-10', to: '2027-01-05' } }
+			)
+		).toContain('2026-12-31');
+		expect(
+			validateFieldWithValibot(
+				rangeField,
+				{ from: '2026-11-15', to: '2026-11-22' },
+				{ booking_window: { from: '2026-11-15', to: '2026-11-22' } }
+			)
+		).toBeNull();
+	});
+
+	it('validates unit_number/currency bounds & unit allowlists and color formats', () => {
+		const currencyField: SchemaFieldDefinition = {
+			kind: 'control',
+			type: 'currency',
+			name: 'rate',
+			label: 'Base Rate',
+			required: true,
+			min: 100,
+			max: 5000,
+			units: ['EUR', 'USD'],
+		};
+
+		expect(validateFieldWithValibot(currencyField, '', { rate: '' })).toContain('required');
+		expect(validateFieldWithValibot(currencyField, { value: null, unit: 'EUR' }, { rate: { value: null, unit: 'EUR' } })).toContain('required');
+		expect(validateFieldWithValibot(currencyField, { value: 50, unit: 'EUR' }, { rate: { value: 50, unit: 'EUR' } })).toContain('at least 100');
+		expect(validateFieldWithValibot(currencyField, { value: 6000, unit: 'EUR' }, { rate: { value: 6000, unit: 'EUR' } })).toContain('at most 5000');
+		expect(validateFieldWithValibot(currencyField, { value: 500, unit: 'JPY' }, { rate: { value: 500, unit: 'JPY' } })).toContain('unit');
+		expect(validateFieldWithValibot(currencyField, { value: 500, unit: 'EUR' }, { rate: { value: 500, unit: 'EUR' } })).toBeNull();
+
+		const colorField: SchemaFieldDefinition = {
+			kind: 'control',
+			type: 'color',
+			name: 'brand',
+			label: 'Brand Color',
+		};
+		expect(validateFieldWithValibot(colorField, '', { brand: '' })).toBeNull();
+		expect(validateFieldWithValibot(colorField, 'not-a-color', { brand: 'not-a-color' })).toContain('valid hex');
+		expect(validateFieldWithValibot(colorField, '#eb1d61', { brand: '#eb1d61' })).toBeNull();
+		expect(validateFieldWithValibot(colorField, '#eb1d6180', { brand: '#eb1d6180' })).toBeNull();
+		expect(validateFieldWithValibot(colorField, 'rgba(235, 29, 97, 0.5)', { brand: 'rgba(235, 29, 97, 0.5)' })).toBeNull();
+	});
+
+	it('validates Package 3 spacing, dual range_slider, otp, and password policy rules', () => {
+		const spacingField: SchemaFieldDefinition = {
+			kind: 'control',
+			type: 'spacing',
+			name: 'padding',
+			label: 'Padding',
+			required: true,
+			max: 64,
+			units: ['px', 'rem'],
+			allowAuto: false,
+		};
+		expect(
+			validateFieldWithValibot(
+				spacingField,
+				{ top: '', right: '', bottom: '', left: '', unit: 'px' },
+				{ padding: { top: '', right: '', bottom: '', left: '', unit: 'px' } }
+			)
+		).toContain('required');
+		expect(
+			validateFieldWithValibot(
+				spacingField,
+				{ top: 'auto', right: '16', bottom: '16', left: '16', unit: 'px' },
+				{ padding: { top: 'auto', right: '16', bottom: '16', left: '16', unit: 'px' } }
+			)
+		).toContain('auto');
+		expect(
+			validateFieldWithValibot(
+				spacingField,
+				{ top: '-8', right: '16', bottom: '16', left: '16', unit: 'px' },
+				{ padding: { top: '-8', right: '16', bottom: '16', left: '16', unit: 'px' } }
+			)
+		).toContain('negative');
+		expect(
+			validateFieldWithValibot(
+				spacingField,
+				{ top: '96', right: '16', bottom: '16', left: '16', unit: 'px' },
+				{ padding: { top: '96', right: '16', bottom: '16', left: '16', unit: 'px' } }
+			)
+		).toContain('at most 64');
+		expect(
+			validateFieldWithValibot(
+				spacingField,
+				{ top: '16', right: '24', bottom: '16', left: '24', unit: 'rem' },
+				{ padding: { top: '16', right: '24', bottom: '16', left: '24', unit: 'rem' } }
+			)
+		).toBeNull();
+
+		const dualRangeField: SchemaFieldDefinition = {
+			kind: 'control',
+			type: 'range_slider',
+			name: 'budget',
+			label: 'Budget',
+			min: 0,
+			max: 1000,
+			minDistance: 50,
+		};
+		expect(validateFieldWithValibot(dualRangeField, { min: 400, max: 200 }, { budget: { min: 400, max: 200 } })).toContain('minimum');
+		expect(validateFieldWithValibot(dualRangeField, { min: 500, max: 520 }, { budget: { min: 500, max: 520 } })).toContain('span of at least 50');
+		expect(validateFieldWithValibot(dualRangeField, { min: 100, max: 1200 }, { budget: { min: 100, max: 1200 } })).toContain('at most 1000');
+		expect(validateFieldWithValibot(dualRangeField, { min: 120, max: 480 }, { budget: { min: 120, max: 480 } })).toBeNull();
+
+		const otpField: SchemaFieldDefinition = {
+			kind: 'control',
+			type: 'otp',
+			name: 'otp_code',
+			label: 'Verification Code',
+			otpLength: 6,
+			otpMode: 'numeric',
+			required: true,
+		};
+		expect(validateFieldWithValibot(otpField, '12ab34', { otp_code: '12ab34' })).toContain('digits');
+		expect(validateFieldWithValibot(otpField, '123', { otp_code: '123' })).toContain('6 characters');
+		expect(validateFieldWithValibot(otpField, '482910', { otp_code: '482910' })).toBeNull();
+
+		const passwordField: SchemaFieldDefinition = {
+			kind: 'control',
+			type: 'password',
+			name: 'pw',
+			label: 'Password',
+			minLength: 10,
+			requireSymbol: true,
+			required: true,
+		};
+		expect(validateFieldWithValibot(passwordField, 'short', { pw: 'short' })).toContain('10 characters');
+		expect(validateFieldWithValibot(passwordField, 'longlowercase1!', { pw: 'longlowercase1!' })).toContain('uppercase');
+		expect(validateFieldWithValibot(passwordField, 'LongPasswordNoSym1', { pw: 'LongPasswordNoSym1' })).toContain('symbol');
+		expect(validateFieldWithValibot(passwordField, 'ValidPass2026!', { pw: 'ValidPass2026!' })).toBeNull();
+	});
+
+	it('normalizes HTML pattern attributes for Chromium V8 /v safety and sanitizes ToggleField radio IDs', () => {
+		expect(toSafeHtmlPatternAttr('')).toBeUndefined();
+		expect(toSafeHtmlPatternAttr('/^[A-Z]{3}-[0-9]{4}$/')).toBe('^[A-Z]{3}-[0-9]{4}$');
+		expect(toSafeHtmlPatternAttr('/^[a-z]+$/u')).toBe('^[a-z]+$');
+		expect(toSafeHtmlPatternAttr('/^[a-z]+$/i')).toBeUndefined();
+		expect(toSafeHtmlPatternAttr('^[a-z0-9_-]+$')).toBeUndefined();
+
+		const unsafePatternHtml = renderToStaticMarkup(
+			React.createElement(TextField, {
+				id: 'Inputfield_slug',
+				name: 'slug',
+				type: 'text',
+				value: 'alpha-1',
+				pattern: '^[a-z0-9_-]+$',
+			})
+		);
+		expect(unsafePatternHtml).not.toContain('pattern=');
+
+		const pcrePatternHtml = renderToStaticMarkup(
+			React.createElement(TextField, {
+				id: 'Inputfield_sku',
+				name: 'sku',
+				type: 'text',
+				value: 'PRD-2026',
+				pattern: '/^[A-Z]{3}-[0-9]{4}$/',
+			})
+		);
+		expect(pcrePatternHtml).toContain('pattern="^[A-Z]{3}-[0-9]{4}$"');
+
+		const toggleHtml = renderToStaticMarkup(
+			React.createElement(ToggleField, {
+				id: 'Inputfield_mode',
+				name: 'mode',
+				type: 'toggle',
+				value: 'yes / fast',
+				options: [
+					{ value: 'yes / fast', label: 'Fast' },
+					{ value: 'no', label: 'Standard' },
+				],
+			})
+		);
+		expect(toggleHtml).toContain('id="Inputfield_mode_yes___fast"');
+		expect(toggleHtml).toContain('for="Inputfield_mode_yes___fast"');
 	});
 });

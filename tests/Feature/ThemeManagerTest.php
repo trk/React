@@ -57,7 +57,9 @@ afterEach(function (): void {
 	}
 	if ($this->superPrefPath !== '') {
 		if ($this->superPrefBackup === null) {
-			@unlink($this->superPrefPath);
+			if (is_file($this->superPrefPath)) {
+				unlink($this->superPrefPath);
+			}
 		} else {
 			file_put_contents($this->superPrefPath, $this->superPrefBackup);
 		}
@@ -203,7 +205,7 @@ test('root view data, shared context, and workspace preference responses carry t
 	$rootView = $react->buildInertiaRootViewData('Workspace');
 	$shared = $react->buildInertiaSharedContext();
 
-	expect($rootView['themeCss'] ?? '')->toContain('--primary: light-dark(oklch(0.546 0.245 262.881), oklch(0.623 0.214 259.815));')
+	expect($rootView['themeCss'] ?? '')->toContain('--primary: light-dark(oklch(0.49 0.155 256), oklch(0.68 0.148 252));')
 		->and($shared['themePreset'] ?? null)->toBe('ocean')
 		->and($shared['hasCustomThemeTokens'] ?? null)->toBeFalse();
 
@@ -225,18 +227,18 @@ test('set_theme_preset persists per-user overrides without overwriting site defa
 
 	$saved = $react->handleWorkspacePrefsAction([
 		'action' => 'set_theme_preset',
-		'themePreset' => 'violet',
+		'themePreset' => 'indigo',
 		'_requestMethod' => 'POST',
 	], false, $superuser);
 
 	expect($saved['ok'])->toBeTrue()
-		->and($saved['themePreset'] ?? null)->toBe('violet')
-		->and($saved['userThemePreset'] ?? null)->toBe('violet')
+		->and($saved['themePreset'] ?? null)->toBe('indigo')
+		->and($saved['userThemePreset'] ?? null)->toBe('indigo')
 		->and($saved['siteDefaultThemePreset'] ?? null)->toBe('ocean')
-		->and($saved['themeCss'] ?? '')->toContain('oklch(0.541 0.281 293.009)')
+		->and($saved['themeCss'] ?? '')->toContain('oklch(0.475 0.16 272)')
 		->and($react->theme()->siteDefaultPreset())->toBe(ThemePreset::Ocean)
-		->and($react->theme()->userPresetOverride($superuser))->toBe('violet')
-		->and($react->theme()->activePreset($superuser))->toBe(ThemePreset::Violet);
+		->and($react->theme()->userPresetOverride($superuser))->toBe('indigo')
+		->and($react->theme()->activePreset($superuser))->toBe(ThemePreset::Indigo);
 
 	$invalid = $react->handleWorkspacePrefsAction([
 		'action' => 'set_theme_preset',
@@ -244,6 +246,16 @@ test('set_theme_preset persists per-user overrides without overwriting site defa
 		'_requestMethod' => 'POST',
 	], false, $superuser);
 	expect($invalid['ok'])->toBeFalse()->and($invalid['status'])->toBe(422);
+
+	foreach (['rose', 'amber'] as $retired) {
+		expect(ThemePreset::fromInput($retired))->toBe(ThemePreset::Native);
+		$retiredRes = $react->handleWorkspacePrefsAction([
+			'action' => 'set_theme_preset',
+			'themePreset' => $retired,
+			'_requestMethod' => 'POST',
+		], false, $superuser);
+		expect($retiredRes['ok'])->toBeFalse()->and($retiredRes['status'])->toBe(422);
+	}
 
 	$react->set('themeCustomTokens', '');
 	$customWithoutTokens = $react->handleWorkspacePrefsAction([
@@ -265,14 +277,14 @@ test('set_theme_preset persists per-user overrides without overwriting site defa
 
 	$editorSaved = $react->handleWorkspacePrefsAction([
 		'action' => 'set_theme_preset',
-		'themePreset' => 'rose',
+		'themePreset' => 'teal',
 		'_requestMethod' => 'POST',
 	], false, $editor);
 	expect($editorSaved['ok'])->toBeTrue()
-		->and($editorSaved['userThemePreset'] ?? null)->toBe('rose')
-		->and($editorSaved['themePreset'] ?? null)->toBe('rose')
+		->and($editorSaved['userThemePreset'] ?? null)->toBe('teal')
+		->and($editorSaved['themePreset'] ?? null)->toBe('teal')
 		->and($editorSaved['siteDefaultThemePreset'] ?? null)->toBe('ocean')
-		->and($react->theme()->activePreset($editor))->toBe(ThemePreset::Rose)
+		->and($react->theme()->activePreset($editor))->toBe(ThemePreset::Teal)
 		->and($react->theme()->activePreset($peer))->toBe(ThemePreset::Ocean);
 
 	// Clearing user override reverts seamlessly to site default

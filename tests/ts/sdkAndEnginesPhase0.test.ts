@@ -183,10 +183,12 @@ console.log(JSON.stringify({
 			'ReactIcons',
 		]);
 		expect(CORE_STYLE_ENTRIES).toEqual(['ReactInertia', 'ReactMedia', 'TiptapCore', 'ReactCalendar']);
-		expect(ISOLATED_BUILD_ENTRIES).toHaveLength(18);
+		expect(ISOLATED_BUILD_ENTRIES).toHaveLength(20);
 		expect(ISOLATED_BUILD_ENTRIES).toContain('ReactGrid');
 		expect(ISOLATED_BUILD_ENTRIES).toContain('ReactDnd');
 		expect(ISOLATED_BUILD_ENTRIES).toContain('ReactCalendar');
+		expect(ISOLATED_BUILD_ENTRIES).toContain('ReactExtraFields');
+		expect(ISOLATED_BUILD_ENTRIES).toContain('ReactUiShowcase');
 		expect(new Set(CORE_JS_ENTRIES).size).toBe(CORE_JS_ENTRIES.length);
 		expect(new Set(CORE_STYLE_ENTRIES).size).toBe(CORE_STYLE_ENTRIES.length);
 		expect(new Set(ISOLATED_BUILD_ENTRIES).size).toBe(ISOLATED_BUILD_ENTRIES.length);

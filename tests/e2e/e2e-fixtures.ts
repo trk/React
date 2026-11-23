@@ -295,9 +295,13 @@ export function destroyIsolatedE2EFixture(suffix?: string): void {
 			foreach ($wire->pages->find($pageSel) as $p) {
 				try { $wire->pages->delete($p, true); } catch (\\Throwable $e) {}
 			}
+			$classesDir = rtrim((string) $wire->config->paths->classes, '/') . '/';
 			foreach ($wire->templates->find('name^=rw_e2e_pw_') as $tpl) {
-				if ($sfx === '' || str_ends_with((string) $tpl->name, '_' . $sfx)) {
+				$tplName = (string) $tpl->name;
+				if ($sfx === '' || str_ends_with($tplName, '_' . $sfx)) {
+					$pascal = str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $tplName)));
 					try { $wire->templates->delete($tpl); } catch (\\Throwable $e) {}
+					@unlink($classesDir . $pascal . 'Page.php');
 				}
 			}
 			foreach ($wire->fieldgroups as $fg) {

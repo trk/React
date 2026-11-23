@@ -37,14 +37,12 @@ beforeEach(function (): void {
 });
 
 afterEach(function (): void {
-	if (isset($this->previousUser) && $this->previousUser instanceof User) {
-		\ProcessWire\wire()->users->setCurrentUser($this->previousUser);
-	}
 	$pages = \ProcessWire\wire()->pages;
 	$templates = \ProcessWire\wire()->templates;
 	$fieldgroups = \ProcessWire\wire()->fieldgroups;
 	$fields = \ProcessWire\wire()->fields;
 	$files = \ProcessWire\wire()->files;
+	$classesDir = rtrim((string) \ProcessWire\wire()->config->paths->classes, '/') . '/';
 
 	foreach (array_reverse($this->cleanupPages ?? []) as $page) {
 		if ($page instanceof Page && $page->id) {
@@ -56,9 +54,14 @@ afterEach(function (): void {
 	}
 	foreach (array_reverse($this->cleanupTemplates ?? []) as $tpl) {
 		if ($tpl instanceof Template && $tpl->id) {
+			$pascal = str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', (string) $tpl->name)));
 			try {
 				$templates->delete($tpl);
 			} catch (\Throwable) {
+			}
+			$classFile = $classesDir . $pascal . 'Page.php';
+			if (is_file($classFile)) {
+				unlink($classFile);
 			}
 		}
 	}
@@ -89,6 +92,12 @@ afterEach(function (): void {
 				$files->rmdir($dirPath, true);
 			} catch (\Throwable) {
 			}
+		}
+	}
+	if (isset($this->previousUser) && $this->previousUser instanceof User && $this->previousUser->id > 0) {
+		try {
+			\ProcessWire\wire()->users->setCurrentUser($this->previousUser);
+		} catch (\Throwable) {
 		}
 	}
 });

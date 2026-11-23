@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { attachRuntimeErrorTracker, getAdminUrl } from '../../../../../tests/e2e/helpers';
 import {
@@ -1255,6 +1255,523 @@ test.describe('ProcessReactWorkspace Launcher, Cross-Panel SPA Navigation & Stan
 			await expect(page.locator('[data-rw-admin-return]')).toBeVisible();
 			await expect(page.locator('#pw-mastheads, #masthead')).toHaveCount(0);
 		}
+
+		tracker.assertNoErrors();
+	});
+
+	test('navigates to debug-only UI Showcase, renders all 6 sections and SVG samples, toggles viewports/themes, and runs cross-iframe overflow checks', async ({ page }) => {
+		const tracker = attachRuntimeErrorTracker(page);
+
+		await page.goto(getAdminUrl('workspace/'), { waitUntil: 'networkidle' });
+
+		const showcaseLink = page.locator('[data-rw-ui-showcase-link]');
+		await expect(showcaseLink).toBeVisible();
+		await showcaseLink.click();
+		await page.waitForLoadState('networkidle');
+
+		await expect(page).toHaveURL(/\/ui-showcase\//);
+		const directCanvas = page.locator('[data-rw-showcase-canvas="direct"]');
+		await expect(directCanvas).toBeVisible();
+
+		for (const sec of ['media', 'links', 'relations', 'datetime', 'contexts', 'controls', 'primitives']) {
+			await expect(directCanvas.locator(`[data-rw-showcase-section="${sec}"]`)).toBeVisible();
+		}
+
+		// Interactively open Date, Time, and DateRange pickers in the datetime section
+		const dtSection = directCanvas.locator('[data-rw-showcase-section="datetime"]');
+		const dtDateTrigger = dtSection.locator('[data-field-name="dt_date_empty"] [data-rw-datetime-trigger]');
+		await dtDateTrigger.scrollIntoViewIfNeeded();
+		await dtDateTrigger.click();
+		await expect(page.locator('[data-rw-calendar]').first()).toBeVisible();
+		await page.keyboard.press('Escape');
+
+		const dtTimeTrigger = dtSection.locator('[data-field-name="dt_time_empty"] [data-rw-datetime-trigger]');
+		await dtTimeTrigger.scrollIntoViewIfNeeded();
+		await dtTimeTrigger.click();
+		await expect(page.locator('[data-rw-time-picker]').first()).toBeVisible();
+		await page.keyboard.press('Escape');
+
+		const dtRangeTrigger = dtSection.locator('[data-field-name="dt_range_empty"] [data-rw-control="daterange"] button').first();
+		await dtRangeTrigger.scrollIntoViewIfNeeded();
+		await dtRangeTrigger.click();
+		await expect(page.locator('[data-rw-daterange-presets]').first()).toBeVisible();
+		await page.keyboard.press('Escape');
+
+		// Interactively test Package 2 Extended Controls (Color, Tags, UnitNumber, Segmented)
+		const ctrlSection = directCanvas.locator('[data-rw-showcase-section="controls"]');
+		const colorTrigger = ctrlSection.locator('[data-field-name="color_hex"] [data-rw-color-trigger]');
+		await colorTrigger.scrollIntoViewIfNeeded();
+		await colorTrigger.click();
+		await expect(page.locator('[data-rw-portal-overlay] [aria-label="Color swatches"]').first()).toBeVisible();
+		await page.keyboard.press('Escape');
+
+		const freeTagsField = ctrlSection.locator('[data-field-name="tags_free"] [data-rw-control="tags"]');
+		await freeTagsField.scrollIntoViewIfNeeded();
+		const tagsInput = freeTagsField.locator('input[data-rw-bare-input]');
+		await tagsInput.fill('verified-tag');
+		await tagsInput.press('Enter');
+		await expect(freeTagsField).toContainText('verified-tag');
+
+		const unitGapField = ctrlSection.locator('[data-field-name="unit_spacing"]');
+		await unitGapField.scrollIntoViewIfNeeded();
+		await unitGapField.locator('button[data-rw-unit-step="up"]').click();
+		await expect(unitGapField.locator('input[type="hidden"]')).toHaveValue('{"value":28,"unit":"px"}');
+
+		const segLayoutField = ctrlSection.locator('[data-field-name="seg_layout"]');
+		await segLayoutField.scrollIntoViewIfNeeded();
+		await segLayoutField.locator('button[data-rw-segment="list"]').click();
+		await expect(segLayoutField.locator('input[type="hidden"]')).toHaveValue('list');
+
+		// Interactively test Package 3 Domain Controls (Spacing, OTP, Password, Dual Range, Markdown)
+		const spacingField = ctrlSection.locator('[data-field-name="spacing_linked"]');
+		await spacingField.scrollIntoViewIfNeeded();
+		const topSideInput = spacingField.locator('input[data-rw-spacing-side="top"]');
+		await topSideInput.fill('32');
+		await expect(spacingField.locator('[data-rw-spacing-preview]')).toContainText('32px');
+
+		const dualRangeField = ctrlSection.locator('[data-field-name="range_price"]');
+		await dualRangeField.scrollIntoViewIfNeeded();
+		await expect(dualRangeField.locator('[data-rw-range-output]')).toContainText('€120 – €480');
+
+		const otpCodeField = ctrlSection.locator('[data-field-name="otp_code"]');
+		await otpCodeField.scrollIntoViewIfNeeded();
+		await expect(otpCodeField.locator('input[data-rw-otp-slot="0"]')).toHaveValue('4');
+
+		const pwCreateField = ctrlSection.locator('[data-field-name="pw_create"]');
+		await pwCreateField.scrollIntoViewIfNeeded();
+		await pwCreateField.locator('[data-rw-password-toggle]').click();
+		await expect(pwCreateField.locator('input').first()).toHaveAttribute('type', 'text');
+
+		const mdArticleField = ctrlSection.locator('[data-field-name="md_article"]');
+		await mdArticleField.scrollIntoViewIfNeeded();
+		await mdArticleField.locator('[data-rw-md-tab="preview"]').click();
+		await expect(mdArticleField.locator('[data-rw-md-preview] h1')).toContainText('Release Highlights');
+
+		// Scroll all visible sample SVG images into view (triggers loading="lazy") and verify naturalWidth > 0
+		const visibleSampleImgs = directCanvas.locator('img[src*="?sample="]:visible');
+		const visibleImgCount = await visibleSampleImgs.count();
+		expect(visibleImgCount).toBeGreaterThan(0);
+		for (let i = 0; i < visibleImgCount; i++) {
+			const img = visibleSampleImgs.nth(i);
+			await img.scrollIntoViewIfNeeded();
+			await expect
+				.poll(async () => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0))
+				.toBe(true);
+		}
+		await page.evaluate(() => window.scrollTo(0, 0));
+
+		// Run direct overflow audit
+		await page.locator('[data-rw-showcase-check-overflow]').click();
+		await expect(page.locator('[data-rw-showcase-audit-summary]')).toBeVisible();
+		await expect(page.locator('[data-rw-showcase-audit-summary]')).toContainText(/Cases:\s*[1-9]/);
+
+		// Toggle theme controls cleanly (scoped without breaking host localStorage)
+		await page.locator('[data-rw-showcase-theme="dark"]').click();
+		await expect(directCanvas).toHaveClass(/\bdark\b/);
+		await page.locator('[data-rw-showcase-theme="light"]').click();
+		await expect(directCanvas).toHaveClass(/\blight\b/);
+		await page.locator('[data-rw-showcase-theme="auto"]').click();
+
+		// Toggle section filter
+		await page.locator('[data-rw-showcase-filter="links"]').click();
+		await expect(directCanvas.locator('[data-rw-showcase-section="links"]')).toBeVisible();
+		await expect(directCanvas.locator('[data-rw-showcase-section="media"]')).toHaveCount(0);
+		await page.locator('[data-rw-showcase-filter="all"]').click();
+		await expect(directCanvas.locator('[data-rw-showcase-section="media"]')).toBeVisible();
+
+		// Switch to 375px Mobile framed viewport and verify postMessage overflow roundtrip
+		await page.locator('[data-rw-showcase-viewport="mobile"]').click();
+		const mobileIframe = page.locator('iframe[data-rw-showcase-iframe="mobile"]');
+		await expect(mobileIframe).toBeVisible();
+		const mobileFrame = page.frameLocator('iframe[data-rw-showcase-iframe="mobile"]');
+		await expect(mobileFrame.locator('[data-rw-showcase-canvas="embed"]')).toBeVisible();
+		await expect(mobileFrame.locator('[data-rw-showcase-section="media"]')).toBeVisible();
+
+		await page.locator('[data-rw-showcase-check-overflow]').click();
+		await expect(page.locator('[data-rw-showcase-overflow-count]')).toBeVisible();
+
+		// Switch to Compare 375/420/768 strip and verify all 3 iframes mount cleanly
+		await page.locator('[data-rw-showcase-viewport="compare"]').click();
+		const compareStrip = page.locator('[data-rw-showcase-compare-strip]');
+		await expect(compareStrip).toBeVisible();
+		for (const width of ['375', '420', '768']) {
+			await expect(compareStrip.locator(`iframe[data-rw-showcase-iframe="compare-${width}"]`)).toBeVisible();
+		}
+		await expect(
+			page.frameLocator('iframe[data-rw-showcase-iframe="compare-375"]').locator('[data-rw-showcase-canvas="embed"]')
+		).toBeVisible();
+
+		tracker.assertNoErrors();
+	});
+
+	test('Command Palette 2.0 renders grouped sections, runs live /_react/command-search queries, toggles layout safely, and passes WCAG 2.1 AA in light and dark modes', async ({
+		page,
+	}) => {
+		const tracker = attachRuntimeErrorTracker(page);
+		await page.setViewportSize({ width: 1280, height: 720 });
+		await page.goto(getAdminUrl('workspace/'), { waitUntil: 'networkidle' });
+
+		const rootShell = page.locator('[data-rw-app-shell]');
+		await expect(rootShell).toBeVisible();
+
+		try {
+			// Open Command Palette and verify grouped landmarks
+			await page.locator('[data-rw-command-trigger]:visible').first().click();
+			const palette = page.locator('[data-rw-command-palette]');
+			await expect(palette).toBeVisible();
+
+			const combobox = palette.getByRole('combobox');
+			await expect(combobox).toHaveAttribute('placeholder', /record/i);
+			await expect(palette.getByRole('group', { name: 'Current Workspace' })).toBeVisible();
+			await expect(palette.getByRole('group', { name: 'Workspaces' })).toBeVisible();
+			await expect(palette.getByRole('group', { name: 'Layout & Appearance' })).toBeVisible();
+			await expect(palette.getByRole('group', { name: 'Actions' })).toBeVisible();
+
+			// Live debounced backend record search for provisioned page 'Alpha Vessel'
+			const searchResponsePromise = page.waitForResponse(
+				(res) =>
+					res.url().includes('/_react/command-search') &&
+					res.url().includes('Alpha') &&
+					res.request().method() === 'GET'
+			);
+			await combobox.fill('Alpha Vessel');
+			const searchResponse = await searchResponsePromise;
+			expect(searchResponse.status()).toBe(200);
+			const searchPayload = (await searchResponse.json()) as {
+				ok?: boolean;
+				items?: Array<{ label?: string; href?: string; isInertia?: boolean }>;
+			};
+			expect(searchPayload.ok).toBe(true);
+			expect(Array.isArray(searchPayload.items)).toBe(true);
+			expect(searchPayload.items?.some((item) => item.label === 'Alpha Vessel')).toBe(true);
+
+			const pagesGroup = palette.getByRole('group', { name: 'Pages' });
+			await expect(pagesGroup).toBeVisible();
+			const alphaLink = pagesGroup.locator('a', { hasText: 'Alpha Vessel' }).first();
+			await expect(alphaLink).toBeVisible();
+			const alphaHref = await alphaLink.getAttribute('href');
+			expect(alphaHref || '').toContain('page/edit/?id=');
+			expect(alphaHref || '').not.toContain('ws=1');
+			await expect(alphaLink.locator('[data-rw-command-badge]')).toBeVisible();
+
+			// Switch layout to Sidebar cleanly via Command Palette
+			await combobox.fill('Layout: Sidebar');
+			const sidebarCmd = palette.getByRole('option', { name: /Layout:\s*Sidebar/i }).first();
+			await expect(sidebarCmd).toBeVisible();
+			const [sidebarPrefRes] = await Promise.all([waitForWorkspacePrefsPost(page), sidebarCmd.click()]);
+			expect(sidebarPrefRes.status()).toBe(200);
+			await expect(palette).toHaveCount(0);
+			await expect(page.locator('[data-rw-app-shell][data-rw-shell-layout="sidebar"]')).toBeVisible();
+
+			// Switch to Light theme via Command Palette, confirm Toggle Sidebar option appears, and audit WCAG 2.1 AA
+			await page.locator('[data-rw-command-trigger]:visible').first().click();
+			await expect(palette).toBeVisible();
+			await expect(palette.getByRole('option', { name: /Toggle sidebar/i })).toBeVisible();
+
+			await combobox.fill('Theme: Light');
+			const lightCmd = palette.getByRole('option', { name: /Theme:\s*Light/i }).first();
+			await expect(lightCmd).toBeVisible();
+			const [lightPrefRes] = await Promise.all([waitForWorkspacePrefsPost(page), lightCmd.click()]);
+			expect(lightPrefRes.status()).toBe(200);
+			await expect(page.locator('html')).not.toHaveClass(/\bdark\b/);
+
+			await page.locator('[data-rw-command-trigger]:visible').first().click();
+			await expect(palette).toBeVisible();
+			const lightAxe = await new AxeBuilder({ page })
+				.include('[data-rw-command-palette]')
+				.withTags(['wcag2a', 'wcag2aa'])
+				.analyze();
+			expect(lightAxe.violations.filter((v) => v.impact === 'critical' || v.impact === 'serious')).toEqual([]);
+
+			// Switch to Dark theme via Command Palette and audit WCAG 2.1 AA with palette open
+			await combobox.fill('Theme: Dark');
+			const darkCmd = palette.getByRole('option', { name: /Theme:\s*Dark/i }).first();
+			await expect(darkCmd).toBeVisible();
+			const [darkPrefRes] = await Promise.all([waitForWorkspacePrefsPost(page), darkCmd.click()]);
+			expect(darkPrefRes.status()).toBe(200);
+			await expect(page.locator('html')).toHaveClass(/\bdark\b/);
+
+			await page.locator('[data-rw-command-trigger]:visible').first().click();
+			await expect(palette).toBeVisible();
+			const darkAxe = await new AxeBuilder({ page })
+				.include('[data-rw-command-palette]')
+				.withTags(['wcag2a', 'wcag2aa'])
+				.analyze();
+			expect(darkAxe.violations.filter((v) => v.impact === 'critical' || v.impact === 'serious')).toEqual([]);
+
+			await page.keyboard.press('Escape');
+			await expect(palette).toHaveCount(0);
+		} finally {
+			// Restore clean initial topbar layout & system theme mode regardless of test outcome
+			await page.keyboard.press('Escape').catch(() => {});
+			const userMenuTrigger = page.locator('[data-rw-user-menu-trigger]:visible').first();
+			if (await userMenuTrigger.isVisible().catch(() => false)) {
+				await userMenuTrigger.click();
+				await expect(page.locator('[data-rw-user-menu]')).toBeVisible();
+				const sysModeBtn = page.locator('[data-rw-theme-mode-option="system"]');
+				if ((await sysModeBtn.isVisible().catch(() => false)) && (await sysModeBtn.getAttribute('aria-pressed')) !== 'true') {
+					const [sysRes] = await Promise.all([waitForWorkspacePrefsPost(page), sysModeBtn.click()]);
+					expect(sysRes.status()).toBe(200);
+				}
+				const resetLayoutBtn = page.locator('[data-rw-shell-layout-reset]');
+				if (await resetLayoutBtn.isVisible().catch(() => false)) {
+					const [resetRes] = await Promise.all([waitForWorkspacePrefsPost(page), resetLayoutBtn.click()]);
+					expect(resetRes.status()).toBe(200);
+				} else {
+					const topbarBtn = page.locator('[data-rw-shell-layout-option="topbar"]');
+					if ((await topbarBtn.count()) > 0 && (await topbarBtn.getAttribute('aria-pressed')) !== 'true') {
+						await Promise.all([waitForWorkspacePrefsPost(page), topbarBtn.click()]);
+					}
+				}
+				await page.keyboard.press('Escape').catch(() => {});
+			}
+		}
+
+		await expect(page.locator('[data-rw-app-shell][data-rw-shell-layout="topbar"]')).toBeVisible();
+		tracker.assertNoErrors();
+	});
+});
+
+async function assertWcag21AaClean(page: Page, _contextLabel: string): Promise<void> {
+	const axeResults = await new AxeBuilder({ page })
+		.include('#app')
+		.withTags(['wcag2a', 'wcag2aa'])
+		.analyze();
+	const criticalOrSerious = axeResults.violations.filter(
+		(v) => v.impact === 'critical' || v.impact === 'serious'
+	);
+	expect(criticalOrSerious).toEqual([]);
+}
+
+function waitForWorkspacePrefsPost(page: Page) {
+	return page.waitForResponse(
+		(res) => res.url().includes('/_react/workspace-prefs') && res.request().method() === 'POST'
+	);
+}
+
+test.describe('Multi-Shell Layouts & Collapsible Sidebar Navigation', () => {
+	test.describe.configure({ mode: 'serial' });
+
+	test('switches Topbar to Sidebar, searches/pins/navigates in ModuleSwitcher, collapses/expands via click and Ctrl+B, passes light/dark/mobile WCAG 2.1 AA, and resets cleanly', async ({
+		page,
+	}) => {
+		test.setTimeout(90_000);
+		const tracker = attachRuntimeErrorTracker(page);
+		await page.setViewportSize({ width: 1280, height: 720 });
+		await page.goto(getAdminUrl('workspace/'), { waitUntil: 'networkidle' });
+
+		const rootShell = page.locator('[data-rw-app-shell]');
+		await expect(rootShell).toBeVisible();
+
+		try {
+			// 1. Switch Topbar -> Sidebar via UserAccountMenu and verify reload persistence
+			await page.locator('[data-rw-user-menu-trigger]:visible').first().click();
+			await expect(page.locator('[data-rw-user-menu]')).toBeVisible();
+			await expect(page.locator('[data-rw-layout-section]')).toBeVisible();
+
+			const sidebarOption = page.locator('[data-rw-shell-layout-option="sidebar"]');
+			await expect(sidebarOption).toBeVisible();
+			const isAlreadySidebar = (await sidebarOption.getAttribute('aria-pressed')) === 'true';
+			if (!isAlreadySidebar) {
+				const [switchRes] = await Promise.all([waitForWorkspacePrefsPost(page), sidebarOption.click()]);
+				expect(switchRes.status()).toBe(200);
+			} else {
+				await page.keyboard.press('Escape');
+			}
+
+			await expect(page.locator('[data-rw-app-shell][data-rw-shell-layout="sidebar"]')).toBeVisible();
+			const sidebar = page.locator('[data-rw-sidebar]');
+			await expect(sidebar).toBeVisible();
+			await expect(sidebar.locator('[data-rw-module-switcher]')).toBeVisible();
+			await expect(sidebar.locator('[data-rw-user-menu-trigger]')).toBeVisible();
+
+			// Zero redundant Workspaces topbar or duplicate Workspaces nav section in sidebar mode
+			await expect(page.locator('[data-rw-global-bar]')).toHaveCount(0);
+			await expect(sidebar.locator('nav[aria-label="Workspaces"]')).toHaveCount(0);
+			await expect(sidebar.locator('nav[data-rw-module-nav]')).toHaveCount(1);
+
+			await page.reload({ waitUntil: 'networkidle' });
+			await expect(page.locator('[data-rw-app-shell][data-rw-shell-layout="sidebar"]')).toBeVisible();
+			await expect(sidebar).toBeVisible();
+
+			// 2. Verify ModuleSwitcher search, pinning favorite, compact footer, and module navigation
+			await sidebar.locator('[data-rw-module-switcher]').click();
+			const switcherMenu = page.locator('[data-rw-module-switcher-menu]');
+			await expect(switcherMenu).toBeVisible();
+			await expect(switcherMenu.getByText('Workspace Hub')).toBeVisible();
+			await expect(switcherMenu.locator('[data-rw-admin-return]')).toBeVisible();
+
+			const searchInput = switcherMenu.locator('[data-rw-module-switcher-search]');
+			await expect(searchInput).toBeVisible();
+			await searchInput.fill('__no_such_workspace_match__');
+			await expect(switcherMenu.locator('[data-rw-module-switcher-item]')).toHaveCount(0);
+			await searchInput.fill('');
+			const itemCount = await switcherMenu.locator('[data-rw-module-switcher-item]').count();
+			expect(itemCount).toBeGreaterThan(0);
+
+			// Pin & unpin a specific workspace item cleanly (tracking by id across Pinned/All reordering)
+			const firstItem = switcherMenu.locator('[data-rw-module-switcher-item]').first();
+			const firstItemId = (await firstItem.getAttribute('data-rw-module-switcher-item')) || '';
+			expect(firstItemId).not.toBe('');
+			const trackedPinBtn = switcherMenu
+				.locator(`[data-rw-module-switcher-item="${firstItemId}"] button[aria-label]`)
+				.first();
+			const initialPinLabel = (await trackedPinBtn.getAttribute('aria-label')) || '';
+			const [pinRes] = await Promise.all([waitForWorkspacePrefsPost(page), trackedPinBtn.click()]);
+			expect(pinRes.status()).toBe(200);
+			await expect(trackedPinBtn).not.toHaveAttribute('aria-label', initialPinLabel);
+
+			const [unpinRes] = await Promise.all([waitForWorkspacePrefsPost(page), trackedPinBtn.click()]);
+			expect(unpinRes.status()).toBe(200);
+			await expect(trackedPinBtn).toHaveAttribute('aria-label', initialPinLabel);
+
+			// Navigate via ModuleSwitcher to another module if present, otherwise Workspace Hub footer link
+			const altModuleLink = switcherMenu
+				.locator('[data-rw-module-switcher-item]:not([data-rw-module-switcher-item="workspace"]) a[href]')
+				.first();
+			if ((await altModuleLink.count()) > 0) {
+				const targetHref = (await altModuleLink.getAttribute('href')) || '';
+				const expectedTarget = targetHref !== '' ? new URL(targetHref, page.url()) : null;
+				await altModuleLink.click();
+				if (expectedTarget) {
+					await page.waitForURL((u) => u.pathname === expectedTarget.pathname && u.search === expectedTarget.search);
+				}
+				await page.waitForLoadState('networkidle');
+				await expect(page.locator('[data-rw-app-shell][data-rw-shell-layout="sidebar"]')).toBeVisible();
+				await page.goto(getAdminUrl('workspace/'), { waitUntil: 'networkidle' });
+			} else {
+				const hubLink = switcherMenu.locator('a:has-text("Workspace Hub")').first();
+				await hubLink.click();
+				await expect(switcherMenu).toBeHidden();
+			}
+
+			// 3. Collapse and expand sidebar via toggle button (60px rail), reload persistence, and Control+b shortcut
+			if ((await rootShell.getAttribute('data-rw-sidebar-collapsed')) === 'true') {
+				const [expandInitRes] = await Promise.all([
+					waitForWorkspacePrefsPost(page),
+					page.locator('[data-rw-sidebar-toggle]').click(),
+				]);
+				expect(expandInitRes.status()).toBe(200);
+			}
+			await expect(rootShell).toHaveAttribute('data-rw-sidebar-collapsed', 'false');
+			await expect
+				.poll(async () => Math.round((await sidebar.boundingBox())?.width ?? 0))
+				.toBeGreaterThanOrEqual(235);
+
+			const [collapseRes] = await Promise.all([
+				waitForWorkspacePrefsPost(page),
+				page.locator('[data-rw-sidebar-toggle]').click(),
+			]);
+			expect(collapseRes.status()).toBe(200);
+			await expect(rootShell).toHaveAttribute('data-rw-sidebar-collapsed', 'true');
+			await expect
+				.poll(async () => Math.round((await sidebar.boundingBox())?.width ?? 0))
+				.toBeLessThanOrEqual(64);
+			const railWidth = (await sidebar.boundingBox())?.width ?? 0;
+			expect(railWidth).toBeGreaterThanOrEqual(56);
+
+			await page.reload({ waitUntil: 'networkidle' });
+			await expect(page.locator('[data-rw-app-shell]')).toHaveAttribute('data-rw-sidebar-collapsed', 'true');
+			await expect
+				.poll(async () => Math.round((await page.locator('[data-rw-sidebar]').boundingBox())?.width ?? 0))
+				.toBeLessThanOrEqual(64);
+
+			// Blur any focused element before triggering global mod+b shortcut
+			await page.evaluate(() => {
+				if (document.activeElement instanceof HTMLElement) {
+					document.activeElement.blur();
+				}
+			});
+			const [shortcutExpandRes] = await Promise.all([
+				waitForWorkspacePrefsPost(page),
+				page.keyboard.press('Control+b'),
+			]);
+			expect(shortcutExpandRes.status()).toBe(200);
+			await expect(page.locator('[data-rw-app-shell]')).toHaveAttribute('data-rw-sidebar-collapsed', 'false');
+			await expect
+				.poll(async () => Math.round((await page.locator('[data-rw-sidebar]').boundingBox())?.width ?? 0))
+				.toBeGreaterThanOrEqual(235);
+
+			// 4. Light + Dark mode WCAG 2.1 AA audit in Sidebar layout
+			await page.locator('[data-rw-sidebar] [data-rw-user-menu-trigger]').click();
+			const lightBtn = page.locator('[data-rw-theme-mode-option="light"]');
+			if ((await lightBtn.getAttribute('aria-pressed')) !== 'true') {
+				const [lightRes] = await Promise.all([waitForWorkspacePrefsPost(page), lightBtn.click()]);
+				expect(lightRes.status()).toBe(200);
+			}
+			await page.keyboard.press('Escape');
+			await expect(page.locator('html')).not.toHaveClass(/\bdark\b/);
+			await assertWcag21AaClean(page, 'sidebar-light');
+
+			await page.locator('[data-rw-sidebar] [data-rw-user-menu-trigger]').click();
+			const [darkRes] = await Promise.all([
+				waitForWorkspacePrefsPost(page),
+				page.locator('[data-rw-theme-mode-option="dark"]').click(),
+			]);
+			expect(darkRes.status()).toBe(200);
+			await page.keyboard.press('Escape');
+			await expect(page.locator('html')).toHaveClass(/\bdark\b/);
+			await assertWcag21AaClean(page, 'sidebar-dark');
+
+			// Restore theme mode back to system
+			await page.locator('[data-rw-sidebar] [data-rw-user-menu-trigger]').click();
+			const [sysThemeRes] = await Promise.all([
+				waitForWorkspacePrefsPost(page),
+				page.locator('[data-rw-theme-mode-option="system"]').click(),
+			]);
+			expect(sysThemeRes.status()).toBe(200);
+			await page.keyboard.press('Escape');
+
+			// 5. Mobile 390x844 drawer open, navigation, zero horizontal overflow, and WCAG clean
+			await page.setViewportSize({ width: 390, height: 844 });
+			await expect(page.locator('[data-rw-sidebar]')).toBeHidden();
+			await expect(page.locator('[data-rw-mobile-header]')).toBeVisible();
+			const mobileTrigger = page.locator('[data-rw-mobile-menu-trigger]');
+			await expect(mobileTrigger).toBeVisible();
+
+			const hasOverflow = await page.evaluate(
+				() => document.documentElement.scrollWidth > document.documentElement.clientWidth
+			);
+			expect(hasOverflow).toBe(false);
+			await assertWcag21AaClean(page, 'sidebar-mobile');
+
+			await mobileTrigger.click();
+			const mobileDrawer = page.locator('[data-rw-mobile-drawer]');
+			await expect(mobileDrawer).toBeVisible();
+			await expect(mobileDrawer.locator('[data-rw-module-switcher]')).toBeVisible();
+			await mobileDrawer.locator('[data-rw-module-nav] button, [data-rw-module-nav] a').nth(1).click();
+			await expect(mobileDrawer).toHaveCount(0);
+			await expect(page.locator('[data-rw-directory-section]')).toBeVisible();
+
+			await page.setViewportSize({ width: 1280, height: 720 });
+			await expect(page.locator('[data-rw-sidebar]')).toBeVisible();
+		} finally {
+			// 6. Restore shell layout preference to site default (topbar) so clean state remains
+			await page.setViewportSize({ width: 1280, height: 720 });
+			const userMenuTrigger = page.locator('[data-rw-user-menu-trigger]:visible').first();
+			if (await userMenuTrigger.isVisible().catch(() => false)) {
+				await userMenuTrigger.click();
+				await expect(page.locator('[data-rw-user-menu]')).toBeVisible();
+				const resetLayoutBtn = page.locator('[data-rw-shell-layout-reset]');
+				if (await resetLayoutBtn.isVisible().catch(() => false)) {
+					const [resetRes] = await Promise.all([waitForWorkspacePrefsPost(page), resetLayoutBtn.click()]);
+					expect(resetRes.status()).toBe(200);
+				} else {
+					const topbarBtn = page.locator('[data-rw-shell-layout-option="topbar"]');
+					if ((await topbarBtn.count()) > 0 && (await topbarBtn.getAttribute('aria-pressed')) !== 'true') {
+						await Promise.all([waitForWorkspacePrefsPost(page), topbarBtn.click()]);
+					} else {
+						await page.keyboard.press('Escape');
+					}
+				}
+			}
+		}
+
+		await expect(page.locator('[data-rw-app-shell][data-rw-shell-layout="topbar"]')).toBeVisible();
+		await expect(page.locator('[data-rw-global-bar]')).toBeVisible();
+		await expect(page.locator('[data-rw-sidebar]')).toHaveCount(0);
+		await page.reload({ waitUntil: 'networkidle' });
+		await expect(page.locator('[data-rw-app-shell][data-rw-shell-layout="topbar"]')).toBeVisible();
 
 		tracker.assertNoErrors();
 	});

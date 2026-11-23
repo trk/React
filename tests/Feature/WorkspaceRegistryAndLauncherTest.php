@@ -276,31 +276,31 @@ test('ProcessReact modules operate standalone when ProcessReactWorkspace is not 
 	$react = wire('react');
 
 	$react->registerWorkspace([
-		'id' => 'seo-standalone',
-		'title' => 'SEO',
-		'description' => 'Search engine metadata.',
+		'id' => 'catalog-standalone',
+		'title' => 'Catalog',
+		'description' => 'Catalog metadata.',
 		'icon' => 'line-chart',
-		'url' => '/processwire/setup/wire-seo/',
-		'process' => 'ProcessSeoStandaloneFixture',
+		'url' => '/processwire/setup/catalog-demo/',
+		'process' => 'ProcessCatalogStandaloneFixture',
 		'accessCallback' => static fn(): bool => true,
 	]);
 
-	$seoProcess = new class extends ProcessReact {
+	$catalogProcess = new class extends ProcessReact {
 		public static function getModuleInfo(): array
 		{
 			return [
-				'title' => 'SEO',
+				'title' => 'Catalog',
 				'version' => 1,
 			];
 		}
 	};
-	wire($seoProcess);
+	wire($catalogProcess);
 
 	try {
 		// 1. Without ProcessReactWorkspace installed: standalone mode (no hub link, no cross-module switcher)
 		$react->setWorkspaceHubEnabled(false);
-		$standalonePage = $seoProcess->inertiaRender('WireSeo/Workspace', [
-			'title' => 'SEO',
+		$standalonePage = $catalogProcess->inertiaRender('CatalogDemo/Workspace', [
+			'title' => 'Catalog',
 		])->toPageObject();
 
 		expect($standalonePage['props']['workspace']['launcherUrl'])->toBe('')
@@ -310,16 +310,16 @@ test('ProcessReact modules operate standalone when ProcessReactWorkspace is not 
 
 		// 2. With ProcessReactWorkspace installed: unified hub mode (launcherUrl + cross-module switcher populated)
 		$react->setWorkspaceHubEnabled(true);
-		$hubPage = $seoProcess->inertiaRender('WireSeo/Workspace', [
-			'title' => 'SEO',
+		$hubPage = $catalogProcess->inertiaRender('CatalogDemo/Workspace', [
+			'title' => 'Catalog',
 		])->toPageObject();
 
 		expect($hubPage['props']['workspace']['launcherUrl'])->toContain('workspace/')
 			->and($hubPage['props']['workspace']['launcherScripts'])->not->toBeEmpty()
-			->and(array_column($hubPage['props']['workspace']['workspaces'], 'id'))->toContain('seo-standalone');
+			->and(array_column($hubPage['props']['workspace']['workspaces'], 'id'))->toContain('catalog-standalone');
 	} finally {
 		$react->setWorkspaceHubEnabled(null);
-		$react->workspaces()->unregister('seo-standalone');
+		$react->workspaces()->unregister('catalog-standalone');
 	}
 });
 
@@ -1278,7 +1278,7 @@ test('ProcessReact executes Setup > Module inline via EmbeddedAdminPageResponse 
 			->and($demoProcess->shouldEmbedInClassicAdmin(false))->toBeTrue()
 			->and($demoProcess->inertiaRootView())->toEndWith('/views/admin.php');
 
-		// Simulate pre-queued module script BEFORE ReactInertia.js (like WireBlocks::loadAdminAssets)
+		// Simulate pre-queued module script BEFORE ReactInertia.js
 		$config->scripts->removeAll();
 		$config->scripts->add('/wire/modules/Jquery/JqueryCore/JqueryCore.js');
 		$config->scripts->add('/site/modules/DualDemo/dist/EarlyPlugin.js');
@@ -1346,16 +1346,16 @@ test('ProcessReact executes Setup > Module inline via EmbeddedAdminPageResponse 
 
 		// 3. withWorkspaceQuery() appends ws=1 only to local admin module URLs
 		$adminBase = rtrim((string) ($config->urls->admin ?: '/processwire/'), '/') . '/';
-		expect($react->withWorkspaceQuery($adminBase . 'setup/wire-seo/mappings/'))
-			->toBe($adminBase . 'setup/wire-seo/mappings/?ws=1')
-			->and($react->withWorkspaceQuery($adminBase . 'setup/wire-seo/edit/?type=redirects#top'))
-			->toBe($adminBase . 'setup/wire-seo/edit/?type=redirects&ws=1#top')
+		expect($react->withWorkspaceQuery($adminBase . 'setup/catalog-demo/mappings/'))
+			->toBe($adminBase . 'setup/catalog-demo/mappings/?ws=1')
+			->and($react->withWorkspaceQuery($adminBase . 'setup/catalog-demo/edit/?type=redirects#top'))
+			->toBe($adminBase . 'setup/catalog-demo/edit/?type=redirects&ws=1#top')
 			->and($react->withWorkspaceQuery($adminBase))
 			->toBe($adminBase)
 			->and($react->withWorkspaceQuery($react->resolveLauncherUrl()))
 			->toBe($react->resolveLauncherUrl())
-			->and($react->withWorkspaceQuery($adminBase . 'setup/wire-seo/?export=csv'))
-			->toBe($adminBase . 'setup/wire-seo/?export=csv');
+			->and($react->withWorkspaceQuery($adminBase . 'setup/catalog-demo/?export=csv'))
+			->toBe($adminBase . 'setup/catalog-demo/?export=csv');
 
 		// 4. When ProcessReactWorkspace is uninstalled, even ?ws=1 resolves cleanly to 'admin' mode
 		$react->setWorkspaceHubEnabled(false);
@@ -1412,5 +1412,60 @@ test('ProcessReact executes Setup > Module inline via EmbeddedAdminPageResponse 
 			$users->setCurrentUser($prevUser);
 		}
 	}
+});
+
+test('FieldIntegrationHooks::unregister() and React::forgetDeferredRegistrations() detach lifecycle and deferred module hooks cleanly', function (): void {
+	/** @var React $react */
+	$react = wire('react');
+	$pw = \ProcessWire\ProcessWire::getCurrentInstance();
+	$textFieldtype = $pw->fieldtypes->get('FieldtypeText');
+	expect($textFieldtype)->not->toBeNull();
+
+	$sleepBefore = count($textFieldtype->getHooks('sleepValue'));
+	$isolatedHooks = new \Totoglu\React\Hook\FieldIntegrationHooks($react);
+	$pw->wire($isolatedHooks);
+
+	try {
+		$isolatedHooks->register();
+		$isolatedHooks->register(); // idempotent second call
+		expect(count($textFieldtype->getHooks('sleepValue')))->toBe($sleepBefore + 1);
+	} finally {
+		$isolatedHooks->unregister();
+		$isolatedHooks->unregister(); // idempotent unregister
+	}
+	expect(count($textFieldtype->getHooks('sleepValue')))->toBe($sleepBefore);
+
+	$firedWorkspace = 0;
+	$firedWidget = 0;
+	$probe = new class extends \ProcessWire\Wire {};
+	$pw->wire($probe);
+	$isolatedReact = new \ProcessWire\React();
+	$pw->wire($isolatedReact);
+	$wsBefore = count($isolatedReact->getHooks('registerWorkspaces'));
+	$wdBefore = count($isolatedReact->getHooks('registerWidgets'));
+
+	try {
+		\ProcessWire\React::deferModuleRegistration(
+			$probe,
+			static function () use (&$firedWorkspace): void {
+				$firedWorkspace++;
+			},
+			static function () use (&$firedWidget): void {
+				$firedWidget++;
+			},
+		);
+		expect(count($isolatedReact->getHooks('registerWorkspaces')))->toBe($wsBefore + 1)
+			->and(count($isolatedReact->getHooks('registerWidgets')))->toBe($wdBefore + 1);
+	} finally {
+		\ProcessWire\React::forgetDeferredRegistrations($probe);
+	}
+
+	$isolatedReact->workspaces();
+	$isolatedReact->widgets();
+
+	expect($firedWorkspace)->toBe(0)
+		->and($firedWidget)->toBe(0)
+		->and(count($isolatedReact->getHooks('registerWorkspaces')))->toBe($wsBefore)
+		->and(count($isolatedReact->getHooks('registerWidgets')))->toBe($wdBefore);
 });
 

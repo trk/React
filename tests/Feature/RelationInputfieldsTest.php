@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use ProcessWire\Field;
+use ProcessWire\HookEvent;
 use ProcessWire\InputfieldPage;
 use ProcessWire\InputfieldReactM2A;
 use ProcessWire\InputfieldReactM2M;
@@ -11,10 +12,16 @@ use ProcessWire\InputfieldReactO2M;
 use ProcessWire\InputfieldWrapper;
 use ProcessWire\Page;
 use ProcessWire\React;
+use ProcessWire\Role;
 use ProcessWire\User;
 use ProcessWire\WireInputData;
+use ProcessWire\WirePermissionException;
+use Totoglu\React\Contract\ReactDataProviderInterface;
+use Totoglu\React\Data\ReactPageResult;
 use Totoglu\React\Relation\RelationItem;
 use Totoglu\React\Relation\Resource\AbstractRelationResource;
+use Totoglu\React\Relation\Resource\PageResourceAdapter;
+use Totoglu\React\Relation\Resource\UserResourceAdapter;
 use function ProcessWire\bootReactForTesting;
 use function ProcessWire\wire;
 
@@ -582,6 +589,246 @@ test('dependsResourceMap fallback hydrates saved alternate-resource values and F
 	} finally {
 		if ($createdQuickPage !== null && (int) $createdQuickPage->id > 1) {
 			wire()->pages->delete($createdQuickPage, true);
+		}
+	}
+});
+
+test('o2m_list, UserResourceAdapter, PageResourceAdapter, hydrate limits, and JSON 403 WirePermissionException responses enforce strict scope bounds', function (): void {
+	$workspace = React::instance();
+	$pw = wire();
+	$uid = (int) $pw->user->id;
+	$suffix = substr(bin2hex(random_bytes(4)), 0, 8);
+
+	// 1. o2m_list ignores forged client ownerId when signed token omits ownerId and caps q at 250 chars
+	$unsignedOwnerToken = $workspace->relationSigner()->sign([
+		'cardinality' => 'o2m',
+		'resource' => 'page',
+		'targetResource' => 'page',
+		'foreignField' => 'parent',
+	], $uid);
+	$forgedO2mRes = $workspace->handleRelationAction([
+		'action' => 'o2m_list',
+		'relationToken' => $unsignedOwnerToken,
+		'ownerId' => 1,
+		'q' => 'home',
+	]);
+	expect($forgedO2mRes['ok'])->toBeTrue()
+		->and($forgedO2mRes['items'])->toBe([])
+		->and($forgedO2mRes['total'])->toBe(0);
+
+	$capturedO2mQ = [];
+	$probeResName = 'o2m_cap_probe_' . $suffix;
+	$probeAdapter = new class($probeResName, $capturedO2mQ) extends AbstractRelationResource {
+		/**
+		 * @param list<string> $captured
+		 */
+		public function __construct(
+			private string $probeName,
+			private array &$captured,
+		) {
+			parent::__construct();
+		}
+
+		public function name(): string { return $this->probeName; }
+		public function label(): string { return 'Probe'; }
+		public function icon(): string { return 'search'; }
+		public function defaultValueField(): string { return 'id'; }
+
+		public function query(array $params = [], array $config = []): array
+		{
+			return ['items' => [], 'total' => 0, 'hasMore' => false];
+		}
+
+		public function hydrate(array $values, array $config = []): array
+		{
+			return [];
+		}
+
+		public function count(array $config = []): int
+		{
+			return 0;
+		}
+
+		public function queryReverse(string|int $ownerId, string $foreignField, array $params = [], array $config = []): array
+		{
+			$this->captured[] = (string) ($params['q'] ?? '');
+
+			return ['items' => [], 'total' => 0, 'hasMore' => false];
+		}
+	};
+	$workspace->relations()->register($probeAdapter, $probeResName);
+
+	$signedOwnerToken = $workspace->relationSigner()->sign([
+		'cardinality' => 'o2m',
+		'resource' => $probeResName,
+		'targetResource' => $probeResName,
+		'ownerId' => 1,
+		'foreignField' => 'title',
+	], $uid);
+	$longQ = str_repeat('ü', 300);
+	$workspace->handleRelationAction([
+		'action' => 'o2m_list',
+		'relationToken' => $signedOwnerToken,
+		'q' => $longQ,
+	]);
+	expect($capturedO2mQ)->toHaveCount(1)
+		->and(mb_strlen($capturedO2mQ[0], 'UTF-8'))->toBe(250);
+
+	// 2. UserResourceAdapter ignores dependsValue when dependsParam is unset and rejects role escalation outside signed roles
+	/** @var UserResourceAdapter $userAdapter */
+	$userAdapter = $workspace->relations()->get('user');
+	$tempRole = null;
+	$tempUser = null;
+	try {
+		$tempRole = $pw->roles->add('rw_rel_scope_' . $suffix);
+
+		$tempUser = $pw->users->add('rw_rel_user_' . $suffix);
+		$tempUser->addRole('guest');
+		$tempUser->addRole($tempRole);
+		$pw->users->save($tempUser);
+
+		$unsetDepRes = $userAdapter->query(
+			['dependsValue' => 'superuser'],
+			['roles' => [$tempRole->name], 'excludeSuperuser' => false, 'valueField' => 'name'],
+		);
+		$unsetDepNames = array_map(static fn(RelationItem $i): string => (string) $i->value, $unsetDepRes['items']);
+		expect($unsetDepNames)->toContain($tempUser->name)
+			->and($unsetDepNames)->not->toContain('admin');
+
+		$escapedRoleRes = $userAdapter->query(
+			['dependsValue' => 'superuser'],
+			['dependsParam' => 'role', 'roles' => [$tempRole->name], 'excludeSuperuser' => false, 'valueField' => 'name'],
+		);
+		expect($escapedRoleRes['items'])->toBe([])
+			->and($escapedRoleRes['total'])->toBe(0);
+
+		$allowedRoleRes = $userAdapter->query(
+			['dependsValue' => $tempRole->name],
+			['dependsParam' => 'role', 'roles' => [$tempRole->name], 'valueField' => 'name'],
+		);
+		$allowedRoleNames = array_map(static fn(RelationItem $i): string => (string) $i->value, $allowedRoleRes['items']);
+		expect($allowedRoleNames)->toContain($tempUser->name);
+
+		// UserResourceAdapter::hydrate() caps >500 inputs and appends limit=500
+		$hydrateUserSelectors = [];
+		$hookUserHydrateId = $pw->addHookBefore('Pages::find', static function (HookEvent $event) use (&$hydrateUserSelectors): void {
+			$hydrateUserSelectors[] = (string) $event->arguments(0);
+		});
+		try {
+			$overCapInputs = [$tempUser->name];
+			for ($i = 0; $i < 515; $i++) {
+				$overCapInputs[] = 'rw_missing_user_' . $i;
+			}
+			$overCapInputs[] = 'admin';
+			$hydratedUsers = $userAdapter->hydrate($overCapInputs, ['valueField' => 'name', 'excludeSuperuser' => false]);
+			$hydratedNames = array_map(static fn(RelationItem $i): string => (string) $i->value, $hydratedUsers);
+			expect($hydratedNames)->toContain($tempUser->name)
+				->and($hydratedNames)->not->toContain('admin')
+				->and(implode("\n", $hydrateUserSelectors))->toContain('limit=500');
+		} finally {
+			$pw->removeHook($hookUserHydrateId);
+		}
+	} finally {
+		if ($tempUser instanceof User && $tempUser->id > 0) {
+			try {
+				$pw->users->delete($tempUser, true);
+			} catch (\Throwable) {
+			}
+		}
+		if ($tempRole instanceof Role && $tempRole->id > 0) {
+			try {
+				$pw->roles->delete($tempRole);
+			} catch (\Throwable) {
+			}
+		}
+	}
+
+	// 3. PageResourceAdapter blocks dependsValue=admin escape and appends limit=500 in hydrate()
+	/** @var PageResourceAdapter $pageAdapter */
+	$pageAdapter = $workspace->relations()->get('page');
+	$adminEscapeWithTpls = $pageAdapter->query(
+		['dependsValue' => 'admin'],
+		['dependsParam' => 'template', 'templates' => ['home']],
+	);
+	$adminEscapeOpen = $pageAdapter->query(
+		['dependsValue' => 'admin'],
+		['dependsParam' => 'template'],
+	);
+	expect($adminEscapeWithTpls['items'])->toBe([])
+		->and($adminEscapeOpen['items'])->toBe([]);
+
+	$hydratePageSelectors = [];
+	$hookPageHydrateId = $pw->addHookBefore('Pages::find', static function (HookEvent $event) use (&$hydratePageSelectors): void {
+		$hydratePageSelectors[] = (string) $event->arguments(0);
+	});
+	try {
+		$pageAdapter->hydrate(['home'], ['valueField' => 'name']);
+		expect(implode("\n", $hydratePageSelectors))->toContain('limit=500');
+	} finally {
+		$pw->removeHook($hookPageHydrateId);
+	}
+
+	// 4. WirePermissionException returns JSON HTTP 403 on both /_react/relation and /_react/viewport
+	$permRelHookId = $pw->addHookBefore('Pages::find', static function (): void {
+		throw new WirePermissionException('Forbidden relation access');
+	});
+	try {
+		$relToken = $workspace->relationSigner()->sign([
+			'cardinality' => 'm2o',
+			'resource' => 'page',
+		], $uid);
+		$relPermRes = $workspace->handleRelationAction([
+			'action' => 'search',
+			'relationToken' => $relToken,
+			'q' => 'home',
+		]);
+		expect($relPermRes['ok'])->toBeFalse()
+			->and($relPermRes['status'])->toBe(403)
+			->and($relPermRes['error'])->toBe('Forbidden relation access');
+	} finally {
+		$pw->removeHook($permRelHookId);
+	}
+
+	$permProviderId = 'perm_test_' . $suffix . ':boom';
+	$permProvider = new class($permProviderId) implements ReactDataProviderInterface {
+		public bool $throwOnQuery = false;
+
+		public function __construct(private string $id) {}
+		public function id(): string { return $this->id; }
+		public function title(): string { return 'Perm Test'; }
+		public function columns(): array { return ['title' => 'Title']; }
+		public function sortableColumns(): array { return []; }
+		public function statusOptions(): array { return []; }
+		public function isLocked(): bool { return false; }
+		public function query(array $criteria = []): ReactPageResult {
+			if ($this->throwOnQuery) {
+				throw new WirePermissionException('Forbidden viewport access');
+			}
+
+			return new ReactPageResult([], 0, 1, 25);
+		}
+		public function mutate(string $operation, array $ids, array $payload = []): int { return 0; }
+	};
+	$workspace->providers()->register($permProviderId, $permProvider);
+	$prevHttpStatus = http_response_code();
+	try {
+		$vp = $workspace->configureTable($permProviderId);
+		$stateToken = $vp->signViewportState();
+		$permProvider->throwOnQuery = true;
+		$pw->input->post->set('stateToken', $stateToken);
+		$pw->input->post->set('action', 'fetch');
+		$rawJson = $workspace->handleViewportRequest(new HookEvent());
+		$decoded = json_decode($rawJson, true);
+		expect(http_response_code())->toBe(403)
+			->and($decoded)->toBe([
+				'ok' => false,
+				'error' => 'Forbidden viewport access',
+			]);
+	} finally {
+		$pw->input->post->remove('stateToken');
+		$pw->input->post->remove('action');
+		if (is_int($prevHttpStatus) && $prevHttpStatus > 0) {
+			http_response_code($prevHttpStatus);
 		}
 	}
 });

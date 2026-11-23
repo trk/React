@@ -18,10 +18,13 @@ final class LayeringScanner
 	public const string MAIN_MODULE = 'React';
 
 	/** @var list<string> Only this module and its allowed lower-layer dependencies. */
-	public const array ALLOWED_MODULES = ["React","Inertia"];
+	public const array ALLOWED_MODULES = ['React', 'Inertia', 'Vite', 'InterventionImage'];
+
+	/** @var list<string> Third-party debugging tools excluded from sibling scans. */
+	private const array IGNORED_SIBLING_MODULES = ['TracyDebugger'];
 
 	/** @var list<string> Direct module dependencies that MAIN_MODULE must declare in getModuleInfo()['requires']. */
-	public const array REQUIRED_DIRECT = ["Inertia"];
+	public const array REQUIRED_DIRECT = ['Inertia'];
 
 	/** @var list<string> Allowed short CSS/data-* prefixes for this module and its lower layers. */
 	public const array ALLOWED_PREFIXES = ["rw-"];
@@ -175,12 +178,13 @@ final class LayeringScanner
 		$disallowedModules = [];
 		foreach (glob(dirname(self::moduleRoot()) . '/*', GLOB_ONLYDIR) ?: [] as $siblingDir) {
 			$otherMod = basename($siblingDir);
-			if (!str_starts_with($otherMod, 'Wire')) {
+			if (
+				in_array($otherMod, self::ALLOWED_MODULES, true)
+				|| in_array($otherMod, self::IGNORED_SIBLING_MODULES, true)
+			) {
 				continue;
 			}
-			if (!in_array($otherMod, self::ALLOWED_MODULES, true)) {
-				$disallowedModules[] = $otherMod;
-			}
+			$disallowedModules[] = $otherMod;
 		}
 
 		foreach ($files as $path => $contents) {
@@ -231,6 +235,7 @@ final class LayeringScanner
 			}
 
 			// 4. Check references to classes owned by other installed modules in site/modules/
+			$isPhpFile = str_ends_with($path, '.php');
 			foreach ($disallowedModules as $otherMod) {
 				if ($otherMod === $integrationTarget) {
 					continue;
@@ -239,8 +244,22 @@ final class LayeringScanner
 					if (in_array($otherClass, $allowedModuleClasses, true)) {
 						continue;
 					}
-					if (preg_match('/\b' . preg_quote($otherClass, '/') . '\b/', $contents, $m, PREG_OFFSET_CAPTURE) === 1) {
-						self::recordOffset($violations, $path, 'class:' . $otherClass, $m[0][0], $m[0][1], $contents);
+					$quoted = preg_quote($otherClass, '/');
+					if (self::isPrefixedOrMultiWordClass($otherClass)) {
+						if (preg_match('/\b' . $quoted . '\b/', $contents, $m, PREG_OFFSET_CAPTURE) === 1) {
+							self::recordOffset($violations, $path, 'class:' . $otherClass, $m[0][0], $m[0][1], $contents);
+						}
+					} elseif ($isPhpFile) {
+						$structuralPattern = '/(?:'
+							. 'ProcessWire\\\\' . $quoted . '\b'
+							. '|\b(?:new|extends|implements|instanceof)\s+' . $quoted . '\b'
+							. '|\b' . $quoted . '::'
+							. '|->(?:get|getModule|isInstalled|getModuleInfo|getModuleInfoVerbose|getConfig|getModuleID)\(\s*[\'"]' . $quoted . '[\'"]'
+							. '|\b' . $quoted . '\.module\.php'
+							. ')/';
+						if (preg_match($structuralPattern, $contents, $m, PREG_OFFSET_CAPTURE) === 1) {
+							self::recordOffset($violations, $path, 'class:' . $otherClass, $m[0][0], $m[0][1], $contents);
+						}
 					}
 				}
 			}
@@ -317,6 +336,12 @@ final class LayeringScanner
 		return $names;
 	}
 
+	private static function isPrefixedOrMultiWordClass(string $className): bool
+	{
+		return preg_match('/^(?:Process|Fieldtype|Inputfield|Markup|Textformatter|Wire|FileValidator)/', $className) === 1
+			|| preg_match('/[A-Z][a-z0-9]+[A-Z]/', $className) === 1;
+	}
+
 	/**
 	 * @param array<string, string> $violations
 	 */
@@ -377,4 +402,32 @@ test('maintains strict brand neutrality across React source files and documentat
 	}
 
 	expect($hits)->toBe([], "Banned third-party brand references in React:\n" . implode("\n", $hits));
+});
+
+test('contains zero kanban or calendar viewport logic in React core', function (): void {
+	$excludedPrefixes = [
+		'resources/ts/engines/calendar/',
+		'resources/ts/entries/ReactCalendar.tsx',
+		'resources/ts/sdk/calendar.ts',
+		'resources/ts/ui/primitives/Icon.tsx',
+		'resources/ts/icons/',
+		'src/Icon/',
+		'src/I18n/TranslationCatalogService.php',
+		'languages/',
+	];
+	$forbidden = '/\b(Kanban|KanbanBoardDnd|ReactCalendarProvider|OP_MOVE_STAGE|OP_RESCHEDULE|OP_RESIZE_SPAN|OP_SHIFT_DATES|moveStage|moveCalendarDate|resizeCalendarSpan|bulkShiftDates|calendarView|dateStartField|dateEndField)\b/i';
+	$hits = [];
+
+	foreach (LayeringScanner::files() as $path => $contents) {
+		foreach ($excludedPrefixes as $prefix) {
+			if ($path === $prefix || str_starts_with($path, $prefix)) {
+				continue 2;
+			}
+		}
+		if (preg_match($forbidden, $contents, $m) === 1) {
+			$hits[] = $path . ': ' . $m[0];
+		}
+	}
+
+	expect($hits)->toBe([], "Forbidden viewport mode references in React core:\n" . implode("\n", $hits));
 });

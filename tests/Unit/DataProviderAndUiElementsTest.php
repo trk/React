@@ -39,9 +39,11 @@ test('ReactRecord and ReactPageResult normalize values, status bitmasks, and pag
 		],
 		editUrl: '/admin/edit/rec_1',
 		sort: 5,
-		stage: 'confirmed',
-		startDate: '2026-11-01',
-		endDate: '2026-11-08',
+		meta: [
+			'stage' => 'confirmed',
+			'startDate' => '2026-11-01',
+			'endDate' => '2026-11-08',
+		],
 	);
 
 	expect($record->id)->toBe('rec_1')
@@ -129,7 +131,7 @@ test('ArrayDataProvider supports search, filtering, sorting, pagination, field u
 	expect($draftRes->total)->toBe(1)
 		->and($draftRes->items[0]->id)->toBe('b_2');
 
-	expect($provider->mutate('move_stage', ['b_1'], ['stage' => 'done']))->toBe(1)
+	expect($provider->mutate('update_field', ['b_1'], ['field' => 'stage', 'value' => 'done']))->toBe(1)
 		->and($provider->mutate('publish', ['b_2']))->toBe(1);
 
 	$afterPublish = $provider->query(['statusFilter' => 'published']);
@@ -162,9 +164,8 @@ test('ProviderRegistry resolves built-in pages and array adapters, supports cust
 
 	$workspace = React::instance();
 	$pagesProvider = $workspace->provider('pages:id=1');
-	expect($pagesProvider->stageField())->toBe('')
-		->and($pagesProvider->stageOptions())->toBe([])
-		->and($pagesProvider->dateStartField())->toBe('');
+	expect($pagesProvider->columns())->toHaveKey('title')
+		->and($pagesProvider->isLocked())->toBeFalse();
 	$pagesResult = $pagesProvider->query(['limit' => 5]);
 	expect($pagesResult->total)->toBeGreaterThanOrEqual(1)
 		->and($pagesResult->items[0]->id)->toBe('1');
@@ -241,6 +242,7 @@ test('modular dist bundles exist within strict size budgets and isolate CSS/JS p
 	$dndFile = $moduleDir . '/dist/ReactDnd.js';
 	$calendarFile = $moduleDir . '/dist/ReactCalendar.js';
 	$calendarCssFile = $moduleDir . '/dist/ReactCalendar.css';
+	$extraFieldsFile = $moduleDir . '/dist/ReactExtraFields.js';
 	$legacyMonolithTiptap = $moduleDir . '/dist/InputfieldTiptap.js';
 	$sharedChunks = glob($moduleDir . '/dist/ReactInertia-*.js') ?: [];
 	$styleJsLeftovers = glob($moduleDir . '/dist/*.style.js') ?: [];
@@ -276,8 +278,10 @@ test('modular dist bundles exist within strict size budgets and isolate CSS/JS p
 		->and(is_file($dndFile))->toBeTrue()
 		->and(is_file($calendarFile))->toBeTrue()
 		->and(is_file($calendarCssFile))->toBeTrue()
+		->and(is_file($extraFieldsFile))->toBeTrue()
 		->and((int) filesize($jsFile))->toBeLessThan(700_000)
 		->and((int) filesize($schemaFormFile))->toBeLessThan(200_000)
+		->and((int) filesize($extraFieldsFile))->toBeLessThan(120_000)
 		->and((int) filesize($tiptapCoreFile))->toBeLessThan(560_000)
 		->and((int) filesize($gridFile))->toBeLessThan(160_000)
 		->and((int) filesize($dndFile))->toBeLessThan(120_000)
@@ -666,6 +670,185 @@ test('FormSchemaSerializer serializes InputfieldForm trees and declarative field
 		->and($declarativeSchema['fields'][2]['formula'])->toBe('{guest_count} * 250')
 		->and($declarativeSchema['fields'][3]['type'])->toBe('repeater')
 		->and($declarativeSchema['submits'][0]['label'])->toBe('Send Inquiry');
+
+	$dateSchema = $workspace->serializeFormDefinitions([
+		[
+			'name' => 'event_date',
+			'type' => 'date',
+			'label' => 'Event Date',
+			'defaultValue' => '2026-11-21',
+		],
+		[
+			'name' => 'start_time',
+			'type' => 'time',
+			'label' => 'Start Time',
+			'hourFormat' => '12h',
+			'minuteStep' => 15,
+			'showSeconds' => true,
+		],
+		[
+			'name' => 'publish_at',
+			'type' => 'datetime',
+			'label' => 'Publish At',
+			'timezone' => 'Europe/Istanbul',
+			'datetimeMode' => 'picker',
+		],
+		[
+			'name' => 'charter_dates',
+			'type' => 'date_range',
+			'label' => 'Charter Window',
+			'defaultValue' => '2026-11-15..2026-11-22',
+			'presets' => true,
+			'numberOfMonths' => 2,
+		],
+	], [
+		'id' => 'schedule_form',
+	]);
+
+	expect($dateSchema['fields'])->toHaveCount(4)
+		->and($dateSchema['fields'][0]['type'])->toBe('date')
+		->and($dateSchema['fields'][0]['inputType'])->toBe('date')
+		->and($dateSchema['fields'][1]['type'])->toBe('time')
+		->and($dateSchema['fields'][1]['inputType'])->toBe('time')
+		->and($dateSchema['fields'][1]['hourFormat'])->toBe('12h')
+		->and($dateSchema['fields'][1]['minuteStep'])->toBe(15)
+		->and($dateSchema['fields'][1]['showSeconds'])->toBeTrue()
+		->and($dateSchema['fields'][2]['type'])->toBe('datetime')
+		->and($dateSchema['fields'][2]['inputType'])->toBe('datetime-local')
+		->and($dateSchema['fields'][2]['timezone'])->toBe('Europe/Istanbul')
+		->and($dateSchema['fields'][2]['datetimeMode'])->toBe('picker')
+		->and($dateSchema['fields'][3]['type'])->toBe('daterange')
+		->and($dateSchema['fields'][3]['value'])->toBe(['from' => '2026-11-15', 'to' => '2026-11-22'])
+		->and($dateSchema['fields'][3]['presets'])->toBeTrue()
+		->and($dateSchema['fields'][3]['numberOfMonths'])->toBe(2);
+
+	$extraSchema = $workspace->serializeFormDefinitions([
+		[
+			'name' => 'accent_color',
+			'type' => 'color',
+			'label' => 'Accent Color',
+			'allowAlpha' => true,
+			'swatches' => ['#eb1d61', '#3b82f6'],
+			'defaultValue' => '#eb1d61',
+		],
+		[
+			'name' => 'topic_tags',
+			'type' => 'tags',
+			'label' => 'Topics',
+			'suggestions' => ['editorial', 'seo'],
+			'defaultValue' => 'editorial, mobile',
+		],
+		[
+			'name' => 'template_kind',
+			'type' => 'combobox',
+			'label' => 'Template',
+			'clearable' => true,
+			'options' => [
+				['value' => 'article', 'label' => 'Article', 'icon' => 'file-text', 'description' => 'Longform post'],
+			],
+		],
+		[
+			'name' => 'base_price',
+			'type' => 'currency',
+			'label' => 'Price',
+			'currency' => 'EUR',
+			'defaultValue' => 1250,
+		],
+		[
+			'name' => 'layout_mode',
+			'type' => 'segmented',
+			'label' => 'Layout',
+			'fullWidth' => true,
+			'options' => [
+				['value' => 'grid', 'label' => 'Grid', 'icon' => 'layout-grid'],
+			],
+		],
+	], [
+		'id' => 'extra_fields_form',
+	]);
+
+	expect($extraSchema['fields'])->toHaveCount(5)
+		->and($extraSchema['fields'][0]['type'])->toBe('color')
+		->and($extraSchema['fields'][0]['allowAlpha'])->toBeTrue()
+		->and($extraSchema['fields'][1]['type'])->toBe('tags')
+		->and($extraSchema['fields'][1]['value'])->toBe(['editorial', 'mobile'])
+		->and($extraSchema['fields'][2]['type'])->toBe('combobox')
+		->and($extraSchema['fields'][2]['options'][0]['icon'])->toBe('file-text')
+		->and($extraSchema['fields'][3]['type'])->toBe('unit_number')
+		->and($extraSchema['fields'][3]['currency'])->toBe('EUR')
+		->and($extraSchema['fields'][3]['value'])->toBe(['value' => 1250, 'unit' => 'EUR'])
+		->and($extraSchema['fields'][4]['type'])->toBe('segmented')
+		->and($extraSchema['fields'][4]['fullWidth'])->toBeTrue();
+
+	// Declarative serialization also normalizes Package 3 controls (spacing, otp, password, range_slider, markdown)
+	$package3Schema = $workspace->serializeFormDefinitions([
+		[
+			'name' => 'card_padding',
+			'type' => 'spacing',
+			'label' => 'Padding',
+			'allowAuto' => true,
+			'units' => ['px', 'rem'],
+			'defaultValue' => '16px 24px',
+		],
+		[
+			'name' => 'otp_code',
+			'type' => 'otp',
+			'label' => 'OTP Code',
+			'otpLength' => 6,
+			'otpSeparatorAfter' => 3,
+			'mask' => true,
+		],
+		[
+			'name' => 'account_pw',
+			'type' => 'password',
+			'label' => 'Password',
+			'allowGenerate' => true,
+			'requireSymbol' => true,
+			'confirmPassword' => true,
+		],
+		[
+			'name' => 'price_band',
+			'type' => 'range_slider',
+			'label' => 'Price Band',
+			'min' => 0,
+			'max' => 1000,
+			'minDistance' => 50,
+			'defaultValue' => '120..480',
+		],
+		[
+			'name' => 'release_md',
+			'type' => 'markdown',
+			'label' => 'Release Notes',
+			'allowSplit' => true,
+			'previewMode' => 'write',
+			'defaultValue' => '# Notes',
+		],
+	], [
+		'id' => 'package3_fields_form',
+	]);
+
+	expect($package3Schema['fields'])->toHaveCount(5)
+		->and($package3Schema['fields'][0]['type'])->toBe('spacing')
+		->and($package3Schema['fields'][0]['allowAuto'])->toBeTrue()
+		->and($package3Schema['fields'][0]['value'])->toBe([
+			'top' => '16',
+			'right' => '24',
+			'bottom' => '16',
+			'left' => '24',
+			'unit' => 'px',
+			'linked' => false,
+		])
+		->and($package3Schema['fields'][1]['type'])->toBe('otp')
+		->and($package3Schema['fields'][1]['otpLength'])->toBe(6)
+		->and($package3Schema['fields'][1]['otpSeparatorAfter'])->toBe(3)
+		->and($package3Schema['fields'][2]['type'])->toBe('password')
+		->and($package3Schema['fields'][2]['allowGenerate'])->toBeTrue()
+		->and($package3Schema['fields'][2]['confirmPassword'])->toBeTrue()
+		->and($package3Schema['fields'][3]['type'])->toBe('range_slider')
+		->and($package3Schema['fields'][3]['dual'])->toBeTrue()
+		->and($package3Schema['fields'][3]['value'])->toBe(['min' => 120, 'max' => 480])
+		->and($package3Schema['fields'][4]['type'])->toBe('markdown')
+		->and($package3Schema['fields'][4]['allowSplit'])->toBeTrue();
 
 	// Non-inline MarkupReactTab groups inside a WireTab wrapper hoist into unified top-level tabs without leaking rwtabgrp_* labels
 	/** @var \ProcessWire\InputfieldForm $tabbedForm */
@@ -1072,4 +1255,809 @@ test('FormSchemaSerializer deleteTab and appendDeleteTab normalize flat and tabb
 		->and($serializedTabbed['fields'][0]['tabs'][1]['fields'][0]['confirmDelete'])->toBeTrue()
 		->and($serializedTabbed['fields'][0]['tabs'][1]['fields'][0]['disabled'])->toBeTrue()
 		->and($serializedTabbed['fields'][0]['tabs'][1]['fields'][0]['description'])->toContain('currently in use');
+
+	// 3. WireTab wrappers preserve icon, confirmDelete, showIf, collapsed and integrate cleanly with appendDeleteTab
+	/** @var \ProcessWire\InputfieldForm $wireTabForm */
+	$wireTabForm = $modules->get('InputfieldForm');
+	$wireTabForm->attr('id+name', 'rw_wiretab_meta_form');
+
+	$wtGeneral = new \ProcessWire\InputfieldWrapper();
+	$wtGeneral->set('wire($this)', wire());
+	$wtGeneral->attr('id+name', '_tab_wire_general');
+	$wtGeneral->attr('title', 'General');
+	$wtGeneral->icon = 'file-text';
+	$wtGeneral->addClass('WireTab');
+	/** @var \ProcessWire\InputfieldText $wtTitle */
+	$wtTitle = $modules->get('InputfieldText');
+	$wtTitle->attr('id+name', 'title');
+	$wtTitle->label = 'Title';
+	$wtGeneral->add($wtTitle);
+	$wireTabForm->add($wtGeneral);
+
+	$wtAdvanced = new \ProcessWire\InputfieldWrapper();
+	$wtAdvanced->set('wire($this)', wire());
+	$wtAdvanced->attr('id+name', '_tab_wire_advanced');
+	$wtAdvanced->attr('title', 'Advanced');
+	$wtAdvanced->icon = 'sliders';
+	$wtAdvanced->set('showIf', 'title!=""');
+	$wtAdvanced->collapsed = \ProcessWire\Inputfield::collapsedYes;
+	$wtAdvanced->addClass('WireTab');
+	$wireTabForm->add($wtAdvanced);
+
+	$wtHidden = new \ProcessWire\InputfieldWrapper();
+	$wtHidden->set('wire($this)', wire());
+	$wtHidden->attr('id+name', '_tab_wire_hidden');
+	$wtHidden->attr('title', 'Hidden');
+	$wtHidden->collapsed = \ProcessWire\Inputfield::collapsedHidden;
+	$wtHidden->addClass('WireTab');
+	$wireTabForm->add($wtHidden);
+
+	$wtSubmit = $modules->get('InputfieldSubmit');
+	$wtSubmit->attr('id+name', 'submit_save');
+	$wtSubmit->attr('value', 'Save');
+	$wireTabForm->add($wtSubmit);
+
+	$serializedWireTabs = $serializer->serialize($wireTabForm, [
+		'surface' => 'card',
+		'deleteTab' => [
+			'name' => '_wt_delete_confirm',
+			'typeLabel' => 'Item',
+		],
+	]);
+
+	expect($serializedWireTabs['tabs'])->toHaveCount(3)
+		->and($serializedWireTabs['tabs'][0]['id'])->toBe('_tab_wire_general')
+		->and($serializedWireTabs['tabs'][0]['icon'])->toBe('file-text')
+		->and($serializedWireTabs['tabs'][0]['confirmDelete'])->toBeFalse()
+		->and($serializedWireTabs['tabs'][0]['collapsed'])->toBeFalse()
+		->and($serializedWireTabs['tabs'][1]['id'])->toBe('_tab_wire_advanced')
+		->and($serializedWireTabs['tabs'][1]['icon'])->toBe('sliders')
+		->and($serializedWireTabs['tabs'][1]['showIf'])->toBe('title!=""')
+		->and($serializedWireTabs['tabs'][1]['collapsed'])->toBeTrue()
+		->and($serializedWireTabs['tabs'][2]['id'])->toBe('_tab_delete')
+		->and($serializedWireTabs['tabs'][2]['icon'])->toBe('trash')
+		->and($serializedWireTabs['tabs'][2]['confirmDelete'])->toBeTrue()
+		->and($serializedWireTabs['tabs'][2]['fields'][0]['name'])->toBe('_wt_delete_confirm');
+
+	// Existing WireTab carrying data-confirm-delete="1" is preserved without appending a second delete tab
+	/** @var \ProcessWire\InputfieldForm $explicitDeleteWireForm */
+	$explicitDeleteWireForm = $modules->get('InputfieldForm');
+	$explicitDeleteWireForm->attr('id+name', 'rw_wiretab_explicit_delete_form');
+	$wtContent = new \ProcessWire\InputfieldWrapper();
+	$wtContent->set('wire($this)', wire());
+	$wtContent->attr('id+name', 'ContentTab');
+	$wtContent->attr('title', 'Content');
+	$wtContent->addClass('WireTab');
+	$explicitDeleteWireForm->add($wtContent);
+
+	$wtExplicitDelete = new \ProcessWire\InputfieldWrapper();
+	$wtExplicitDelete->set('wire($this)', wire());
+	$wtExplicitDelete->attr('id+name', 'DangerZoneTab');
+	$wtExplicitDelete->attr('title', 'Remove');
+	$wtExplicitDelete->attr('data-confirm-delete', '1');
+	$wtExplicitDelete->icon = 'trash';
+	$wtExplicitDelete->addClass('WireTab');
+	$explicitDeleteWireForm->add($wtExplicitDelete);
+
+	$serializedExplicitDelete = $serializer->serialize($explicitDeleteWireForm, [
+		'deleteTab' => ['name' => '_wt_delete_confirm'],
+	]);
+	expect($serializedExplicitDelete['tabs'])->toHaveCount(2)
+		->and($serializedExplicitDelete['tabs'][1]['id'])->toBe('DangerZoneTab')
+		->and($serializedExplicitDelete['tabs'][1]['confirmDelete'])->toBeTrue()
+		->and($serializedExplicitDelete['tabs'][1]['icon'])->toBe('trash');
+});
+
+test('FormSchemaSerializer maps rwControl extended native Inputfields with 1:1 SchemaForm fidelity', function (): void {
+	$modules = wire()->modules;
+	$modules->get('React');
+	$serializer = new \Totoglu\React\Form\FormSchemaSerializer();
+	wire($serializer);
+
+	/** @var \ProcessWire\InputfieldForm $form */
+	$form = $modules->get('InputfieldForm');
+	$form->attr('id+name', 'rw_extended_native_form');
+
+	/** @var \ProcessWire\InputfieldText $colorField */
+	$colorField = $modules->get('InputfieldText');
+	$colorField->attr('id+name', 'brand_color');
+	$colorField->label = 'Color';
+	$colorField->set('rwControl', 'color');
+	$colorField->set('swatches', ['#64748b', '#2563eb']);
+	$colorField->set('allowAlpha', true);
+	$colorField->set('clearable', false);
+	$colorField->val('#2563eb');
+	$form->add($colorField);
+
+	/** @var \ProcessWire\InputfieldText $customComboField */
+	$customComboField = $modules->get('InputfieldText');
+	$customComboField->attr('id+name', 'country_code');
+	$customComboField->label = 'Country';
+	$customComboField->set('rwControl', 'combobox');
+	$customComboField->set('comboboxOptions', ['TR' => 'Türkiye', 'GR' => 'Greece']);
+	$customComboField->set('allowCustom', true);
+	$customComboField->set('clearable', true);
+	$customComboField->val('TR');
+	$form->add($customComboField);
+
+	/** @var \ProcessWire\InputfieldSelect $segmentedField */
+	$segmentedField = $modules->get('InputfieldSelect');
+	$segmentedField->attr('id+name', 'scope');
+	$segmentedField->label = 'Scope';
+	$segmentedField->set('rwControl', 'segmented');
+	$segmentedField->set('fullWidth', true);
+	$segmentedField->addOption('both', 'Contacts & Orgs', ['data-icon' => 'users']);
+	$segmentedField->addOption('contact', 'Contacts');
+	$segmentedField->val('both');
+	$form->add($segmentedField);
+
+	/** @var \ProcessWire\InputfieldSelect $strictComboField */
+	$strictComboField = $modules->get('InputfieldSelect');
+	$strictComboField->attr('id+name', 'stabilizers');
+	$strictComboField->label = 'Stabilizers';
+	$strictComboField->set('rwControl', 'combobox');
+	$strictComboField->set('clearable', true);
+	$strictComboField->addOption('zero_speed', 'Zero-Speed');
+	$strictComboField->val('zero_speed');
+	$form->add($strictComboField);
+
+	/** @var \ProcessWire\InputfieldTextarea $markdownField */
+	$markdownField = $modules->get('InputfieldTextarea');
+	$markdownField->attr('id+name', 'internal_notes');
+	$markdownField->label = 'Notes';
+	$markdownField->set('rwControl', 'markdown');
+	$markdownField->set('previewMode', 'split');
+	$markdownField->set('allowSplit', true);
+	$markdownField->set('showToolbar', true);
+	$markdownField->val('## Notes');
+	$form->add($markdownField);
+
+	/** @var \ProcessWire\InputfieldText $dateRangeField */
+	$dateRangeField = $modules->get('InputfieldText');
+	$dateRangeField->attr('id+name', 'charter_window');
+	$dateRangeField->label = 'Window';
+	$dateRangeField->set('rwControl', 'daterange');
+	$dateRangeField->val('2026-07-01..2026-07-15');
+	$form->add($dateRangeField);
+
+	/** @var \ProcessWire\InputfieldText $unitField */
+	$unitField = $modules->get('InputfieldText');
+	$unitField->attr('id+name', 'deposit_amount');
+	$unitField->label = 'Deposit';
+	$unitField->set('rwControl', 'unit_number');
+	$unitField->set('units', ['EUR', 'USD']);
+	$unitField->set('defaultUnit', 'EUR');
+	$unitField->val('5000 EUR');
+	$form->add($unitField);
+
+	/** @var \ProcessWire\InputfieldText $spacingField */
+	$spacingField = $modules->get('InputfieldText');
+	$spacingField->attr('id+name', 'box_pad');
+	$spacingField->label = 'Padding';
+	$spacingField->set('rwControl', 'spacing');
+	$spacingField->set('defaultUnit', 'rem');
+	$spacingField->val('1.5rem 2rem');
+	$form->add($spacingField);
+
+	/** @var \ProcessWire\InputfieldText $otpField */
+	$otpField = $modules->get('InputfieldText');
+	$otpField->attr('id+name', 'verify_code');
+	$otpField->label = 'OTP';
+	$otpField->set('rwControl', 'otp');
+	$otpField->set('otpLength', 6);
+	$otpField->set('otpMode', 'numeric');
+	$otpField->set('otpSeparatorAfter', 3);
+	$form->add($otpField);
+
+	/** @var \ProcessWire\InputfieldText $passwordField */
+	$passwordField = $modules->get('InputfieldText');
+	$passwordField->attr('id+name', 'api_pass');
+	$passwordField->label = 'Secret';
+	$passwordField->set('rwControl', 'password');
+	$passwordField->set('showStrength', true);
+	$passwordField->set('requireSymbol', true);
+	$form->add($passwordField);
+
+	/** @var \ProcessWire\InputfieldText $sliderField */
+	$sliderField = $modules->get('InputfieldText');
+	$sliderField->attr('id+name', 'budget_band');
+	$sliderField->label = 'Budget Band';
+	$sliderField->set('rwControl', 'range_slider');
+	$sliderField->set('min', 10);
+	$sliderField->set('max', 100);
+	$sliderField->val('20..80');
+	$form->add($sliderField);
+
+	$payload = $serializer->serialize($form);
+	$byName = [];
+	foreach ($payload['fields'] as $node) {
+		if (is_array($node) && isset($node['name'])) {
+			$byName[(string) $node['name']] = $node;
+		}
+	}
+
+	expect($byName['brand_color']['type'])->toBe('color')
+		->and($byName['brand_color']['swatches'])->toBe(['#64748b', '#2563eb'])
+		->and($byName['brand_color']['allowAlpha'])->toBeTrue()
+		->and($byName['brand_color']['clearable'])->toBeFalse()
+		->and($byName['country_code']['type'])->toBe('combobox')
+		->and($byName['country_code']['allowCustom'])->toBeTrue()
+		->and($byName['country_code']['clearable'])->toBeTrue()
+		->and($byName['country_code']['options'])->toBe([
+			['value' => 'TR', 'label' => 'Türkiye'],
+			['value' => 'GR', 'label' => 'Greece'],
+		])
+		->and($byName['scope']['type'])->toBe('segmented')
+		->and($byName['scope']['fullWidth'])->toBeTrue()
+		->and($byName['scope']['options'][0]['icon'])->toBe('users')
+		->and($byName['stabilizers']['type'])->toBe('combobox')
+		->and($byName['stabilizers']['clearable'])->toBeTrue()
+		->and($byName['internal_notes']['type'])->toBe('markdown')
+		->and($byName['internal_notes']['editorMode'])->toBe('markdown')
+		->and($byName['internal_notes']['previewMode'])->toBe('split')
+		->and($byName['internal_notes']['allowSplit'])->toBeTrue()
+		->and($byName['internal_notes']['showToolbar'])->toBeTrue()
+		->and($byName['charter_window']['type'])->toBe('daterange')
+		->and($byName['charter_window']['value'])->toBe(['from' => '2026-07-01', 'to' => '2026-07-15'])
+		->and($byName['deposit_amount']['type'])->toBe('unit_number')
+		->and($byName['deposit_amount']['units'])->toBe(['EUR', 'USD'])
+		->and($byName['deposit_amount']['value'])->toBe(['value' => 5000, 'unit' => 'EUR'])
+		->and($byName['box_pad']['type'])->toBe('spacing')
+		->and($byName['box_pad']['value'])->toBe([
+			'top' => '1.5',
+			'right' => '2',
+			'bottom' => '1.5',
+			'left' => '2',
+			'unit' => 'rem',
+			'linked' => false,
+		])
+		->and($byName['verify_code']['type'])->toBe('otp')
+		->and($byName['verify_code']['otpLength'])->toBe(6)
+		->and($byName['verify_code']['otpMode'])->toBe('numeric')
+		->and($byName['verify_code']['otpSeparatorAfter'])->toBe(3)
+		->and($byName['api_pass']['type'])->toBe('password')
+		->and($byName['api_pass']['isSecret'])->toBeFalse()
+		->and($byName['api_pass']['showStrength'])->toBeTrue()
+		->and($byName['api_pass']['requireSymbol'])->toBeTrue()
+		->and($byName['budget_band']['type'])->toBe('range_slider')
+		->and($byName['budget_band']['dual'])->toBeTrue()
+		->and($byName['budget_band']['value'])->toBe(['min' => 20, 'max' => 80]);
+
+	// Verify canonical time/date/datetime, unitVariant currency, segmented multiple, and structured select metadata parity
+	/** @var \ProcessWire\InputfieldForm $canonicalForm */
+	$canonicalForm = $modules->get('InputfieldForm');
+	$canonicalForm->attr('id+name', 'rw_canonical_parity_form');
+
+	/** @var \ProcessWire\InputfieldDatetime $dtTimeField */
+	$dtTimeField = $modules->get('InputfieldDatetime');
+	$dtTimeField->attr('id+name', 'shift_start');
+	$dtTimeField->label = 'Shift Start';
+	$dtTimeField->set('rwControl', 'time');
+	$dtTimeField->set('dateInputFormat', '');
+	$dtTimeField->set('timeInputFormat', 'H:i:s');
+	$dtTimeField->set('minuteStep', 10);
+	$dtTimeField->set('timezone', 'Europe/Istanbul');
+	$dtTimeField->set('minTime', '08:00');
+	$dtTimeField->set('maxTime', '18:00');
+	$dtTimeField->val('09:30:15');
+	$canonicalForm->add($dtTimeField);
+
+	/** @var \ProcessWire\InputfieldText $textDateField */
+	$textDateField = $modules->get('InputfieldText');
+	$textDateField->attr('id+name', 'publish_day');
+	$textDateField->label = 'Publish Day';
+	$textDateField->set('rwControl', 'date');
+	$textDateField->set('weekStartsOn', 1);
+	$textDateField->val('2026-11-21');
+	$canonicalForm->add($textDateField);
+
+	/** @var \ProcessWire\InputfieldText $currencyTextField */
+	$currencyTextField = $modules->get('InputfieldText');
+	$currencyTextField->attr('id+name', 'charter_fee');
+	$currencyTextField->label = 'Charter Fee';
+	$currencyTextField->set('rwControl', 'unit_number');
+	$currencyTextField->set('unitVariant', 'currency');
+	$currencyTextField->set('currencies', ['EUR', 'USD', 'GBP']);
+	$currencyTextField->set('precision', 2);
+	$currencyTextField->val('1500');
+	$canonicalForm->add($currencyTextField);
+
+	/** @var \ProcessWire\InputfieldFloat $currencyFloatField */
+	$currencyFloatField = $modules->get('InputfieldFloat');
+	$currencyFloatField->attr('id+name', 'security_bond');
+	$currencyFloatField->label = 'Security Bond';
+	$currencyFloatField->set('rwControl', 'currency');
+	$currencyFloatField->val(250);
+	$canonicalForm->add($currencyFloatField);
+
+	/** @var \ProcessWire\InputfieldCheckboxes $multiSegField */
+	$multiSegField = $modules->get('InputfieldCheckboxes');
+	$multiSegField->attr('id+name', 'amenities');
+	$multiSegField->label = 'Amenities';
+	$multiSegField->set('rwControl', 'segmented');
+	$multiSegField->addOption('wifi', 'Wi-Fi');
+	$multiSegField->addOption('ac', 'Air Conditioning');
+	$multiSegField->set('segmentedOptions', [
+		['value' => 'wifi', 'label' => 'Wi-Fi', 'icon' => 'wifi', 'description' => 'High-speed satellite link'],
+		['value' => 'ac', 'label' => 'Air Conditioning', 'icon' => 'wind'],
+	]);
+	$multiSegField->val(['wifi', 'ac']);
+	$canonicalForm->add($multiSegField);
+
+	/** @var \ProcessWire\InputfieldSelect $richComboField */
+	$richComboField = $modules->get('InputfieldSelect');
+	$richComboField->attr('id+name', 'cabin_layout');
+	$richComboField->label = 'Cabin Layout';
+	$richComboField->set('rwControl', 'combobox');
+	$richComboField->addOption('master', 'Master Suite');
+	$richComboField->set('comboboxOptions', [
+		['value' => 'master', 'label' => 'Master Suite', 'icon' => 'bed', 'description' => 'Full-beam lower deck'],
+	]);
+	$richComboField->val('master');
+	$canonicalForm->add($richComboField);
+
+	$canonicalPayload = $serializer->serialize($canonicalForm);
+	$canonicalByName = [];
+	foreach ($canonicalPayload['fields'] as $node) {
+		if (is_array($node) && isset($node['name'])) {
+			$canonicalByName[(string) $node['name']] = $node;
+		}
+	}
+
+	expect($canonicalByName['shift_start']['type'])->toBe('time')
+		->and($canonicalByName['shift_start']['inputType'])->toBe('time')
+		->and($canonicalByName['shift_start']['showSeconds'])->toBeTrue()
+		->and($canonicalByName['shift_start']['minuteStep'])->toBe(10)
+		->and($canonicalByName['shift_start']['timezone'])->toBe('Europe/Istanbul')
+		->and($canonicalByName['shift_start']['minTime'])->toBe('08:00')
+		->and($canonicalByName['shift_start']['maxTime'])->toBe('18:00')
+		->and($canonicalByName['publish_day']['type'])->toBe('date')
+		->and($canonicalByName['publish_day']['inputType'])->toBe('date')
+		->and($canonicalByName['publish_day']['weekStartsOn'])->toBe(1)
+		->and($canonicalByName['charter_fee']['type'])->toBe('unit_number')
+		->and($canonicalByName['charter_fee']['unitVariant'])->toBe('currency')
+		->and($canonicalByName['charter_fee']['currency'])->toBe('EUR')
+		->and($canonicalByName['charter_fee']['units'])->toBe(['EUR', 'USD', 'GBP'])
+		->and($canonicalByName['charter_fee']['precision'])->toBe(2)
+		->and($canonicalByName['charter_fee']['value'])->toBe(['value' => 1500, 'unit' => 'EUR'])
+		->and($canonicalByName['security_bond']['type'])->toBe('unit_number')
+		->and($canonicalByName['security_bond']['unitVariant'])->toBe('currency')
+		->and($canonicalByName['security_bond']['currency'])->toBe('EUR')
+		->and($canonicalByName['security_bond']['value'])->toBe(['value' => 250.0, 'unit' => 'EUR'])
+		->and($canonicalByName['amenities']['type'])->toBe('segmented')
+		->and($canonicalByName['amenities']['multiple'])->toBeTrue()
+		->and($canonicalByName['amenities']['value'])->toBe(['wifi', 'ac'])
+		->and($canonicalByName['amenities']['options'][0]['icon'])->toBe('wifi')
+		->and($canonicalByName['amenities']['options'][0]['description'])->toBe('High-speed satellite link')
+		->and($canonicalByName['cabin_layout']['type'])->toBe('combobox')
+		->and($canonicalByName['cabin_layout']['options'][0]['icon'])->toBe('bed')
+		->and($canonicalByName['cabin_layout']['options'][0]['description'])->toBe('Full-beam lower deck');
+
+	$declUnitVariant = $serializer->serializeDefinitions([
+		[
+			'name' => 'deposit',
+			'type' => 'unit_number',
+			'unitVariant' => 'currency',
+			'label' => 'Deposit',
+			'defaultValue' => 450,
+		],
+		[
+			'name' => 'guard_time',
+			'type' => 'time',
+			'label' => 'Guard Time',
+			'showSeconds' => null,
+			'minuteStep' => null,
+		],
+		[
+			'name' => 'guard_pw',
+			'type' => 'password',
+			'label' => 'Guard Password',
+			'showStrength' => null,
+			'allowGenerate' => null,
+			'requireUppercase' => null,
+			'requireLowercase' => null,
+			'requireNumber' => null,
+			'requireSymbol' => null,
+			'confirmPassword' => null,
+			'autoComplete' => null,
+		],
+		[
+			'name' => 'guard_md',
+			'type' => 'markdown',
+			'label' => 'Guard Markdown',
+			'allowSplit' => null,
+			'showToolbar' => null,
+		],
+	], ['id' => 'decl_unit_variant']);
+	expect($declUnitVariant['fields'][0]['type'])->toBe('unit_number')
+		->and($declUnitVariant['fields'][0]['unitVariant'])->toBe('currency')
+		->and($declUnitVariant['fields'][0]['currency'])->toBe('EUR')
+		->and($declUnitVariant['fields'][0]['value'])->toBe(['value' => 450, 'unit' => 'EUR'])
+		->and($declUnitVariant['fields'][1]['showSeconds'])->toBeFalse()
+		->and($declUnitVariant['fields'][2]['showStrength'])->toBeFalse()
+		->and($declUnitVariant['fields'][2]['allowGenerate'])->toBeFalse()
+		->and($declUnitVariant['fields'][3]['allowSplit'])->toBeFalse()
+		->and($declUnitVariant['fields'][3]['showToolbar'])->toBeFalse();
+});
+
+test('IntlCatalog and FormSchemaSerializer serialize phone, country, countries, timezone, and currency_code while keeping currency monetary', function (): void {
+	$countries = \Totoglu\React\Support\IntlCatalog::countryOptions([], ['AQ'], ['TR', 'GR']);
+	expect(array_key_first($countries))->toBe('TR')
+		->and($countries)->toHaveKey('GR', 'GR — Greece')
+		->and($countries)->toHaveKey('HR', 'HR — Croatia')
+		->and($countries)->not->toHaveKey('AQ');
+
+	expect(\Totoglu\React\Support\IntlCatalog::dialCode('HR'))->toBe('385')
+		->and(\Totoglu\React\Support\IntlCatalog::dialCode('CY'))->toBe('357')
+		->and(\Totoglu\React\Support\IntlCatalog::normalizePhoneE164('091 123 4567', 'HR'))->toBe('+385911234567')
+		->and(\Totoglu\React\Support\IntlCatalog::normalizePhoneE164('+44 (0) 20 7946 0199'))->toBe('+4402079460199')
+		->and(\Totoglu\React\Support\IntlCatalog::isValidPhoneE164('+905325551234'))->toBeTrue()
+		->and(\Totoglu\React\Support\IntlCatalog::isValidCountryCode('TR'))->toBeTrue()
+		->and(\Totoglu\React\Support\IntlCatalog::isValidCountryCode('ZZ'))->toBeFalse()
+		->and(\Totoglu\React\Support\IntlCatalog::isValidTimezone('Europe/Istanbul'))->toBeTrue()
+		->and(\Totoglu\React\Support\IntlCatalog::isValidTimezone('Mars/Phobos'))->toBeFalse()
+		->and(\Totoglu\React\Support\IntlCatalog::isValidCurrencyCode('EUR'))->toBeTrue()
+		->and(\Totoglu\React\Support\IntlCatalog::currencySymbol('TRY'))->toBe('₺');
+
+	$eurZones = \Totoglu\React\Support\IntlCatalog::timezoneOptions(['Europe', 'UTC']);
+	expect($eurZones)->toHaveKey('Europe/Istanbul')
+		->and($eurZones)->toHaveKey('UTC')
+		->and($eurZones)->not->toHaveKey('America/New_York');
+
+	/** @var \ProcessWire\React $react */
+	wire('modules')->get('React');
+	$serializer = new \Totoglu\React\Form\FormSchemaSerializer();
+	wire($serializer);
+	$payload = $serializer->serializeDefinitions([
+		[
+			'name' => 'phone',
+			'type' => 'phone',
+			'label' => 'Phone',
+			'defaultCountry' => 'tr',
+			'preferredCountries' => ['TR', 'GB'],
+			'value' => '+905325551234',
+		],
+		[
+			'name' => 'country',
+			'type' => 'country',
+			'label' => 'Country',
+			'only' => ['TR', 'HR', 'GR'],
+			'preferred' => ['TR'],
+		],
+		[
+			'name' => 'service_countries',
+			'type' => 'countries',
+			'label' => 'Service Countries',
+			'value' => ['TR', 'HR'],
+		],
+		[
+			'name' => 'tz',
+			'type' => 'timezone',
+			'label' => 'Timezone',
+			'regions' => ['Europe', 'UTC'],
+		],
+		[
+			'name' => 'curr_code',
+			'type' => 'currency_code',
+			'label' => 'Currency Code',
+			'only' => ['EUR', 'USD', 'TRY'],
+			'preferred' => ['TRY'],
+		],
+		[
+			'name' => 'amount',
+			'type' => 'currency',
+			'label' => 'Monetary Amount',
+			'defaultValue' => ['value' => 100, 'unit' => 'EUR'],
+		],
+	], ['id' => 'intl_decl_test']);
+
+	$byName = [];
+	foreach ($payload['fields'] as $node) {
+		if (is_array($node) && isset($node['name'])) {
+			$byName[(string) $node['name']] = $node;
+		}
+	}
+
+	expect($byName['phone']['type'])->toBe('phone')
+		->and($byName['phone']['inputType'])->toBe('tel')
+		->and($byName['phone']['defaultCountry'])->toBe('TR')
+		->and($byName['phone']['preferredCountries'])->toBe(['TR', 'GB'])
+		->and(count($byName['phone']['phoneCountries']))->toBeGreaterThan(200)
+		->and($byName['country']['type'])->toBe('combobox')
+		->and($byName['country']['multiple'])->toBeFalse()
+		->and(array_column($byName['country']['options'], 'value'))->toBe(['TR', 'HR', 'GR'])
+		->and($byName['service_countries']['type'])->toBe('combobox')
+		->and($byName['service_countries']['multiple'])->toBeTrue()
+		->and(count($byName['service_countries']['options']))->toBeGreaterThan(200)
+		->and($byName['tz']['type'])->toBe('combobox')
+		->and($byName['tz']['options'][0]['label'])->toContain('UTC')
+		->and($byName['curr_code']['type'])->toBe('combobox')
+		->and(array_column($byName['curr_code']['options'], 'value'))->toBe(['TRY', 'EUR', 'USD'])
+		->and($byName['amount']['type'])->toBe('unit_number')
+		->and($byName['amount']['unitVariant'])->toBe('currency');
+
+	$modulesApi = wire('modules');
+	/** @var \ProcessWire\InputfieldForm $unitForm */
+	$unitForm = $modulesApi->get('InputfieldForm');
+	/** @var \ProcessWire\InputfieldText $unitInput */
+	$unitInput = $modulesApi->get('InputfieldText');
+	$unitInput->name = 'charter_price';
+	$unitInput->label = 'Charter Price';
+	$unitInput->set('rwControl', 'unit_number');
+	$unitInput->set('unitVariant', 'currency');
+	$unitInput->set('units', ['EUR', 'USD', 'TRY']);
+	$unitInput->set('defaultUnit', 'EUR');
+	$unitForm->add($unitInput);
+
+	$serializedUnitForm = $serializer->serialize($unitForm);
+	$unitField = $serializedUnitForm['fields'][0] ?? [];
+	expect($unitField['type'] ?? null)->toBe('unit_number')
+		->and($unitField['unitVariant'] ?? null)->toBe('currency')
+		->and($unitField['currency'] ?? null)->toBe('EUR');
+});
+
+test('FormSchemaSerializer preserves secretPrefix, secretBytes, and secretAutoGenerate across native and declarative forms', function () {
+	$modules = \ProcessWire\wire('modules');
+	$modules->get('React');
+	$serializer = new \Totoglu\React\Form\FormSchemaSerializer();
+	\ProcessWire\wire($serializer);
+
+	/** @var \ProcessWire\InputfieldForm $form */
+	$form = $modules->get('InputfieldForm');
+	$form->attr('id+name', 'rw_secret_meta_form');
+
+	/** @var \ProcessWire\InputfieldText $thirdPartySecret */
+	$thirdPartySecret = $modules->get('InputfieldText');
+	$thirdPartySecret->attr('id+name', 'third_party_key');
+	$thirdPartySecret->label = 'Third-Party Key';
+	$thirdPartySecret->attr('data-rw-secret-masked', '1');
+	$thirdPartySecret->attr('data-rw-secret-prefix', 'wh_');
+	$thirdPartySecret->attr('data-rw-secret-bytes', '24');
+	$thirdPartySecret->attr('data-rw-secret-autogen', '0');
+	$thirdPartySecret->val('wh_live_123');
+	$form->add($thirdPartySecret);
+
+	$serializedNative = $serializer->serialize($form);
+	$nativeByName = [];
+	foreach ($serializedNative['fields'] as $node) {
+		if (is_array($node) && isset($node['name'])) {
+			$nativeByName[(string) $node['name']] = $node;
+		}
+	}
+
+	expect($nativeByName['third_party_key']['isSecret'])->toBeTrue()
+		->and($nativeByName['third_party_key']['secretMasked'])->toBeTrue()
+		->and($nativeByName['third_party_key']['secretPrefix'])->toBe('wh_')
+		->and($nativeByName['third_party_key']['secretBytes'])->toBe(24)
+		->and($nativeByName['third_party_key']['secretAutoGenerate'])->toBeFalse();
+
+	$serializedDecl = $serializer->serializeDefinitions([
+		[
+			'name' => 'qdrant_api_key',
+			'type' => 'secret',
+			'label' => 'Qdrant API Key',
+			'autoGenerate' => false,
+			'secretMasked' => true,
+			'secretPrefix' => 'qd_',
+			'secretBytes' => 16,
+		],
+		[
+			'name' => 'local_secret',
+			'type' => 'text',
+			'label' => 'Local Token',
+			'isSecret' => true,
+			'secretAutoGenerate' => true,
+		],
+	], ['id' => 'rw_secret_decl_form']);
+
+	$declByName = [];
+	foreach ($serializedDecl['fields'] as $node) {
+		if (is_array($node) && isset($node['name'])) {
+			$declByName[(string) $node['name']] = $node;
+		}
+	}
+
+	expect($declByName['qdrant_api_key']['type'])->toBe('text')
+		->and($declByName['qdrant_api_key']['isSecret'])->toBeTrue()
+		->and($declByName['qdrant_api_key']['secretMasked'])->toBeTrue()
+		->and($declByName['qdrant_api_key']['secretPrefix'])->toBe('qd_')
+		->and($declByName['qdrant_api_key']['secretBytes'])->toBe(16)
+		->and($declByName['qdrant_api_key']['secretAutoGenerate'])->toBeFalse()
+		->and($declByName['local_secret']['isSecret'])->toBeTrue()
+		->and($declByName['local_secret']['secretAutoGenerate'])->toBeTrue();
+});
+
+it('supports configurable createAction and editUrlBuilder on PagesDataProvider', function (): void {
+	$default = new PagesDataProvider('id=1');
+	wire($default);
+	expect($default->createAction())->toBeNull();
+
+	$explicit = new PagesDataProvider('id=1', [
+		'createAction' => [
+			'url' => '/admin/page/add/?parent_id=1',
+			'label' => 'Create Record',
+			'modal' => true,
+		],
+	]);
+	wire($explicit);
+	expect($explicit->createAction())->toBe([
+		'url' => '/admin/page/add/?parent_id=1',
+		'label' => 'Create Record',
+		'modal' => true,
+	]);
+
+	$unsafe = new PagesDataProvider('id=1', [
+		'createAction' => [
+			'url' => 'javascript:alert(1)',
+			'label' => 'Unsafe',
+		],
+	]);
+	wire($unsafe);
+	expect($unsafe->createAction())->toBeNull();
+
+	$declarative = new PagesDataProvider('id=1', [
+		'createParentId' => 1,
+		'createTemplate' => 'home',
+		'createLabel' => 'New Subpage',
+		'createModal' => false,
+		'editUrlBuilder' => static fn (\ProcessWire\Page $page): string => '/custom-admin/edit/?page=' . $page->id,
+	]);
+	wire($declarative);
+	$homeTpl = wire('templates')->get('home');
+	$expectedUrl = rtrim((string) (wire('config')->urls->admin ?: '/processwire'), '/')
+		. '/page/add/?parent_id=1'
+		. ($homeTpl instanceof \ProcessWire\Template && $homeTpl->id > 0 ? '&template_id=' . $homeTpl->id : '');
+
+	expect($declarative->createAction())->toBe([
+		'url' => $expectedUrl,
+		'label' => 'New Subpage',
+		'modal' => false,
+	]);
+	expect(array_key_exists('editUrlBuilder', $declarative->options()))->toBeFalse();
+
+	$result = $declarative->query(['limit' => 5]);
+	expect($result->items)->not->toBeEmpty()
+		->and($result->items[0]->editUrl)->toBe('/custom-admin/edit/?page=1');
+
+	$locked = new PagesDataProvider('id=1', [
+		'locked' => true,
+		'createAction' => ['url' => '/admin/page/add/?parent_id=1', 'label' => 'Blocked'],
+		'createParentId' => 1,
+	]);
+	wire($locked);
+	expect($locked->createAction())->toBeNull();
+});
+
+test('MarkupReactTable filters non-href mutation row actions when locked is true', function (): void {
+	$provider = new class extends \ProcessWire\Wire implements \Totoglu\React\Contract\ReactDataProviderInterface, \Totoglu\React\Contract\ReactRecordActionsProvider {
+		public function id(): string
+		{
+			return 'custom:audit-sample';
+		}
+
+		public function title(): string
+		{
+			return 'Audit Sample';
+		}
+
+		public function columns(): array
+		{
+			return ['title' => 'Title'];
+		}
+
+		public function sortableColumns(): array
+		{
+			return ['title'];
+		}
+
+		public function statusOptions(): array
+		{
+			return [];
+		}
+
+		public function isLocked(): bool
+		{
+			return false;
+		}
+
+		public function query(array $criteria = []): ReactPageResult
+		{
+			return new ReactPageResult([
+				new ReactRecord(
+					id: 'audit-1',
+					title: 'Immutable Event',
+					name: 'immutable-event',
+					status: ReactRecord::STATUS_PUBLISHED,
+					statusVariant: 'success',
+					statusLabel: 'Published',
+					values: ['title' => 'Immutable Event'],
+					editUrl: '/admin/setup/inspect/?id=audit-1',
+				),
+			], 1, 1, 25, 0);
+		}
+
+		public function mutate(string $operation, array $ids, array $payload = []): int
+		{
+			return 0;
+		}
+
+		public function recordActions(ReactRecord $record): array
+		{
+			return [
+				[
+					'key' => 'edit',
+					'label' => 'Inspect',
+					'icon' => 'eye',
+					'href' => $record->editUrl,
+				],
+				[
+					'key' => 'trash',
+					'label' => 'Move to Trash',
+					'icon' => 'trash',
+					'tone' => 'danger',
+				],
+			];
+		}
+
+		public function createAction(): ?array
+		{
+			return ['url' => '/admin/setup/inspect/?new=1', 'label' => 'New Item'];
+		}
+	};
+	wire($provider);
+
+	/** @var React $react */
+	$react = wire('react');
+	$tableProp = $react->configureTable($provider, [
+		'locked' => true,
+		'showCreateButton' => false,
+		'exportEnabled' => false,
+	])->toInertiaProp();
+
+	expect($tableProp['locked'] ?? null)->toBeTrue()
+		->and($tableProp['selectable'] ?? null)->toBeFalse()
+		->and($tableProp['quickEditEnabled'] ?? null)->toBeFalse()
+		->and($tableProp['showCreateButton'] ?? null)->toBeFalse()
+		->and($tableProp['createUrl'] ?? null)->toBe('')
+		->and($tableProp['bulkActions'] ?? null)->toBe([])
+		->and($tableProp['rowActionsByRecord']['audit-1'] ?? null)->toBe([
+			[
+				'key' => 'edit',
+				'label' => 'Inspect',
+				'icon' => 'eye',
+				'href' => '/admin/setup/inspect/?id=audit-1',
+			],
+		]);
+});
+
+test('FormSchemaSerializer normalizes and emits tabsLayout across wrapper and declarative forms', function (): void {
+	$serializer = new \Totoglu\React\Form\FormSchemaSerializer();
+	$modules = wire('modules');
+
+	/** @var \ProcessWire\InputfieldForm $form */
+	$form = $modules->get('InputfieldForm');
+	$form->attr('id', 'rw-tabs-layout-wrapper');
+	$form->attr('data-rw-tabs-layout', 'vertical');
+
+	/** @var \ProcessWire\InputfieldText $textField */
+	$textField = $modules->get('InputfieldText');
+	$textField->attr('name', 'headline');
+	$textField->label = 'Headline';
+	$form->add($textField);
+
+	$fromAttr = $serializer->serialize($form, ['surface' => 'card']);
+	$fromOptionOverride = $serializer->serialize($form, ['surface' => 'card', 'tabsLayout' => 'horizontal']);
+	$fromInvalid = $serializer->serialize($form, ['tabsLayout' => 'diagonal']);
+	$fromDefinitions = $serializer->serializeDefinitions([
+		['name' => 'title', 'type' => 'text', 'label' => 'Title'],
+	], [
+		'surface' => 'card',
+		'tabsLayout' => 'Vertical',
+	]);
+
+	expect($fromAttr['tabsLayout'] ?? null)->toBe('vertical')
+		->and($fromOptionOverride['tabsLayout'] ?? null)->toBe('horizontal')
+		->and(array_key_exists('tabsLayout', $fromInvalid))->toBeTrue()
+		->and($fromInvalid['tabsLayout'])->toBeNull()
+		->and($fromDefinitions['tabsLayout'] ?? null)->toBe('vertical');
 });

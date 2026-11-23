@@ -220,49 +220,54 @@ test('InputfieldReactIcon handles scalar and customizable modes, FormSchemaSeria
 	$fieldName = 'rw_icon_test_' . $suffix;
 	$tplName = 'rw-icon-tpl-' . $suffix;
 
-	$field = new Field();
-	$field->type = $modules->get('FieldtypeText');
-	$field->name = $fieldName;
-	$field->label = 'Custom Feature Icon';
-	$field->set('inputfieldClass', 'InputfieldReactIcon');
-	$field->set('allowCustomization', true);
-	$field->set('textformatters', ['TextformatterEntities']);
-	$fields->save($field);
-
-	$fg = new Fieldgroup();
-	$fg->name = $tplName;
-	$fg->add($fields->get('title'));
-	$fg->add($field);
-	$fieldgroups->save($fg);
-
-	$tpl = new Template();
-	$tpl->name = $tplName;
-	$tpl->fieldgroup = $fg;
-	$templates->save($tpl);
-
-	$page = new Page();
-	$page->template = $tpl;
-	$page->parent = $pages->get(1);
-	$page->name = 'rw-icon-page-' . $suffix;
-	$page->title = 'Icon Page ' . $suffix;
-	$page->set($fieldName, [
-		'name' => 'compass',
-		'variant' => 'filled',
-		'size' => 40,
-		'color' => '#0d9488',
-		'strokeWidth' => 1.5,
-		'background' => '#ccfbf1',
-		'radius' => 'full',
-	]);
-	$pages->save($page);
-
+	$field = null;
+	$fg = null;
+	$tpl = null;
+	$page = null;
 	$prevUser = wire()->user;
-	$superuser = wire()->users->get((int) wire()->config->superUserPageID);
-	if ($superuser instanceof \ProcessWire\User && $superuser->id > 0) {
-		wire()->users->setCurrentUser($superuser);
-	}
 
 	try {
+		$field = new Field();
+		$field->type = $modules->get('FieldtypeText');
+		$field->name = $fieldName;
+		$field->label = 'Custom Feature Icon';
+		$field->set('inputfieldClass', 'InputfieldReactIcon');
+		$field->set('allowCustomization', true);
+		$field->set('textformatters', ['TextformatterEntities']);
+		$fields->save($field);
+
+		$fg = new Fieldgroup();
+		$fg->name = $tplName;
+		$fg->add($fields->get('title'));
+		$fg->add($field);
+		$fieldgroups->save($fg);
+
+		$tpl = new Template();
+		$tpl->name = $tplName;
+		$tpl->fieldgroup = $fg;
+		$templates->save($tpl);
+
+		$page = new Page();
+		$page->template = $tpl;
+		$page->parent = $pages->get(1);
+		$page->name = 'rw-icon-page-' . $suffix;
+		$page->title = 'Icon Page ' . $suffix;
+		$page->set($fieldName, [
+			'name' => 'compass',
+			'variant' => 'filled',
+			'size' => 40,
+			'color' => '#0d9488',
+			'strokeWidth' => 1.5,
+			'background' => '#ccfbf1',
+			'radius' => 'full',
+		]);
+		$pages->save($page);
+
+		$superuser = wire()->users->get((int) wire()->config->superUserPageID);
+		if ($superuser instanceof \ProcessWire\User && $superuser->id > 0) {
+			wire()->users->setCurrentUser($superuser);
+		}
+
 		$pages->uncacheAll();
 		$reloaded = $pages->get((int) $page->id);
 		$reloaded->of(true);
@@ -279,26 +284,48 @@ test('InputfieldReactIcon handles scalar and customizable modes, FormSchemaSeria
 			->and((string) $formatted)->toContain('rw-icon-badge')
 			->and((string) $field->type->markupValue($reloaded, $field, $reloaded->getUnformatted($fieldName)))->toContain('pw-rw-cell-icon');
 	} finally {
-		if ($prevUser instanceof \ProcessWire\User) {
-			wire()->users->setCurrentUser($prevUser);
+		$classesDir = rtrim((string) wire()->config->paths->classes, '/') . '/';
+		if ($page instanceof Page && $page->id > 0) {
+			try {
+				$pages->delete($page, true);
+			} catch (\Throwable) {
+			}
 		}
-		if ($page->id > 0) {
-			$pages->delete($page, true);
+		if ($tpl instanceof Template && $tpl->id > 0) {
+			$pascal = str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', (string) $tpl->name)));
+			try {
+				$templates->delete($tpl);
+			} catch (\Throwable) {
+			}
+			$classFile = $classesDir . $pascal . 'Page.php';
+			if (is_file($classFile)) {
+				unlink($classFile);
+			}
 		}
-		if ($tpl->id > 0) {
-			$templates->delete($tpl);
+		if ($fg instanceof Fieldgroup && $fg->id > 0) {
+			try {
+				$fieldgroups->delete($fg);
+			} catch (\Throwable) {
+			}
 		}
-		if ($fg->id > 0) {
-			$fieldgroups->delete($fg);
+		if ($field instanceof Field && $field->id > 0) {
+			try {
+				$fields->delete($field);
+			} catch (\Throwable) {
+			}
 		}
-		if ($field->id > 0) {
-			$fields->delete($field);
+		if ($prevUser instanceof \ProcessWire\User && $prevUser->id > 0) {
+			try {
+				wire()->users->setCurrentUser($prevUser);
+			} catch (\Throwable) {
+			}
 		}
 	}
 });
 
 test('Admin icon hooks inject brand-neutral Vector Icon picker on ProcessTemplate and ProcessField and generate CSS mask-image rules for both outline and filled icons', function (): void {
 	$workspace = React::instance();
+	$prevEnableAdminVectorIcons = $workspace->get('enableAdminVectorIcons');
 	$workspace->set('enableAdminVectorIcons', true);
 
 	$modules = wire()->modules;
@@ -311,30 +338,34 @@ test('Admin icon hooks inject brand-neutral Vector Icon picker on ProcessTemplat
 	$fieldName = 'rw_admin_icon_f_' . $suffix;
 	$tplName = 'rw-admin-icon-t-' . $suffix;
 
-	$field = new Field();
-	$field->type = $modules->get('FieldtypeText');
-	$field->name = $fieldName;
-	$field->label = 'Admin Icon Field';
-	$fields->save($field);
-
-	$fg = new Fieldgroup();
-	$fg->name = $tplName;
-	$fg->add($fields->get('title'));
-	$fg->add($field);
-	$fieldgroups->save($fg);
-
-	$tpl = new Template();
-	$tpl->name = $tplName;
-	$tpl->fieldgroup = $fg;
-	$templates->save($tpl);
-
+	$field = null;
+	$fg = null;
+	$tpl = null;
 	$prevUser = wire()->user;
-	$superuser = wire()->users->get((int) wire()->config->superUserPageID);
-	if ($superuser instanceof \ProcessWire\User && $superuser->id > 0) {
-		wire()->users->setCurrentUser($superuser);
-	}
 
 	try {
+		$field = new Field();
+		$field->type = $modules->get('FieldtypeText');
+		$field->name = $fieldName;
+		$field->label = 'Admin Icon Field';
+		$fields->save($field);
+
+		$fg = new Fieldgroup();
+		$fg->name = $tplName;
+		$fg->add($fields->get('title'));
+		$fg->add($field);
+		$fieldgroups->save($fg);
+
+		$tpl = new Template();
+		$tpl->name = $tplName;
+		$tpl->fieldgroup = $fg;
+		$templates->save($tpl);
+
+		$superuser = wire()->users->get((int) wire()->config->superUserPageID);
+		if ($superuser instanceof \ProcessWire\User && $superuser->id > 0) {
+			wire()->users->setCurrentUser($superuser);
+		}
+
 		// 1. Verify ProcessTemplate::buildEditForm & ProcessField::buildEditForm use brand-neutral `Vector Icon` label and `showIf="vectorIcon=''"`
 		$input->get->set('id', (int) $tpl->id);
 		/** @var ProcessTemplate $procTemplate */
@@ -402,20 +433,59 @@ test('Admin icon hooks inject brand-neutral Vector Icon picker on ProcessTemplat
 			->and($tpl->getIcon(false))->toBe('')
 			->and($field->get('vectorIcon'))->toBe('')
 			->and($field->getIcon(false))->toBe('');
+
+		// 4. Non-string array POST payload for `vectorIcon` is ignored cleanly without array-to-string conversion warnings
+		$prevMethod = $_SERVER['REQUEST_METHOD'] ?? null;
+		$_SERVER['REQUEST_METHOD'] = 'POST';
+		$_POST['vectorIcon'] = ['unexpected-array'];
+		$input->get->set('id', $field->id);
+		try {
+			$fields->save($field);
+		} finally {
+			unset($_POST['vectorIcon']);
+			if ($prevMethod === null) {
+				unset($_SERVER['REQUEST_METHOD']);
+			} else {
+				$_SERVER['REQUEST_METHOD'] = $prevMethod;
+			}
+		}
+		expect($field->get('vectorIcon'))->toBe('');
 	} finally {
-		if ($prevUser instanceof \ProcessWire\User) {
-			wire()->users->setCurrentUser($prevUser);
-		}
 		$input->get->remove('id');
-		if ($tpl->id > 0) {
-			$templates->delete($tpl);
+		$classesDir = rtrim((string) wire()->config->paths->classes, '/') . '/';
+		if ($tpl instanceof Template && $tpl->id > 0) {
+			$pascal = str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', (string) $tpl->name)));
+			try {
+				$templates->delete($tpl);
+			} catch (\Throwable) {
+			}
+			$classFile = $classesDir . $pascal . 'Page.php';
+			if (is_file($classFile)) {
+				unlink($classFile);
+			}
 		}
-		if ($fg->id > 0) {
-			$fieldgroups->delete($fg);
+		if ($fg instanceof Fieldgroup && $fg->id > 0) {
+			try {
+				$fieldgroups->delete($fg);
+			} catch (\Throwable) {
+			}
 		}
-		if ($field->id > 0) {
-			$fields->delete($field);
+		if ($field instanceof Field && $field->id > 0) {
+			try {
+				$fields->delete($field);
+			} catch (\Throwable) {
+			}
 		}
-		$workspace->icons()->generateAdminCss();
+		try {
+			$workspace->set('enableAdminVectorIcons', $prevEnableAdminVectorIcons);
+			$workspace->icons()->generateAdminCss();
+		} catch (\Throwable) {
+		}
+		if ($prevUser instanceof \ProcessWire\User && $prevUser->id > 0) {
+			try {
+				wire()->users->setCurrentUser($prevUser);
+			} catch (\Throwable) {
+			}
+		}
 	}
 });

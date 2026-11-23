@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace ProcessWire;
 
+if (PHP_SAPI === 'cli') {
+	@ini_set('memory_limit', '1G');
+}
+
 /**
  * Ensure React and its companion modules from `site/modules/React` are booted for testing.
  */

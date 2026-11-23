@@ -682,10 +682,16 @@ test('TiptapMediaLinkGateway serves signed pages, files, images, inspectImage, -
 				}
 			}
 		}
+		$classesDir = rtrim((string) wire('config')->paths->classes, '/') . '/';
 		if ($tpl !== null && $tpl->id > 0) {
+			$pascal = str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', (string) $tpl->name)));
 			try {
 				$templates->delete($tpl);
 			} catch (\Throwable) {
+			}
+			$classFile = $classesDir . $pascal . 'Page.php';
+			if (is_file($classFile)) {
+				unlink($classFile);
 			}
 		}
 		if ($fg !== null && $fg->id > 0) {
@@ -704,9 +710,11 @@ test('TiptapMediaLinkGateway serves signed pages, files, images, inspectImage, -
 		}
 		if (is_dir($tmpUploadDir)) {
 			foreach (glob($tmpUploadDir . '/*') ?: [] as $tmpF) {
-				@unlink($tmpF);
+				if (is_file($tmpF)) {
+					unlink($tmpF);
+				}
 			}
-			@rmdir($tmpUploadDir);
+			rmdir($tmpUploadDir);
 		}
 	}
 });
@@ -903,8 +911,11 @@ it('handles uploads when global outputFormatting is enabled on maxFiles=1 fields
 		expect($noImgUpload['ok'])->toBeFalse()
 			->and($noImgUpload['status'])->toBe(403);
 	} finally {
-		$pages->of($prevPagesOf);
-		$users->setCurrentUser($previousUser);
+		$classesDir = rtrim((string) $wire->config->paths->classes, '/') . '/';
+		try {
+			$pages->of($prevPagesOf);
+		} catch (\Throwable) {
+		}
 		if (is_file($tmpFile)) {
 			@unlink($tmpFile);
 		}
@@ -918,9 +929,14 @@ it('handles uploads when global outputFormatting is enabled on maxFiles=1 fields
 		}
 		foreach ([$singleTpl, $noImgTpl] as $t) {
 			if ($t !== null && $t->id > 0) {
+				$pascal = str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', (string) $t->name)));
 				try {
 					$templates->delete($t);
 				} catch (\Throwable) {
+				}
+				$classFile = $classesDir . $pascal . 'Page.php';
+				if (is_file($classFile)) {
+					unlink($classFile);
 				}
 			}
 		}
@@ -935,6 +951,12 @@ it('handles uploads when global outputFormatting is enabled on maxFiles=1 fields
 		if ($singleImgField !== null && $singleImgField->id > 0) {
 			try {
 				$fields->delete($singleImgField);
+			} catch (\Throwable) {
+			}
+		}
+		if ($previousUser instanceof User && $previousUser->id > 0) {
+			try {
+				$users->setCurrentUser($previousUser);
 			} catch (\Throwable) {
 			}
 		}
@@ -1047,4 +1069,326 @@ test('TiptapConfigFormBuilder exposes preset radio options, blockHandles checkbo
 	TiptapConfigFormBuilder::buildModuleConfigInputfields($field, $moduleWrapper);
 	expect($moduleWrapper->getChildByName('preset'))->not->toBeNull()
 		->and($moduleWrapper->getChildByName('_tiptap_preset_sync'))->not->toBeNull();
+});
+
+test('TiptapContentPolicy enforces strict attribute allowlist + iterative CSS sanitization and TiptapMediaLinkGateway enforces read-only, crop clamp, and upload rollback', function (): void {
+	$modules = wire('modules');
+	$fields = wire('fields');
+	$fieldgroups = wire('fieldgroups');
+	$templates = wire('templates');
+	$pages = wire('pages');
+	$users = wire('users');
+	/** @var React $workspace */
+	$workspace = wire('react');
+
+	// 1. Strict attribute allowlist in DOMDocument fallback (`sanitizeHtmlWithoutPurifier`)
+	$dirtyHtml = '<p dir="rtl" lang="en-US" style="text-align: center" title="Greeting" contenteditable="true" popover="auto" autofocus tabindex="0">'
+		. '<span style="color: red" background="/evil" usemap="#m" xml:base="https://evil.example/">Inline</span> '
+		. '<a href="https://processwire.com/docs/" target="_blank" rel="nofollow" id="doc-anchor" name="doc-name" ping="https://track.example/" download="evil.exe" class="cta">Docs</a>'
+		. '<img src="/site/assets/files/1/hero.png" alt="Hero" width="400" height="300" loading="lazy" decoding="async" srcset="/evil.png 2x" usemap="#imgmap">'
+		. '</p>'
+		. '<table width="100%"><tbody><tr><th scope="col" colspan="2" width="50%">Head</th></tr><tr><td rowspan="2" style="text-align: right">Cell</td></tr></tbody></table>'
+		. '<ul data-type="taskList" data-evil="drop"><li data-type="taskItem" data-checked="true" data-other="drop">Done</li></ul>';
+
+	$cleanedHtml = TiptapContentPolicy::sanitizeHtmlWithoutPurifier($dirtyHtml);
+	expect($cleanedHtml)
+		->toContain('dir="rtl"')
+		->toContain('lang="en-US"')
+		->toContain('style="text-align: center"')
+		->toContain('title="Greeting"')
+		->toContain('id="doc-anchor"')
+		->toContain('name="doc-name"')
+		->toContain('target="_blank"')
+		->toContain('noopener')
+		->toContain('noreferrer')
+		->toContain('alt="Hero"')
+		->toContain('loading="lazy"')
+		->toContain('decoding="async"')
+		->toContain('scope="col"')
+		->toContain('colspan="2"')
+		->toContain('rowspan="2"')
+		->toContain('data-type="taskList"')
+		->toContain('data-type="taskItem"')
+		->toContain('data-checked="true"')
+		->not->toContain('srcset=')
+		->not->toContain('ping=')
+		->not->toContain('download=')
+		->not->toContain('contenteditable=')
+		->not->toContain('popover=')
+		->not->toContain('autofocus')
+		->not->toContain('tabindex=')
+		->not->toContain('background=')
+		->not->toContain('usemap=')
+		->not->toContain('xml:base')
+		->not->toContain('color: red')
+		->not->toContain('data-evil=')
+		->not->toContain('data-other=');
+
+	// 2. Iterative CSS breakout sanitization
+	$dirtyCss = 'body{color:red} <<//style><img src=x onerror=alert(1)>';
+	$cleanCss = TiptapContentPolicy::sanitizeExtraCss($dirtyCss);
+	expect($cleanCss)->toContain('body{color:red}')
+		->and($cleanCss)->not->toContain('<')
+		->and(strtolower($cleanCss))->not->toContain('</style')
+		->and(strtolower($cleanCss))->not->toContain('<img');
+
+	// 3. TiptapMediaLinkGateway: mediaToken readOnly inspectImage/resize, crop y-clamp, and multi-file upload rollback
+	$suffix = substr(bin2hex(random_bytes(4)), 0, 8);
+	$imgFieldName = 'rw_tt_sec_img_' . $suffix;
+	$bodyFieldName = 'rw_tt_sec_body_' . $suffix;
+	$tplName = 'rw_tt_sec_tpl_' . $suffix;
+
+	$imgField = null;
+	$bodyField = null;
+	$fg = null;
+	$tpl = null;
+	$hostPage = null;
+	$tmpDir = sys_get_temp_dir() . '/rw_tt_sec_' . $suffix;
+	mkdir($tmpDir, 0777, true);
+	$prevUser = wire('user');
+
+	try {
+		$imgField = new Field();
+		$imgField->type = $modules->get('FieldtypeImage');
+		$imgField->name = $imgFieldName;
+		$imgField->label = 'Gallery';
+		$imgField->set('extensions', 'png jpg');
+		$fields->save($imgField);
+
+		$bodyField = new Field();
+		$bodyField->type = $modules->get('FieldtypeTextarea');
+		$bodyField->name = $bodyFieldName;
+		$bodyField->label = 'Body';
+		$bodyField->set('inputfieldClass', 'InputfieldTiptap');
+		$fields->save($bodyField);
+
+		$fg = new \ProcessWire\Fieldgroup();
+		$fg->name = $tplName;
+		$fg->add($fields->get('title'));
+		$fg->add($imgField);
+		$fg->add($bodyField);
+		$fieldgroups->save($fg);
+
+		$tpl = new Template();
+		$tpl->name = $tplName;
+		$tpl->fieldgroup = $fg;
+		$templates->save($tpl);
+
+		$hostPage = new \ProcessWire\Page();
+		$hostPage->template = $tpl;
+		$hostPage->parent = $pages->get(1);
+		$hostPage->name = 'tt-sec-host-' . $suffix;
+		$hostPage->title = 'Tiptap Security Host';
+		$pages->save($hostPage);
+
+		$seedPng = $tmpDir . '/seed.png';
+		$gdSeed = imagecreatetruecolor(24, 16);
+		$blue = imagecolorallocate($gdSeed, 20, 90, 180);
+		imagefilledrectangle($gdSeed, 0, 0, 24, 16, $blue);
+		imagepng($gdSeed, $seedPng);
+
+		$hostPage->of(false);
+		$hostPage->getUnformatted($imgFieldName)->add($seedPng);
+		$hostPage->save($imgFieldName);
+		$seedImg = $hostPage->getUnformatted($imgFieldName)->first();
+		expect($seedImg)->not->toBeNull();
+
+		$superId = (int) $users->getCurrentUser()->id;
+		$csrf = wire('session')->CSRF;
+		$csrfName = (string) $csrf->getTokenName();
+		$csrfVal = (string) $csrf->getTokenValue();
+
+		$tiptapToken = $workspace->tiptap()->sign([
+			'pageId' => (int) $hostPage->id,
+			'fieldName' => $bodyFieldName,
+			'imgUpload' => true,
+			'imgResize' => true,
+			'imageFields' => [$imgFieldName],
+		], $superId);
+
+		$writableMediaToken = $workspace->media()->sign([
+			'kind' => 'page',
+			'isImage' => true,
+			'pageId' => (int) $hostPage->id,
+			'rootPageId' => (int) $hostPage->id,
+			'fieldName' => $imgFieldName,
+			'extensions' => ['png', 'jpg'],
+			'readOnly' => false,
+		], $superId);
+
+		$readOnlyMediaToken = $workspace->media()->sign([
+			'kind' => 'page',
+			'isImage' => true,
+			'pageId' => (int) $hostPage->id,
+			'rootPageId' => (int) $hostPage->id,
+			'fieldName' => $imgFieldName,
+			'extensions' => ['png', 'jpg'],
+			'readOnly' => true,
+		], $superId);
+
+		$inspectWritable = $workspace->handleTiptapAction([
+			'action' => 'inspectImage',
+			'tiptapToken' => $tiptapToken,
+			'mediaToken' => $writableMediaToken,
+			'src' => (string) $seedImg->url(),
+		]);
+		expect($inspectWritable['ok'])->toBeTrue()
+			->and($inspectWritable['canEditImages'])->toBeTrue();
+
+		$inspectReadOnly = $workspace->handleTiptapAction([
+			'action' => 'inspectImage',
+			'tiptapToken' => $tiptapToken,
+			'mediaToken' => $readOnlyMediaToken,
+			'src' => (string) $seedImg->url(),
+		]);
+		expect($inspectReadOnly['ok'])->toBeTrue()
+			->and($inspectReadOnly['canEditImages'])->toBeFalse();
+
+		$resizeReadOnly = $workspace->handleTiptapAction([
+			'action' => 'resize',
+			'tiptapToken' => $tiptapToken,
+			'mediaToken' => $readOnlyMediaToken,
+			'file' => (string) $seedImg->basename(),
+			'width' => 12,
+			'_requestMethod' => 'POST',
+			$csrfName => $csrfVal,
+		], true);
+		expect($resizeReadOnly['ok'])->toBeFalse()
+			->and($resizeReadOnly['status'])->toBe(403);
+
+		// Non-editable user gets 403 on resize
+		$guestId = (int) (wire('config')->guestUserPageID ?: 40);
+		$guestUser = $users->get($guestId);
+		$guestTiptapToken = $workspace->tiptap()->sign([
+			'pageId' => (int) $hostPage->id,
+			'fieldName' => $bodyFieldName,
+			'imgUpload' => true,
+			'imgResize' => true,
+			'imageFields' => [$imgFieldName],
+		], $guestId);
+		$guestMediaToken = $workspace->media()->sign([
+			'kind' => 'page',
+			'isImage' => true,
+			'pageId' => (int) $hostPage->id,
+			'rootPageId' => (int) $hostPage->id,
+			'fieldName' => $imgFieldName,
+			'extensions' => ['png', 'jpg'],
+			'readOnly' => false,
+		], $guestId);
+		$users->setCurrentUser($guestUser);
+		$nonEditResize = $workspace->handleTiptapAction([
+			'action' => 'resize',
+			'tiptapToken' => $guestTiptapToken,
+			'mediaToken' => $guestMediaToken,
+			'file' => (string) $seedImg->basename(),
+			'width' => 12,
+			'_requestMethod' => 'POST',
+			$csrfName => $csrfVal,
+		], false);
+		expect($nonEditResize['ok'])->toBeFalse()
+			->and($nonEditResize['status'])->toBe(403);
+
+		// Restore superuser and verify crop $cy >= $origH clamps to $origH - 1 (15, not 0)
+		$users->setCurrentUser($prevUser);
+		$clampedCrop = $workspace->handleTiptapAction([
+			'action' => 'resize',
+			'tiptapToken' => $tiptapToken,
+			'pageId' => (int) $hostPage->id,
+			'file' => (string) $seedImg->basename(),
+			'width' => 6,
+			'crop' => ['x' => 0, 'y' => 9999, 'width' => 10, 'height' => 10],
+			'_requestMethod' => 'POST',
+			$csrfName => $csrfVal,
+		], true);
+		expect($clampedCrop['ok'])->toBeTrue()
+			->and((string) ($clampedCrop['src'] ?? ''))->toContain('cropx0y15');
+
+		// Multi-file upload rollback: 1st file valid raster PNG, 2nd file exceeds MAX_RASTER_AXIS (8200x1 PNG)
+		$validUpload = $tmpDir . '/batch-valid-one.png';
+		$gdOne = imagecreatetruecolor(16, 16);
+		$green = imagecolorallocate($gdOne, 30, 160, 80);
+		imagefilledrectangle($gdOne, 0, 0, 16, 16, $green);
+		imagepng($gdOne, $validUpload);
+
+		$oversizedUpload = $tmpDir . '/batch-oversized-two.png';
+		$gdTwo = imagecreatetruecolor(8200, 1);
+		$red = imagecolorallocate($gdTwo, 200, 40, 40);
+		imagefilledrectangle($gdTwo, 0, 0, 8200, 1, $red);
+		imagepng($gdTwo, $oversizedUpload);
+
+		$batchRes = $workspace->handleTiptapAction(
+			[
+				'action' => 'upload',
+				'tiptapToken' => $tiptapToken,
+				'pageId' => (int) $hostPage->id,
+				'fieldName' => $imgFieldName,
+				'_requestMethod' => 'POST',
+				$csrfName => $csrfVal,
+			],
+			true,
+			null,
+			[
+				'files' => [
+					'name' => ['batch-valid-one.png', 'batch-oversized-two.png'],
+					'type' => ['image/png', 'image/png'],
+					'tmp_name' => [$validUpload, $oversizedUpload],
+					'error' => [UPLOAD_ERR_OK, UPLOAD_ERR_OK],
+					'size' => [filesize($validUpload), filesize($oversizedUpload)],
+				],
+			],
+		);
+		expect($batchRes['ok'])->toBeFalse()
+			->and($batchRes['status'])->toBe(422);
+
+		$pages->uncacheAll();
+		$reloaded = $pages->get((int) $hostPage->id);
+		$reloaded->of(false);
+		$filesPath = rtrim((string) $reloaded->filesManager()->path(), '/') . '/';
+		expect($reloaded->getUnformatted($imgFieldName)->count())->toBe(1)
+			->and(is_file($filesPath . 'batch-valid-one.png'))->toBeFalse();
+	} finally {
+		if ($prevUser instanceof User && $prevUser->id > 0) {
+			$users->setCurrentUser($prevUser);
+		}
+		if ($hostPage !== null && $hostPage->id > 0) {
+			try {
+				$pages->delete($hostPage, true);
+			} catch (\Throwable) {
+			}
+		}
+		$classesDir = rtrim((string) wire('config')->paths->classes, '/') . '/';
+		if ($tpl !== null && $tpl->id > 0) {
+			$pascal = str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', (string) $tpl->name)));
+			try {
+				$templates->delete($tpl);
+			} catch (\Throwable) {
+			}
+			$classFile = $classesDir . $pascal . 'Page.php';
+			if (is_file($classFile)) {
+				unlink($classFile);
+			}
+		}
+		if ($fg !== null && $fg->id > 0) {
+			try {
+				$fieldgroups->delete($fg);
+			} catch (\Throwable) {
+			}
+		}
+		foreach ([$imgField, $bodyField] as $f) {
+			if ($f !== null && $f->id > 0) {
+				try {
+					$fields->delete($f);
+				} catch (\Throwable) {
+				}
+			}
+		}
+		if (is_dir($tmpDir)) {
+			foreach (glob($tmpDir . '/*') ?: [] as $tmpFile) {
+				if (is_file($tmpFile)) {
+					unlink($tmpFile);
+				}
+			}
+			rmdir($tmpDir);
+		}
+	}
 });
