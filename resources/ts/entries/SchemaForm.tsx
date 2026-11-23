@@ -5,6 +5,7 @@ import { getReactWorkspaceRuntime } from '../runtime';
 import {
 	SchemaForm,
 	SchemaField,
+	FieldControlIsland,
 	SchemaFormContext,
 	useSchemaFormContext,
 	evaluateSafeMathFormula,
@@ -23,6 +24,7 @@ const { registerPages, registerIslands } = runtime;
 const Fields = {
 	SchemaForm,
 	SchemaField,
+	FieldControlIsland,
 	SchemaFormContext,
 	useSchemaFormContext,
 	evaluateSafeMathFormula,
@@ -44,5 +46,6 @@ registerPages({
 
 registerIslands({
 	'ReactWorkspace/SchemaForm': SchemaForm,
+	'ReactWorkspace/FieldControl': FieldControlIsland,
 	SchemaForm,
 });

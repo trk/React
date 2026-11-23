@@ -31,11 +31,11 @@ export function lookupScopedFieldValue(
 		if (targetKey in values && values[targetKey] !== undefined) {
 			return { found: true, value: values[targetKey] };
 		}
-		if (/^(?:weblock|rwblock)_/.test(targetKey)) {
+		if (/^(?:weblock|rwblock|entriesblock)_/.test(targetKey)) {
 			return { found: false, value: undefined };
 		}
 		for (const [k, v] of Object.entries(values)) {
-			if (!/^(?:weblock|rwblock)_/.test(k) && k.endsWith(`_${targetKey}`) && v !== undefined) {
+			if (!/^(?:weblock|rwblock|entriesblock)_/.test(k) && k.endsWith(`_${targetKey}`) && v !== undefined) {
 				return { found: true, value: v };
 			}
 		}
@@ -568,18 +568,66 @@ export function evaluateShowIfCondition(
 	return evaluateCondition(expression, values, scopePrefix);
 }
 
-export function scrollTabIntoView(tabEl: HTMLElement | null): void {
-	if (!tabEl || typeof tabEl.scrollIntoView !== 'function') {
+export function scrollTabIntoView(
+	tabEl: HTMLElement | null,
+	inline: ScrollLogicalPosition = 'nearest'
+): void {
+	if (!tabEl) {
+		return;
+	}
+	const tablist = tabEl.closest?.<HTMLElement>('[data-rw-tablist], [role="tablist"]') ?? null;
+	if (tablist && tablist.scrollWidth > tablist.clientWidth) {
+		const maxScroll = Math.max(0, tablist.scrollWidth - tablist.clientWidth);
+		const isRtl =
+			tablist.matches?.(':dir(rtl)') ||
+			(typeof document !== 'undefined' && document.documentElement?.dir === 'rtl');
+		if (typeof tablist.getBoundingClientRect === 'function' && typeof tabEl.getBoundingClientRect === 'function') {
+			const listRect = tablist.getBoundingClientRect();
+			const tabRect = tabEl.getBoundingClientRect();
+			if (listRect.width > 0 && tabRect.width > 0) {
+				let delta = 0;
+				if (inline === 'center') {
+					delta = tabRect.left - listRect.left - (tablist.clientWidth - tabRect.width) / 2;
+				} else if (tabRect.left < listRect.left) {
+					delta = tabRect.left - listRect.left;
+				} else if (tabRect.right > listRect.right) {
+					delta = tabRect.right - listRect.right;
+				}
+				if (delta !== 0) {
+					const next = tablist.scrollLeft + delta;
+					tablist.scrollLeft = isRtl ? next : Math.max(0, Math.min(maxScroll, next));
+				}
+				return;
+			}
+		}
+		const tabLeft = tabEl.offsetLeft;
+		const tabWidth = tabEl.offsetWidth;
+		if (inline === 'center') {
+			const centered = tabLeft - (tablist.clientWidth - tabWidth) / 2;
+			tablist.scrollLeft = isRtl ? centered : Math.max(0, Math.min(maxScroll, centered));
+			return;
+		}
+		if (tabLeft < tablist.scrollLeft) {
+			tablist.scrollLeft = Math.max(0, tabLeft);
+			return;
+		}
+		if (tabLeft + tabWidth > tablist.scrollLeft + tablist.clientWidth) {
+			tablist.scrollLeft = Math.min(maxScroll, tabLeft + tabWidth - tablist.clientWidth);
+			return;
+		}
+		return;
+	}
+	if (typeof tabEl.scrollIntoView !== 'function') {
 		return;
 	}
 	try {
 		tabEl.scrollIntoView({
 			block: 'nearest',
-			inline: 'nearest',
+			inline,
 			container: 'nearest',
 		} as ScrollIntoViewOptions);
 	} catch {
-		tabEl.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+		tabEl.scrollIntoView({ block: 'nearest', inline });
 	}
 }
 

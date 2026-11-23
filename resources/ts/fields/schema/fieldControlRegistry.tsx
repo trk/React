@@ -4,6 +4,7 @@ import {
 	CalculationField,
 	CheckboxesField,
 	CheckboxField,
+	DateRangeField,
 	DatetimeField,
 	HeadingField,
 	MultiSelectField,
@@ -27,7 +28,31 @@ export type RuntimeFieldControlKey =
 	| 'ImageFieldControl'
 	| 'KeyValueFieldControl'
 	| 'LinkFieldControl'
-	| 'RelationFieldControl';
+	| 'RelationFieldControl'
+	| 'ColorFieldControl'
+	| 'TagsFieldControl'
+	| 'ComboboxFieldControl'
+	| 'PhoneFieldControl'
+	| 'UnitNumberFieldControl'
+	| 'SegmentedFieldControl'
+	| 'SpacingFieldControl'
+	| 'OtpFieldControl'
+	| 'PasswordFieldControl'
+	| 'MarkdownFieldControl'
+	| 'ConditionBuilderFieldControl';
+
+function resolveRuntimeFieldComponent(
+	controlKey: RuntimeFieldControlKey
+): React.ComponentType<Record<string, unknown>> | undefined {
+	if (typeof window === 'undefined') {
+		return undefined;
+	}
+	return (
+		window.ReactWorkspaceRuntime?.Fields as unknown as
+			| Record<string, React.ComponentType<Record<string, unknown>> | undefined>
+			| undefined
+	)?.[controlKey];
+}
 
 export function RuntimeFieldControl({
 	controlKey,
@@ -38,14 +63,23 @@ export function RuntimeFieldControl({
 	skeletonClass: string;
 	controlProps: Record<string, unknown>;
 }): React.ReactElement {
-	const Resolved =
-		typeof window !== 'undefined'
-			? (
-					window.ReactWorkspaceRuntime?.Fields as unknown as
-						| Record<string, React.ComponentType<Record<string, unknown>> | undefined>
-						| undefined
-				)?.[controlKey]
-			: undefined;
+	// Pin the resolved LazyWrapper/Component reference on mount so replacing `FieldsProxy[controlKey]` after async bundle load never swaps element identity mid-interaction.
+	const [pinned, setPinned] = React.useState<{
+		key: RuntimeFieldControlKey;
+		Component: React.ComponentType<Record<string, unknown>> | undefined;
+	}>(() => ({
+		key: controlKey,
+		Component: resolveRuntimeFieldComponent(controlKey),
+	}));
+
+	if (pinned.key !== controlKey || !pinned.Component) {
+		const latest = resolveRuntimeFieldComponent(controlKey);
+		if (pinned.key !== controlKey || latest !== pinned.Component) {
+			setPinned({ key: controlKey, Component: latest });
+		}
+	}
+
+	const Resolved = pinned.key === controlKey ? pinned.Component : resolveRuntimeFieldComponent(controlKey);
 	if (Resolved) {
 		return <Resolved {...controlProps} />;
 	}
@@ -70,6 +104,8 @@ export function prefetchSchemaControls(schema: SchemaFormPayload): void {
 				ensureImageFieldLoaded?: () => Promise<void>;
 				ensureRelationFieldLoaded?: () => Promise<void>;
 				ensureTabLoaded?: () => Promise<void>;
+				ensureCalendarLoaded?: () => Promise<void>;
+				ensureExtraFieldsLoaded?: () => Promise<void>;
 		  }
 		| undefined;
 	if (!rt) {
@@ -139,6 +175,76 @@ export function prefetchSchemaControls(schema: SchemaFormPayload): void {
 				rawType === 'react_file'
 			) {
 				needed.add('file');
+			} else if (
+				rawType === 'date' ||
+				rawType === 'time' ||
+				rawType === 'datetime' ||
+				rawType === 'daterange' ||
+				rawType === 'date_range' ||
+				rawType === 'date-range' ||
+				rawType === 'inputfielddatetime'
+			) {
+				needed.add('calendar');
+			} else if (
+				rawType === 'color' ||
+				rawType === 'tags' ||
+				rawType === 'texttags' ||
+				rawType === 'text_tags' ||
+				rawType === 'text-tags' ||
+				rawType === 'inputfieldtexttags' ||
+				rawType === 'combobox' ||
+				rawType === 'searchable_select' ||
+				rawType === 'searchable-select' ||
+				rawType === 'phone' ||
+				rawType === 'phone_number' ||
+				rawType === 'phone-number' ||
+				rawType === 'country' ||
+				rawType === 'country_code' ||
+				rawType === 'country-code' ||
+				rawType === 'countries' ||
+				rawType === 'timezone' ||
+				rawType === 'time_zone' ||
+				rawType === 'time-zone' ||
+				rawType === 'tz' ||
+				rawType === 'currency_code' ||
+				rawType === 'currency-code' ||
+				rawType === 'currencycode' ||
+				rawType === 'iso_currency' ||
+				rawType === 'iso-currency' ||
+				rawType === 'unit_number' ||
+				rawType === 'unit-number' ||
+				rawType === 'unitnumber' ||
+				rawType === 'currency' ||
+				rawType === 'money' ||
+				rawType === 'segmented' ||
+				rawType === 'button_group' ||
+				rawType === 'button-group' ||
+				rawType === 'spacing' ||
+				rawType === 'box_spacing' ||
+				rawType === 'box-spacing' ||
+				rawType === 'padding' ||
+				rawType === 'margin' ||
+				rawType === 'dimensions' ||
+				rawType === 'otp' ||
+				rawType === 'pin' ||
+				rawType === 'verification_code' ||
+				rawType === 'verification-code' ||
+				rawType === 'totp' ||
+				rawType === 'password' ||
+				rawType === 'password_strength' ||
+				rawType === 'password-strength' ||
+				rawType === 'new_password' ||
+				rawType === 'new-password' ||
+				rawType === 'markdown' ||
+				rawType === 'md' ||
+				rawType === 'markdown_editor' ||
+				rawType === 'markdown-editor' ||
+				(rawType.includes('textarea') && String(f.editorMode || '').toLowerCase() === 'markdown') ||
+				rawType === 'condition_builder' ||
+				rawType === 'condition-builder' ||
+				rawType === 'conditionbuilder'
+			) {
+				needed.add('extra');
 			}
 			visitFieldList(f.fields);
 			visitFieldList(f.children);
@@ -159,6 +265,8 @@ export function prefetchSchemaControls(schema: SchemaFormPayload): void {
 	if (needed.has('image')) void rt.ensureImageFieldLoaded?.();
 	if (needed.has('file')) void rt.ensureFileFieldLoaded?.();
 	if (needed.has('tab')) void rt.ensureTabLoaded?.();
+	if (needed.has('calendar')) void rt.ensureCalendarLoaded?.();
+	if (needed.has('extra')) void rt.ensureExtraFieldsLoaded?.();
 }
 
 export function renderFieldControl(props: ReactInputfieldProps): React.ReactElement {
@@ -193,6 +301,96 @@ export function renderFieldControl(props: ReactInputfieldProps): React.ReactElem
 		case 'date':
 		case 'time':
 			return <DatetimeField {...props} />;
+		case 'daterange':
+			return <DateRangeField {...props} />;
+		case 'color':
+			return (
+				<RuntimeFieldControl
+					controlKey="ColorFieldControl"
+					skeletonClass="h-9"
+					controlProps={props as unknown as Record<string, unknown>}
+				/>
+			);
+		case 'tags':
+			return (
+				<RuntimeFieldControl
+					controlKey="TagsFieldControl"
+					skeletonClass="h-9"
+					controlProps={props as unknown as Record<string, unknown>}
+				/>
+			);
+		case 'combobox':
+			return (
+				<RuntimeFieldControl
+					controlKey="ComboboxFieldControl"
+					skeletonClass="h-9"
+					controlProps={props as unknown as Record<string, unknown>}
+				/>
+			);
+		case 'phone':
+			return (
+				<RuntimeFieldControl
+					controlKey="PhoneFieldControl"
+					skeletonClass="h-9"
+					controlProps={props as unknown as Record<string, unknown>}
+				/>
+			);
+		case 'unit_number':
+			return (
+				<RuntimeFieldControl
+					controlKey="UnitNumberFieldControl"
+					skeletonClass="h-9"
+					controlProps={props as unknown as Record<string, unknown>}
+				/>
+			);
+		case 'segmented':
+			return (
+				<RuntimeFieldControl
+					controlKey="SegmentedFieldControl"
+					skeletonClass="h-9"
+					controlProps={props as unknown as Record<string, unknown>}
+				/>
+			);
+		case 'spacing':
+			return (
+				<RuntimeFieldControl
+					controlKey="SpacingFieldControl"
+					skeletonClass="h-24"
+					controlProps={props as unknown as Record<string, unknown>}
+				/>
+			);
+		case 'otp':
+			return (
+				<RuntimeFieldControl
+					controlKey="OtpFieldControl"
+					skeletonClass="h-9"
+					controlProps={props as unknown as Record<string, unknown>}
+				/>
+			);
+		case 'password':
+			return (
+				<RuntimeFieldControl
+					controlKey="PasswordFieldControl"
+					skeletonClass="h-24"
+					controlProps={props as unknown as Record<string, unknown>}
+				/>
+			);
+		case 'markdown':
+			return (
+				<RuntimeFieldControl
+					controlKey="MarkdownFieldControl"
+					skeletonClass="h-32"
+					controlProps={props as unknown as Record<string, unknown>}
+				/>
+			);
+		case 'condition_builder':
+			return (
+				<RuntimeFieldControl
+					controlKey="ConditionBuilderFieldControl"
+					skeletonClass="h-32"
+					controlProps={props as unknown as Record<string, unknown>}
+				/>
+			);
 		case 'checkbox':
 		case 'consent':
 			return <CheckboxField {...props} />;
@@ -209,6 +407,7 @@ export function renderFieldControl(props: ReactInputfieldProps): React.ReactElem
 		case 'multiselect':
 			return <MultiSelectField {...props} />;
 		case 'range':
+		case 'range_slider':
 		case 'colspan':
 			return <RangeField {...props} />;
 		case 'rating':

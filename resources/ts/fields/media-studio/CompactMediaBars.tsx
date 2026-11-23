@@ -132,15 +132,15 @@ export function CompactMediaDropBar({
 				</span>
 
 				{compactExtsLabel || maxSizeText || maxFilesText ? (
-					<span className="min-w-0 truncate text-[11px] tabular-nums text-muted-foreground">
+					<span className="hidden @2xs/rw-media:inline min-w-0 truncate text-[11px] tabular-nums text-muted-foreground">
 						{compactExtsLabel ? <span className="font-mono">{compactExtsLabel}</span> : null}
 						{maxSizeText ? (
-							<span className={cn(compactExtsLabel && 'hidden @md:inline')}>
+							<span className={cn(compactExtsLabel && 'hidden @md/rw-media:inline')}>
 								{compactExtsLabel ? ` · ${maxSizeText}` : maxSizeText}
 							</span>
 						) : null}
 						{maxFilesText ? (
-							<span className="hidden @lg:inline">
+							<span className="hidden @lg/rw-media:inline">
 								{compactExtsLabel || maxSizeText ? ` · ${maxFilesText}` : maxFilesText}
 							</span>
 						) : null}
@@ -154,7 +154,7 @@ export function CompactMediaDropBar({
 					'shrink-0 items-center gap-1.5 pr-1.5 text-[11px] transition-colors',
 					isDropOverZone
 						? 'flex font-medium text-primary'
-						: 'hidden text-muted-foreground @sm:flex'
+						: 'hidden text-muted-foreground @sm/rw-media:flex'
 				)}
 			>
 				<DynamicIcon name="upload-cloud" className="size-3.5 shrink-0 opacity-80" />

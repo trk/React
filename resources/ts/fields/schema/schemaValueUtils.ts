@@ -67,6 +67,10 @@ export function extractFieldsInitialValues(
 				rawType === 'checkboxes' ||
 				rawType === 'asmselect' ||
 				rawType === 'multiselect' ||
+				rawType === 'tags' ||
+				rawType === 'texttags' ||
+				rawType === 'text_tags' ||
+				rawType === 'text-tags' ||
 				rawType === 'repeater';
 			if (isMedia) {
 				if (Array.isArray(f.value) && f.value.length > 0) {

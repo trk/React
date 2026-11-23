@@ -35,13 +35,23 @@ export function SelectedItemsStack({
 		>
 			{values.map((tok, idx) => {
 				const item = resolveItem(tok);
+				const showItemBadge = Boolean(
+					item.badge &&
+						!(
+							cardinality === 'm2a' &&
+							item.badge.trim().toLowerCase() ===
+								String(item.resourceLabel || item.resource || '')
+									.trim()
+									.toLowerCase()
+						)
+				);
 				return (
 					<div
 						key={tok}
 						{...(isSortable ? sortable.getItemProps(tok) : {})}
 						className="flex items-center justify-between gap-2 px-2.5 py-1.5 text-xs transition-colors hover:bg-muted/35"
 					>
-						<div className="flex items-center gap-2 min-w-0">
+						<div className="flex min-w-0 flex-1 items-center gap-2">
 							{isSortable && !disabled && values.length > 1 ? (
 								<SortableHandle size="xs" {...sortable.getHandleProps(tok, idx)} />
 							) : null}
@@ -51,16 +61,16 @@ export function SelectedItemsStack({
 									{item.resourceLabel || item.resource}
 								</Badge>
 							) : null}
-							<div className="min-w-0 truncate">
+							<div className="min-w-0 flex-1 truncate">
 								<span className="font-medium text-foreground">{item.label}</span>
 								{item.subtitle ? (
-									<span className="ml-2 font-mono text-[11px] text-muted-foreground">
+									<span className="hidden @md/rw-rel:inline ml-2 font-mono text-[11px] text-muted-foreground">
 										{item.subtitle}
 									</span>
 								) : null}
 							</div>
-							{item.badge ? (
-								<Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-normal shrink-0">
+							{showItemBadge ? (
+								<Badge variant="secondary" className="hidden @sm/rw-rel:inline-flex px-1.5 py-0 text-[10px] font-normal shrink-0">
 									{item.badge}
 								</Badge>
 							) : null}

@@ -15,6 +15,42 @@ import {
 } from '../shared';
 import type { ReactInputfieldProps } from '../types';
 
+/**
+ * Normalizes a field pattern into a Chromium V8 `/v`-safe HTML5 `pattern` attribute.
+ * Strips matching PCRE `/.../` delimiters when flags do not alter JS semantics, and
+ * omits expressions rejected under `/v` (`UnicodeSets`) so Valibot handles them cleanly.
+ */
+export function toSafeHtmlPatternAttr(raw?: string | null): string | undefined {
+	if (typeof raw !== 'string') {
+		return undefined;
+	}
+	let candidate = raw.trim();
+	if (candidate === '') {
+		return undefined;
+	}
+	if (candidate.startsWith('/') && candidate.length >= 2) {
+		const lastSlash = candidate.lastIndexOf('/');
+		if (lastSlash > 0) {
+			const flags = candidate.slice(lastSlash + 1);
+			if (/^[a-zA-Z]*$/.test(flags)) {
+				if (/[imsx]/i.test(flags.replace(/u/gi, ''))) {
+					return undefined;
+				}
+				candidate = candidate.slice(1, lastSlash);
+			}
+		}
+	}
+	if (candidate === '') {
+		return undefined;
+	}
+	try {
+		new RegExp(candidate, 'v');
+		return candidate;
+	} catch {
+		return undefined;
+	}
+}
+
 function coerceSlugSourceString(raw: unknown): string {
 	if (raw === null || raw === undefined) {
 		return '';
@@ -411,7 +447,7 @@ export function TextField(props: ReactInputfieldProps): React.ReactElement {
 					: 'text');
 
 	const handleGenerateSecret = () => {
-		if (!props.secret || props.readOnly || props.disabled) {
+		if (!props.secret || props.secret.autogen === false || props.readOnly || props.disabled) {
 			return;
 		}
 		const generated = `${props.secret.prefix || ''}${generateRandomHex(props.secret.bytes || 32)}`;
@@ -580,7 +616,7 @@ export function TextField(props: ReactInputfieldProps): React.ReactElement {
 				aria-describedby={props.describedBy || undefined}
 				minLength={props.minLength || undefined}
 				maxLength={props.maxLength || undefined}
-				pattern={props.pattern || undefined}
+				pattern={toSafeHtmlPatternAttr(props.pattern)}
 				className={cn(
 					props.mono && 'font-mono text-xs',
 					hasPrefix && 'rounded-l-none',
@@ -703,7 +739,7 @@ export function TextField(props: ReactInputfieldProps): React.ReactElement {
 									step={props.step ?? undefined}
 									minLength={props.minLength || undefined}
 									maxLength={props.maxLength || undefined}
-									pattern={props.pattern || undefined}
+									pattern={toSafeHtmlPatternAttr(props.pattern)}
 									className={cn(
 										props.mono && 'font-mono text-xs',
 										hasPrefix && 'rounded-l-none',
@@ -767,7 +803,7 @@ export function TextField(props: ReactInputfieldProps): React.ReactElement {
 								>
 									<DynamicIcon name={secretCopied ? 'check' : 'copy'} className="size-3.5" />
 								</Button>
-								{!props.readOnly && !props.disabled ? (
+								{!props.readOnly && !props.disabled && props.secret.autogen !== false ? (
 									<Button
 										type="button"
 										variant="outline"

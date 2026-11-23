@@ -206,21 +206,28 @@ export function AutocompleteAndMorphWidget({
 			<div data-rw-field-slot="input" className="relative space-y-1.5">
 				{!multiple && selectedSingle && !open ? (
 					<div className="flex h-9 items-center justify-between gap-2 rounded-md border border-input bg-input-surface px-3 text-xs shadow-2xs">
-						<div className="flex items-center gap-2 min-w-0">
+						<div className="flex min-w-0 flex-1 items-center gap-2">
 							<RelationItemVisual item={selectedSingle} fallbackIcon={resourceMeta.icon} size="sm" />
 							{cardinality === 'm2a' ? (
 								<Badge variant="outline" className="px-1.5 py-0 text-[10px] uppercase shrink-0">
 									{selectedSingle.resourceLabel || selectedSingle.resource}
 								</Badge>
 							) : null}
-							<span className="truncate font-medium text-foreground">{selectedSingle.label}</span>
+							<span className="min-w-0 flex-1 truncate font-medium text-foreground">{selectedSingle.label}</span>
 							{selectedSingle.subtitle ? (
-								<span className="truncate font-mono text-[11px] text-muted-foreground">
+								<span className="hidden @md/rw-rel:inline max-w-[35%] truncate font-mono text-[11px] text-muted-foreground">
 									{selectedSingle.subtitle}
 								</span>
 							) : null}
-							{selectedSingle.badge ? (
-								<Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-normal shrink-0">
+							{selectedSingle.badge &&
+							!(
+								cardinality === 'm2a' &&
+								selectedSingle.badge.trim().toLowerCase() ===
+									String(selectedSingle.resourceLabel || selectedSingle.resource || '')
+										.trim()
+										.toLowerCase()
+							) ? (
+								<Badge variant="secondary" className="hidden @sm/rw-rel:inline-flex px-1.5 py-0 text-[10px] font-normal shrink-0">
 									{selectedSingle.badge}
 								</Badge>
 							) : null}
@@ -234,9 +241,12 @@ export function AutocompleteAndMorphWidget({
 										variant="ghost"
 										size="xs"
 										onClick={() => setOpen(true)}
-										className="h-6 px-2 text-[11px]"
+										aria-label={t('common.change', 'Change')}
+										title={t('common.change', 'Change')}
+										className="h-6 px-1.5 @xs/rw-rel:px-2 text-[11px]"
 									>
-										Change
+										<DynamicIcon name="refresh-cw" className="size-3 @xs/rw-rel:hidden" aria-hidden="true" />
+										<span className="hidden @xs/rw-rel:inline">Change</span>
 									</Button>
 									<button
 										type="button"
@@ -417,7 +427,14 @@ export function AutocompleteAndMorphWidget({
 											</div>
 										</div>
 										<div className="flex items-center gap-1.5 shrink-0">
-											{item.badge ? (
+											{item.badge &&
+											!(
+												cardinality === 'm2a' &&
+												item.badge.trim().toLowerCase() ===
+													String(item.resourceLabel || item.resource || '')
+														.trim()
+														.toLowerCase()
+											) ? (
 												<Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-normal">
 													{item.badge}
 												</Badge>

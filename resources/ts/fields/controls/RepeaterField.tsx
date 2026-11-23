@@ -110,7 +110,7 @@ export function RepeaterField(props: ReactInputfieldProps): React.ReactElement {
 	});
 
 	return (
-		<div className="space-y-2.5" data-rw-control="repeater">
+		<div className="@container/rw-repeater min-w-0 space-y-2.5" data-rw-control="repeater">
 			<SortableStatusRegion message={sortable.statusMessage} />
 			<div
 				{...sortable.getContainerProps()}
@@ -132,19 +132,19 @@ export function RepeaterField(props: ReactInputfieldProps): React.ReactElement {
 									/>
 								</div>
 							) : null}
-							<div className="grid flex-1 grid-cols-1 gap-2.5 sm:grid-cols-12">
+							<div className="grid min-w-0 flex-1 grid-cols-1 gap-2.5 @lg/rw-repeater:grid-cols-12">
 								{subfields.map((sub) => {
 									const span =
 										sub.width && sub.width <= 34
-											? 'sm:col-span-4'
+											? '@lg/rw-repeater:col-span-4'
 											: sub.width && sub.width <= 50
-												? 'sm:col-span-6'
-												: 'sm:col-span-12';
+												? '@lg/rw-repeater:col-span-6'
+												: '@lg/rw-repeater:col-span-12';
 									const subInputName = `${props.name}[${rowIdx}][${sub.name}]`;
 									const subInputId = `${repeaterBaseId}-${rowItem._rowId}-${sub.name}`;
 									const cellError = props.subErrors?.[subInputName];
 									return (
-										<div key={sub.name} className={cn('space-y-1', span)}>
+										<div key={sub.name} className={cn('min-w-0 space-y-1', span)}>
 											<label htmlFor={subInputId} className="block text-[11px] font-medium text-muted-foreground">
 												{sub.label}
 												{sub.required ? <span className="ml-0.5 text-destructive">*</span> : null}

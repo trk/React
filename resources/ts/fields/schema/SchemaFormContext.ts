@@ -33,7 +33,12 @@ export interface SchemaFormContextValue {
 	isDirty: boolean;
 	scopePrefix?: string;
 	fieldsByName?: ReadonlyMap<string, SchemaFieldDefinition>;
-	updateFieldValue: (name: string, value: unknown, fieldDef?: SchemaFieldDefinition, scopePrefix?: string) => void;
+	updateFieldValue: (
+		name: string,
+		value: unknown,
+		fieldDef?: SchemaFieldDefinition,
+		scopePrefix?: string
+	) => Record<string, unknown> | void;
 	setValuesBatch: (patch: Record<string, unknown>, markDirty?: boolean) => void;
 	setFieldError: (name: string, message: string | null) => void;
 	registerFragment: (spec: RegisteredFragmentSpec) => () => void;

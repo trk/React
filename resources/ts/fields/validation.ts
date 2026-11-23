@@ -140,6 +140,193 @@ export interface SchemaValidationResult {
 	failedBlockIds: string[];
 }
 
+function isDateRangeObject(val: unknown): val is { from?: unknown; to?: unknown } {
+	if (!val || typeof val !== 'object' || Array.isArray(val)) {
+		return false;
+	}
+	const keys = Object.keys(val);
+	if (keys.length === 0) {
+		return false;
+	}
+	return keys.every((k) => k === 'from' || k === 'to');
+}
+
+function isDateRangeTypeName(controlType: string): boolean {
+	return controlType === 'daterange' || controlType === 'date_range' || controlType === 'date-range';
+}
+
+function isUnitNumberObject(val: unknown): val is { value?: unknown; unit?: unknown } {
+	if (!val || typeof val !== 'object' || Array.isArray(val)) {
+		return false;
+	}
+	const keys = Object.keys(val);
+	if (keys.length === 0) {
+		return false;
+	}
+	return keys.every((k) => k === 'value' || k === 'unit');
+}
+
+function isUnitNumberTypeName(controlType: string): boolean {
+	return (
+		controlType === 'unit_number' ||
+		controlType === 'unit-number' ||
+		controlType === 'unitnumber' ||
+		controlType === 'currency' ||
+		controlType === 'money'
+	);
+}
+
+function isSpacingTypeName(controlType: string): boolean {
+	return (
+		controlType === 'spacing' ||
+		controlType === 'box_spacing' ||
+		controlType === 'box-spacing' ||
+		controlType === 'padding' ||
+		controlType === 'margin' ||
+		controlType === 'dimensions'
+	);
+}
+
+function isSpacingObject(val: unknown): val is Record<string, unknown> {
+	if (!val || typeof val !== 'object' || Array.isArray(val)) {
+		return false;
+	}
+	const keys = Object.keys(val);
+	if (keys.length === 0) {
+		return false;
+	}
+	const hasSide = keys.some((k) => k === 'top' || k === 'right' || k === 'bottom' || k === 'left');
+	return hasSide && keys.every((k) => k === 'top' || k === 'right' || k === 'bottom' || k === 'left' || k === 'unit' || k === 'linked');
+}
+
+function isDualRangeTypeName(controlType: string, field?: SchemaFieldDefinition): boolean {
+	if (
+		controlType === 'range_slider' ||
+		controlType === 'range-slider' ||
+		controlType === 'dual_range' ||
+		controlType === 'dual-range' ||
+		controlType === 'minmax'
+	) {
+		return true;
+	}
+	return (controlType === 'range' || controlType === 'slider') && Boolean(field?.rangeMode === 'dual' || field?.dual);
+}
+
+function isDualRangeObject(val: unknown): val is { min?: unknown; max?: unknown } {
+	if (!val || typeof val !== 'object' || Array.isArray(val)) {
+		return false;
+	}
+	const keys = Object.keys(val);
+	return keys.length > 0 && keys.every((k) => k === 'min' || k === 'max') && ('min' in val || 'max' in val);
+}
+
+function isConditionBuilderTypeName(controlType: string): boolean {
+	return (
+		controlType === 'condition_builder' ||
+		controlType === 'condition-builder' ||
+		controlType === 'conditionbuilder'
+	);
+}
+
+function parseConditionBuilderCandidate(val: unknown): { match?: unknown; groups?: unknown[] } | null {
+	if (typeof val === 'string') {
+		const trimmed = val.trim();
+		if (trimmed === '' || trimmed === '[]') {
+			return null;
+		}
+		try {
+			const parsed = JSON.parse(trimmed) as unknown;
+			if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+				const rec = parsed as Record<string, unknown>;
+				if (Array.isArray(rec.groups)) {
+					return rec as { match?: unknown; groups?: unknown[] };
+				}
+			}
+		} catch {
+			return null;
+		}
+		return null;
+	}
+	if (val && typeof val === 'object' && !Array.isArray(val)) {
+		const rec = val as Record<string, unknown>;
+		if (Array.isArray(rec.groups)) {
+			return rec as { match?: unknown; groups?: unknown[] };
+		}
+	}
+	return null;
+}
+
+function isConditionBuilderObject(val: unknown): val is { match?: unknown; groups?: unknown[] } {
+	return Boolean(val && typeof val === 'object' && !Array.isArray(val) && Array.isArray((val as Record<string, unknown>).groups));
+}
+
+function isOtpTypeName(controlType: string): boolean {
+	return (
+		controlType === 'otp' ||
+		controlType === 'pin' ||
+		controlType === 'verification_code' ||
+		controlType === 'verification-code' ||
+		controlType === 'totp'
+	);
+}
+
+function isPasswordTypeName(controlType: string, field?: SchemaFieldDefinition): boolean {
+	if (field?.isSecret) {
+		return false;
+	}
+	return (
+		controlType === 'password' ||
+		controlType === 'password_strength' ||
+		controlType === 'password-strength' ||
+		controlType === 'new_password' ||
+		controlType === 'new-password'
+	);
+}
+
+function isValidCalendarYmd(raw: string): boolean {
+	const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+	if (!m) {
+		return false;
+	}
+	const year = Number(m[1]);
+	const month = Number(m[2]);
+	const day = Number(m[3]);
+	const candidate = new Date(year, month - 1, day);
+	return (
+		candidate.getFullYear() === year &&
+		candidate.getMonth() === month - 1 &&
+		candidate.getDate() === day
+	);
+}
+
+function parseDateRangePair(val: unknown): { from: string; to: string } {
+	if (isDateRangeObject(val)) {
+		return {
+			from: String(val.from ?? '').trim(),
+			to: String(val.to ?? '').trim(),
+		};
+	}
+	if (typeof val === 'string') {
+		const trimmed = val.trim();
+		if (trimmed.startsWith('{')) {
+			try {
+				const parsed = JSON.parse(trimmed) as unknown;
+				return parseDateRangePair(parsed);
+			} catch {
+				return { from: '', to: '' };
+			}
+		}
+		const parts = trimmed.split(/\s*(?:\.\.|\/|–)\s*/);
+		if (parts.length === 2) {
+			return { from: (parts[0] ?? '').trim(), to: (parts[1] ?? '').trim() };
+		}
+		if (trimmed !== '') {
+			return { from: trimmed, to: '' };
+		}
+	}
+	return { from: '', to: '' };
+}
+
 function isEmptyFieldValue(val: unknown, controlType: string): boolean {
 	if (val === null || val === undefined) {
 		return true;
@@ -149,6 +336,43 @@ function isEmptyFieldValue(val: unknown, controlType: string): boolean {
 	}
 	if (controlType === 'link' || isLinkValueObject(val)) {
 		return isLinkFieldValueEmpty(val);
+	}
+	if (isConditionBuilderTypeName(controlType) || isConditionBuilderObject(val)) {
+		const cbObj = parseConditionBuilderCandidate(val);
+		if (!cbObj || !Array.isArray(cbObj.groups) || cbObj.groups.length === 0) {
+			return true;
+		}
+		return cbObj.groups.every((grp) => {
+			if (!grp || typeof grp !== 'object' || Array.isArray(grp)) {
+				return true;
+			}
+			const rules = (grp as { rules?: unknown }).rules;
+			return !Array.isArray(rules) || rules.length === 0;
+		});
+	}
+	if (isDateRangeTypeName(controlType) || isDateRangeObject(val)) {
+		const pair = parseDateRangePair(val);
+		return pair.from === '' && pair.to === '';
+	}
+	if (isUnitNumberTypeName(controlType) || isUnitNumberObject(val)) {
+		if (isUnitNumberObject(val)) {
+			return val.value === null || val.value === undefined || String(val.value).trim() === '';
+		}
+		return String(val).trim() === '';
+	}
+	if (isSpacingTypeName(controlType) || isSpacingObject(val)) {
+		if (isSpacingObject(val)) {
+			return (['top', 'right', 'bottom', 'left'] as const).every(
+				(s) => String(val[s] ?? '').trim() === '',
+			);
+		}
+		return String(val).trim() === '';
+	}
+	if (isDualRangeObject(val)) {
+		return (
+			(val.min === undefined || val.min === null || String(val.min).trim() === '') &&
+			(val.max === undefined || val.max === null || String(val.max).trim() === '')
+		);
 	}
 	if (controlType === 'checkbox' || controlType === 'consent' || controlType === 'toggle') {
 		return val === false || val === '' || val === '0' || val === 0;
@@ -417,6 +641,267 @@ export function validateFieldWithValibot(
 			if (!parsed.success) {
 				return parsed.issues[0]?.message || `${label} is invalid.`;
 			}
+		}
+		return null;
+	}
+
+	// DateRange validation (`from` / `to` completeness, valid ISO dates, chronological order, min/max bounds)
+	if (isDateRangeTypeName(rawType) || isDateRangeObject(effectiveVal)) {
+		const pair = parseDateRangePair(effectiveVal);
+		if ((pair.from !== '' && pair.to === '') || (pair.from === '' && pair.to !== '')) {
+			return getRuleMessage(rules, 'format', `${label} requires both a start and end date.`);
+		}
+		if (pair.from !== '' && pair.to !== '') {
+			if (!isValidCalendarYmd(pair.from) || !isValidCalendarYmd(pair.to)) {
+				return getRuleMessage(rules, 'format', `${label} must contain valid dates (YYYY-MM-DD).`);
+			}
+			if (pair.from > pair.to) {
+				return getRuleMessage(rules, 'max', `${label} end date must be on or after the start date.`);
+			}
+			const minDateRule = unwrapRule(rules.min) ?? field.min;
+			if (typeof minDateRule === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(minDateRule.trim()) && pair.from < minDateRule.trim()) {
+				return getRuleMessage(rules, 'min', `${label} must be on or after ${minDateRule.trim()}.`);
+			}
+			const maxDateRule = unwrapRule(rules.max) ?? field.max;
+			if (typeof maxDateRule === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(maxDateRule.trim()) && pair.to > maxDateRule.trim()) {
+				return getRuleMessage(rules, 'max', `${label} must be on or before ${maxDateRule.trim()}.`);
+			}
+		}
+		return null;
+	}
+
+	// UnitNumber / Currency validation (numeric bounds, unit allowlist)
+	if (isUnitNumberTypeName(rawType) || isUnitNumberObject(effectiveVal)) {
+		let parsedNum: number | null = null;
+		let unitStr = '';
+		if (isUnitNumberObject(effectiveVal)) {
+			const rawNum = effectiveVal.value;
+			if (typeof rawNum === 'number') {
+				parsedNum = Number.isFinite(rawNum) ? rawNum : NaN;
+			} else if (typeof rawNum === 'string' && rawNum.trim() !== '') {
+				parsedNum = Number(rawNum.trim().replace(',', '.'));
+			}
+			unitStr = typeof effectiveVal.unit === 'string' ? effectiveVal.unit.trim() : '';
+		} else if (typeof effectiveVal === 'number') {
+			parsedNum = effectiveVal;
+		} else {
+			const m = String(effectiveVal).trim().match(/^(-?\d+(?:[.,]\d+)?)\s*([A-Za-z%]+)?$/);
+			if (m) {
+				parsedNum = Number((m[1] ?? '').replace(',', '.'));
+				unitStr = (m[2] ?? '').trim();
+			} else {
+				parsedNum = NaN;
+			}
+		}
+
+		if (parsedNum === null || !Number.isFinite(parsedNum)) {
+			return getRuleMessage(rules, 'format', `${label} must be a valid number.`);
+		}
+		const minNumRule = unwrapRule(rules.min) ?? field.min;
+		if (minNumRule !== null && minNumRule !== undefined && minNumRule !== '' && Number.isFinite(Number(minNumRule))) {
+			const minNum = Number(minNumRule);
+			if (parsedNum < minNum) {
+				return getRuleMessage(rules, 'min', `${label} must be at least ${minNum}.`);
+			}
+		}
+		const maxNumRule = unwrapRule(rules.max) ?? field.max;
+		if (maxNumRule !== null && maxNumRule !== undefined && maxNumRule !== '' && Number.isFinite(Number(maxNumRule))) {
+			const maxNum = Number(maxNumRule);
+			if (parsedNum > maxNum) {
+				return getRuleMessage(rules, 'max', `${label} must be at most ${maxNum}.`);
+			}
+		}
+		if (Array.isArray(field.units) && field.units.length > 0 && unitStr !== '' && !field.units.includes(unitStr)) {
+			return getRuleMessage(rules, 'format', `${label} unit "${unitStr}" is not allowed.`);
+		}
+		return null;
+	}
+
+	// Color validation (`#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`, or CSS color function)
+	if (rawType === 'color') {
+		const colorStr = String(effectiveVal).trim();
+		const hexRe = /^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+		const funcRe = /^(?:rgb|rgba|hsl|hsla|oklch|oklab)\(\s*[^()]{1,64}\)$/i;
+		if (!hexRe.test(colorStr) && !funcRe.test(colorStr)) {
+			return getRuleMessage(rules, 'format', `${label} must be a valid hex or CSS color.`);
+		}
+		return null;
+	}
+
+	// Phone validation (`phone`, `phone_number`, `phone-number`)
+	if (rawType === 'phone' || rawType === 'phone_number' || rawType === 'phone-number') {
+		const phoneStr = String(effectiveVal).trim();
+		const digits = phoneStr.replace(/[^0-9]/g, '');
+		if (!/^\+?[0-9\s().-]{6,22}$/.test(phoneStr) || digits.length < 6 || digits.length > 17) {
+			return getRuleMessage(rules, 'format', `${label} must be a valid phone number.`);
+		}
+		return null;
+	}
+
+	// Spacing validation (4-side numeric/auto bounds & unit allowlist)
+	if (isSpacingTypeName(rawType) || isSpacingObject(effectiveVal)) {
+		let objVal: Record<string, unknown> | null = isSpacingObject(effectiveVal) ? effectiveVal : null;
+		if (!objVal && typeof effectiveVal === 'string' && effectiveVal.trim().startsWith('{')) {
+			try {
+				const parsed = JSON.parse(effectiveVal.trim()) as unknown;
+				if (isSpacingObject(parsed)) {
+					objVal = parsed;
+				}
+			} catch {
+				objVal = null;
+			}
+		}
+		if (objVal) {
+			const unitStr = typeof objVal.unit === 'string' ? objVal.unit.trim() : '';
+			if (Array.isArray(field.units) && field.units.length > 0 && unitStr !== '' && !field.units.includes(unitStr)) {
+				return getRuleMessage(rules, 'format', `${label} unit "${unitStr}" is not allowed.`);
+			}
+			const minNumRule = unwrapRule(rules.min) ?? field.min;
+			const maxNumRule = unwrapRule(rules.max) ?? field.max;
+			const activeSides =
+				Array.isArray(field.sides) && field.sides.length > 0
+					? field.sides
+					: (['top', 'right', 'bottom', 'left'] as const);
+			for (const side of activeSides) {
+				const sideRaw = String(objVal[side] ?? '').trim();
+				if (sideRaw === '') {
+					continue;
+				}
+				if (sideRaw.toLowerCase() === 'auto') {
+					if (!field.allowAuto) {
+						return getRuleMessage(rules, 'format', `${label} (${side}) does not allow "auto".`);
+					}
+					continue;
+				}
+				const n = Number(sideRaw);
+				if (!Number.isFinite(n)) {
+					return getRuleMessage(rules, 'format', `${label} (${side}) must be a valid number.`);
+				}
+				if (!field.allowNegative && n < 0) {
+					return getRuleMessage(rules, 'min', `${label} (${side}) cannot be negative.`);
+				}
+				if (minNumRule !== null && minNumRule !== undefined && minNumRule !== '' && Number.isFinite(Number(minNumRule))) {
+					const minBound = Number(minNumRule);
+					if (n < minBound) {
+						return getRuleMessage(rules, 'min', `${label} (${side}) must be at least ${minBound}.`);
+					}
+				}
+				if (maxNumRule !== null && maxNumRule !== undefined && maxNumRule !== '' && Number.isFinite(Number(maxNumRule))) {
+					const maxBound = Number(maxNumRule);
+					if (n > maxBound) {
+						return getRuleMessage(rules, 'max', `${label} (${side}) must be at most ${maxBound}.`);
+					}
+				}
+			}
+		}
+		return null;
+	}
+
+	// Dual-Thumb Range validation (`{ min, max }`)
+	if (isDualRangeTypeName(rawType, field) || isDualRangeObject(effectiveVal)) {
+		let minCandidate: number = NaN;
+		let maxCandidate: number = NaN;
+		if (isDualRangeObject(effectiveVal)) {
+			minCandidate = Number(effectiveVal.min);
+			maxCandidate = Number(effectiveVal.max);
+		} else if (Array.isArray(effectiveVal)) {
+			minCandidate = Number(effectiveVal[0]);
+			maxCandidate = Number(effectiveVal[1]);
+		} else if (typeof effectiveVal === 'string') {
+			const m = effectiveVal.trim().match(/^(-?\d+(?:\.\d+)?)\s*(?:\.\.|–|,|-)\s*(-?\d+(?:\.\d+)?)$/);
+			if (m) {
+				minCandidate = Number(m[1]);
+				maxCandidate = Number(m[2]);
+			}
+		}
+		if (!Number.isFinite(minCandidate) || !Number.isFinite(maxCandidate)) {
+			return getRuleMessage(rules, 'format', `${label} must specify valid minimum and maximum values.`);
+		}
+		if (minCandidate > maxCandidate) {
+			return getRuleMessage(rules, 'max', `${label} minimum cannot exceed maximum.`);
+		}
+		const minBoundRule = unwrapRule(rules.min) ?? field.min;
+		if (minBoundRule !== null && minBoundRule !== undefined && minBoundRule !== '' && Number.isFinite(Number(minBoundRule))) {
+			const minBound = Number(minBoundRule);
+			if (minCandidate < minBound) {
+				return getRuleMessage(rules, 'min', `${label} minimum must be at least ${minBound}.`);
+			}
+		}
+		const maxBoundRule = unwrapRule(rules.max) ?? field.max;
+		if (maxBoundRule !== null && maxBoundRule !== undefined && maxBoundRule !== '' && Number.isFinite(Number(maxBoundRule))) {
+			const maxBound = Number(maxBoundRule);
+			if (maxCandidate > maxBound) {
+				return getRuleMessage(rules, 'max', `${label} maximum must be at most ${maxBound}.`);
+			}
+		}
+		if (typeof field.minDistance === 'number' && Number.isFinite(field.minDistance) && field.minDistance > 0) {
+			if (maxCandidate - minCandidate < field.minDistance) {
+				return getRuleMessage(rules, 'min', `${label} requires a span of at least ${field.minDistance}.`);
+			}
+		}
+		return null;
+	}
+
+	// OTP / Verification code validation
+	if (isOtpTypeName(rawType)) {
+		const codeStr = String(effectiveVal).trim();
+		const expectedLength = Math.min(12, Math.max(4, Math.round(Number(field.otpLength) || 6)));
+		const mode = field.otpMode === 'alphanumeric' ? 'alphanumeric' : 'numeric';
+		const charRe = mode === 'alphanumeric' ? /^[A-Za-z0-9]+$/ : /^[0-9]+$/;
+		if (!charRe.test(codeStr)) {
+			return getRuleMessage(
+				rules,
+				'format',
+				mode === 'numeric'
+					? `${label} must contain only digits.`
+					: `${label} must contain only letters and numbers.`,
+			);
+		}
+		if (codeStr.length !== expectedLength) {
+			return getRuleMessage(rules, 'minLength', `${label} must be ${expectedLength} characters.`);
+		}
+		return null;
+	}
+
+	// Password strength / policy validation
+	if (isPasswordTypeName(rawType, field)) {
+		const pwStr = String(effectiveVal);
+		const minLen = Math.max(4, Number(unwrapRule(rules.minLength) ?? field.minLength) || 8);
+		if (pwStr.length < minLen) {
+			return getRuleMessage(rules, 'minLength', `${label} must be at least ${minLen} characters.`);
+		}
+		if (field.requireUppercase !== false && !/[A-Z]/.test(pwStr)) {
+			return getRuleMessage(rules, 'format', `${label} must include an uppercase letter.`);
+		}
+		if (field.requireLowercase !== false && !/[a-z]/.test(pwStr)) {
+			return getRuleMessage(rules, 'format', `${label} must include a lowercase letter.`);
+		}
+		if (field.requireNumber !== false && !/[0-9]/.test(pwStr)) {
+			return getRuleMessage(rules, 'format', `${label} must include a number.`);
+		}
+		if (field.requireSymbol && !/[^A-Za-z0-9]/.test(pwStr)) {
+			return getRuleMessage(rules, 'format', `${label} must include a symbol.`);
+		}
+		return null;
+	}
+
+	if (isConditionBuilderTypeName(rawType) || isConditionBuilderObject(effectiveVal)) {
+		const cbObj = parseConditionBuilderCandidate(effectiveVal);
+		const groups = Array.isArray(cbObj?.groups) ? cbObj.groups : [];
+		const totalRules = groups.reduce<number>((sum, grp) => {
+			if (!grp || typeof grp !== 'object' || Array.isArray(grp)) {
+				return sum;
+			}
+			const rulesArr = (grp as { rules?: unknown }).rules;
+			return sum + (Array.isArray(rulesArr) ? rulesArr.length : 0);
+		}, 0);
+		const minItems = Number(unwrapRule(rules.minItems) ?? field.minItems ?? field.minRows ?? 0);
+		const maxItems = Number(unwrapRule(rules.maxItems) ?? field.maxItems ?? 0);
+		if (minItems > 0 && totalRules < minItems) {
+			return getRuleMessage(rules, 'minItems', `${label} requires at least ${minItems} item(s).`);
+		}
+		if (maxItems > 0 && totalRules > maxItems) {
+			return getRuleMessage(rules, 'maxItems', `${label} allows at most ${maxItems} item(s).`);
 		}
 		return null;
 	}
@@ -1017,6 +1502,57 @@ export function validateFieldNodesRecursive(
 	}
 }
 
+function tabContainsBlockField(
+	fields: SchemaFieldDefinition[] | Record<string, SchemaFieldDefinition> | undefined,
+	fieldName: string,
+	fieldKey: string
+): boolean {
+	for (const f of normalizeChildFields(fields)) {
+		if ((fieldName !== '' && f.name === fieldName) || (fieldKey !== '' && f.name === fieldKey)) {
+			return true;
+		}
+		const islandInputKey =
+			f.props && typeof f.props === 'object'
+				? f.props.inputKey
+				: undefined;
+		if (
+			typeof islandInputKey === 'string' &&
+			islandInputKey !== '' &&
+			((fieldKey !== '' && islandInputKey === fieldKey) || (fieldName !== '' && islandInputKey === fieldName))
+		) {
+			return true;
+		}
+		if (tabContainsBlockField(f.fields as SchemaFieldDefinition[] | Record<string, SchemaFieldDefinition> | undefined, fieldName, fieldKey)) {
+			return true;
+		}
+		if (tabContainsBlockField(f.children, fieldName, fieldKey)) {
+			return true;
+		}
+		if (Array.isArray(f.tabs)) {
+			for (const subTab of f.tabs) {
+				if (tabContainsBlockField(subTab.fields, fieldName, fieldKey)) {
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
+function findEnclosingTopTabIdForBlockField(
+	schema: SchemaFormPayload,
+	fieldName: string,
+	fieldKey: string
+): string | undefined {
+	const topTabs = Array.isArray(schema.tabs) ? schema.tabs : [];
+	for (const tab of topTabs) {
+		if (tabContainsBlockField(tab.fields, fieldName, fieldKey)) {
+			return tab.id;
+		}
+	}
+	return undefined;
+}
+
 /**
  * Validates an entire `SchemaFormPayload` tree, including top-level tabs, root fields,
  * registered nested fragments, and dynamic block collections (`RegisteredBlockFieldSpec`).
@@ -1212,7 +1748,7 @@ export function validateSchemaTree(
 					const hasDescendantErr = allErrorKeys.some(
 						(errKey) =>
 							errKey.startsWith(`${block.prefix}_`) ||
-							(errKey.startsWith('weblock_') && errKey.includes(`_${block.prefix}_`))
+							errKey.includes(`_${block.prefix}_`)
 					);
 					if (hasDescendantErr) {
 						entry.failedIds.add(block.id);
@@ -1223,6 +1759,16 @@ export function validateSchemaTree(
 		}
 
 		for (const [blockField, entry] of evaluatedByField) {
+			if (entry.failedIds.size > 0 || entry.fieldError) {
+				const tabId = findEnclosingTopTabIdForBlockField(
+					schema,
+					blockField.fieldName || '',
+					blockField.fieldKey || ''
+				);
+				if (tabId) {
+					failedTabIds.add(tabId);
+				}
+			}
 			blockField.onValidationResult?.(Array.from(entry.failedIds), entry.fieldError);
 		}
 	}

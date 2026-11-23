@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { t } from '../../lib/i18n';
 import { cn, DynamicIcon } from '../../lib/utils';
-import { Badge, Card, CardContent } from '../../ui';
+import { Badge, Card, CardContent, ResponsiveTabBar, type ResponsiveTabItem } from '../../ui';
 import {
 	countNestedErrors,
-	navigateTablistByKey,
 	resolveFieldState,
-	scrollTabIntoView,
 	SearchableTabPanel,
 } from '../shared';
 import type {
@@ -196,8 +195,95 @@ export function SchemaIslandNode({
 	);
 }
 
+export async function copyMarkupText(text: string): Promise<boolean> {
+	if (!text) {
+		return false;
+	}
+	try {
+		if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+			await navigator.clipboard.writeText(text);
+			return true;
+		}
+	} catch {
+		// Fall through to execCommand fallback
+	}
+	if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
+		return false;
+	}
+	try {
+		const textarea = document.createElement('textarea');
+		textarea.value = text;
+		textarea.setAttribute('readonly', '');
+		textarea.style.position = 'fixed';
+		textarea.style.opacity = '0';
+		textarea.style.pointerEvents = 'none';
+		document.body?.appendChild(textarea);
+		textarea.select?.();
+		const copied = typeof document.execCommand === 'function' ? document.execCommand('copy') : false;
+		textarea.remove?.();
+		return Boolean(copied);
+	} catch {
+		return false;
+	}
+}
+
+export function applyMarkupCopyFeedback(
+	copyTrigger: HTMLElement,
+	copiedLabel: string,
+	timersMap: Map<HTMLElement, ReturnType<typeof setTimeout>>
+): void {
+	const existingTimer = timersMap.get(copyTrigger);
+	if (existingTimer !== undefined) {
+		clearTimeout(existingTimer);
+	}
+	if (!copyTrigger.hasAttribute('data-rw-orig-title')) {
+		copyTrigger.setAttribute('data-rw-orig-title', copyTrigger.getAttribute('title') ?? '');
+	}
+	copyTrigger.setAttribute('data-copied', '1');
+	copyTrigger.setAttribute('title', copiedLabel);
+
+	const labelTarget = copyTrigger.querySelector?.<HTMLElement>('[data-rw-copy-label]') ?? null;
+	if (labelTarget) {
+		if (!labelTarget.hasAttribute('data-rw-orig-label')) {
+			labelTarget.setAttribute('data-rw-orig-label', labelTarget.textContent ?? '');
+		}
+		labelTarget.textContent = copiedLabel;
+	} else if (copyTrigger.childElementCount === 0) {
+		if (!copyTrigger.hasAttribute('data-rw-orig-label')) {
+			copyTrigger.setAttribute('data-rw-orig-label', copyTrigger.textContent ?? '');
+		}
+		copyTrigger.textContent = copiedLabel;
+	}
+
+	const resetTimer = setTimeout(() => {
+		timersMap.delete(copyTrigger);
+		if (copyTrigger.isConnected === false) {
+			return;
+		}
+		copyTrigger.removeAttribute('data-copied');
+		const origTitle = copyTrigger.getAttribute('data-rw-orig-title') ?? '';
+		copyTrigger.removeAttribute('data-rw-orig-title');
+		if (origTitle !== '') {
+			copyTrigger.setAttribute('title', origTitle);
+		} else {
+			copyTrigger.removeAttribute('title');
+		}
+		if (labelTarget && labelTarget.hasAttribute('data-rw-orig-label')) {
+			labelTarget.textContent = labelTarget.getAttribute('data-rw-orig-label') ?? '';
+			labelTarget.removeAttribute('data-rw-orig-label');
+		} else if (copyTrigger.hasAttribute('data-rw-orig-label')) {
+			copyTrigger.textContent = copyTrigger.getAttribute('data-rw-orig-label') ?? '';
+			copyTrigger.removeAttribute('data-rw-orig-label');
+		}
+	}, 1500);
+	timersMap.set(copyTrigger, resetTimer);
+}
+
 export function SchemaMarkupNode({ field, errorMessage }: { field: SchemaFieldDefinition; errorMessage?: string }) {
 	const htmlRef = useRef<HTMLDivElement | null>(null);
+	const copyTimersRef = useRef<Map<HTMLElement, ReturnType<typeof setTimeout>>>(new Map());
+	const announceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const [copyAnnouncement, setCopyAnnouncement] = useState('');
 	const resolvedError = errorMessage || field.error || '';
 
 	useEffect(() => {
@@ -206,6 +292,41 @@ export function SchemaMarkupNode({ field, errorMessage }: { field: SchemaFieldDe
 			window.ReactWorkspaceRuntime?.mountIslands(el);
 		}
 	}, [field.html]);
+
+	useEffect(() => {
+		const timers = copyTimersRef.current;
+		return () => {
+			timers.forEach((timerId) => clearTimeout(timerId));
+			timers.clear();
+			if (announceTimerRef.current !== null) {
+				clearTimeout(announceTimerRef.current);
+				announceTimerRef.current = null;
+			}
+		};
+	}, []);
+
+	const handleMarkupClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+		const copyTrigger = (e.target as HTMLElement | null)?.closest?.<HTMLElement>('[data-copy-text]');
+		const copyVal = copyTrigger?.getAttribute('data-copy-text');
+		if (!copyTrigger || !copyVal) {
+			return;
+		}
+		void copyMarkupText(copyVal).then((copied) => {
+			if (!copied) {
+				return;
+			}
+			const copiedLabel = copyTrigger.getAttribute('data-rw-copied-label') || t('common.copied', 'Copied');
+			applyMarkupCopyFeedback(copyTrigger, copiedLabel, copyTimersRef.current);
+			setCopyAnnouncement(copiedLabel);
+			if (announceTimerRef.current !== null) {
+				clearTimeout(announceTimerRef.current);
+			}
+			announceTimerRef.current = setTimeout(() => {
+				setCopyAnnouncement('');
+				announceTimerRef.current = null;
+			}, 1500);
+		});
+	}, []);
 
 	return (
 		<div
@@ -220,16 +341,12 @@ export function SchemaMarkupNode({ field, errorMessage }: { field: SchemaFieldDe
 			<div
 				ref={htmlRef}
 				className="text-xs text-foreground"
-				onClick={(e) => {
-					const copyVal = (e.target as HTMLElement | null)
-						?.closest<HTMLElement>('[data-copy-text]')
-						?.getAttribute('data-copy-text');
-					if (copyVal) {
-						void navigator.clipboard?.writeText(copyVal);
-					}
-				}}
+				onClick={handleMarkupClick}
 				dangerouslySetInnerHTML={{ __html: field.html || '' }}
 			/>
+			<span role="status" aria-live="polite" className="sr-only">
+				{copyAnnouncement}
+			</span>
 			<SchemaFieldFooter notes={field.notes} error={resolvedError} />
 		</div>
 	);
@@ -265,7 +382,7 @@ export function SchemaSectionNode({
 	}, [errorCount, collapsed]);
 
 	if (field.hideWrap) {
-		return <div className="col-span-12">{renderFieldsGrid(childFields)}</div>;
+		return <div className="min-w-0 col-span-12">{renderFieldsGrid(childFields)}</div>;
 	}
 
 	return (
@@ -443,97 +560,41 @@ export function SchemaTabsGroupNode({
 	const resolvedVariant = isVertical ? 'vertical' : isSegmented ? 'segmented' : 'line';
 
 	return (
-		<div className="space-y-3" data-field-name={field.name}>
+		<div className="@container/rw-tabs min-w-0 space-y-3" data-field-name={field.name}>
 			{field.label ? (
 				<div className="text-xs font-semibold text-foreground">{field.label}</div>
 			) : null}
 
 			<div
 				className={cn(
-					isVertical ? 'grid grid-cols-1 gap-6 md:grid-cols-12' : 'space-y-3.5'
+					isVertical ? 'grid grid-cols-1 gap-6 @xl/rw-tabs:grid-cols-12' : 'space-y-3.5'
 				)}
 				data-variant={resolvedVariant}
 			>
-				<div
-					role="tablist"
-					aria-label={field.label || 'Sections'}
-					aria-orientation={isVertical ? 'vertical' : 'horizontal'}
-					data-rw-tablist=""
-					data-variant={resolvedVariant}
-					onKeyDown={(e) => navigateTablistByKey(e, isVertical ? 'vertical' : 'horizontal')}
-					className={cn(
+				<ResponsiveTabBar
+					items={visiblePanes.map<ResponsiveTabItem>((pane) => ({
+						id: pane.id,
+						btnId: `rw-tab-${groupDomId}-${pane.id}`,
+						controlsId: `rw-panel-${groupDomId}-${pane.id}`,
+						label: pane.label,
+						icon: pane.icon,
+						badge: pane.badge,
+						errorCount: countNestedErrors(pane.fields || [], errors),
+						confirmDelete: Boolean(pane.confirmDelete),
+					}))}
+					activeId={resolvedActiveId}
+					ariaLabel={field.label || 'Sections'}
+					variant={isVertical ? 'vertical' : isSegmented ? 'segmented' : 'line'}
+					compact={!isVertical}
+					className={
 						isVertical
-							? 'flex flex-col gap-1 border-border md:col-span-3 md:border-r md:pr-4'
-							: isSegmented
-								? 'inline-flex max-w-full items-center gap-1 rounded-lg border border-border bg-muted/50 p-1'
-								: 'flex items-center gap-1 border-b border-border'
-					)}
-				>
-					{visiblePanes.map((pane) => {
-						const isActive = pane.id === resolvedActiveId;
-						const errCount = countNestedErrors(pane.fields || [], errors);
-						const tabBtnId = `rw-tab-${groupDomId}-${pane.id}`;
-						const tabPanelId = `rw-panel-${groupDomId}-${pane.id}`;
-						return (
-							<button
-								key={pane.id}
-								id={tabBtnId}
-								type="button"
-								role="tab"
-								aria-selected={isActive}
-								aria-controls={tabPanelId}
-								tabIndex={isActive ? 0 : -1}
-								data-rw-confirm-delete-tab={pane.confirmDelete ? '1' : undefined}
-								style={
-									pane.confirmDelete
-										? ({ '--tab-accent': 'var(--destructive)' } as React.CSSProperties)
-										: undefined
-								}
-								onClick={(e) => {
-									updateActiveTab(pane.id, Boolean(pane.confirmDelete));
-									scrollTabIntoView(e.currentTarget);
-								}}
-								className={cn(
-									'inline-flex items-center gap-2 text-xs font-medium transition-colors cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-									isSegmented || isVertical
-										? cn(
-												'rounded-md px-3 py-1.5',
-												isVertical && 'w-full justify-start text-left',
-												isActive
-													? pane.confirmDelete
-														? 'bg-background text-destructive shadow-2xs'
-														: 'bg-background text-foreground shadow-2xs'
-													: pane.confirmDelete
-														? 'text-muted-foreground hover:text-destructive'
-														: 'text-muted-foreground hover:text-foreground'
-											)
-										: cn(
-												'px-3.5 py-2.5',
-												isActive
-													? pane.confirmDelete
-														? 'text-destructive'
-														: 'text-foreground'
-													: pane.confirmDelete
-														? 'text-muted-foreground hover:text-destructive'
-														: 'text-muted-foreground hover:text-foreground'
-											),
-									errCount > 0 && 'text-destructive'
-								)}
-							>
-								{pane.icon ? <DynamicIcon name={pane.icon} className="size-3.5 shrink-0" /> : null}
-								<span>{pane.label}</span>
-								{pane.badge !== undefined && pane.badge !== null && pane.badge !== '' ? (
-									<Badge variant="secondary" mono>
-										{pane.badge}
-									</Badge>
-								) : null}
-								{errCount > 0 ? <Badge variant="destructive">{errCount}</Badge> : null}
-							</button>
-						);
-					})}
-				</div>
+							? 'border-border @xl/rw-tabs:col-span-3 @xl/rw-tabs:border-r @xl/rw-tabs:pr-4'
+							: undefined
+					}
+					onSelect={(id, item) => updateActiveTab(id, Boolean(item.confirmDelete))}
+				/>
 
-				<div className={cn('min-w-0', isVertical && 'md:col-span-9')}>
+				<div className={cn('min-w-0', isVertical && '@xl/rw-tabs:col-span-9')}>
 					{allPanes.map((pane) => {
 						const isVisible = resolveFieldState(pane, values, scopePrefix).visible;
 						const isActive = isVisible && pane.id === resolvedActiveId;
@@ -557,7 +618,7 @@ export function SchemaTabsGroupNode({
 									{renderFieldsGrid(pane.fields || [])}
 									{paneSlot?.after}
 									{pane.notes ? (
-										<p className="text-[11px] text-muted-foreground/80">{pane.notes}</p>
+										<p className="text-[11px] text-muted-foreground">{pane.notes}</p>
 									) : null}
 								</div>
 							</SearchableTabPanel>

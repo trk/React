@@ -57,7 +57,8 @@ export function TransferRelationWidget({
 	};
 
 	return (
-		<div className="grid grid-cols-1 divide-y divide-border overflow-hidden rounded-md border border-border md:grid-cols-2 md:divide-x md:divide-y-0">
+		<div className="@container/rw-rel min-w-0">
+			<div className="grid grid-cols-1 divide-y divide-border overflow-hidden rounded-md border border-border @lg/rw-rel:grid-cols-2 @lg/rw-rel:divide-x @lg/rw-rel:divide-y-0">
 			<div className="flex flex-col">
 				<div className="flex items-center justify-between border-b border-border/70 bg-muted/25 px-2.5 py-1.5 text-xs font-semibold text-foreground">
 					<span>Available ({available.length})</span>
@@ -190,6 +191,7 @@ export function TransferRelationWidget({
 						);
 					})}
 				</div>
+			</div>
 			</div>
 		</div>
 	);

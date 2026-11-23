@@ -4,7 +4,12 @@ import { t } from '../../lib/i18n';
 import { cn, DynamicIcon } from '../../lib/utils';
 import { Button, Popover, PopoverContent, PopoverTrigger } from '../../ui';
 import { Calendar } from './Calendar';
-import { formatDisplayDate, formatIsoDate, parseIsoDate } from './dateUtils';
+import {
+	buildDateDisabledMatcher,
+	formatDisplayDate,
+	formatIsoDate,
+	parseIsoDate,
+} from './dateUtils';
 
 export interface DatePickerProps {
 	value?: string | Date | null;
@@ -13,7 +18,11 @@ export interface DatePickerProps {
 	placeholder?: string;
 	displayFormat?: string;
 	disabled?: boolean;
+	readOnly?: boolean;
 	clearable?: boolean;
+	error?: boolean;
+	showTodayButton?: boolean;
+	inlinePortal?: boolean;
 	align?: 'start' | 'center' | 'end';
 	side?: 'top' | 'bottom' | 'left' | 'right';
 	id?: string;
@@ -28,30 +37,6 @@ export interface DatePickerProps {
 	};
 }
 
-function buildDisabledMatcher(
-	minDate: string | Date | null | undefined,
-	maxDate: string | Date | null | undefined,
-	extra?: Matcher | Matcher[],
-): Matcher | Matcher[] | undefined {
-	const matchers: Matcher[] = [];
-	const parsedMin = parseIsoDate(minDate);
-	const parsedMax = parseIsoDate(maxDate);
-	if (parsedMin) {
-		matchers.push({ before: parsedMin });
-	}
-	if (parsedMax) {
-		matchers.push({ after: parsedMax });
-	}
-	if (extra) {
-		if (Array.isArray(extra)) {
-			matchers.push(...extra);
-		} else {
-			matchers.push(extra);
-		}
-	}
-	return matchers.length > 0 ? matchers : undefined;
-}
-
 /**
  * Single-date popover picker backed by `Calendar` (`react-day-picker`) and Base UI `Popover`.
  */
@@ -62,7 +47,11 @@ export function DatePicker({
 	placeholder,
 	displayFormat = 'PP',
 	disabled = false,
+	readOnly = false,
 	clearable = true,
+	error = false,
+	showTodayButton = true,
+	inlinePortal = false,
 	align = 'start',
 	side = 'bottom',
 	id,
@@ -87,11 +76,16 @@ export function DatePicker({
 	);
 
 	const disabledMatcher = useMemo(
-		() => buildDisabledMatcher(minDate, maxDate, calendarProps?.disabled),
+		() => buildDateDisabledMatcher(minDate, maxDate, calendarProps?.disabled),
 		[minDate, maxDate, calendarProps?.disabled],
 	);
 
+	const locked = disabled || readOnly;
+
 	const commitDate = (nextDate: Date | undefined) => {
+		if (locked) {
+			return;
+		}
 		const nextIso = formatIsoDate(nextDate);
 		if (!isControlled) {
 			setInternalValue(nextIso || null);
@@ -99,10 +93,35 @@ export function DatePicker({
 		onChange?.(nextIso, nextDate);
 	};
 
+	const pickToday = () => {
+		const today = new Date();
+		const parsedMin = parseIsoDate(minDate);
+		const parsedMax = parseIsoDate(maxDate);
+		if (parsedMin && today < parsedMin) {
+			commitDate(parsedMin);
+			setOpen(false);
+			return;
+		}
+		if (parsedMax && today > parsedMax) {
+			commitDate(parsedMax);
+			setOpen(false);
+			return;
+		}
+		commitDate(today);
+		setOpen(false);
+	};
+
 	return (
-		<div className={cn('inline-flex items-center gap-1', className)}>
-			{name ? <input type="hidden" name={name} value={isoValue} /> : null}
-			<Popover open={open} onOpenChange={setOpen}>
+		<div className={cn('inline-flex items-center gap-1 min-w-0 max-w-full', className)}>
+			{name && !inlinePortal ? <input type="hidden" name={name} value={isoValue} /> : null}
+			<Popover
+				open={locked ? false : open}
+				onOpenChange={(nextOpen) => {
+					if (!locked) {
+						setOpen(nextOpen);
+					}
+				}}
+			>
 				<PopoverTrigger
 					render={
 						<Button
@@ -111,9 +130,13 @@ export function DatePicker({
 							variant="outline"
 							size="sm"
 							disabled={disabled}
+							aria-readonly={readOnly || undefined}
+							aria-invalid={error || undefined}
 							className={cn(
-								'justify-start gap-2 font-normal',
+								'justify-start gap-2 font-normal min-w-0 max-w-full',
 								!displayLabel && 'text-muted-foreground',
+								error && 'border-destructive focus-visible:ring-destructive/40',
+								readOnly && 'bg-muted/40 cursor-default',
 								triggerClassName,
 							)}
 						>
@@ -122,24 +145,46 @@ export function DatePicker({
 						</Button>
 					}
 				/>
-				<PopoverContent align={align} side={side} className="w-auto p-0">
-					<Calendar
-						{...calendarProps}
-						mode="single"
-						selected={selectedDate}
-						defaultMonth={selectedDate ?? calendarProps?.defaultMonth}
-						weekStartsOn={weekStartsOn ?? calendarProps?.weekStartsOn}
-						disabled={disabledMatcher}
-						onSelect={(date) => {
-							commitDate(date);
-							if (date) {
-								setOpen(false);
-							}
-						}}
-					/>
+				<PopoverContent align={align} side={side} className="w-auto max-w-[calc(100vw-1.5rem)] p-0">
+					<div className="flex flex-col">
+						<Calendar
+							{...calendarProps}
+							mode="single"
+							selected={selectedDate}
+							defaultMonth={selectedDate ?? calendarProps?.defaultMonth}
+							weekStartsOn={weekStartsOn ?? calendarProps?.weekStartsOn}
+							disabled={disabledMatcher}
+							onSelect={(date) => {
+								commitDate(date);
+								if (date) {
+									setOpen(false);
+								}
+							}}
+						/>
+						{showTodayButton ? (
+							<div className="flex items-center justify-between gap-2 border-t border-border/70 px-2.5 py-2">
+								<Button type="button" variant="ghost" size="xs" onClick={pickToday}>
+									{t('form.today', 'Today')}
+								</Button>
+								{clearable && selectedDate ? (
+									<Button
+										type="button"
+										variant="ghost"
+										size="xs"
+										onClick={() => {
+											commitDate(undefined);
+											setOpen(false);
+										}}
+									>
+										{t('common.clear', 'Clear')}
+									</Button>
+								) : null}
+							</div>
+						) : null}
+					</div>
 				</PopoverContent>
 			</Popover>
-			{clearable && selectedDate && !disabled ? (
+			{clearable && selectedDate && !locked ? (
 				<Button
 					type="button"
 					variant="ghost"

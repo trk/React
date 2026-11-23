@@ -132,6 +132,12 @@ export function SelectAndMultiRelationWidget({
 					<div
 						role="combobox"
 						aria-expanded={open}
+						aria-label={
+							placeholder ||
+							(multiple
+								? `Add ${resourceMeta.label.toLowerCase()}`
+								: `Select ${resourceMeta.label.toLowerCase()}`)
+						}
 						tabIndex={inputDisabled ? -1 : 0}
 						onClick={() => {
 							if (!inputDisabled) setOpen((o) => !o);
@@ -152,16 +158,16 @@ export function SelectAndMultiRelationWidget({
 						)}
 					>
 						{!multiple && selectedSingle ? (
-							<div className="flex items-center gap-2 min-w-0">
+							<div className="flex min-w-0 flex-1 items-center gap-2">
 								<RelationItemVisual item={selectedSingle} fallbackIcon={resourceMeta.icon} size="xs" />
-								<span className="truncate font-medium text-foreground">{selectedSingle.label}</span>
+								<span className="min-w-0 flex-1 truncate font-medium text-foreground">{selectedSingle.label}</span>
 								{selectedSingle.subtitle ? (
-									<span className="truncate font-mono text-[11px] text-muted-foreground">
+									<span className="hidden @md/rw-rel:inline max-w-[38%] truncate font-mono text-[11px] text-muted-foreground">
 										{selectedSingle.subtitle}
 									</span>
 								) : null}
 								{selectedSingle.badge ? (
-									<Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-normal shrink-0">
+									<Badge variant="secondary" className="hidden @sm/rw-rel:inline-flex px-1.5 py-0 text-[10px] font-normal shrink-0">
 										{selectedSingle.badge}
 									</Badge>
 								) : null}
@@ -266,14 +272,16 @@ export function SelectAndMultiRelationWidget({
 											opt.disabled && 'opacity-50 pointer-events-none'
 										)}
 									>
-										<div className="flex items-center gap-2 min-w-0">
+										<div className="flex items-start gap-2 min-w-0 flex-1">
 											<RelationItemVisual item={opt} fallbackIcon={resourceMeta.icon} size="xs" />
-											<span className="truncate">{opt.label}</span>
-											{opt.subtitle ? (
-												<span className="truncate font-mono text-[11px] text-muted-foreground">
-													{opt.subtitle}
-												</span>
-											) : null}
+											<div className="flex min-w-0 flex-1 flex-col">
+												<span className="truncate font-medium">{opt.label}</span>
+												{opt.subtitle ? (
+													<span className="truncate font-mono text-[11px] text-muted-foreground">
+														{opt.subtitle}
+													</span>
+												) : null}
+											</div>
 										</div>
 										<div className="flex items-center gap-1.5 shrink-0">
 											{opt.badge ? (

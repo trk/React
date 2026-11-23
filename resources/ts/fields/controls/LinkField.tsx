@@ -3,6 +3,7 @@ import { fetchGatewayJson } from '../../hooks';
 import { useTranslations } from '../../lib/i18n';
 import { cn, DynamicIcon, sanitizeHref } from '../../lib/utils';
 import { Badge, Input, PortalRoot, Select } from '../../ui';
+import { SettingsPopoverShell } from '../schema/InlineFieldSettingsPopover';
 import {
 	extractClipboardFiles,
 	formatFocusPoint,
@@ -187,9 +188,9 @@ export function LinkFieldControl(rawProps: LinkFieldStandaloneProps): React.Reac
 			norm.url.trim() ||
 			(norm.pageId > 0 ? `Page #${norm.pageId}` : norm.entryId ? `Entry ${norm.entryId.slice(0, 8)}` : '—');
 		return (
-			<Badge variant="secondary" className="gap-1.5 text-xs font-normal" data-rw-control="link">
-				<span className="font-mono font-semibold uppercase text-foreground">{norm.type}:</span>
-				<span className="truncate text-muted-foreground">{summary}</span>
+			<Badge variant="secondary" className="max-w-full min-w-0 overflow-hidden gap-1.5 text-xs font-normal" data-rw-control="link">
+				<span className="shrink-0 font-mono font-semibold uppercase text-foreground">{norm.type}:</span>
+				<span className="min-w-0 truncate text-muted-foreground">{summary}</span>
 			</Badge>
 		);
 	}
@@ -642,108 +643,26 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 	// Unified inline settings state for standalone InputfieldReactLink outside SchemaForm
 	const inlineOptionsInHeader = Boolean(props.inlineOptionsInHeader);
 	const optionsMeta = useMemo(
-		() => buildLinkInlineSettingFields(cfg, current, isDisabled),
-		[cfg, current, isDisabled]
+		() => buildLinkInlineSettingFields(cfg, current, isDisabled, props.name),
+		[cfg, current, isDisabled, props.name]
 	);
 	const hasSecondaryOptions = !inlineOptionsInHeader && optionsMeta.fields.length > 0;
-	const [optionsOpen, setOptionsOpen] = useState(false);
-	const optionsBtnRef = useRef<HTMLButtonElement | null>(null);
-	const optionsPanelRef = useRef<HTMLDivElement | null>(null);
-	const optionsPanelId = useId();
-	const optionsHeadingId = useId();
 	const optionsCompactCount = useMemo(
 		() => optionsMeta.fields.filter((bf) => isCompactPopoverField(bf)).length,
 		[optionsMeta.fields]
 	);
 	const useTwoColOptions = optionsMeta.fields.length >= 4 && optionsCompactCount >= 2;
-	const [optionsPos, setOptionsPos] = useState<FloatingPosition>({
-		top: 0,
-		left: 0,
-		width: 336,
-		maxHeight: 440,
-		placement: 'bottom',
-	});
-
-	const refreshOptionsPos = useCallback(() => {
-		const rowUnits = useTwoColOptions
-			? optionsMeta.fields.reduce((acc, bf) => acc + (isCompactPopoverField(bf) ? 0.5 : 1), 0)
-			: optionsMeta.fields.length;
-		const chromeHeight = optionsMeta.isTargetEmpty ? 104 : 68;
-		const estHeight = Math.min(540, Math.ceil(rowUnits) * 68 + chromeHeight);
-		const nextPos = computeFloatingPosition(optionsBtnRef.current, useTwoColOptions ? 448 : 336, estHeight, true);
-		setOptionsPos((prev) =>
-			prev.top === nextPos.top &&
-			prev.left === nextPos.left &&
-			prev.width === nextPos.width &&
-			prev.maxHeight === nextPos.maxHeight &&
-			prev.placement === nextPos.placement
-				? prev
-				: nextPos
-		);
-	}, [optionsMeta.fields, optionsMeta.isTargetEmpty, useTwoColOptions]);
-
-	const refreshOptionsPosRef = useRef(refreshOptionsPos);
-	refreshOptionsPosRef.current = refreshOptionsPos;
-
-	useEffect(() => {
-		if (!optionsOpen || !hasSecondaryOptions) {
-			return;
-		}
-		refreshOptionsPosRef.current();
-		const focusRaf = window.requestAnimationFrame(() => {
-			const panel = optionsPanelRef.current;
-			if (!panel || panel.contains(document.activeElement)) {
-				return;
-			}
-			const firstControl = panel.querySelector<HTMLElement>(
-				'[data-rw-inline-settings-body] input:not([disabled]):not([type="hidden"]), [data-rw-inline-settings-body] select:not([disabled]), [data-rw-inline-settings-body] textarea:not([disabled]), [data-rw-inline-settings-body] button:not([disabled])'
-			);
-			(firstControl ?? panel).focus({ preventScroll: true });
-		});
-		const handlePointerDown = (e: MouseEvent) => {
-			const target = e.target as Node | null;
-			if (!target) {
-				return;
-			}
-			if (optionsBtnRef.current?.contains(target) || optionsPanelRef.current?.contains(target)) {
-				return;
-			}
-			if (target instanceof Element && target.closest('[data-rw-portal-overlay]')) {
-				return;
-			}
-			setOptionsOpen(false);
-		};
-		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.key === 'Escape') {
-				e.stopPropagation();
-				setOptionsOpen(false);
-				optionsBtnRef.current?.focus();
-			}
-		};
-		const handleReposition = (e: Event) => {
-			if (e.type === 'scroll' && e.target instanceof Node && optionsPanelRef.current?.contains(e.target)) {
-				return;
-			}
-			refreshOptionsPosRef.current();
-		};
-		document.addEventListener('mousedown', handlePointerDown);
-		document.addEventListener('keydown', handleKeyDown);
-		window.addEventListener('resize', handleReposition);
-		window.addEventListener('scroll', handleReposition, true);
-		return () => {
-			window.cancelAnimationFrame(focusRaf);
-			document.removeEventListener('mousedown', handlePointerDown);
-			document.removeEventListener('keydown', handleKeyDown);
-			window.removeEventListener('resize', handleReposition);
-			window.removeEventListener('scroll', handleReposition, true);
-		};
-	}, [optionsOpen, hasSecondaryOptions]);
-
-	useEffect(() => {
-		if (optionsOpen && hasSecondaryOptions) {
-			refreshOptionsPosRef.current();
-		}
-	}, [optionsOpen, hasSecondaryOptions, optionsMeta.fields.length, optionsMeta.isTargetEmpty, useTwoColOptions]);
+	const optionsRowUnits = useMemo(
+		() =>
+			useTwoColOptions
+				? optionsMeta.fields.reduce((acc, bf) => acc + (isCompactPopoverField(bf) ? 0.5 : 1), 0)
+				: optionsMeta.fields.length,
+		[optionsMeta.fields, useTwoColOptions]
+	);
+	const optionsSignature = useMemo(
+		() => `${optionsMeta.fields.map((bf) => bf.name).join('\u0000')}:${optionsMeta.isTargetEmpty ? '1' : '0'}`,
+		[optionsMeta.fields, optionsMeta.isTargetEmpty]
+	);
 
 	const allOptionChips = useMemo(() => {
 		const chips: string[] = [];
@@ -1084,20 +1003,20 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 	]);
 
 	return (
-		<div ref={rootRef} className="space-y-1.5" data-rw-control="link">
-			{props.name && !isDisabled ? (
+		<div ref={rootRef} className="@container/rw-link min-w-0 space-y-1.5" data-rw-control="link">
+			{props.name && !isDisabled && !props.inlinePortal ? (
 				<input type="hidden" name={`${props.name}_present`} value="1" />
 			) : null}
-			{!isIslandHost && props.name ? (
+			{!isIslandHost && props.name && !props.inlinePortal ? (
 				<input ref={hiddenInputRef} type="hidden" name={props.name} value={serializedJson} />
 			) : null}
 
 			<div
 				data-rw-field-slot="input"
-				className="flex flex-wrap items-center gap-1.5 sm:flex-nowrap"
+				className="flex flex-col gap-1.5 @sm/rw-link:flex-row @sm/rw-link:items-center"
 			>
 				{cfg.types.length > 1 ? (
-					<div className="w-28 shrink-0">
+					<div className="w-full @sm/rw-link:w-28 @sm/rw-link:shrink-0">
 						<Select
 							id={`${props.id}_type`}
 							aria-label={t('link.typeLabel', 'Link type')}
@@ -1168,7 +1087,10 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 									}
 								}}
 								className={cn(
-									'flex h-9 items-center justify-between gap-2 rounded-md px-2 text-xs transition-colors',
+									'flex rounded-md px-2 text-xs transition-colors',
+									activeMediaMeta && !uploadingName
+										? 'min-h-9 py-1 flex-col items-stretch gap-1 @xs/rw-link:h-9 @xs/rw-link:py-0 @xs/rw-link:flex-row @xs/rw-link:items-center @xs/rw-link:justify-between @xs/rw-link:gap-2'
+										: 'h-9 items-center justify-between gap-2',
 									activeMediaMeta || uploadingName
 										? 'border border-input bg-input-surface shadow-2xs'
 										: 'border border-dashed border-input bg-input-surface hover:border-primary/50 hover:bg-muted/30',
@@ -1261,7 +1183,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 												{activeMediaMeta.name}
 											</span>
 											{activeMediaMeta.ext || activeMediaMeta.size ? (
-												<span className="hidden shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] uppercase tabular-nums text-muted-foreground md:inline-block">
+												<span className="hidden shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] uppercase tabular-nums text-muted-foreground @md/rw-link:inline-block">
 													{[
 														activeMediaMeta.ext || '',
 														activeMediaMeta.size && activeMediaMeta.size > 0
@@ -1273,7 +1195,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 												</span>
 											) : null}
 										</button>
-										<div className="flex shrink-0 items-center gap-0.5">
+										<div className="flex flex-wrap items-center justify-end gap-0.5 border-t border-border/50 pt-1 @xs/rw-link:shrink-0 @xs/rw-link:flex-nowrap @xs/rw-link:border-t-0 @xs/rw-link:pt-0">
 											<button
 												type="button"
 												data-rw-link-media-edit=""
@@ -1385,7 +1307,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 												{extensionsSummary}
 											</span>
 										) : null}
-										<span className="hidden shrink-0 items-center gap-1 text-[11px] text-muted-foreground xl:inline-flex">
+										<span className="hidden shrink-0 items-center gap-1 text-[11px] text-muted-foreground @xl/rw-link:inline-flex">
 											<DynamicIcon name="upload-cloud" className="size-3" aria-hidden="true" />
 											<span>{t('link.dropHint', 'Drop')}</span>
 										</span>
@@ -1415,7 +1337,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 											{selectedItem?.label || `#${activeRelationId}`}
 										</span>
 										{selectedItem?.subtitle ? (
-											<span className="hidden truncate font-mono text-[11px] text-muted-foreground lg:inline">
+											<span className="hidden truncate font-mono text-[11px] text-muted-foreground @lg/rw-link:inline">
 												{selectedItem.subtitle}
 											</span>
 										) : null}
@@ -1626,44 +1548,104 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 					</div>
 				</div>
 
-				{/* Standalone inline settings trigger when rendered outside SchemaForm */}
+				{/* Standalone inline settings trigger + unified popover when rendered outside SchemaForm */}
 				{hasSecondaryOptions ? (
-					<button
-						ref={optionsBtnRef}
-						type="button"
+					<SettingsPopoverShell
+						ownerLabel={props.label || props.name || 'Link'}
+						summaryChips={optionSummaryChips}
+						overflowChipCount={optionOverflowCount}
+						modifiedCount={modifiedOptionCount}
 						disabled={isDisabled}
-						aria-expanded={optionsOpen}
-						aria-controls={optionsPanelId}
-						aria-haspopup="dialog"
-						aria-label={t(
-							'form.openFieldSettings',
-							{ field: props.label || props.name || 'Link' },
-							'{field} settings'
-						)}
-						data-rw-inline-settings-trigger=""
-						onClick={() => setOptionsOpen((prev) => !prev)}
-						className={cn(
-							'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border px-2 text-xs font-medium transition-colors cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
-							optionsOpen
-								? 'border-primary/60 bg-primary/12 text-foreground'
-								: 'border-input bg-input-surface text-foreground/85 hover:bg-muted hover:text-foreground'
-						)}
+						allFieldsDisabled={optionsMeta.isTargetEmpty}
+						useTwoColumns={useTwoColOptions}
+						rowUnits={optionsRowUnits}
+						repositionKey={optionsSignature}
+						triggerClassName="h-9 shrink-0 gap-1.5 px-2 text-xs bg-input-surface border-input"
+						triggerChipClassName="hidden max-w-44 truncate @sm/rw-link:inline"
+						triggerOverflowClassName="hidden @sm/rw-link:inline"
+						triggerIconClassName="size-3.5"
+						onReset={() => {
+							const resetPatch: Record<string, unknown> = {};
+							for (const bf of optionsMeta.fields) {
+								resetPatch[bf.name] = getNeutralSettingValue(bf);
+							}
+							commit(applyLinkSettingPatches(current, resetPatch, cfg));
+						}}
 					>
-						{optionSummaryChips.length > 0 ? (
-							<span className="hidden max-w-44 truncate font-mono text-[10px] leading-none tracking-tight text-foreground sm:inline">
-								{optionSummaryChips.join(' · ')}
-							</span>
-						) : null}
-						{optionOverflowCount > 0 ? (
-							<span
-								data-rw-inline-settings-overflow=""
-								className="hidden rounded border border-border/70 bg-background/80 px-1 py-0.5 font-mono text-[10px] leading-none text-foreground/85 sm:inline"
-							>
-								+{optionOverflowCount}
-							</span>
-						) : null}
-						<DynamicIcon name="sliders-horizontal" className="size-3.5 shrink-0" />
-					</button>
+						{({ isTwoColActive, panelId }) =>
+							optionsMeta.fields.map((bf) => {
+								const shortKey = bf.name.replace('__rw_link_opt__', '');
+								const isFullWidth = isTwoColActive && !isCompactPopoverField(bf);
+								const fieldInputId = `${panelId}_${shortKey}`;
+								const isTechField =
+									shortKey === 'rel' || shortKey === 'anchor' || shortKey === 'query';
+								const fieldVal = String(optionsMeta.values[bf.name] ?? '');
+								const fieldLocked = Boolean(isDisabled || bf.disabled);
+								const selectOpts = Array.isArray(bf.options) ? bf.options : [];
+								return (
+									<div
+										key={bf.name}
+										data-field-name={bf.name}
+										className={cn('space-y-1.5 min-w-0', isFullWidth && 'col-span-2')}
+									>
+										<label
+											htmlFor={fieldInputId}
+											data-rw-field-slot="label"
+											className="block text-xs font-semibold tracking-tight text-foreground"
+										>
+											{bf.label}
+										</label>
+										<div data-rw-field-slot="input">
+											{bf.type === 'select' ? (
+												<Select
+													id={fieldInputId}
+													value={fieldVal || '_self'}
+													disabled={fieldLocked}
+													className="h-8 text-xs"
+													onChange={(e) =>
+														commit(
+															applyLinkSettingPatches(
+																current,
+																{ [bf.name]: e.target.value },
+																cfg
+															)
+														)
+													}
+												>
+													{selectOpts.map((opt) => (
+														<option key={String(opt.value)} value={String(opt.value)}>
+															{opt.label}
+														</option>
+													))}
+												</Select>
+											) : (
+												<Input
+													id={fieldInputId}
+													type="text"
+													autoCorrect={isTechField ? 'off' : undefined}
+													autoCapitalize={isTechField ? 'none' : undefined}
+													spellCheck={isTechField ? false : undefined}
+													disabled={fieldLocked}
+													value={fieldVal}
+													className="h-8 text-xs"
+													placeholder={bf.placeholder}
+													onChange={(e) =>
+														commit(
+															applyLinkSettingPatches(
+																current,
+																{ [bf.name]: e.target.value },
+																cfg
+															)
+														)
+													}
+												/>
+											)}
+										</div>
+									</div>
+								);
+							})
+						}
+					</SettingsPopoverShell>
 				) : null}
 			</div>
 
@@ -1689,7 +1671,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 						className={cn(
 							'grid gap-2.5',
 							optionsMeta.flags.enableLabel && optionsMeta.flags.enableAriaLabel
-								? 'grid-cols-1 sm:grid-cols-2'
+								? 'grid-cols-1 @sm/rw-link:grid-cols-2'
 								: 'grid-cols-1'
 						)}
 					>
@@ -1827,194 +1809,6 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 								})
 							)}
 							</div>
-				</PortalRoot>
-			) : null}
-
-			{/* Standalone unified inline settings popover when outside SchemaForm */}
-			{optionsOpen && hasSecondaryOptions ? (
-				<PortalRoot anchor={optionsBtnRef.current} ssrFallback={false}>
-					<div
-						ref={optionsPanelRef}
-							id={optionsPanelId}
-							role="dialog"
-							aria-modal="false"
-							aria-labelledby={optionsHeadingId}
-							tabIndex={-1}
-							data-rw-portal-overlay=""
-							data-rw-inline-settings-popover=""
-							data-placement={optionsPos.placement}
-							data-layout={useTwoColOptions && optionsPos.width >= 400 ? 'two-col' : 'single-col'}
-							style={{
-								position: 'fixed',
-								top: optionsPos.top,
-								left: optionsPos.left,
-								width: optionsPos.width,
-								maxHeight: optionsPos.maxHeight,
-								transform: optionsPos.placement === 'top' ? 'translateY(-100%)' : undefined,
-								zIndex: 9998,
-							}}
-							className="flex flex-col overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground focus:outline-none"
-						>
-							<div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3.5 py-2.5">
-								<div className="flex min-w-0 items-center gap-1.5">
-									<DynamicIcon
-										name="sliders-horizontal"
-										className="size-3.5 shrink-0 text-muted-foreground"
-										aria-hidden="true"
-									/>
-									<span id={optionsHeadingId} className="truncate text-xs font-semibold text-foreground">
-										{t(
-											'form.fieldSettingsTitle',
-											{ field: props.label || props.name || 'Link' },
-											'{field} Settings'
-										)}
-									</span>
-									{modifiedOptionCount > 0 ? (
-										<span
-											data-rw-inline-settings-count=""
-											title={t(
-												'form.activeSettingsCount',
-												{ count: modifiedOptionCount },
-												'{count} customized'
-											)}
-											className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary/15 px-1.5 font-mono text-[10px] font-semibold tabular-nums text-primary"
-										>
-											{modifiedOptionCount}
-										</span>
-									) : null}
-								</div>
-								<div className="flex shrink-0 items-center gap-1">
-									{modifiedOptionCount > 0 && !isDisabled && !optionsMeta.isTargetEmpty ? (
-										<button
-											type="button"
-											onClick={() => {
-												const resetPatch: Record<string, unknown> = {};
-												for (const bf of optionsMeta.fields) {
-													resetPatch[bf.name] = getNeutralSettingValue(bf);
-												}
-												commit(applyLinkSettingPatches(current, resetPatch, cfg));
-											}}
-											data-rw-inline-settings-reset=""
-											className="inline-flex h-6 items-center gap-1 rounded px-1.5 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-										>
-											<DynamicIcon name="rotate-ccw" className="size-3 shrink-0" aria-hidden="true" />
-											<span>{t('common.reset', 'Reset')}</span>
-										</button>
-									) : null}
-									<button
-										type="button"
-										onClick={() => {
-											setOptionsOpen(false);
-											optionsBtnRef.current?.focus();
-										}}
-										aria-label={t('form.closeFieldSettings', 'Close field settings')}
-										className="inline-flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-									>
-										<DynamicIcon name="x" className="size-3.5" aria-hidden="true" />
-									</button>
-								</div>
-							</div>
-
-							{optionsMeta.isTargetEmpty ? (
-								<div
-									role="status"
-									data-rw-inline-settings-locked=""
-									className="flex shrink-0 items-center gap-2 border-b border-border/80 bg-muted/45 px-3.5 py-2 text-[11px] leading-snug text-foreground/85"
-								>
-									<DynamicIcon name="lock" className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-									<span>
-										{t(
-											'form.inlineSettingsLocked',
-											{ field: props.label || props.name || 'Link' },
-											'Controls unlock once "{field}" has a value.'
-										)}
-									</span>
-								</div>
-							) : null}
-
-							<div
-								data-rw-inline-settings-body=""
-								className={cn(
-									'flex-1 min-h-0 overflow-y-auto p-3.5',
-									useTwoColOptions && optionsPos.width >= 400
-										? 'grid grid-cols-2 gap-x-3 gap-y-2.5 items-start'
-										: 'space-y-2.5'
-								)}
-							>
-								{optionsMeta.fields.map((bf) => {
-									const shortKey = bf.name.replace('__rw_link_opt__', '');
-									const isTwoColActive = useTwoColOptions && optionsPos.width >= 400;
-									const isFullWidth = isTwoColActive && !isCompactPopoverField(bf);
-									const fieldInputId = `${optionsPanelId}_${shortKey}`;
-									const isTechField =
-										shortKey === 'rel' || shortKey === 'anchor' || shortKey === 'query';
-									const fieldVal = String(optionsMeta.values[bf.name] ?? '');
-									const fieldLocked = Boolean(isDisabled || bf.disabled);
-									const selectOpts = Array.isArray(bf.options) ? bf.options : [];
-									return (
-										<div
-											key={bf.name}
-											data-field-name={bf.name}
-											className={cn('space-y-1.5 min-w-0', isFullWidth && 'col-span-2')}
-										>
-											<label
-												htmlFor={fieldInputId}
-												data-rw-field-slot="label"
-												className="block text-xs font-semibold tracking-tight text-foreground"
-											>
-												{bf.label}
-											</label>
-											<div data-rw-field-slot="input">
-												{bf.type === 'select' ? (
-													<Select
-														id={fieldInputId}
-														value={fieldVal || '_self'}
-														disabled={fieldLocked}
-														className="h-8 text-xs"
-														onChange={(e) =>
-															commit(
-																applyLinkSettingPatches(
-																	current,
-																	{ [bf.name]: e.target.value },
-																	cfg
-																)
-															)
-														}
-													>
-														{selectOpts.map((opt) => (
-															<option key={String(opt.value)} value={String(opt.value)}>
-																{opt.label}
-															</option>
-														))}
-													</Select>
-												) : (
-													<Input
-														id={fieldInputId}
-														type="text"
-														autoCorrect={isTechField ? 'off' : undefined}
-														autoCapitalize={isTechField ? 'none' : undefined}
-														spellCheck={isTechField ? false : undefined}
-														disabled={fieldLocked}
-														value={fieldVal}
-														className="h-8 text-xs"
-														placeholder={bf.placeholder}
-														onChange={(e) =>
-															commit(
-																applyLinkSettingPatches(
-																	current,
-																	{ [bf.name]: e.target.value },
-																	cfg
-																)
-															)
-														}
-													/>
-												)}
-											</div>
-										</div>
-									);
-								})}
-							</div>
-						</div>
 				</PortalRoot>
 			) : null}
 

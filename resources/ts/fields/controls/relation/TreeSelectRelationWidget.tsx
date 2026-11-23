@@ -216,15 +216,15 @@ export function TreeSelectRelationWidget({
 	const selectedSingle = !multiple && scalarValue ? resolveItem(scalarValue) : undefined;
 
 	return (
-		<div className="space-y-1.5">
+		<div className="@container/rw-rel min-w-0 space-y-1.5">
 			<div data-rw-field-slot="input" className="space-y-2">
 				{!multiple && selectedSingle ? (
 					<div className="flex h-9 items-center justify-between gap-2 rounded-md border border-input bg-input-surface px-3 text-xs shadow-2xs">
-						<div className="flex items-center gap-2 min-w-0">
+						<div className="flex min-w-0 flex-1 items-center gap-2">
 							<RelationItemVisual item={selectedSingle} fallbackIcon={fallbackIcon} size="sm" />
-							<span className="truncate font-medium text-foreground">{selectedSingle.label}</span>
+							<span className="min-w-0 flex-1 truncate font-medium text-foreground">{selectedSingle.label}</span>
 							{selectedSingle.subtitle ? (
-								<span className="truncate font-mono text-[11px] text-muted-foreground">
+								<span className="hidden @md/rw-rel:inline max-w-[38%] truncate font-mono text-[11px] text-muted-foreground">
 									{selectedSingle.subtitle}
 								</span>
 							) : null}

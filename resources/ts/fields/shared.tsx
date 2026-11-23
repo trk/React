@@ -25,6 +25,12 @@ import {
 } from './schemaRuntimeHelpers';
 
 export {
+	ResponsiveTabBar,
+	type ResponsiveTabBarProps,
+	type ResponsiveTabItem,
+} from '../ui';
+
+export {
 	evaluateCondition,
 	evaluateShowIfCondition,
 	isLinkFieldValueEmpty,
@@ -137,6 +143,8 @@ export function normalizeOptions(
 			label: String(opt.label),
 			disabled: opt.disabled,
 			group: opt.group,
+			icon: opt.icon,
+			description: opt.description,
 		}));
 	}
 	return Object.entries(options).map(([value, label]) => ({
@@ -146,27 +154,27 @@ export function normalizeOptions(
 }
 
 const GRID_SPAN_CLASSES: Record<number, string> = {
-	1: 'col-span-12 md:col-span-1',
-	2: 'col-span-12 md:col-span-2',
-	3: 'col-span-12 md:col-span-3',
-	4: 'col-span-12 md:col-span-4',
-	5: 'col-span-12 md:col-span-5',
-	6: 'col-span-12 md:col-span-6',
-	7: 'col-span-12 md:col-span-7',
-	8: 'col-span-12 md:col-span-8',
-	9: 'col-span-12 md:col-span-9',
-	10: 'col-span-12 md:col-span-10',
-	11: 'col-span-12 md:col-span-11',
-	12: 'col-span-12',
+	1: 'min-w-0 col-span-12 @2xl/rw-grid:col-span-1',
+	2: 'min-w-0 col-span-12 @2xl/rw-grid:col-span-2',
+	3: 'min-w-0 col-span-12 @2xl/rw-grid:col-span-3',
+	4: 'min-w-0 col-span-12 @xl/rw-grid:col-span-4',
+	5: 'min-w-0 col-span-12 @lg/rw-grid:col-span-5',
+	6: 'min-w-0 col-span-12 @lg/rw-grid:col-span-6',
+	7: 'min-w-0 col-span-12 @lg/rw-grid:col-span-7',
+	8: 'min-w-0 col-span-12 @xl/rw-grid:col-span-8',
+	9: 'min-w-0 col-span-12 @2xl/rw-grid:col-span-9',
+	10: 'min-w-0 col-span-12 @2xl/rw-grid:col-span-10',
+	11: 'min-w-0 col-span-12 @2xl/rw-grid:col-span-11',
+	12: 'min-w-0 col-span-12',
 };
 
 export function resolveGridSpanClass(width?: number, colSpan?: number): string {
 	if (typeof colSpan === 'number' && Number.isFinite(colSpan) && colSpan >= 1 && colSpan <= 12) {
-		return GRID_SPAN_CLASSES[Math.round(colSpan)] || 'col-span-12';
+		return GRID_SPAN_CLASSES[Math.round(colSpan)] || 'min-w-0 col-span-12';
 	}
 	const w = width && width > 0 && width <= 100 ? width : 100;
 	const span = Math.max(1, Math.min(12, Math.round((w / 100) * 12)));
-	return GRID_SPAN_CLASSES[span] || 'col-span-12';
+	return GRID_SPAN_CLASSES[span] || 'min-w-0 col-span-12';
 }
 
 export function sanitizePhoneInput(raw: string, stripDanglingPlus = false): string {
@@ -239,9 +247,7 @@ export function normalizeLinkFieldValue(raw: unknown, defaultType = 'url'): Link
 	let urlVal =
 		rec.url !== undefined && rec.url !== null
 			? String(rec.url).trim()
-			: rec.href !== undefined && rec.href !== null
-				? String(rec.href).trim()
-				: '';
+			: '';
 	let anchorVal =
 		rec.anchor !== undefined && rec.anchor !== null
 			? String(rec.anchor).trim().replace(/^#+/, '')
@@ -260,7 +266,7 @@ export function normalizeLinkFieldValue(raw: unknown, defaultType = 'url'): Link
 	}
 
 	const rawTarget = typeof rec.target === 'string' ? rec.target.trim() : '_self';
-	const rawAriaLabel = rec.ariaLabel ?? rec.aria_label;
+	const rawAriaLabel = rec.ariaLabel;
 	const parseLangTextMap = (rawMap: unknown, defVal: string): Record<string, string> | undefined => {
 		const clean: Record<string, string> = {};
 		let hasNonDefault = false;
@@ -286,25 +292,23 @@ export function normalizeLinkFieldValue(raw: unknown, defaultType = 'url'): Link
 	}
 	let ariaLabelVal =
 		rawAriaLabel !== undefined && rawAriaLabel !== null ? String(rawAriaLabel) : '';
-	const ariaLabelsMap = parseLangTextMap(rec.ariaLabels ?? rec.aria_labels, ariaLabelVal);
+	const ariaLabelsMap = parseLangTextMap(rec.ariaLabels, ariaLabelVal);
 	if (ariaLabelVal === '' && ariaLabelsMap?.default) {
 		ariaLabelVal = ariaLabelsMap.default;
 	}
 	const out: LinkFieldValue = {
 		type: rawType,
-		pageId: Number.isFinite(Number(rec.pageId ?? rec.page_id))
-			? Math.max(0, Math.trunc(Number(rec.pageId ?? rec.page_id)))
+		pageId: Number.isFinite(Number(rec.pageId))
+			? Math.max(0, Math.trunc(Number(rec.pageId)))
 			: 0,
 		entryType:
-			typeof (rec.entryType ?? rec.entry_type) === 'string'
-				? String(rec.entryType ?? rec.entry_type).trim()
+			typeof rec.entryType === 'string'
+				? rec.entryType.trim()
 				: '',
 		entryId:
 			rec.entryId !== undefined && rec.entryId !== null
 				? String(rec.entryId).trim()
-				: rec.entry_id !== undefined && rec.entry_id !== null
-					? String(rec.entry_id).trim()
-					: '',
+				: '',
 		url: urlVal,
 		file: rec.file !== undefined && rec.file !== null ? String(rec.file).trim() : '',
 		query:
@@ -437,24 +441,25 @@ export interface LinkFeatureFlags {
 
 export function normalizeLinkConfigFlags(raw?: Partial<LinkFieldConfig> | null): LinkFeatureFlags {
 	const rec = (raw ?? {}) as Record<string, unknown>;
-	const flag = (camel: string, snake: string): boolean => {
-		const v = rec[camel] ?? rec[snake];
+	const flag = (key: string): boolean => {
+		const v = rec[key];
 		return v !== false && v !== 0 && v !== '0' && v !== '';
 	};
 	return {
-		enableLabel: flag('enableLabel', 'enable_label'),
-		enableAriaLabel: flag('enableAriaLabel', 'enable_aria_label'),
-		enableTarget: flag('enableTarget', 'enable_target'),
-		enableRel: flag('enableRel', 'enable_rel'),
-		enableAnchor: flag('enableAnchor', 'enable_anchor'),
-		enableQuery: flag('enableQuery', 'enable_query'),
+		enableLabel: flag('enableLabel'),
+		enableAriaLabel: flag('enableAriaLabel'),
+		enableTarget: flag('enableTarget'),
+		enableRel: flag('enableRel'),
+		enableAnchor: flag('enableAnchor'),
+		enableQuery: flag('enableQuery'),
 	};
 }
 
 export function buildLinkInlineSettingFields(
 	linkConfig: Partial<LinkFieldConfig> | undefined,
 	rawVal: unknown,
-	ownerDisabled: boolean
+	ownerDisabled: boolean,
+	ownerFieldName?: string
 ): {
 	fields: SchemaFieldDefinition[];
 	values: Record<string, unknown>;
@@ -476,12 +481,14 @@ export function buildLinkInlineSettingFields(
 
 	const fields: SchemaFieldDefinition[] = [];
 	const values: Record<string, unknown> = {};
+	const cleanOwner = ownerFieldName ? ownerFieldName.replace(/[^a-zA-Z0-9_-]/g, '_') : '';
 
 	const pushField = (key: keyof LinkFieldValue, def: Omit<SchemaFieldDefinition, 'kind' | 'name' | 'disabled'>) => {
 		const name = `${LINK_INLINE_SETTING_PREFIX}${key}`;
 		fields.push({
 			...def,
 			kind: 'control',
+			id: cleanOwner ? `${cleanOwner}__link_opt_${key}` : undefined,
 			name,
 			disabled: locked,
 		});
@@ -533,14 +540,18 @@ export function applyLinkSettingPatches(
 	flags?: Partial<LinkFeatureFlags>
 ): LinkFieldValue {
 	const next: LinkFieldValue = { ...currentLink };
+	let hasTargetPatch = false;
+	let hasRelPatch = false;
 	for (const [key, rawVal] of Object.entries(patches)) {
 		const cleanKey = key.startsWith(LINK_INLINE_SETTING_PREFIX)
 			? key.slice(LINK_INLINE_SETTING_PREFIX.length)
 			: key;
 		const strVal = rawVal === null || rawVal === undefined ? '' : String(rawVal);
 		if (cleanKey === 'target') {
+			hasTargetPatch = true;
 			next.target = strVal === '_blank' ? '_blank' : '_self';
 		} else if (cleanKey === 'rel') {
+			hasRelPatch = true;
 			next.rel = strVal;
 		} else if (cleanKey === 'anchor') {
 			next.anchor = strVal.replace(/^#+/, '');
@@ -548,7 +559,14 @@ export function applyLinkSettingPatches(
 			next.query = strVal.replace(/^\?+/, '');
 		}
 	}
-	if (next.target === '_blank' && flags?.enableRel !== false && !next.rel.trim()) {
+	if (
+		hasTargetPatch &&
+		currentLink.target !== '_blank' &&
+		next.target === '_blank' &&
+		!hasRelPatch &&
+		flags?.enableRel !== false &&
+		!next.rel.trim()
+	) {
 		next.rel = 'noopener noreferrer';
 	}
 	return next;
@@ -677,6 +695,44 @@ export function isCompactPopoverField(bf: SchemaFieldDefinition): boolean {
 
 export function getNeutralSettingValue(bf: SchemaFieldDefinition): unknown {
 	const rawType = String(bf.type || bf.inputfieldClass || 'text').toLowerCase();
+	if (bf.resetValue !== undefined && bf.resetValue !== null) {
+		if (
+			rawType === 'checkbox' ||
+			rawType === 'consent' ||
+			rawType === 'switch' ||
+			rawType === 'boolean' ||
+			rawType === 'bool'
+		) {
+			const checkedVal = bf.checkedValue || '1';
+			return bf.resetValue === true || bf.resetValue === 1 || bf.resetValue === '1' || bf.resetValue === 'true'
+				? checkedVal
+				: '';
+		}
+		if (
+			Boolean(bf.multiple) ||
+			rawType === 'checkboxes' ||
+			rawType === 'asmselect' ||
+			rawType === 'multiselect' ||
+			rawType === 'repeater'
+		) {
+			return Array.isArray(bf.resetValue)
+				? bf.resetValue.map((item) => String(item ?? ''))
+				: bf.resetValue === ''
+					? []
+					: [String(bf.resetValue)];
+		}
+		if (rawType === 'toggle') {
+			if (typeof bf.resetValue === 'boolean') {
+				return bf.resetValue ? '1' : '0';
+			}
+			return String(bf.resetValue);
+		}
+		return typeof bf.resetValue === 'boolean'
+			? bf.resetValue
+				? '1'
+				: '0'
+			: bf.resetValue;
+	}
 	if (
 		rawType === 'checkbox' ||
 		rawType === 'consent' ||
@@ -802,12 +858,14 @@ export function countNestedErrors(
 		}
 		if (f.name) {
 			const repeaterPrefix = `${f.name}[`;
+			const entriesBlockPrefix = `entriesblock_${f.name}_`;
 			const weBlockPrefix = `weblock_${f.name}_`;
 			const rwBlockPrefix = `rwblock_${f.name}_`;
 			for (const errKey of errorKeys) {
 				if (
 					errKey !== f.name &&
 					(errKey.startsWith(repeaterPrefix) ||
+						errKey.startsWith(entriesBlockPrefix) ||
 						errKey.startsWith(weBlockPrefix) ||
 						errKey.startsWith(rwBlockPrefix))
 				) {
@@ -1399,7 +1457,7 @@ export function FieldNotes({
 		<p
 			id={id}
 			data-rw-field-slot="notes"
-			className={cn('text-[11px] text-muted-foreground/85 leading-relaxed', className)}
+			className={cn('text-[11px] text-muted-foreground leading-relaxed', className)}
 		>
 			{cleanNotes}
 		</p>
@@ -1436,7 +1494,7 @@ export interface ManagedMediaItem extends InputfieldMediaItem {
 export function MediaItemFilename({ item, isDeleted }: { item: ManagedMediaItem; isDeleted: boolean }) {
 	const safeUrl = sanitizeHref(item.url);
 	const cls = cn(
-		'block text-xs font-semibold text-foreground truncate max-w-[320px]',
+		'block text-xs font-semibold text-foreground truncate w-full max-w-full',
 		safeUrl && 'hover:text-primary hover:underline',
 		isDeleted && 'line-through text-muted-foreground'
 	);

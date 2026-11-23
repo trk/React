@@ -5,12 +5,6 @@ import type {
 	DragMoveEvent,
 	DragOverEvent,
 	DragStartEvent,
-	KanbanBoardColumn,
-	KanbanBoardDndProps,
-	KanbanColumnSpec,
-	KanbanItemRenderContext,
-	KanbanMoveEvent,
-	KanbanMoveResolution,
 	ProjectedTreeReorder,
 	SortableListCanvasProps,
 	SortableListItemRenderContext,
@@ -23,7 +17,7 @@ import { requireReactRuntime } from './optional';
 
 export const Dnd = requireReactRuntime().Dnd;
 
-export const { SortableListCanvas, KanbanBoardDnd, SortableTreeCanvas } = Dnd;
+export const { SortableListCanvas, SortableTreeCanvas } = Dnd;
 
 export function ensureDndLoaded(): Promise<void> {
 	return requireReactRuntime().ensureDndLoaded();
@@ -56,12 +50,6 @@ export type {
 	DragMoveEvent,
 	DragOverEvent,
 	DragStartEvent,
-	KanbanBoardColumn,
-	KanbanBoardDndProps,
-	KanbanColumnSpec,
-	KanbanItemRenderContext,
-	KanbanMoveEvent,
-	KanbanMoveResolution,
 	ProjectedTreeReorder,
 	SortableListCanvasProps,
 	SortableListItemRenderContext,

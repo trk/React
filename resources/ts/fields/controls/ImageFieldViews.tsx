@@ -147,7 +147,7 @@ export const ImageGridCard = React.memo(function ImageGridCard({
 						decoding="async"
 						className={cn(
 							gridRatio === 'auto'
-								? 'w-full h-auto max-h-64 object-contain'
+								? 'w-full h-auto max-h-48 @md/rw-media:max-h-64 object-contain'
 								: 'size-full object-cover',
 							'transition-transform duration-150 motion-reduce:transition-none group-hover:scale-[1.03] motion-reduce:group-hover:scale-100',
 							img.markedForDelete && 'opacity-35 grayscale'
@@ -391,7 +391,7 @@ export const ImageTableRow = React.memo(function ImageTableRow({
 				isDropOverRow && 'bg-primary/8 ring-2 ring-inset ring-primary/35'
 			)}
 		>
-			<div className="flex items-center justify-between gap-2">
+			<div className="flex flex-col gap-1.5 @md/rw-media:flex-row @md/rw-media:items-center @md/rw-media:justify-between @md/rw-media:gap-2">
 				<div className="flex min-w-0 flex-1 items-center gap-2">
 					{!isLocked && totalItems > 1 && handleSortProps ? (
 						<SortableHandle
@@ -430,37 +430,36 @@ export const ImageTableRow = React.memo(function ImageTableRow({
 					</button>
 					<div className="min-w-0 flex-1">
 						<MediaItemFilename item={img} isDeleted={img.markedForDelete} />
-						<div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] tabular-nums text-muted-foreground">
+						<div className="flex min-w-0 items-center gap-1.5 overflow-hidden whitespace-nowrap text-[10px] tabular-nums text-muted-foreground">
 							{img.markedForDelete ? (
-								<span className="font-medium text-destructive">
+								<span className="truncate font-medium text-destructive">
 									{t('media.markedForDeletion', 'Marked for deletion')}
 								</span>
 							) : (
 								<>
-									{img.ext ? (
-										<span className="font-mono uppercase">{img.ext}</span>
-									) : null}
-									{img.width && img.height ? (
-										<span className="font-mono">
-											{img.ext ? '· ' : ''}
-											{img.width}×{img.height}
-										</span>
-									) : null}
-									<span className="font-mono">
-										{img.ext || (img.width && img.height) ? '· ' : ''}
-										{img.filesizeStr || formatMediaBytes(img.size)}
+									<span className="min-w-0 truncate font-mono">
+										{[
+											img.ext ? img.ext.toUpperCase() : '',
+											img.width && img.height ? `${img.width}×${img.height}` : '',
+											img.filesizeStr || formatMediaBytes(img.size),
+										]
+											.filter(Boolean)
+											.join(' · ')}
 									</span>
 									{languages && languages.length > 1 ? (
-										<span className="font-mono">
+										<span className="shrink-0 font-mono">
 											· {langSummary.filled}/{langSummary.total}
 										</span>
 									) : null}
 									{descriptionRows > 0 && !langSummary.hasDefault ? (
-										<span className="font-medium text-warning">
-											· {t('media.missingAlt', 'Missing alt')}
+										<span className="shrink-0 font-medium text-warning">
+											<span className="@sm/rw-media:hidden">· !Alt</span>
+											<span className="hidden @sm/rw-media:inline">
+												· {t('media.missingAlt', 'Missing alt')}
+											</span>
 										</span>
 									) : img.description?.trim() ? (
-										<span className="hidden max-w-48 truncate @md:inline">
+										<span className="hidden max-w-48 truncate @md/rw-media:inline">
 											· {img.description.trim()}
 										</span>
 									) : null}
@@ -470,7 +469,7 @@ export const ImageTableRow = React.memo(function ImageTableRow({
 					</div>
 				</div>
 
-				<div className="flex shrink-0 items-center gap-0.5">
+				<div className="flex flex-wrap items-center justify-end gap-0.5 border-t border-border/50 pt-1 @md/rw-media:shrink-0 @md/rw-media:flex-nowrap @md/rw-media:border-t-0 @md/rw-media:pt-0">
 					{img.markedForDelete ? (
 						!isLocked ? (
 							<Button

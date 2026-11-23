@@ -39,10 +39,6 @@ export { CSS } from '@dnd-kit/utilities';
 export {
 	moveArrayItem,
 	projectTreeReorder,
-	resolveKanbanMove,
-	type KanbanColumnSpec,
-	type KanbanMoveEvent,
-	type KanbanMoveResolution,
 	type ProjectedTreeReorder,
 	type TreeSortableNodeSpec,
 } from './helpers';
@@ -51,12 +47,6 @@ export {
 	type SortableListCanvasProps,
 	type SortableListItemRenderContext,
 } from './SortableListCanvas';
-export {
-	KanbanBoardDnd,
-	type KanbanBoardColumn,
-	type KanbanBoardDndProps,
-	type KanbanItemRenderContext,
-} from './KanbanBoardDnd';
 export {
 	SortableTreeCanvas,
 	type SortableTreeCanvasProps,

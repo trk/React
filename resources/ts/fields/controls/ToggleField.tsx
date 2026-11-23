@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import { cn } from '../../lib/utils';
 import { dispatchDomChange, flattenOptions } from '../shared';
 import type { ReactInputfieldProps } from '../types';
+import { CheckboxField } from './CheckboxField';
 
 export function ToggleField(props: ReactInputfieldProps): React.ReactElement {
 	const options = useMemo(() => flattenOptions(props.options), [props.options]);
@@ -19,6 +20,13 @@ export function ToggleField(props: ReactInputfieldProps): React.ReactElement {
 
 	const radioGroupName = props.inlinePortal ? `${props.name}__inline` : props.name;
 
+	if (options.length === 0) {
+		const isBooleanChecked =
+			Boolean(props.checked) ||
+			['1', 'true', 'yes', 'on'].includes(incomingVal.trim().toLowerCase());
+		return <CheckboxField {...props} checked={isBooleanChecked} />;
+	}
+
 	const handleSelect = (val: string) => {
 		if (props.readOnly || props.disabled) {
 			return;
@@ -34,7 +42,7 @@ export function ToggleField(props: ReactInputfieldProps): React.ReactElement {
 
 	return (
 		<div ref={containerRef} data-rw-control="toggle">
-			<input type="hidden" name={`_${props.name}_`} value="1" />
+			{!props.inlinePortal ? <input type="hidden" name={`_${props.name}_`} value="1" /> : null}
 			<div
 				className={cn(
 					'inline-flex rounded-lg border border-border bg-muted/50 p-1 gap-1',
@@ -49,7 +57,7 @@ export function ToggleField(props: ReactInputfieldProps): React.ReactElement {
 					const isNegativeBoolean =
 						options.length === 2 &&
 						(optStr === '0' || optStr.toLowerCase() === 'false' || optStr.toLowerCase() === 'no');
-					const radioId = `${props.id}_${opt.value}`;
+					const radioId = `${props.id}_${optStr.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
 					return (
 						<label
 							key={opt.value}

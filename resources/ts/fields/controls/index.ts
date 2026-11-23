@@ -2,6 +2,7 @@ export { TextField } from './TextField';
 export { TextareaField } from './TextareaField';
 export { TiptapField } from './TiptapField';
 export { DatetimeField } from './DatetimeField';
+export { DateRangeField } from './DateRangeField';
 export { CheckboxField } from './CheckboxField';
 export { ToggleField } from './ToggleField';
 export { SelectField } from './SelectField';

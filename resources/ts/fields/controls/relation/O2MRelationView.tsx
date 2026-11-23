@@ -139,9 +139,9 @@ export function O2MRelationView({
 	const linkedValues = new Set(items.map((i) => String(i.value)));
 
 	return (
-		<div className="space-y-2.5">
+		<div className="@container/rw-rel min-w-0 space-y-2.5">
 			<div className="flex flex-wrap items-center justify-between gap-2">
-				<div className="flex items-center gap-2">
+				<div className="flex items-center gap-2 min-w-0">
 					<Input
 						aria-label={`Filter incoming ${resourceLabel.toLowerCase()}...`}
 						value={query}
@@ -153,7 +153,7 @@ export function O2MRelationView({
 							}
 						}}
 						placeholder={`Filter incoming ${resourceLabel.toLowerCase()}...`}
-						className="h-8 w-52 text-xs"
+						className="h-8 w-full max-w-52 @sm/rw-rel:w-52 text-xs"
 					/>
 					<Badge variant="secondary" className="text-[11px] tabular-nums">
 						{total}
@@ -196,7 +196,7 @@ export function O2MRelationView({
 					{loading ? 'Loading related records...' : `No related ${resourceLabel.toLowerCase()} records linked yet.`}
 				</div>
 			) : widget === 'cards' ? (
-				<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+				<div className="grid grid-cols-1 gap-2 @md/rw-rel:grid-cols-2">
 					{items.map((item) => (
 						<div
 							key={item.key || String(item.value)}
@@ -238,11 +238,11 @@ export function O2MRelationView({
 							key={item.key || String(item.value)}
 							className="flex items-center justify-between gap-2 px-3 py-2 text-xs"
 						>
-							<div className="flex items-center gap-2 min-w-0">
+							<div className="flex min-w-0 flex-1 items-center gap-2">
 								<RelationItemVisual item={item} fallbackIcon={resourceIcon} size="sm" />
-								<span className="truncate font-medium text-foreground">{item.label}</span>
+								<span className="min-w-0 flex-1 truncate font-medium text-foreground">{item.label}</span>
 								{item.subtitle ? (
-									<span className="truncate font-mono text-[11px] text-muted-foreground">
+									<span className="hidden @md/rw-rel:inline max-w-[38%] truncate font-mono text-[11px] text-muted-foreground">
 										{item.subtitle}
 									</span>
 								) : null}

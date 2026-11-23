@@ -582,7 +582,7 @@ export const KeyValueFieldControl: React.FC<KeyValueFieldProps> = (rawProps) => 
 	return (
 		<div
 			ref={rootRef}
-			className="space-y-2"
+			className="@container/rw-kv min-w-0 space-y-2"
 			data-rw-control="key-value"
 			data-rw-kv-reactive={inputName || undefined}
 			data-kv-field={baseName || undefined}
@@ -593,7 +593,7 @@ export const KeyValueFieldControl: React.FC<KeyValueFieldProps> = (rawProps) => 
 			) : null}
 
 			{pairs.length > 0 ? (
-				<div className="hidden sm:flex items-center gap-2 px-1 text-[11px] font-medium text-muted-foreground select-none">
+				<div className="hidden @md/rw-kv:flex items-center gap-2 px-1 text-[11px] font-medium text-muted-foreground select-none">
 					{canReorder ? <span className="w-6 shrink-0" aria-hidden="true" /> : null}
 					<div className="grid min-w-0 flex-1 grid-cols-2 gap-2">
 						<span className="truncate">{keyHeaderLabel}</span>
@@ -648,12 +648,12 @@ export const KeyValueFieldControl: React.FC<KeyValueFieldProps> = (rawProps) => 
 
 					return (
 						<div key={rowId} {...sortable.getItemProps(pair)} className="space-y-1">
-							<div className="flex items-start sm:items-center gap-1.5 sm:gap-2">
+							<div className="flex items-start @md/rw-kv:items-center gap-1.5 @md/rw-kv:gap-2">
 								{canReorder ? (
 									<SortableHandle size="xs" {...sortable.getHandleProps(pair, idx)} />
 								) : null}
 
-								<div className="grid min-w-0 flex-1 grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2">
+								<div className="grid min-w-0 flex-1 grid-cols-1 @md/rw-kv:grid-cols-2 gap-1.5 @md/rw-kv:gap-2">
 									<Input
 										ref={(el) => {
 											if (el) {
@@ -858,7 +858,7 @@ export const KeyValueFieldControl: React.FC<KeyValueFieldProps> = (rawProps) => 
 						<span />
 					)}
 					{pairCountText ? (
-						<span className="sm:hidden shrink-0 tabular-nums text-[11px] font-medium text-muted-foreground">
+						<span className="@md/rw-kv:hidden shrink-0 tabular-nums text-[11px] font-medium text-muted-foreground">
 							{pairCountText}
 						</span>
 					) : null}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
 	DayPicker,
 	getDefaultClassNames,
@@ -6,9 +6,12 @@ import {
 	type DayPickerProps,
 } from 'react-day-picker';
 import { cn, DynamicIcon } from '../../lib/utils';
+import { buildDateDisabledMatcher } from './dateUtils';
 
 export type CalendarProps = DayPickerProps & {
 	containerClassName?: string;
+	minDate?: string | Date | null;
+	maxDate?: string | Date | null;
 };
 
 function mergeClassNames(
@@ -36,21 +39,29 @@ export function Calendar({
 	classNames,
 	components,
 	containerClassName,
+	minDate,
+	maxDate,
+	disabled,
 	showOutsideDays = true,
 	...props
 }: CalendarProps): React.ReactElement {
 	const defaults = getDefaultClassNames();
 	const mergedClassNames = mergeClassNames(defaults, classNames);
+	const mergedDisabled = useMemo(
+		() => buildDateDisabledMatcher(minDate, maxDate, disabled),
+		[minDate, maxDate, disabled],
+	);
 
 	return (
 		<div
 			data-rw-calendar=""
-			className={cn('inline-block p-2.5', containerClassName)}
+			className={cn('inline-block max-w-full p-2.5', containerClassName)}
 		>
 			<DayPicker
 				showOutsideDays={showOutsideDays}
 				className={cn(defaults.root, className)}
 				classNames={mergedClassNames}
+				disabled={mergedDisabled}
 				components={{
 					Chevron: ({ orientation, className: iconClassName }) => {
 						const iconName =

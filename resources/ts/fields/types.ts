@@ -16,10 +16,14 @@ export interface InputfieldOptionItem {
 	label: string;
 	disabled?: boolean;
 	group?: string;
+	icon?: string;
+	description?: string;
 	optgroup?: Array<{
 		value: string;
 		label: string;
 		disabled?: boolean;
+		icon?: string;
+		description?: string;
 	}>;
 }
 
@@ -145,6 +149,14 @@ export interface InputfieldDatetimeConfig {
 	timeMin?: string;
 	timeMax?: string;
 	timeStep?: number;
+	hourFormat?: '24h' | '12h';
+	minuteStep?: number;
+	showSeconds?: boolean;
+	timezone?: string;
+	weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+	displayFormat?: string;
+	presets?: boolean;
+	numberOfMonths?: number;
 }
 
 export interface InputfieldSubmitDropdownItem {
@@ -272,11 +284,18 @@ export interface IconFieldConfig {
 	totalIcons?: number;
 }
 
+export interface PhoneCountryItem {
+	code: string;
+	name: string;
+	dial: string;
+}
+
 export type ReactControlType =
 	| 'text'
 	| 'email'
 	| 'url'
 	| 'tel'
+	| 'phone'
 	| 'link'
 	| 'icon'
 	| 'number'
@@ -285,6 +304,18 @@ export type ReactControlType =
 	| 'datetime'
 	| 'date'
 	| 'time'
+	| 'daterange'
+	| 'color'
+	| 'tags'
+	| 'combobox'
+	| 'unit_number'
+	| 'segmented'
+	| 'spacing'
+	| 'otp'
+	| 'password'
+	| 'range_slider'
+	| 'markdown'
+	| 'condition_builder'
 	| 'checkbox'
 	| 'consent'
 	| 'toggle'
@@ -303,6 +334,48 @@ export type ReactControlType =
 	| 'image'
 	| 'heading'
 	| 'submit';
+
+export type ConditionMatchMode = 'all' | 'any';
+
+export type ConditionFieldType =
+	| 'text'
+	| 'number'
+	| 'select'
+	| 'boolean'
+	| 'country'
+	| 'currency'
+	| 'date';
+
+export interface ConditionFieldOption {
+	value: string;
+	label: string;
+}
+
+export interface ConditionFieldSpec {
+	key: string;
+	label: string;
+	type: ConditionFieldType;
+	options?: ConditionFieldOption[];
+	operators?: string[];
+}
+
+export interface ConditionRuleItem {
+	id: string;
+	field: string;
+	operator: string;
+	value: unknown;
+}
+
+export interface ConditionGroupItem {
+	id: string;
+	match: ConditionMatchMode;
+	rules: ConditionRuleItem[];
+}
+
+export interface ConditionBuilderValue {
+	match: ConditionMatchMode;
+	groups: ConditionGroupItem[];
+}
 
 export interface ReactInputfieldProps {
 	controlType: ReactControlType;
@@ -352,6 +425,57 @@ export interface ReactInputfieldProps {
 	useDeselect?: boolean;
 	useVertical?: boolean;
 	datetime?: InputfieldDatetimeConfig;
+	datetimeMode?: 'picker' | 'html' | 'text';
+	hourFormat?: '24h' | '12h';
+	minuteStep?: number;
+	showSeconds?: boolean;
+	timezone?: string;
+	weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+	displayFormat?: string;
+	presets?: boolean;
+	numberOfMonths?: number;
+	minTime?: string;
+	maxTime?: string;
+	swatches?: string[];
+	allowAlpha?: boolean;
+	clearable?: boolean;
+	allowDuplicates?: boolean;
+	suggestions?: string[];
+	emptyText?: string;
+	allowCustom?: boolean;
+	maxItems?: number;
+	units?: string[];
+	defaultUnit?: string;
+	unitVariant?: 'currency' | string;
+	currency?: string;
+	locale?: string;
+	defaultCountry?: string;
+	preferredCountries?: string[];
+	phoneCountries?: PhoneCountryItem[];
+	iconOnly?: boolean;
+	fullWidth?: boolean;
+	sides?: Array<'top' | 'right' | 'bottom' | 'left'>;
+	allowAuto?: boolean;
+	allowNegative?: boolean;
+	otpLength?: number;
+	otpMode?: 'numeric' | 'alphanumeric';
+	otpSeparatorAfter?: number;
+	mask?: boolean;
+	showStrength?: boolean;
+	showRequirements?: boolean;
+	allowGenerate?: boolean;
+	requireUppercase?: boolean;
+	requireLowercase?: boolean;
+	requireNumber?: boolean;
+	requireSymbol?: boolean;
+	confirmPassword?: boolean;
+	autoComplete?: string;
+	rangeMode?: 'single' | 'dual';
+	dual?: boolean;
+	minDistance?: number;
+	previewMode?: 'write' | 'preview' | 'split';
+	allowSplit?: boolean;
+	showToolbar?: boolean;
 	submit?: InputfieldSubmitConfig;
 	maxStars?: number;
 	valueMode?: 'columns' | 'percent' | string;
@@ -403,6 +527,7 @@ export interface ReactInputfieldProps {
 	inlineOptionsInHeader?: boolean;
 	inlinePortal?: boolean;
 	iconConfig?: IconFieldConfig;
+	conditionFields?: ConditionFieldSpec[];
 	formId?: string;
 	error?: string;
 	errorId?: string;
@@ -417,6 +542,8 @@ export interface SchemaFieldOption {
 	label: string;
 	disabled?: boolean;
 	group?: string;
+	icon?: string;
+	description?: string;
 }
 
 export interface RelationItemData {
@@ -478,6 +605,7 @@ export interface SchemaFieldDefinition {
 	checked?: boolean;
 	checkedValue?: string;
 	defaultValue?: unknown;
+	resetValue?: unknown;
 	options?: Record<string, string> | SchemaFieldOption[];
 	optionColumns?: number;
 	min?: string | number | null;
@@ -500,6 +628,9 @@ export interface SchemaFieldDefinition {
 	connection?: SchemaFieldConnection | null;
 	isSecret?: boolean;
 	secretMasked?: boolean;
+	secretPrefix?: string;
+	secretBytes?: number;
+	secretAutoGenerate?: boolean;
 	useLanguages?: boolean;
 	languages?: Array<{
 		id: number;
@@ -628,6 +759,57 @@ export interface SchemaFieldDefinition {
 	iconPrefixMode?: 'none' | 'vector' | 'fa';
 	inlineSettings?: string[];
 	inlineHidden?: boolean;
+	datetimeMode?: 'picker' | 'html' | 'text';
+	hourFormat?: '24h' | '12h';
+	minuteStep?: number;
+	showSeconds?: boolean;
+	timezone?: string;
+	weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+	displayFormat?: string;
+	presets?: boolean;
+	numberOfMonths?: number;
+	minTime?: string;
+	maxTime?: string;
+	swatches?: string[];
+	allowAlpha?: boolean;
+	clearable?: boolean;
+	allowDuplicates?: boolean;
+	suggestions?: string[];
+	emptyText?: string;
+	units?: string[];
+	defaultUnit?: string;
+	unitVariant?: 'currency' | string;
+	currency?: string;
+	locale?: string;
+	defaultCountry?: string;
+	preferredCountries?: string[];
+	phoneCountries?: PhoneCountryItem[];
+	iconOnly?: boolean;
+	fullWidth?: boolean;
+	useDeselect?: boolean;
+	sides?: Array<'top' | 'right' | 'bottom' | 'left'>;
+	allowAuto?: boolean;
+	allowNegative?: boolean;
+	otpLength?: number;
+	otpMode?: 'numeric' | 'alphanumeric';
+	otpSeparatorAfter?: number;
+	mask?: boolean;
+	showStrength?: boolean;
+	showRequirements?: boolean;
+	allowGenerate?: boolean;
+	requireUppercase?: boolean;
+	requireLowercase?: boolean;
+	requireNumber?: boolean;
+	requireSymbol?: boolean;
+	confirmPassword?: boolean;
+	autoComplete?: string;
+	rangeMode?: 'single' | 'dual';
+	dual?: boolean;
+	minDistance?: number;
+	previewMode?: 'write' | 'preview' | 'split';
+	allowSplit?: boolean;
+	showToolbar?: boolean;
+	conditionFields?: ConditionFieldSpec[];
 }
 
 export interface SchemaTabPaneDefinition {
@@ -638,6 +820,7 @@ export interface SchemaTabPaneDefinition {
 	badge?: string | number | null;
 	description?: string;
 	notes?: string;
+	collapsed?: boolean;
 	showIf?: string;
 	hideIf?: string;
 	conditions?: SchemaFieldConditions;
@@ -670,6 +853,7 @@ export interface SchemaFormPayload {
 	isFragment?: boolean;
 	dirtyGuard?: boolean;
 	surface?: 'plain' | 'card' | null;
+	tabsLayout?: 'horizontal' | 'vertical' | null;
 	presenceKey?: string | null;
 	presenceEndpoint?: string | null;
 	csrf?: { name: string; value: string } | null;
@@ -703,11 +887,13 @@ export interface SchemaFormProps extends Omit<Partial<SchemaFormPayload>, 'field
 	validateOnSubmit?: boolean;
 	validateOnChange?: boolean;
 	onChange?: (values: Record<string, unknown>) => void;
-	onSubmit?: (values: Record<string, unknown>) => void;
+	onFieldChange?: (name: string, value: unknown, nextValues: Record<string, unknown>) => void;
+	onSubmit?: (values: Record<string, unknown>, formElement?: HTMLFormElement | null) => void | Promise<void>;
 	onValidationError?: (errors: Record<string, string>) => void;
 	tabSlots?: Record<string, { before?: React.ReactNode; after?: React.ReactNode }>;
 	fieldAdornments?: Record<string, SchemaFieldAdornment>;
 	submitLabel?: string;
+	hideFooterWhenPortaled?: boolean;
 	className?: string;
 }
 

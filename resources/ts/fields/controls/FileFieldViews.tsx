@@ -113,7 +113,7 @@ export const FileTableRow = React.memo(function FileTableRow({
 				isDropOverRow && 'bg-primary/8 ring-2 ring-inset ring-primary/35'
 			)}
 		>
-			<div className="flex items-center justify-between gap-2">
+			<div className="flex flex-col gap-1.5 @md/rw-media:flex-row @md/rw-media:items-center @md/rw-media:justify-between @md/rw-media:gap-2">
 				<div className="flex min-w-0 flex-1 items-center gap-2">
 					{!isLocked && totalItems > 1 && handleSortProps ? (
 						<SortableHandle
@@ -143,24 +143,26 @@ export const FileTableRow = React.memo(function FileTableRow({
 					</button>
 					<div className="min-w-0 flex-1">
 						<MediaItemFilename item={fileItem} isDeleted={fileItem.markedForDelete} />
-						<div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] tabular-nums text-muted-foreground">
+						<div className="flex min-w-0 items-center gap-1.5 overflow-hidden whitespace-nowrap text-[10px] tabular-nums text-muted-foreground">
 							{fileItem.markedForDelete ? (
-								<span className="font-medium text-destructive">
+								<span className="truncate font-medium text-destructive">
 									{t('media.markedForDeletion', 'Marked for deletion')}
 								</span>
 							) : (
 								<>
-									<span className="font-mono uppercase">{fileItem.ext || 'file'}</span>
-									<span className="font-mono">
-										· {fileItem.filesizeStr || formatMediaBytes(fileItem.size)}
+									<span className="min-w-0 truncate font-mono">
+										{[
+											(fileItem.ext || 'file').toUpperCase(),
+											fileItem.filesizeStr || formatMediaBytes(fileItem.size),
+										].join(' · ')}
 									</span>
 									{languages && languages.length > 1 ? (
-										<span className="font-mono">
+										<span className="shrink-0 font-mono">
 											· {langSummary.filled}/{langSummary.total}
 										</span>
 									) : null}
 									{fileItem.description?.trim() ? (
-										<span className="hidden max-w-48 truncate @md:inline">
+										<span className="hidden max-w-48 truncate @md/rw-media:inline">
 											· {fileItem.description.trim()}
 										</span>
 									) : null}
@@ -170,7 +172,7 @@ export const FileTableRow = React.memo(function FileTableRow({
 					</div>
 				</div>
 
-				<div className="flex shrink-0 items-center gap-0.5">
+				<div className="flex flex-wrap items-center justify-end gap-0.5 border-t border-border/50 pt-1 @md/rw-media:shrink-0 @md/rw-media:flex-nowrap @md/rw-media:border-t-0 @md/rw-media:pt-0">
 					{fileItem.markedForDelete ? (
 						!isLocked ? (
 							<Button
@@ -314,6 +316,7 @@ export const FileGridCard = React.memo(function FileGridCard({
 		<div
 			{...itemSortProps}
 			data-rw-media-card=""
+			data-rw-media-kind="file"
 			onDragOver={(e) => {
 				if (!canDropReplace || !hasDraggedOsFiles(e)) return;
 				e.preventDefault();
@@ -336,7 +339,7 @@ export const FileGridCard = React.memo(function FileGridCard({
 				onDropReplace(fileItem, e.dataTransfer?.files || null);
 			}}
 			className={cn(
-				'relative flex items-center justify-between gap-2 overflow-hidden rounded-lg border border-border bg-card px-2 py-1.5 shadow-2xs transition-colors',
+				'@container/rw-file-card relative flex flex-col gap-1.5 overflow-hidden rounded-lg border border-border bg-card px-2.5 py-2 shadow-2xs transition-colors',
 				fileItem.markedForDelete && 'border-destructive/35 bg-destructive/5',
 				isDropOverCard && 'border-primary ring-2 ring-primary/25'
 			)}
@@ -379,19 +382,21 @@ export const FileGridCard = React.memo(function FileGridCard({
 				</button>
 				<div className="min-w-0 flex-1">
 					<MediaItemFilename item={fileItem} isDeleted={fileItem.markedForDelete} />
-					<div className="flex items-center gap-1 text-[10px] tabular-nums text-muted-foreground">
+					<div className="flex min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap text-[10px] tabular-nums text-muted-foreground">
 						{fileItem.markedForDelete ? (
-							<span className="font-medium text-destructive">
+							<span className="truncate font-medium text-destructive">
 								{t('media.markedForDeletion', 'Marked for deletion')}
 							</span>
 						) : (
 							<>
-								<span className="font-mono uppercase">{fileItem.ext || 'file'}</span>
-								<span className="font-mono">
-									· {fileItem.filesizeStr || formatMediaBytes(fileItem.size)}
+								<span className="min-w-0 truncate font-mono">
+									{[
+										(fileItem.ext || 'file').toUpperCase(),
+										fileItem.filesizeStr || formatMediaBytes(fileItem.size),
+									].join(' · ')}
 								</span>
 								{languages && languages.length > 1 ? (
-									<span className="font-mono">
+									<span className="shrink-0 font-mono">
 										· {langSummary.filled}/{langSummary.total}
 									</span>
 								) : null}
@@ -401,7 +406,7 @@ export const FileGridCard = React.memo(function FileGridCard({
 				</div>
 			</div>
 
-			<div className="flex shrink-0 items-center gap-0.5">
+			<div className="flex flex-wrap items-center justify-end gap-0.5 border-t border-border/50 pt-1">
 				{fileItem.markedForDelete ? (
 					!isLocked ? (
 						<Button

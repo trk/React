@@ -6,16 +6,30 @@ import type {
 	DateRange,
 	DateRangeIsoValue,
 	DateRangePickerProps,
+	DateRangePreset,
 	DateRangeValue,
+	DateTimePickerPanelProps,
+	DateTimePickerProps,
 	DayPickerProps,
 	Matcher,
+	ParsedTime,
 	PropsBase,
+	TimePickerPanelProps,
+	TimePickerProps,
 } from '../engines/calendar';
 import { requireReactRuntime } from './optional';
 
 export const CalendarEngine = requireReactRuntime().Calendar;
 
-export const { Calendar, DatePicker, DateRangePicker } = CalendarEngine;
+export const {
+	Calendar,
+	DatePicker,
+	TimePicker,
+	TimePickerPanel,
+	DateTimePicker,
+	DateTimePickerPanel,
+	DateRangePicker,
+} = CalendarEngine;
 
 export function ensureCalendarStyleLoaded(): void {
 	requireReactRuntime().ensureCalendarStyleLoaded();
@@ -53,8 +67,14 @@ export type {
 	DateRange,
 	DateRangeIsoValue,
 	DateRangePickerProps,
+	DateRangePreset,
 	DateRangeValue,
+	DateTimePickerPanelProps,
+	DateTimePickerProps,
 	DayPickerProps,
 	Matcher,
+	ParsedTime,
 	PropsBase,
+	TimePickerPanelProps,
+	TimePickerProps,
 };

@@ -635,7 +635,7 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 
 	return (
 		<div ref={rootRef} className="w-full" data-rw-control="icon">
-			{!isIslandHost && scopedName ? (
+			{!isIslandHost && scopedName && !props.inlinePortal ? (
 				<input
 					ref={hiddenInputRef}
 					type="hidden"

@@ -34,17 +34,17 @@ export function RadioRelationWidget({
 }) {
 	const gridCols =
 		optionColumns === 4
-			? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+			? 'grid-cols-1 @sm/rw-rel:grid-cols-2 @lg/rw-rel:grid-cols-4'
 			: optionColumns === 3
-				? 'grid-cols-1 sm:grid-cols-3'
+				? 'grid-cols-1 @md/rw-rel:grid-cols-3'
 				: optionColumns === 2 || cards
-					? 'grid-cols-1 sm:grid-cols-2'
+					? 'grid-cols-1 @md/rw-rel:grid-cols-2'
 					: 'grid-cols-1';
 
 	const isMultiCol = cards || optionColumns >= 2;
 
 	return (
-		<div className="space-y-2">
+		<div className="@container/rw-rel min-w-0 space-y-2">
 			{loading && options.length === 0 ? (
 				<p className="text-xs text-muted-foreground">{t('relation.loadingOptions', 'Loading options...')}</p>
 			) : null}
@@ -77,16 +77,16 @@ export function RadioRelationWidget({
 								(disabled || opt.disabled) ? 'opacity-60 pointer-events-none' : 'cursor-pointer'
 							)}
 						>
-							<div className="flex items-start gap-2.5 min-w-0">
+							<div className="flex min-w-0 flex-1 items-start gap-2.5">
 								<input
 									type="radio"
 									checked={checked}
 									disabled={disabled || opt.disabled}
 									onChange={() => onSelect(tok, opt)}
-									className="mt-0.5 accent-primary"
+									className="mt-0.5 shrink-0 accent-primary"
 								/>
 								{cards ? <RelationItemVisual item={opt} fallbackIcon={fallbackIcon} size="md" /> : null}
-								<div className="min-w-0">
+								<div className="min-w-0 flex-1">
 									<div className="font-medium text-foreground truncate">{opt.label}</div>
 									{opt.subtitle ? (
 										<div className="font-mono text-[11px] text-muted-foreground truncate">
@@ -165,11 +165,11 @@ export function CheckboxesRelationWidget({
 
 	const gridCols =
 		optionColumns === 4
-			? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+			? 'grid-cols-1 @sm/rw-rel:grid-cols-2 @lg/rw-rel:grid-cols-4'
 			: optionColumns === 3
-				? 'grid-cols-1 sm:grid-cols-3'
+				? 'grid-cols-1 @md/rw-rel:grid-cols-3'
 				: optionColumns === 2
-					? 'grid-cols-1 sm:grid-cols-2'
+					? 'grid-cols-1 @md/rw-rel:grid-cols-2'
 					: 'grid-cols-1';
 
 	const toggleOption = (opt: RelationItemData) => {
@@ -182,7 +182,7 @@ export function CheckboxesRelationWidget({
 	};
 
 	return (
-		<div className="space-y-2">
+		<div className="@container/rw-rel min-w-0 space-y-2">
 			{options.length > 6 ? (
 				<div className="flex flex-wrap items-center justify-between gap-2">
 					<Input
@@ -256,21 +256,23 @@ export function CheckboxesRelationWidget({
 									: 'cursor-pointer'
 							)}
 						>
-							<div className="flex items-center gap-2 min-w-0">
+							<div className="flex min-w-0 flex-1 items-center gap-2">
 								<input
 									type="checkbox"
 									checked={checked}
 									disabled={disabled || opt.disabled || lockedByMax}
 									onChange={() => toggleOption(opt)}
-									className="accent-primary"
+									className="shrink-0 accent-primary"
 								/>
 								<RelationItemVisual item={opt} fallbackIcon={fallbackIcon} size="xs" />
-								<span className="truncate font-medium text-foreground">{opt.label}</span>
-								{opt.subtitle ? (
-									<span className="truncate font-mono text-[11px] text-muted-foreground">
-										{opt.subtitle}
-									</span>
-								) : null}
+								<div className="min-w-0 flex-1">
+									<div className="truncate font-medium text-foreground">{opt.label}</div>
+									{opt.subtitle ? (
+										<div className="truncate font-mono text-[11px] text-muted-foreground">
+											{opt.subtitle}
+										</div>
+									) : null}
+								</div>
 							</div>
 							<div className="flex items-center gap-1 shrink-0">
 								{opt.badge ? (

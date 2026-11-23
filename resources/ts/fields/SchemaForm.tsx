@@ -1,16 +1,21 @@
 import React from 'react';
 import { t } from '../lib/i18n';
-import { cn, DynamicIcon, sanitizeSameOriginUrl } from '../lib/utils';
-import { Badge, Button, Card, PortalRoot } from '../ui';
+import { cn, sanitizeSameOriginUrl } from '../lib/utils';
+import {
+	Badge,
+	Button,
+	Card,
+	PortalRoot,
+	ResponsiveTabBar,
+	type ResponsiveTabItem,
+} from '../ui';
 import { SubmitField } from './controls';
 import {
 	countNestedErrors,
 	ensureNativeLanguageTabsBridge,
 	lookupScopedFieldValue,
-	navigateTablistByKey,
 	resolveFieldState,
 	resolveGridSpanClass,
-	scrollTabIntoView,
 	SearchableTabPanel,
 } from './shared';
 import type {
@@ -21,6 +26,7 @@ import type {
 import { valibot } from './validation';
 import type { MediaCustomFieldRenderer } from './mediaUtils';
 import { SchemaField } from './schema/SchemaField';
+import { FieldControlIsland } from './schema/FieldControlIsland';
 import {
 	SchemaFormContext,
 	useSchemaFormContext,
@@ -49,6 +55,7 @@ export {
 };
 export { extractSchemaInitialValues };
 export { SchemaField };
+export { FieldControlIsland };
 
 export const SchemaForm: React.FC<SchemaFormProps> = (props) => {
 	const {
@@ -192,7 +199,12 @@ export const SchemaForm: React.FC<SchemaFormProps> = (props) => {
 
 	function renderFieldsGrid(items: SchemaFieldDefinition[]): React.ReactNode {
 		return (
-			<div className={cn('grid grid-cols-12', schema.isFragment ? 'gap-3.5' : 'gap-4')}>
+			<div
+				className={cn(
+					'@container/rw-grid grid grid-cols-12',
+					schema.isFragment ? 'gap-3 @lg/rw-grid:gap-3.5' : 'gap-3.5 @lg/rw-grid:gap-4'
+				)}
+			>
 				{items.map((field, idx) => renderFieldNode(field, idx))}
 			</div>
 		);
@@ -256,192 +268,253 @@ export const SchemaForm: React.FC<SchemaFormProps> = (props) => {
 	const resolvedPresenceEndpoint = !schema.isFragment
 		? (props.presenceEndpoint ?? schema.presenceEndpoint ?? null)
 		: null;
+	const [isWideForVertical, setIsWideForVertical] = React.useState(true);
+	const requestedTabsLayout = props.tabsLayout ?? schema.tabsLayout ?? 'horizontal';
+	const useVerticalTopTabs =
+		requestedTabsLayout === 'vertical' && visibleTopTabs.length > 1 && isWideForVertical;
 	const useCardSurface =
 		!schema.isFragment &&
 		(props.card === true || props.surface === 'card' || schema.surface === 'card');
+	const hasCardTabsAbove =
+		useCardSurface && !useVerticalTopTabs && topTabs.length > 0 && visibleTopTabs.length > 1;
+	const sanitizedInstanceId = instanceId.replace(/:/g, '');
 
-	const fieldsAndTabsContent = (
-		<>
-			{topTabs.length > 0 ? (
-				<div className={schema.isFragment ? 'space-y-3.5' : 'space-y-5'}>
-					{visibleTopTabs.length > 1 ? (
-						<div
-							role="tablist"
-							aria-label={schema.name || 'Sections'}
-							data-rw-tablist=""
-							data-variant="line"
-							onKeyDown={(e) => navigateTablistByKey(e, 'horizontal')}
-							className="flex items-center gap-1 border-b border-border"
+	React.useEffect(() => {
+		if (requestedTabsLayout !== 'vertical') {
+			setIsWideForVertical(true);
+			return;
+		}
+		const target = containerRef.current;
+		if (!target || typeof window === 'undefined') {
+			setIsWideForVertical(true);
+			return;
+		}
+		const update = () => {
+			const width = target.clientWidth;
+			setIsWideForVertical(width <= 0 || width >= 768);
+		};
+		update();
+		if (typeof ResizeObserver !== 'undefined') {
+			const ro = new ResizeObserver(() => update());
+			ro.observe(target);
+			return () => ro.disconnect();
+		}
+		window.addEventListener('resize', update);
+		return () => window.removeEventListener('resize', update);
+	}, [requestedTabsLayout, containerRef]);
+
+	const buildTopTabItems = (): ResponsiveTabItem[] =>
+		visibleTopTabs.map((tab) => ({
+			id: tab.id,
+			btnId: `rw-toptab-${sanitizedInstanceId}-${tab.id}`,
+			label: tab.label,
+			icon: tab.icon,
+			badge: tab.badge,
+			errorCount: countNestedErrors(tab.fields || [], errors),
+			confirmDelete: Boolean(tab.confirmDelete),
+		}));
+
+	const renderTopTablist = (mode: 'aboveCard' | 'plain' | 'vertical'): React.ReactNode => {
+		if (visibleTopTabs.length <= 1) {
+			return null;
+		}
+		return (
+			<ResponsiveTabBar
+				items={buildTopTabItems()}
+				activeId={activeTopTabId}
+				ariaLabel={schema.name || 'Sections'}
+				variant={mode === 'vertical' ? 'vertical' : 'line'}
+				aboveCard={mode === 'aboveCard'}
+				compact={mode !== 'vertical' && Boolean(schema.isFragment)}
+				formLayout={mode === 'vertical'}
+				onSelect={(id) => setActiveTopTabId(id)}
+			/>
+		);
+	};
+
+	const renderTopTabPanels = (): React.ReactNode => {
+		if (topTabs.length === 0) {
+			return null;
+		}
+		return (
+			<div>
+				{topTabs.map((tab) => {
+					const isVisible = resolveFieldState(tab, conditionValues, scopePrefix).visible;
+					const isActive = isVisible && tab.id === activeTopTabId;
+					const topTabBtnId = `rw-toptab-${instanceId.replace(/:/g, '')}-${tab.id}`;
+					const tabSlot = resolveTabPaneSlot(props.tabSlots, tab);
+					return (
+						<SearchableTabPanel
+							key={tab.id}
+							id={tab.id}
+							labelledBy={topTabBtnId}
+							isActive={isActive}
+							searchableWhenHidden={isVisible}
+							onRevealMatch={() => setActiveTopTabId(tab.id)}
 						>
-							{visibleTopTabs.map((tab) => {
-								const isActive = tab.id === activeTopTabId;
-								const errCount = countNestedErrors(tab.fields || [], errors);
-								const topTabBtnId = `rw-toptab-${instanceId.replace(/:/g, '')}-${tab.id}`;
-								return (
-									<button
-										key={tab.id}
-										id={topTabBtnId}
-										type="button"
-										role="tab"
-										aria-selected={isActive}
-										tabIndex={isActive ? 0 : -1}
-										data-rw-confirm-delete-tab={tab.confirmDelete ? '1' : undefined}
-										style={
-											tab.confirmDelete
-												? ({ '--tab-accent': 'var(--destructive)' } as React.CSSProperties)
-												: undefined
-										}
-										onClick={(e) => {
-											setActiveTopTabId(tab.id);
-											scrollTabIntoView(e.currentTarget);
-										}}
-										className={cn(
-											'inline-flex items-center gap-2 text-xs font-medium transition-colors cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-											schema.isFragment ? 'px-3 py-2' : 'px-4 py-2.5',
-											isActive
-												? tab.confirmDelete
-													? 'text-destructive'
-													: 'text-foreground'
-												: tab.confirmDelete
-													? 'text-muted-foreground hover:text-destructive'
-													: 'text-muted-foreground hover:text-foreground',
-											errCount > 0 && 'text-destructive'
-										)}
-									>
-										{tab.icon ? <DynamicIcon name={tab.icon} className="size-3.5 shrink-0" /> : null}
-										<span>{tab.label}</span>
-										{tab.badge !== undefined && tab.badge !== null && tab.badge !== '' ? (
-											<Badge variant="secondary" mono>
-												{tab.badge}
-											</Badge>
-										) : null}
-										{errCount > 0 ? <Badge variant="destructive">{errCount}</Badge> : null}
-									</button>
-								);
-							})}
-						</div>
-					) : null}
-
-					{topTabs.map((tab) => {
-						const isVisible = resolveFieldState(tab, conditionValues, scopePrefix).visible;
-						const isActive = isVisible && tab.id === activeTopTabId;
-						const topTabBtnId = `rw-toptab-${instanceId.replace(/:/g, '')}-${tab.id}`;
-						const tabSlot = resolveTabPaneSlot(props.tabSlots, tab);
-						return (
-							<SearchableTabPanel
-								key={tab.id}
-								id={tab.id}
-								labelledBy={topTabBtnId}
-								isActive={isActive}
-								searchableWhenHidden={isVisible}
-								onRevealMatch={() => setActiveTopTabId(tab.id)}
-							>
-								<div className={schema.isFragment ? 'space-y-3.5' : 'space-y-4'}>
-									{tabSlot?.before}
-									{tab.description ? (
-										<p className="text-xs text-muted-foreground">{tab.description}</p>
-									) : null}
-									{renderFieldsGrid(tab.fields || [])}
-									{tabSlot?.after}
-									{tab.notes ? (
-										<p className="text-[11px] text-muted-foreground/80">{tab.notes}</p>
-									) : null}
-								</div>
-							</SearchableTabPanel>
-						);
-					})}
-				</div>
-			) : null}
-
-			{rootFields.length > 0 ? (
-				isMultiStep ? (
-					<div className="space-y-4">
-						<div className="flex flex-wrap items-center gap-2 border-b border-border pb-3">
-							{steps.map((step, sIdx) => {
-								const isCurrent = step.index === activeStepIndex;
-								const stepErrCount = countNestedErrors(step.fields, errors);
-								return (
-									<button
-										key={step.index}
-										type="button"
-										onClick={() => {
-											if (step.index > activeStepIndex && props.validateOnSubmit !== false) {
-												const stepCheck = validateStep(activeStepIndex);
-												if (!stepCheck.valid) {
-													return;
-												}
-											}
-											setActiveStepIndex(step.index);
-										}}
-										className={cn(
-											'inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer',
-											isCurrent
-												? 'bg-primary text-primary-foreground'
-												: 'bg-muted text-muted-foreground hover:text-foreground'
-										)}
-									>
-										<span className="font-mono text-[11px]">{sIdx + 1}.</span>
-										<span>{step.title}</span>
-										{stepErrCount > 0 ? <Badge variant="destructive">{stepErrCount}</Badge> : null}
-									</button>
-								);
-							})}
-						</div>
-
-						{steps.map((step) => (
-							<div
-								key={step.index}
-								className={cn(step.index !== activeStepIndex && 'hidden')}
-							>
-								{renderFieldsGrid(step.fields)}
+							<div className={schema.isFragment ? 'space-y-3.5' : 'space-y-4'}>
+								{tabSlot?.before}
+								{tab.description ? (
+									<p className="text-xs text-muted-foreground">{tab.description}</p>
+								) : null}
+								{renderFieldsGrid(tab.fields || [])}
+								{tabSlot?.after}
+								{tab.notes ? (
+									<p className="text-[11px] text-muted-foreground">{tab.notes}</p>
+								) : null}
 							</div>
-						))}
+						</SearchableTabPanel>
+					);
+				})}
+			</div>
+		);
+	};
 
-						<div className="flex items-center justify-between pt-2">
-							<Button
-								type="button"
-								variant="outline"
-								size="sm"
-								disabled={activeStepIndex <= (steps[0]?.index ?? 0)}
-								onClick={() => {
-									const curPos = steps.findIndex((s) => s.index === activeStepIndex);
-									const prevStep = curPos > 0 ? steps[curPos - 1] : undefined;
-									if (prevStep) {
-										setActiveStepIndex(prevStep.index);
-									}
-								}}
-							>
-								{t('form.previousStep', 'Previous')}
-							</Button>
-							{activeStepIndex < (steps[steps.length - 1]?.index ?? -1) ? (
-								<Button
+	const rootFieldsNode =
+		rootFields.length > 0 ? (
+			isMultiStep ? (
+				<div className="space-y-4">
+					<div className="flex flex-wrap items-center gap-2 border-b border-border pb-3">
+						{steps.map((step, sIdx) => {
+							const isCurrent = step.index === activeStepIndex;
+							const stepErrCount = countNestedErrors(step.fields, errors);
+							return (
+								<button
+									key={step.index}
 									type="button"
-									size="sm"
 									onClick={() => {
-										if (props.validateOnSubmit !== false) {
+										if (step.index > activeStepIndex && props.validateOnSubmit !== false) {
 											const stepCheck = validateStep(activeStepIndex);
 											if (!stepCheck.valid) {
 												return;
 											}
 										}
-										const curPos = steps.findIndex((s) => s.index === activeStepIndex);
-										const nextStep = curPos >= 0 ? steps[curPos + 1] : undefined;
-										if (nextStep) {
-											setActiveStepIndex(nextStep.index);
-										}
+										setActiveStepIndex(step.index);
 									}}
+									className={cn(
+										'inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer',
+										isCurrent
+											? 'bg-primary text-primary-foreground'
+											: 'bg-muted text-muted-foreground hover:text-foreground'
+									)}
 								>
-									{t('form.nextStep', 'Next Step')}
-								</Button>
-							) : null}
+									<span className="font-mono text-[11px]">{sIdx + 1}.</span>
+									<span>{step.title}</span>
+									{stepErrCount > 0 ? <Badge variant="destructive">{stepErrCount}</Badge> : null}
+								</button>
+							);
+						})}
+					</div>
+
+					{steps.map((step) => (
+						<div
+							key={step.index}
+							className={cn(step.index !== activeStepIndex && 'hidden')}
+						>
+							{renderFieldsGrid(step.fields)}
+						</div>
+					))}
+
+					<div className="flex items-center justify-between pt-2">
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							disabled={activeStepIndex <= (steps[0]?.index ?? 0)}
+							onClick={() => {
+								const curPos = steps.findIndex((s) => s.index === activeStepIndex);
+								const prevStep = curPos > 0 ? steps[curPos - 1] : undefined;
+								if (prevStep) {
+									setActiveStepIndex(prevStep.index);
+								}
+							}}
+						>
+							{t('form.previousStep', 'Previous')}
+						</Button>
+						{activeStepIndex < (steps[steps.length - 1]?.index ?? -1) ? (
+							<Button
+								type="button"
+								size="sm"
+								onClick={() => {
+									if (props.validateOnSubmit !== false) {
+										const stepCheck = validateStep(activeStepIndex);
+										if (!stepCheck.valid) {
+											return;
+										}
+									}
+									const curPos = steps.findIndex((s) => s.index === activeStepIndex);
+									const nextStep = curPos >= 0 ? steps[curPos + 1] : undefined;
+									if (nextStep) {
+										setActiveStepIndex(nextStep.index);
+									}
+								}}
+							>
+								{t('form.nextStep', 'Next Step')}
+							</Button>
+						) : null}
+					</div>
+				</div>
+			) : (
+				renderFieldsGrid(rootFields)
+			)
+		) : null;
+
+	const fieldsAndTabsContent = useCardSurface ? (
+		useVerticalTopTabs ? (
+			<div className="@container/rw-form min-w-0">
+				<Card data-rw-form-card="" data-rw-tabs-layout="vertical" className="p-0">
+					<div className="flex min-w-0">
+						<aside className="w-56 shrink-0 rounded-s-xl border-r border-border bg-muted/20 p-2">
+							<div className="sticky top-4">{renderTopTablist('vertical')}</div>
+						</aside>
+						<div className="min-w-0 flex-1 p-5 space-y-5">
+							{renderTopTabPanels()}
+							{rootFieldsNode}
 						</div>
 					</div>
-				) : (
-					renderFieldsGrid(rootFields)
-				)
+				</Card>
+			</div>
+		) : (
+			<div className={cn('@container/rw-form min-w-0', hasCardTabsAbove && 'space-y-0')}>
+				{hasCardTabsAbove ? renderTopTablist('aboveCard') : null}
+				<Card
+					data-rw-form-card=""
+					className={cn(
+						'p-5 space-y-5',
+						hasCardTabsAbove && 'rounded-t-none rounded-b-xl border-t-0'
+					)}
+				>
+					{renderTopTabPanels()}
+					{rootFieldsNode}
+				</Card>
+			</div>
+		)
+	) : useVerticalTopTabs ? (
+		<div
+			data-rw-tabs-layout="vertical"
+			className="@container/rw-form min-w-0 flex items-start gap-6"
+		>
+			<aside className="w-52 shrink-0 sticky top-4 border-r border-border pr-3">
+				{renderTopTablist('vertical')}
+			</aside>
+			<div className="min-w-0 flex-1 space-y-5">
+				{renderTopTabPanels()}
+				{rootFieldsNode}
+			</div>
+		</div>
+	) : (
+		<>
+			{topTabs.length > 0 ? (
+				<div className={cn('@container/rw-form min-w-0', schema.isFragment ? 'space-y-3.5' : 'space-y-5')}>
+					{renderTopTablist('plain')}
+					{renderTopTabPanels()}
+				</div>
 			) : null}
+			{rootFieldsNode}
 		</>
 	);
+
+	const hasPortaledHeadButtons = Boolean(headButtonsTarget && submits.some((s) => s.header));
 
 	const bodyContent = (
 		<>
@@ -467,20 +540,16 @@ export const SchemaForm: React.FC<SchemaFormProps> = (props) => {
 				/>
 			))}
 
-			{useCardSurface ? (
-				<Card data-rw-form-card="" className="p-5 space-y-5">
-					{fieldsAndTabsContent}
-				</Card>
-			) : (
-				fieldsAndTabsContent
-			)}
+			{fieldsAndTabsContent}
 
-			{!schema.isFragment && (submits.length > 0 || (props.onSubmit && props.submitLabel)) ? (
+			{!schema.isFragment &&
+			!(props.hideFooterWhenPortaled && hasPortaledHeadButtons) &&
+			(submits.length > 0 || (props.onSubmit && props.submitLabel)) ? (
 				<div
 					data-rw-form-actions=""
 					className={cn(
-						'flex flex-wrap items-center justify-between gap-3',
-						!useCardSurface && 'border-t border-border pt-4'
+						'flex flex-wrap items-center justify-start gap-3',
+						useCardSurface ? 'pt-1' : 'border-t border-border pt-4'
 					)}
 				>
 					{submits.length > 0 ? (
@@ -493,7 +562,7 @@ export const SchemaForm: React.FC<SchemaFormProps> = (props) => {
 				</div>
 			) : null}
 
-			{headButtonsTarget && submits.some((s) => s.header) ? (
+			{hasPortaledHeadButtons ? (
 				<PortalRoot container={headButtonsTarget} ssrFallback={false}>
 					{renderSubmitButtons(true)}
 				</PortalRoot>
@@ -572,7 +641,7 @@ export const SchemaForm: React.FC<SchemaFormProps> = (props) => {
 					e.preventDefault();
 					let pendingSubmit: unknown;
 					try {
-						pendingSubmit = props.onSubmit(values);
+						pendingSubmit = props.onSubmit(values, e.currentTarget);
 					} catch (submitErr) {
 						setSubmittingState(false);
 						throw submitErr;

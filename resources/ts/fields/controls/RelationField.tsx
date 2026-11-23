@@ -492,8 +492,10 @@ export const RelationFieldControl: React.FC<RelationFieldProps> = (rawProps) => 
 		const cleanBaseName = inputName.endsWith('[]') ? inputName.slice(0, -2) : inputName;
 		return (
 			<>
-				<input ref={hiddenAnchorRef} type="hidden" name={`${cleanBaseName}_present`} value="1" />
-				{!isIslandHost ? (
+				{!rawProps.inlinePortal ? (
+					<input ref={hiddenAnchorRef} type="hidden" name={`${cleanBaseName}_present`} value="1" />
+				) : null}
+				{!isIslandHost && !rawProps.inlinePortal ? (
 					isMultiple ? (
 						multiVals.length > 0 ? (
 							multiVals.map((val) => (
@@ -557,7 +559,7 @@ export const RelationFieldControl: React.FC<RelationFieldProps> = (rawProps) => 
 	return (
 		<div
 			ref={rootRef}
-			className="space-y-1.5"
+			className="@container/rw-rel min-w-0 space-y-1.5"
 			data-rw-control="relation"
 			data-cardinality={cardinality}
 			data-widget={widget}

@@ -83,6 +83,7 @@ export function FileField(rawProps: ReactInputfieldProps): React.ReactElement {
 	});
 
 	const activeCount = activeExisting.length + queuedEntries.length;
+	const effectiveViewMode = items.length === 1 ? 'table' : viewMode;
 	const inspectedIndex = inspectorItemId ? items.findIndex((it) => it.id === inspectorItemId) : -1;
 	const inspectedItem = inspectedIndex >= 0 ? items[inspectedIndex] : null;
 
@@ -109,7 +110,7 @@ export function FileField(rawProps: ReactInputfieldProps): React.ReactElement {
 					void processIncomingFiles(pasted);
 				}
 			}}
-			className="@container space-y-2 focus:outline-none"
+			className="@container/rw-media min-w-0 w-full space-y-2 focus:outline-none"
 			data-rw-media-field="file"
 			data-field-name={props.name || undefined}
 		>
@@ -181,7 +182,7 @@ export function FileField(rawProps: ReactInputfieldProps): React.ReactElement {
 										</div>
 									) : null}
 
-									<div className="flex items-center justify-between gap-2">
+									<div className="flex flex-col gap-1.5 @md/rw-media:flex-row @md/rw-media:items-center @md/rw-media:justify-between @md/rw-media:gap-2">
 										<div className="flex min-w-0 flex-1 items-center gap-2">
 											<button
 												type="button"
@@ -193,15 +194,15 @@ export function FileField(rawProps: ReactInputfieldProps): React.ReactElement {
 											</button>
 											<div className="min-w-0 flex-1">
 												<MediaItemFilename item={singleItem} isDeleted={false} />
-												<div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] tabular-nums text-muted-foreground">
-													<span className="font-mono uppercase">
-														{singleItem.ext || 'file'}
-													</span>
-													<span className="font-mono">
-														· {singleItem.filesizeStr || formatMediaBytes(singleItem.size)}
+												<div className="flex min-w-0 items-center gap-1.5 overflow-hidden whitespace-nowrap text-[10px] tabular-nums text-muted-foreground">
+													<span className="min-w-0 truncate font-mono">
+														{[
+															(singleItem.ext || 'file').toUpperCase(),
+															singleItem.filesizeStr || formatMediaBytes(singleItem.size),
+														].join(' · ')}
 													</span>
 													{props.languages && props.languages.length > 1 ? (
-														<span className="font-mono">
+														<span className="shrink-0 font-mono">
 															· {langSummary.filled}/{langSummary.total}
 														</span>
 													) : null}
@@ -209,7 +210,7 @@ export function FileField(rawProps: ReactInputfieldProps): React.ReactElement {
 											</div>
 										</div>
 
-										<div className="flex shrink-0 items-center gap-0.5">
+										<div className="flex flex-wrap items-center justify-end gap-0.5 border-t border-border/50 pt-1 @md/rw-media:shrink-0 @md/rw-media:flex-nowrap @md/rw-media:border-t-0 @md/rw-media:pt-0">
 											{hasInlineMeta ? (
 												<Button
 													type="button"
@@ -364,7 +365,7 @@ export function FileField(rawProps: ReactInputfieldProps): React.ReactElement {
 											key={delItem.id}
 											className="flex min-h-8 items-center justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-1 text-xs"
 										>
-											<div className="flex min-w-0 items-center gap-2">
+											<div className="flex min-w-0 flex-1 items-center gap-2">
 												<DynamicIcon
 													name={resolveFileIconName(delItem.ext)}
 													className="size-3.5 shrink-0 text-muted-foreground opacity-60"
@@ -373,7 +374,7 @@ export function FileField(rawProps: ReactInputfieldProps): React.ReactElement {
 												<span className="truncate text-muted-foreground line-through">
 													{delItem.basename}
 												</span>
-												<span className="hidden shrink-0 text-[11px] font-medium text-destructive @xs:inline">
+												<span className="hidden shrink-0 text-[11px] font-medium text-destructive @xs/rw-media:inline">
 													· {t('media.markedForDeletion', 'Marked for deletion')}
 												</span>
 											</div>
@@ -398,11 +399,11 @@ export function FileField(rawProps: ReactInputfieldProps): React.ReactElement {
 									key={`${entry.file.name}_${idx}`}
 									className="flex items-center justify-between gap-2 rounded-md border border-primary/40 bg-primary/5 px-2.5 py-1.5 text-xs"
 								>
-									<div className="flex min-w-0 items-center gap-2">
-										<span className="font-medium text-primary">
+									<div className="flex min-w-0 flex-1 items-center gap-2">
+										<span className="shrink-0 font-medium text-primary">
 											{t('media.pendingUpload', 'Pending save')}
 										</span>
-										<span className="truncate font-medium text-foreground">{entry.file.name}</span>
+										<span className="min-w-0 truncate font-medium text-foreground">{entry.file.name}</span>
 										<span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
 											· {formatMediaBytes(entry.file.size)}
 										</span>
@@ -469,7 +470,7 @@ export function FileField(rawProps: ReactInputfieldProps): React.ReactElement {
 					{items.length > 0 || queuedEntries.length > 0 ? (
 						<div data-rw-field-slot="selected" className="space-y-2">
 					{/* Multi-File Toolbar */}
-					{items.length > 0 ? (
+					{items.length > 1 || (items.length > 0 && maxFiles > 0) ? (
 						<div className="flex flex-wrap items-center justify-between gap-2">
 							<Badge variant="secondary" className="font-mono text-[11px] tabular-nums">
 								{maxFiles > 0
@@ -477,63 +478,52 @@ export function FileField(rawProps: ReactInputfieldProps): React.ReactElement {
 									: t('media.itemCount', { count: activeCount }, `${activeCount} item(s)`)}
 							</Badge>
 
-							<div className="flex items-center gap-1.5">
-								<div
-									role="group"
-									className="inline-flex items-center rounded-md border border-border bg-muted/35 p-0.5"
-								>
-									<button
-										type="button"
-										onClick={() => setViewMode('table')}
-										aria-pressed={viewMode === 'table'}
-										aria-label={t('media.viewTable', 'Table view')}
-										title={t('media.viewTable', 'Table view')}
-										className={cn(
-											'inline-flex items-center gap-1 rounded-xs px-2 py-1 text-[11px] font-medium transition-colors cursor-pointer',
-											viewMode === 'table'
-												? 'bg-background text-foreground shadow-2xs'
-												: 'text-muted-foreground hover:text-foreground'
-										)}
+							{items.length > 1 ? (
+								<div className="flex items-center gap-1.5">
+									<div
+										role="group"
+										className="inline-flex items-center rounded-md border border-border bg-muted/35 p-0.5"
 									>
-										<DynamicIcon name="list" className="size-3.5" aria-hidden="true" />
-										<span className="hidden @sm:inline">{t('media.viewTable', 'Table view')}</span>
-									</button>
-									<button
-										type="button"
-										onClick={() => setViewMode('grid')}
-										aria-pressed={viewMode === 'grid'}
-										aria-label={t('media.viewGrid', 'Grid view')}
-										title={t('media.viewGrid', 'Grid view')}
-										className={cn(
-											'inline-flex items-center gap-1 rounded-xs px-2 py-1 text-[11px] font-medium transition-colors cursor-pointer',
-											viewMode === 'grid'
-												? 'bg-background text-foreground shadow-2xs'
-												: 'text-muted-foreground hover:text-foreground'
-										)}
-									>
-										<DynamicIcon name="layout-grid" className="size-3.5" aria-hidden="true" />
-										<span className="hidden @sm:inline">{t('media.viewGrid', 'Grid view')}</span>
-									</button>
+										<button
+											type="button"
+											onClick={() => setViewMode('table')}
+											aria-pressed={viewMode === 'table'}
+											aria-label={t('media.viewTable', 'Table view')}
+											title={t('media.viewTable', 'Table view')}
+											className={cn(
+												'inline-flex items-center gap-1 rounded-xs px-2 py-1 text-[11px] font-medium transition-colors cursor-pointer',
+												viewMode === 'table'
+													? 'bg-background text-foreground shadow-2xs'
+													: 'text-muted-foreground hover:text-foreground'
+											)}
+										>
+											<DynamicIcon name="list" className="size-3.5" aria-hidden="true" />
+											<span className="hidden @sm/rw-media:inline">{t('media.viewTable', 'Table view')}</span>
+										</button>
+										<button
+											type="button"
+											onClick={() => setViewMode('grid')}
+											aria-pressed={viewMode === 'grid'}
+											aria-label={t('media.viewGrid', 'Grid view')}
+											title={t('media.viewGrid', 'Grid view')}
+											className={cn(
+												'inline-flex items-center gap-1 rounded-xs px-2 py-1 text-[11px] font-medium transition-colors cursor-pointer',
+												viewMode === 'grid'
+													? 'bg-background text-foreground shadow-2xs'
+													: 'text-muted-foreground hover:text-foreground'
+											)}
+										>
+											<DynamicIcon name="layout-grid" className="size-3.5" aria-hidden="true" />
+											<span className="hidden @sm/rw-media:inline">{t('media.viewGrid', 'Grid view')}</span>
+										</button>
+									</div>
 								</div>
-
-								{canAddMore && items.length > 3 ? (
-									<Button
-										type="button"
-										variant="outline"
-										size="sm"
-										className="h-7 px-2.5 text-xs"
-										onClick={() => inputRef.current?.click()}
-									>
-										<DynamicIcon name="plus" className="size-3.5" aria-hidden="true" />
-										<span>{t('media.addFiles', 'Add files')}</span>
-									</Button>
-								) : null}
-							</div>
+							) : null}
 						</div>
 					) : null}
 
 					{/* Multi-File List: Compact TABLE Mode */}
-					{items.length > 0 && viewMode === 'table' ? (
+					{items.length > 0 && effectiveViewMode === 'table' ? (
 						<>
 							<SortableStatusRegion message={sortable.statusMessage} />
 							<div
@@ -575,12 +565,12 @@ export function FileField(rawProps: ReactInputfieldProps): React.ReactElement {
 					) : null}
 
 					{/* Multi-File List: Compact GRID Mode */}
-					{items.length > 0 && viewMode === 'grid' ? (
+					{items.length > 0 && effectiveViewMode === 'grid' ? (
 						<>
 							<SortableStatusRegion message={sortable.statusMessage} />
 							<div
 								{...sortable.getContainerProps()}
-								className="grid grid-cols-1 gap-2 @sm:grid-cols-2 @xl:grid-cols-3"
+								className="grid grid-cols-1 gap-2 @md/rw-media:grid-cols-2 @xl/rw-media:grid-cols-3"
 							>
 								{items.map((f, idx) => (
 									<FileGridCard
@@ -617,11 +607,11 @@ export function FileField(rawProps: ReactInputfieldProps): React.ReactElement {
 									key={`${entry.file.name}_${idx}`}
 									className="flex items-center justify-between gap-2 rounded-md border border-primary/40 bg-primary/5 px-2.5 py-1.5 text-xs"
 								>
-									<div className="flex min-w-0 items-center gap-2">
-										<span className="font-medium text-primary">
+									<div className="flex min-w-0 flex-1 items-center gap-2">
+										<span className="shrink-0 font-medium text-primary">
 											{t('media.pendingUpload', 'Pending save')}
 										</span>
-										<span className="truncate font-medium text-foreground">{entry.file.name}</span>
+										<span className="min-w-0 truncate font-medium text-foreground">{entry.file.name}</span>
 										<span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
 											· {formatMediaBytes(entry.file.size)}
 										</span>

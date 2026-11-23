@@ -12,8 +12,11 @@ export {
 	addDaysIso,
 	addMonths,
 	addWeeks,
+	buildDateDisabledMatcher,
 	buildMonthMatrix,
+	buildTimeSlots,
 	buildWeekDays,
+	compareTimeStrings,
 	dateFns,
 	diffDaysIso,
 	differenceInCalendarDays,
@@ -24,6 +27,10 @@ export {
 	format,
 	formatDisplayDate,
 	formatIsoDate,
+	formatIsoDateTime,
+	formatIsoTime,
+	formatTimeString,
+	getDefaultDateRangePresets,
 	isAfter,
 	isBefore,
 	isSameDay,
@@ -33,16 +40,27 @@ export {
 	isWithinInterval,
 	parseISO,
 	parseIsoDate,
+	parseIsoDateTime,
+	parseTimeString,
 	startOfDay,
 	startOfMonth,
 	startOfWeek,
 	subDays,
 	subMonths,
 	subWeeks,
+	type DateRangePreset,
+	type ParsedTime,
 } from './dateUtils';
 
 export { Calendar, type CalendarProps } from './Calendar';
 export { DatePicker, type DatePickerProps } from './DatePicker';
+export { TimePicker, TimePickerPanel, type TimePickerPanelProps, type TimePickerProps } from './TimePicker';
+export {
+	DateTimePicker,
+	DateTimePickerPanel,
+	type DateTimePickerPanelProps,
+	type DateTimePickerProps,
+} from './DateTimePicker';
 export {
 	DateRangePicker,
 	type DateRangeIsoValue,

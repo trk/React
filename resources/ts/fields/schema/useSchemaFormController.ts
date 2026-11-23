@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { useKeyboardShortcuts } from '../../hooks';
+import { markHostFormDirty, useKeyboardShortcuts } from '../../hooks';
 import { t } from '../../lib/i18n';
 import { countNestedErrors, resolveFieldState } from '../shared';
 import type {
@@ -58,6 +58,7 @@ export function useSchemaFormController(props: SchemaFormProps) {
 			isFragment: props.isFragment ?? false,
 			dirtyGuard: props.dirtyGuard ?? !Boolean(props.isFragment),
 			surface: props.surface ?? null,
+			tabsLayout: props.tabsLayout ?? null,
 			presenceKey: props.presenceKey ?? null,
 			presenceEndpoint: props.presenceEndpoint ?? null,
 			csrf: props.csrf ?? null,
@@ -80,8 +81,16 @@ export function useSchemaFormController(props: SchemaFormProps) {
 	);
 
 	const [localValues, setLocalValues] = useState<Record<string, unknown>>(initialValues);
+	const localValuesRef = useRef<Record<string, unknown>>(localValues);
+	localValuesRef.current = localValues;
 	const prevSeededValuesRef = useRef<Record<string, unknown>>(initialValues);
 	const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
+	const clientErrorsRef = useRef<Record<string, string>>(clientErrors);
+	clientErrorsRef.current = clientErrors;
+	const onChangeRef = useRef(props.onChange);
+	onChangeRef.current = props.onChange;
+	const onFieldChangeRef = useRef(props.onFieldChange);
+	onFieldChangeRef.current = props.onFieldChange;
 	const [isDirtyLocal, setIsDirtyLocal] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const isSubmittingRef = useRef(false);
@@ -133,6 +142,9 @@ export function useSchemaFormController(props: SchemaFormProps) {
 							changed = true;
 						}
 					}
+				}
+				if (changed) {
+					localValuesRef.current = merged;
 				}
 				return changed ? merged : prev;
 			});
@@ -387,27 +399,57 @@ export function useSchemaFormController(props: SchemaFormProps) {
 
 	// Dirty guard (`beforeunload`), live dirty event (`rw:schema-form-dirty`), and Cmd/Ctrl+S save shortcut
 	const isDirty = isAttachedFragment && parentCtx ? parentCtx.isDirty : isDirtyLocal;
+	const isSelfDispatchingDirtyRef = useRef(false);
 	useEffect(() => {
 		if (schema.isFragment || typeof window === 'undefined') {
 			return;
 		}
-		window.dispatchEvent(
-			new CustomEvent('rw:schema-form-dirty', {
-				detail: {
-					formId: schema.id,
-					isDirty: Boolean(isDirty),
-					dirtyGuard: Boolean(schema.dirtyGuard),
-				},
-			})
-		);
-		return () => {
+		isSelfDispatchingDirtyRef.current = true;
+		try {
 			window.dispatchEvent(
 				new CustomEvent('rw:schema-form-dirty', {
-					detail: { formId: schema.id, isDirty: false, dirtyGuard: false },
+					detail: {
+						formId: schema.id,
+						isDirty: Boolean(isDirty),
+						dirtyGuard: Boolean(schema.dirtyGuard),
+					},
 				})
 			);
+		} finally {
+			isSelfDispatchingDirtyRef.current = false;
+		}
+		return () => {
+			isSelfDispatchingDirtyRef.current = true;
+			try {
+				window.dispatchEvent(
+					new CustomEvent('rw:schema-form-dirty', {
+						detail: { formId: schema.id, isDirty: false, dirtyGuard: false },
+					})
+				);
+			} finally {
+				isSelfDispatchingDirtyRef.current = false;
+			}
 		};
 	}, [schema.isFragment, schema.id, schema.dirtyGuard, isDirty]);
+
+	useEffect(() => {
+		if (schema.isFragment || typeof window === 'undefined') {
+			return;
+		}
+		const onExternalDirtyClear = (ev: Event) => {
+			if (isSelfDispatchingDirtyRef.current) {
+				return;
+			}
+			const detail = (
+				ev as CustomEvent<{ formId?: string; isDirty?: boolean }>
+			).detail;
+			if (schema.id && detail?.formId === schema.id && detail?.isDirty === false) {
+				setIsDirtyLocal(false);
+			}
+		};
+		window.addEventListener('rw:schema-form-dirty', onExternalDirtyClear);
+		return () => window.removeEventListener('rw:schema-form-dirty', onExternalDirtyClear);
+	}, [schema.isFragment, schema.id]);
 
 	const triggerFormSubmit = useCallback((submitBtn?: HTMLButtonElement | null): void => {
 		const formEl = containerRef.current;
@@ -601,6 +643,9 @@ export function useSchemaFormController(props: SchemaFormProps) {
 						changed = true;
 					}
 				}
+				if (changed) {
+					localValuesRef.current = next;
+				}
 				if (markDirty && changed) {
 					setIsDirtyLocal(true);
 				}
@@ -650,54 +695,69 @@ export function useSchemaFormController(props: SchemaFormProps) {
 	}, [skipRequiredFieldNames, scopePrefix, errors, setFieldError]);
 
 	const updateFieldValue = useCallback(
-		(name: string, nextVal: unknown, fieldDef?: SchemaFieldDefinition, fieldScopePrefix?: string) => {
+		(name: string, nextVal: unknown, fieldDef?: SchemaFieldDefinition, fieldScopePrefix?: string): Record<string, unknown> | void => {
 			if (!name) {
 				return;
 			}
 			const activeParent = parentCtxRef.current;
 			if (isAttachedFragment && activeParent) {
-				activeParent.updateFieldValue(name, nextVal, fieldDef, fieldScopePrefix || scopePrefix);
-				props.onChange?.({ ...activeParent.values, [name]: nextVal });
-				return;
+				const updatedParent = activeParent.updateFieldValue(
+					name,
+					nextVal,
+					fieldDef,
+					fieldScopePrefix || scopePrefix
+				);
+				const nextParentValues = updatedParent ?? { ...activeParent.values, [name]: nextVal };
+				onFieldChangeRef.current?.(name, nextVal, nextParentValues);
+				onChangeRef.current?.(nextParentValues);
+				return nextParentValues;
 			}
+
+			const next = { ...localValuesRef.current, [name]: nextVal };
+			localValuesRef.current = next;
+			setLocalValues(next);
 			setIsDirtyLocal(true);
-			setLocalValues((prev) => {
-				const next = { ...prev, [name]: nextVal };
-				const ownerFieldName = fieldDef?.name || name;
-				if (fieldDef && (props.validateOnChange || clientErrors[ownerFieldName] || clientErrors[name])) {
-					const ownerVal = ownerFieldName in next ? next[ownerFieldName] : undefined;
-					const err = validateFieldWithValibot(
-						fieldDef,
-						ownerVal,
-						next,
-						fieldScopePrefix || scopePrefix
-					);
-					setFieldError(ownerFieldName, err);
-					if (name !== ownerFieldName && clientErrors[name]) {
-						setFieldError(name, null);
-					}
-				} else if (clientErrors[name]) {
+			if (schema.isFragment) {
+				markHostFormDirty(containerRef.current);
+			}
+
+			const currentErrors = clientErrorsRef.current;
+			const ownerFieldName = fieldDef?.name || name;
+			if (fieldDef && (props.validateOnChange || currentErrors[ownerFieldName] || currentErrors[name])) {
+				const ownerVal = ownerFieldName in next ? next[ownerFieldName] : undefined;
+				const err = validateFieldWithValibot(
+					fieldDef,
+					ownerVal,
+					next,
+					fieldScopePrefix || scopePrefix
+				);
+				setFieldError(ownerFieldName, err);
+				if (name !== ownerFieldName && currentErrors[name]) {
 					setFieldError(name, null);
 				}
-				// Clear any repeater subfield errors for this field when edited
-				const repeaterPrefix = `${name}[`;
-				const hasSubErr = Object.keys(clientErrors).some((k) => k.startsWith(repeaterPrefix));
-				if (hasSubErr) {
-					setClientErrors((curr) => {
-						const cleaned: Record<string, string> = {};
-						for (const [k, v] of Object.entries(curr)) {
-							if (!k.startsWith(repeaterPrefix)) {
-								cleaned[k] = v;
-							}
+			} else if (currentErrors[name]) {
+				setFieldError(name, null);
+			}
+			// Clear any repeater subfield errors for this field when edited
+			const repeaterPrefix = `${name}[`;
+			const hasSubErr = Object.keys(currentErrors).some((k) => k.startsWith(repeaterPrefix));
+			if (hasSubErr) {
+				setClientErrors((curr) => {
+					const cleaned: Record<string, string> = {};
+					for (const [k, v] of Object.entries(curr)) {
+						if (!k.startsWith(repeaterPrefix)) {
+							cleaned[k] = v;
 						}
-						return cleaned;
-					});
-				}
-				props.onChange?.(next);
-				return next;
-			});
+					}
+					return cleaned;
+				});
+			}
+
+			onFieldChangeRef.current?.(name, nextVal, next);
+			onChangeRef.current?.(next);
+			return next;
 		},
-		[isAttachedFragment, scopePrefix, props.validateOnChange, props.onChange, clientErrors, setFieldError]
+		[isAttachedFragment, scopePrefix, schema.isFragment, props.validateOnChange, setFieldError]
 	);
 
 	const registerFragment = useCallback(
@@ -808,7 +868,7 @@ export function useSchemaFormController(props: SchemaFormProps) {
 		const onNativeSubmit = (e: SubmitEvent) => {
 			const submitter = e.submitter as HTMLButtonElement | HTMLInputElement | null;
 			const isBypassValidation = Boolean(
-				(submitter?.name && /delete|discard|restore_revision/i.test(submitter.name)) ||
+				(submitter?.name && /delete|discard|restore_revision|trash|unpublish/i.test(submitter.name)) ||
 					submitter?.hasAttribute('formnovalidate') ||
 					hostForm.getAttribute('data-rw-skip-validate') === '1'
 			);

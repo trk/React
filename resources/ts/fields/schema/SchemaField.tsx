@@ -16,6 +16,7 @@ import type {
 	SchemaFieldDefinition,
 } from '../types';
 import { renderFieldControl, RuntimeFieldControl } from './fieldControlRegistry';
+import { buildStandaloneControlProps, resolveCanonicalControlType } from '../controlProps';
 import { InlineFieldSettingsPopover } from './InlineFieldSettingsPopover';
 import { SchemaFormContext, type SchemaFieldComponentProps } from './SchemaFormContext';
 
@@ -157,7 +158,7 @@ export const SchemaField: React.FC<SchemaFieldComponentProps> = ({
 	const currentVal = value !== undefined ? value : (field.values ?? field.value ?? field.defaultValue ?? '');
 	const linkInlineMeta =
 		!suppressInlineSettings && (rawType === 'link' || Boolean(field.linkConfig))
-			? buildLinkInlineSettingFields(field.linkConfig ?? undefined, currentVal, isDisabled)
+			? buildLinkInlineSettingFields(field.linkConfig ?? undefined, currentVal, isDisabled, field.name)
 			: null;
 
 	const hasInlineSettings =
@@ -235,13 +236,8 @@ export const SchemaField: React.FC<SchemaFieldComponentProps> = ({
 								{effectiveRequired ? <span className="text-destructive">*</span> : null}
 							</label>
 						) : <span />}
-						{headerRightNode}
+				{headerRightNode}
 					</div>
-				) : null}
-				{field.description ? (
-					<p id={descriptionId} data-rw-field-slot="description" className="text-xs text-muted-foreground leading-relaxed">
-						{field.description}
-					</p>
 				) : null}
 				{hasBoundOverlay ? <div data-rw-field-slot="bound-overlay">{adornment?.boundOverlay}</div> : null}
 				<div
@@ -278,6 +274,11 @@ export const SchemaField: React.FC<SchemaFieldComponentProps> = ({
 						}}
 					/>
 				</div>
+				{field.description ? (
+					<p id={descriptionId} data-rw-field-slot="description" className="text-xs text-muted-foreground leading-relaxed">
+						{field.description}
+					</p>
+				) : null}
 				<SchemaFieldFooter notes={field.notes} notesId={notesId} error={resolvedError} errorId={errorId} />
 			</div>
 		);
@@ -313,11 +314,6 @@ export const SchemaField: React.FC<SchemaFieldComponentProps> = ({
 						{headerRightNode}
 					</div>
 				) : null}
-				{field.description ? (
-					<p id={descriptionId} data-rw-field-slot="description" className="text-xs text-muted-foreground leading-relaxed">
-						{field.description}
-					</p>
-				) : null}
 				{hasBoundOverlay ? <div data-rw-field-slot="bound-overlay">{adornment?.boundOverlay}</div> : null}
 				<div
 					hidden={hasBoundOverlay || undefined}
@@ -339,10 +335,16 @@ export const SchemaField: React.FC<SchemaFieldComponentProps> = ({
 							errorId,
 							formValues,
 							scopePrefix,
+							inlinePortal,
 							onChange,
 						}}
 					/>
 				</div>
+				{field.description ? (
+					<p id={descriptionId} data-rw-field-slot="description" className="text-xs text-muted-foreground leading-relaxed">
+						{field.description}
+					</p>
+				) : null}
 				<FieldNotes notes={field.notes} id={notesId} />
 			</div>
 		);
@@ -367,6 +369,17 @@ export const SchemaField: React.FC<SchemaFieldComponentProps> = ({
 			field.inputType === 'colspan'
 		) {
 			return 'colspan';
+		}
+		if (
+			rawType === 'range_slider' ||
+			rawType === 'range-slider' ||
+			rawType === 'dual_range' ||
+			rawType === 'dual-range' ||
+			rawType === 'minmax' ||
+			((rawType === 'range' || rawType === 'slider') &&
+				(field.rangeMode === 'dual' || Boolean(field.dual)))
+		) {
+			return 'range_slider';
 		}
 		if (rawType === 'range' || rawType === 'slider' || field.inputType === 'range') {
 			return 'range';
@@ -408,6 +421,31 @@ export const SchemaField: React.FC<SchemaFieldComponentProps> = ({
 		) {
 			return 'checkbox';
 		}
+		const canonical = resolveCanonicalControlType(rawType);
+		if (canonical === 'password' && field.isSecret) {
+			return 'text';
+		}
+		if (
+			canonical === 'color' ||
+			canonical === 'tags' ||
+			canonical === 'phone' ||
+			canonical === 'combobox' ||
+			canonical === 'unit_number' ||
+			canonical === 'segmented' ||
+			canonical === 'spacing' ||
+			canonical === 'otp' ||
+			canonical === 'password' ||
+			canonical === 'condition_builder' ||
+			canonical === 'daterange' ||
+			canonical === 'date' ||
+			canonical === 'time' ||
+			canonical === 'datetime'
+		) {
+			return canonical;
+		}
+		if (canonical === 'markdown' || (rawType.includes('textarea') && field.editorMode === 'markdown')) {
+			return 'markdown';
+		}
 		if (rawType.includes('select') || (options.length > 0 && !rawType.includes('text'))) {
 			return 'select';
 		}
@@ -430,9 +468,6 @@ export const SchemaField: React.FC<SchemaFieldComponentProps> = ({
 		) {
 			return 'textarea';
 		}
-		if (rawType === 'datetime' || rawType === 'date' || rawType === 'time') {
-			return 'datetime';
-		}
 		if (rawType === 'number' || rawType === 'integer' || rawType === 'float' || rawType === 'decimal') {
 			return 'number';
 		}
@@ -454,20 +489,6 @@ export const SchemaField: React.FC<SchemaFieldComponentProps> = ({
 		controlType === 'link' ||
 		controlType === 'file' ||
 		controlType === 'image';
-
-	const connection = field.connection;
-	const resolvedSlugFrom =
-		connection?.type === 'slug' ? connection.sourceField : field.slugFrom || undefined;
-	const resolvedSlugSeparator =
-		connection?.type === 'slug' ? connection.separator : field.slugSeparator;
-	const resolvedSlugMaxLength =
-		connection?.type === 'slug' ? connection.maxLength : field.maxLength;
-	const resolvedSlugLocked =
-		connection?.type === 'slug' ? connection.lockWhenPopulated : field.slugLocked;
-	const resolvedFormula =
-		connection?.type === 'calculation' ? connection.formula : field.formula;
-	const resolvedPrecision =
-		connection?.type === 'calculation' ? connection.precision : field.precision;
 
 	const isChecked =
 		controlType === 'checkbox'
@@ -524,12 +545,6 @@ export const SchemaField: React.FC<SchemaFieldComponentProps> = ({
 				<div data-rw-field-slot="label" className="flex justify-end">{headerRightNode}</div>
 			) : null}
 
-			{field.description ? (
-				<p id={descriptionId} data-rw-field-slot="description" className="text-xs text-muted-foreground leading-relaxed">
-					{field.description}
-				</p>
-			) : null}
-
 			{hasBoundOverlay ? <div data-rw-field-slot="bound-overlay">{adornment?.boundOverlay}</div> : null}
 
 			<div
@@ -537,137 +552,57 @@ export const SchemaField: React.FC<SchemaFieldComponentProps> = ({
 				aria-hidden={hasBoundOverlay ? 'true' : undefined}
 				className={hasBoundOverlay ? 'hidden' : undefined}
 			>
-				{renderFieldControl({
-					controlType,
-					id: fieldId,
-					name: field.name,
-					label: field.label,
-					description: field.description,
-					inputType: field.inputType,
-					value: currentVal,
-					checked: isChecked,
-					checkedValue: field.checkedValue || '1',
-					checkboxLabel: field.checkboxLabel || field.label,
-					readOnly: isReadOnly,
-					disabled: isDisabled,
-					required: effectiveRequired,
-					error: resolvedError || undefined,
-					errorId,
-					describedBy,
-					placeholder: field.placeholder,
-					min: field.min,
-					max: field.max,
-					step: field.step,
-					minLength: field.minLength,
-					maxLength: field.maxLength,
-					pattern: field.pattern,
-					rows: field.rows,
-					mono: field.monospace,
-					editorMode: field.editorMode,
-					codeLanguage: field.codeLanguage,
-					affixPrefix: field.prefix,
-					affixSuffix: field.suffix,
-					showCount: Boolean(field.showCount || field.charCount),
-					slugFrom: resolvedSlugFrom,
-					slugSeparator: resolvedSlugSeparator,
-					slugMaxLength: resolvedSlugMaxLength,
-					slugLocked: resolvedSlugLocked,
-					secret: field.isSecret
-						? {
-								masked: Boolean(field.secretMasked),
-								prefix: '',
-								bytes: 32,
-								autogen: true,
+				{renderFieldControl(
+					buildStandaloneControlProps(field, currentVal, {
+						controlType,
+						id: fieldId,
+						checked: isChecked,
+						readOnly: isReadOnly,
+						disabled: isDisabled,
+						required: effectiveRequired,
+						error: resolvedError || undefined,
+						errorId,
+						describedBy,
+						languages,
+						activeLangId: languages && languages.length > 1 ? activeLangId : undefined,
+						onSelectLanguage: languages && languages.length > 1 ? setActiveLangId : undefined,
+						hideLanguageTabs: false,
+						options,
+						formValues,
+						scopePrefix,
+						subErrors: allErrors,
+						inlineOptionsInHeader: !suppressInlineSettings && controlType === 'link' ? true : undefined,
+						inlinePortal,
+						iconConfig:
+							field.iconConfig ||
+							(controlType === 'icon'
+								? {
+										allowCustomization: Boolean(field.allowCustomization),
+										allowVariant: field.allowVariant,
+										allowSize: field.allowSize,
+										allowColor: field.allowColor,
+										allowStrokeWidth: field.allowStrokeWidth,
+										allowBackground: field.allowBackground,
+										previewSize: field.previewSize,
+										prefixMode: field.iconPrefixMode,
+									}
+								: undefined),
+						onValueChange: (changedName, nextVal) => {
+							if (changedName && changedName !== field.name && onNamedChange) {
+								onNamedChange(changedName, nextVal);
+							} else {
+								onChange(nextVal);
 							}
-						: undefined,
-					languages,
-					activeLangId: languages && languages.length > 1 ? activeLangId : undefined,
-					onSelectLanguage: languages && languages.length > 1 ? setActiveLangId : undefined,
-					hideLanguageTabs: false,
-					options,
-					optionColumns: field.optionColumns,
-					datetime:
-						controlType === 'datetime'
-							? {
-									mode: 'text',
-									htmlType: field.inputType || 'date',
-									dateFormat: 'Y-m-d',
-									timeFormat:
-										field.inputType === 'datetime-local' || field.inputType === 'time' ? 'H:i' : '',
-									hasTime: field.inputType === 'datetime-local' || field.inputType === 'time',
-									formattedValue: String(currentVal ?? ''),
-									dateValue: String(currentVal ?? ''),
-									timeValue: '',
-								}
-							: undefined,
-					maxStars: field.maxStars,
-					valueMode: field.valueMode,
-					formula: resolvedFormula,
-					precision: resolvedPrecision,
-					formValues,
-					scopePrefix,
-					subfields: field.subfields,
-					subErrors: allErrors,
-					minRows: field.minRows,
-					maxRows: field.maxRows,
-					accept: field.accept,
-					extensions: field.extensions,
-					maxFiles: field.maxFiles,
-					maxFilesize: field.maxFilesize,
-					multiple: field.multiple,
-					descriptionRows: field.descriptionRows,
-					useTags: field.useTags,
-					tagsList: field.tagsList,
-					tagsPredefinedOnly: field.tagsPredefinedOnly,
-					noUpload: field.noUpload,
-					overwrite: field.overwrite,
-					uploadUrl: field.uploadUrl,
-					uploadFieldName: field.uploadFieldName,
-					mediaEndpoint: field.mediaEndpoint,
-					mediaToken: field.mediaToken,
-					ownerId: field.ownerId,
-					focusMode: field.focusMode,
-					maxWidth: field.maxWidth,
-					maxHeight: field.maxHeight,
-					minWidth: field.minWidth,
-					minHeight: field.minHeight,
-					maxReject: field.maxReject,
-					dimensionsByAspectRatio: field.dimensionsByAspectRatio,
-					clientQuality: field.clientQuality,
-					resizeServer: field.resizeServer,
-					useImageEditor: field.useImageEditor,
-					gridMode: field.gridMode,
-					gridRatio: field.gridRatio,
-					minFiles: field.minFiles,
-					hasCustomFields: field.hasCustomFields,
-					files: field.files,
-					tiptapConfig: field.tiptapConfig || undefined,
-					linkConfig: field.linkConfig || undefined,
-					inlineOptionsInHeader: controlType === 'link' ? true : undefined,
-					inlinePortal,
-					iconConfig:
-						field.iconConfig ||
-						(controlType === 'icon'
-							? {
-									allowCustomization: Boolean(field.allowCustomization),
-									allowVariant: field.allowVariant,
-									allowSize: field.allowSize,
-									allowColor: field.allowColor,
-									allowStrokeWidth: field.allowStrokeWidth,
-									allowBackground: field.allowBackground,
-									previewSize: field.previewSize,
-									prefixMode: field.iconPrefixMode,
-								}
-							: undefined),
-					onValueChange: (changedName, nextVal) => {
-						if (changedName && changedName !== field.name && onNamedChange) {
-							onNamedChange(changedName, nextVal);
-						} else {
-							onChange(nextVal);
-						}
-					},
-				})}
+						},
+					}),
+				)}
 			</div>
+
+			{field.description ? (
+				<p id={descriptionId} data-rw-field-slot="description" className="text-xs text-muted-foreground leading-relaxed">
+					{field.description}
+				</p>
+			) : null}
 
 			{!controlRendersOwnStatusRow || hasBoundOverlay ? (
 				<FieldStatusRow error={resolvedError} errorId={errorId} />

@@ -20,7 +20,7 @@ export function SelectField(props: ReactInputfieldProps): React.ReactElement {
 
 	return (
 		<div data-rw-control="select">
-			{props.readOnly && !props.disabled ? (
+			{props.readOnly && !props.disabled && !props.inlinePortal ? (
 				<input type="hidden" name={props.name} value={selectedValue} />
 			) : null}
 			<Select

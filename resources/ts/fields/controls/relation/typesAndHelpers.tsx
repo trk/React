@@ -38,6 +38,7 @@ export interface RelationFieldProps {
 	readOnly?: boolean;
 	disabled?: boolean;
 	required?: boolean;
+	inlinePortal?: boolean;
 	formValues?: Record<string, unknown>;
 	scopePrefix?: string;
 	error?: string;
