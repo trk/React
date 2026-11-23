@@ -17,12 +17,13 @@ Deep architectural guides, subsystem walkthroughs, and API references live in [`
 
 | Context / What You Need | Target Document |
 |---|---|
+| **Architecture Overview & Component Map** | [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) |
 | **Documentation Index & Reading Map** | [docs/README.md](./docs/README.md) |
 | **System Architecture, Tech Stack, CI, Runtime Surface & ADRs** | [01 — Architecture & Technical Deep-Dive](./docs/01-architecture.md) |
 | **Admin Modules, Dual-Context Shell, Flyout Nav, Hub & Central Themes** | [02 — Workspaces, Dual-Context Shell & Themes](./docs/02-workspaces-and-admin-shell.md) |
 | **`SchemaForm`, Tabs, Key-Value, Links, Icons, Media Studio, Relations & Tiptap** | [03 — Inputfields, Forms & Rich Text (`InputfieldTiptap`)](./docs/03-inputfields-forms-and-tiptap.md) |
 | **`MarkupReactTable`, `MarkupReactCards`, Pluggable Modes & Capability Providers** | [04 — Viewports & Data Providers](./docs/04-viewports-and-data-providers.md) |
-| **19-Pass Vite Build, `@pw/react/*` SDK, Delta CSS Layers, i18n & Security** | [05 — Frontend Runtime, Typed SDK, i18n & Security](./docs/05-frontend-runtime-sdk-and-security.md) |
+| **21-Pass Vite Build, `@pw/react/*` SDK, Delta CSS Layers, i18n & Security** | [05 — Frontend Runtime, Typed SDK, i18n & Security](./docs/05-frontend-runtime-sdk-and-security.md) |
 | **Complete PHP & Asset Reference Dictionary** | [API.md](./API.md) |
 | **Internal Contributor Invariants & Boundaries** | [AGENTS.md](./AGENTS.md) |
 
@@ -188,54 +189,57 @@ echo React::instance($this)->icons()->renderSvg('sparkles', [
 
 ## Configuration
 
-Configure site-wide defaults under **Modules > Configure > React** ([`React::getModuleConfigInputfields()`](./React.module.php#L1771-L1882)):
+Configure site-wide defaults under **Modules > Configure > React** ([`React::getModuleConfigInputfields()`](./React.module.php#L2067-L2191)):
 
 | Setting | Type | Default | Description |
 |---|---|---|---|
 | `defaultTheme` | `string` | `'system'` | Fallback mode (`'system'`, `'light'`, `'dark'`). |
-| `themePreset` | `string` | `'native'` | Central preset across workspaces, panels, overlays, and controls (`native`, `neutral`, `slate`, `ocean`, `emerald`, `violet`, `rose`, `amber`, `custom`). |
+| `themePreset` | `string` | `'native'` | Central preset across workspaces, panels, overlays, and controls (`native`, `neutral`, `slate`, `stone`, `ocean`, `indigo`, `teal`, `custom`). |
 | `themeCustomTokens` | `string` | `''` | Sanitized Tailwind CSS v4 `:root` / `.dark` variables used when `themePreset` is `custom` (requires `--background`, `--foreground`, `--primary`, `--primary-foreground`). |
-| `enableKeyboardShortcuts` | `bool` | `true` | Enables `Cmd/Ctrl+K` command palette, `?` help dialog, form save shortcuts, and viewport hotkeys. |
+| `defaultShellLayout` | `string` | `'topbar'` | Default navigation shell layout applied across React workspaces when a user has not chosen a personal override (`'topbar'`, `'sidebar'`, or registered custom layout ID). |
+| `enableKeyboardShortcuts` | `bool` | `true` | Enables `Cmd/Ctrl+K` command palette, `Cmd/Ctrl+B` sidebar toggle, `?` help dialog, form save shortcuts, and viewport hotkeys. |
 | `adminReturnLabel` | `string` | `'Panel'` | Localized top-left return label in Workspace mode (supports multi-language values). |
 | `useReactMediaFields` | `bool` | `false` | Upgrades standard `InputfieldImage` / `InputfieldFile` fields on Pages (including Repeaters) to `InputfieldReactImage` / `InputfieldReactFile`. |
 | `enableAdminVectorIcons` | `bool` | `true` | Injects the `Vector Icon` picker on Templates/Fields and generates `site/assets/vector-icons/VectorIcons.css`. |
 | `adminIconPreviewSize` | `int` | `28` | Preview size in pixels (`16`–`64`) on `Edit Template` and `Edit Field`. |
 
 > [!TIP]
-> Authenticated users can choose personal theme modes and color presets from the Workspace account menu (persisted to `site/assets/cache/React/workspaces/{user-id}.json`). See [02 — Theme Engine](./docs/02-workspaces-and-admin-shell.md#centralized-theme-engine-thememanager).
+> Authenticated users can choose personal theme modes, color presets, panel layout (`topbar` / `sidebar`), and collapsed sidebar rail state from the Workspace account menu (persisted to `site/assets/cache/React/workspaces/{user-id}.json`). See [02 — Theme Engine](./docs/02-workspaces-and-admin-shell.md#centralized-theme-engine-thememanager).
 
 ---
 
 ## Hooks & Extension Seams
 
-All discovery hooks execute lazily on first registry access (`React::deferModuleRegistration`, `deferProviderRegistration`, `deferRelationRegistration`, `deferMediaHostRegistration` in [`React.module.php`](./React.module.php#L558,L942,L1234,L1314)):
+All discovery hooks execute lazily on first registry access (`React::deferModuleRegistration`, `deferShellLayoutRegistration`, `deferCommandSearchRegistration`, `deferProviderRegistration`, `deferRelationRegistration`, `deferMediaHostRegistration` in [`React.module.php`](./React.module.php#L579,L984,L1166,L1224,L1479,L1576)):
 
-- **Hookable `React` Methods:** `___initWorkspaceRegistry()`, `___registerWorkspaces()`, `___getWorkspaceDefinitions()`, `___initWidgetRegistry()`, `___registerWidgets()`, `___getWidgetDefinitions()`, `___initProviderRegistry()`, `___registerProviders()`, `___initRelationRegistry()`, `___registerRelationResources()`, `___registerMediaHosts()`, `___translations()`.
+- **Hookable `React` Methods:** `___initWorkspaceRegistry()`, `___registerWorkspaces()`, `___getWorkspaceDefinitions()`, `___initWidgetRegistry()`, `___registerWidgets()`, `___getWidgetDefinitions()`, `___registerShellLayouts()`, `___registerCommandSearch()`, `___initProviderRegistry()`, `___registerProviders()`, `___initRelationRegistry()`, `___registerRelationResources()`, `___registerMediaHosts()`, `___translations()`.
 - **Editorial Mini-Block Hook:** `InputfieldTiptap::registerMiniBlocks` for adding custom flat `[data-tiptap-block]` types rendered via `./site/templates/tiptap/{name}.php`.
+- **Hooks & Signatures:** See [API.md](./API.md) (including `FormSchemaSerializer` `surface: 'card'` native tabs-over-card `[data-rw-card-tabs="above"]`, `appendDeleteTab()`, `WireTab` metadata preservation, `[data-rw-meta-*]`/`[data-rw-ref-*]`/`[data-rw-rev-table]`/`[data-rw-diff-pill]` semantic CSS contracts, and canonical controls: `date`, `time`, `datetime`, `daterange`, `color`, `tags`, `combobox`, `unit_number`/`currency` with `unitVariant: 'currency'`, `segmented`, `spacing`, `range`, `range_slider`, `colspan`, `otp`, `password`, `markdown`, `rating`, `signature`, `calculation`, `repeater`, `keyvalue`, `link`, `icon`, `relation`, `file`, `image`, `tiptap`).
 - **Full Signature Dictionary:** See [API.md](./API.md) and chapters [`02`](./docs/02-workspaces-and-admin-shell.md)–[`04`](./docs/04-viewports-and-data-providers.md).
 
 ---
 
 ## Internal Endpoints & Multi-Language Packs
 
-`React` registers seven URL hooks ([`React.module.php`](./React.module.php#L333-L339)) and delivers native ProcessWire `LanguageTranslator` catalogs via locale-scoped Inertia `OnceProp` keys (`languages/{en,tr,de,fr,es,ru}.csv`):
+`React` registers eight URL hooks ([`React.module.php`](./React.module.php#L351-L358)) and delivers native ProcessWire `LanguageTranslator` catalogs via locale-scoped Inertia `OnceProp` keys (`languages/{en,tr,de,fr,es,ru}.csv`):
 
 | Endpoint | Purpose |
 |---|---|
-| `/_react/viewport` | Signed table/cards/calendar queries, inline/quick edits, bulk actions, saved views, and exports |
-| `/_react/workspace-prefs` | Per-user Workspace favorites, Bento grid layout JSON import/export, `themeMode`, and `themePreset` |
+| `/_react/viewport` | Signed table/cards/pluggable viewport queries, inline/quick edits, bulk actions, saved views, and exports |
+| `/_react/workspace-prefs` | Per-user Workspace favorites, Bento grid layout JSON import/export, `themeMode`, `themePreset`, `shellLayout`, and `sidebarCollapsed` |
 | `/_react/presence` | Concurrent co-editor heartbeats (`15s`) and remote-save staleness alerts |
 | `/_react/relation` | Signed relational search, tree loading, hydration, and `O2M` link/unlink/quick-create actions |
 | `/_react/media` | Signed multipart file/image uploads, replacement, crop/rotate/flip transforms, and palette inspection |
 | `/_react/tiptap` | Signed page/file/anchor lookup and `-is` `Pageimage` variation/upload gateway |
 | `/_react/icons` | Read-only `GET` paginated catalog search (`action=query`) and microtask hydration (`action=hydrate`) |
+| `/_react/command-search` | Read-only `GET` RBAC-scoped command palette search across registered providers and editable pages |
 
 ---
 
 ## Security & Verification
 
 > [!IMPORTANT]
-> State-changing `/_react/*` requests enforce authenticated users (`AccessGuard`), `$session->CSRF` validation (`X-CSRF-TOKEN` / `X-XSRF-TOKEN` / payload token), `POST` method checks, demo-mode guards, `2 MiB` / depth-`64` JSON limits, and HMAC-SHA256 tokens bound to `$user->id` (`uid`), `$config->userAuthSalt`, domain `typ`, and 24-hour `iat` TTL (`SignedTokenCodec`). See [05 — Security Architecture](./docs/05-frontend-runtime-sdk-and-security.md#security-architecture).
+> State-changing `/_react/*` requests enforce authenticated users (`AccessGuard`), `$session->CSRF` validation (`X-CSRF-TOKEN` / `X-XSRF-TOKEN` / request `_token`), `POST` method checks, demo-mode guards, `2 MiB` / depth-`64` JSON limits, and HMAC-SHA256 tokens bound to `$user->id` (`uid`), `$config->userAuthSalt`, domain `typ`, and 24-hour `iat` TTL (`SignedTokenCodec`). See [05 — Security Architecture](./docs/05-frontend-runtime-sdk-and-security.md#security-architecture).
 
 Run verification checks sequentially against the workspace root (details and CI gates in [01 — Architecture](./docs/01-architecture.md#commands--verification-inventory)):
 

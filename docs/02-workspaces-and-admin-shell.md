@@ -137,18 +137,25 @@ class ProcessCatalog extends ProcessReact
 
 [`ProcessReactWorkspace`](../ProcessReactWorkspace.module.php#L20-L50) extends [`WorkspaceLauncherProcess`](../src/Workspace/WorkspaceLauncherProcess.php#L14-L90), sets `useNavJSON => false`, and checks access via `React::checkAccess()` (requires superuser or at least one accessible registered workspace; guests are always rejected).
 
-### Lazy Workspace & Widget Registration
+### Lazy Workspace, Widget, Shell Layout & Command Search Registration
 
-Register definitions lazily via [`React::deferModuleRegistration()`](../React.module.php#L942) so `statsCallback`, `dataCallback`, and page counts execute only when `/processwire/workspace/` renders:
+Register definitions lazily via [`React::deferModuleRegistration()`](../React.module.php#L984), [`React::deferShellLayoutRegistration()`](../React.module.php#L1166), and [`React::deferCommandSearchRegistration()`](../React.module.php#L1224) so `statsCallback`, `dataCallback`, and page/index queries execute only when requested:
 
 - **Workspaces (`WorkspaceDefinition`):** Accepts `id`, `title`, `description`, `icon`, `process`, `url`, `permission`, `accessCallback`, `category`, `badge`, `order`, `logoUrl`, `component`, `stats`, `statsCallback`, `scripts`, `styles` ([WorkspaceDefinition.php](../src/Workspace/WorkspaceDefinition.php#L13-L60)).
 - **Bento Dashboard Widgets (`WorkspaceWidgetDefinition`):** Accepts `id`, `title`, `workspaceId`, `subtitle`, `description`, `icon`, `size` (`'sm'`, `'md'`, `'lg'`, `'full'`, or grid span `'1'`–`'12'`), `order`, `permission`, `accessCallback`, `data`, and lazy `dataCallback` returning normalized keys `metrics`, `items`, `actions`, `status`, and `emptyText` ([WorkspaceWidgetDefinition.php](../src/Workspace/WorkspaceWidgetDefinition.php#L13-L80)).
+
+### Multi-Shell Chrome (`AppShell`, `TopbarShellLayout`, `SidebarShellLayout`, `CommandSearchRegistry`)
+
+- **Built-in & Custom Shell Layouts (`ShellLayoutRegistry`):** Ships `topbar` (order `10`) and `sidebar` (order `20`) layouts; custom layouts register in PHP (`React::deferShellLayoutRegistration()`) and TypeScript (`registerShellLayout()` from `@pw/react/layout`). Resolution precedence follows `{user-id}.json` personal `shellLayout` > `defaultShellLayout` module config > `'topbar'`.
+- **Topbar Navigation (`TopbarShellLayout` / `WorkspaceTopbar`):** Renders the `Panel` return link (`[data-rw-admin-return]`), Workspace Hub link, up to `5` favorite-sorted inline workspace links (`MAX_INLINE_WORKSPACES = 5`), a `+N` `"More"` overflow popover switcher (`ModuleSwitcher` with live search and star pinning), Quick Jump (`Cmd/Ctrl+K`), and `UserAccountMenu`.
+- **Sidebar Navigation (`SidebarShellLayout`):** Renders a collapsible navigation tree toggled via header button or `Cmd/Ctrl+B` (`set_sidebar_collapsed`), mobile slide-over navigation drawer, and an anchored desktop bottom `UserAccountMenu` (`variant="sidebar"` / `"sidebar-collapsed"`).
+- **Command Palette 2.0 & `/_react/command-search`:** Groups navigation sections, shell layout / sidebar collapse / theme preset actions, and debounced server search results across `CommandSearchRegistry` providers (built-in `'pages'` editable-page provider at order `900`, plus deferred module providers enforcing `editable()`/`hasPermission()` and `UrlSanitizer::sanitizeSameOriginUrl()`).
 
 ### Per-User Preferences & Edit Co-Presence
 
 | Feature | Store Class & Path | Capabilities |
 |---|---|---|
-| **Dashboard & Theme Preferences** | [`WorkspacePreferenceStore`](../src/Workspace/WorkspacePreferenceStore.php#L19-L65) (`site/assets/cache/React/workspaces/{user-id}.json`) | Persists starred favorites, widget visibility, widget order, grid sizes (`1`–`12`), `themeMode`, `themePreset`, and validated JSON preset export/import via `/_react/workspace-prefs`. Auto-reconciles when modules are uninstalled or RBAC changes. |
+| **Dashboard & Theme Preferences** | [`WorkspacePreferenceStore`](../src/Workspace/WorkspacePreferenceStore.php#L19-L65) (`site/assets/cache/React/workspaces/{user-id}.json`) | Persists starred favorites, widget visibility, widget order, grid sizes (`1`–`12`), `themeMode`, `themePreset`, `shellLayout`, `sidebarCollapsed`, and validated JSON preset export/import via `/_react/workspace-prefs`. Auto-reconciles when modules are uninstalled (`React::forgetSharedWorkspace()` / `forgetSharedWidget()` / `forgetDeferredRegistrations()`) or RBAC changes. |
 | **Concurrent Edit Presence** | [`EditPresenceStore`](../src/Workspace/EditPresenceStore.php#L17-L95) (`site/assets/cache/React/presence/{sha256}.json`) | Tracks active co-editors per sanitized `resourceKey` (`15s` heartbeat, `45s` TTL, up to 8 sessions per user / 100 per resource) using `flock()` locking; broadcasts stale-form `lastSaved` version notices via `/_react/presence` and `React::notifyResourceSaved()`. |
 
 ---
@@ -157,9 +164,9 @@ Register definitions lazily via [`React::deferModuleRegistration()`](../React.mo
 
 [`ThemeManager`](../src/Theme/ThemeManager.php#L21-L120) unifies light/dark mode and color tokens across Workspaces, embedded `AdminTheme` panels, Inputfield islands, and top-layer `<dialog>` overlays ([`TOKEN_SCOPE`](../src/Theme/ThemeManager.php#L27-L32)):
 
-1. **Theme Modes:** `system` (prefers-color-scheme), `light`, or `dark`. Authenticated users can toggle personal mode from the Workspace account menu (`/_react/workspace-prefs` `action=set_theme_mode`), synchronizing `{user-id}.json` and ProcessWire's `$user->meta('adminDarkMode')` ([ReactGatewayRouter.php](../src/Http/ReactGatewayRouter.php#L524-L547)). Respects `AdminThemeUikit` `noDarkMode`.
-2. **Built-in Presets (`ThemePreset`):** `native` (inherits ProcessWire `--pw-*` variables directly), `neutral`, `slate`, `ocean`, `emerald`, `violet`, `rose`, `amber`, and `custom` ([ThemePreset.php](../src/Theme/ThemePreset.php#L13-L69)).
-3. **Precedence:** Personal user override (`{user-id}.json` `themePreset`) -> site-wide default configured under `Modules > Configure > React` (`themePreset`) -> `native` fallback. Passing `""` or `'default'` to `set_theme_preset` clears the personal override ([ReactGatewayRouter.php](../src/Http/ReactGatewayRouter.php#L547-L563)).
+1. **Theme Modes:** `system` (prefers-color-scheme), `light`, or `dark`. Authenticated users can toggle personal mode from the Workspace account menu (`/_react/workspace-prefs` `action=set_theme_mode`), synchronizing `{user-id}.json` and ProcessWire's `$user->meta('adminDarkMode')` ([ReactGatewayRouter.php](../src/Http/ReactGatewayRouter.php#L590-L612)). Respects `AdminThemeUikit` `noDarkMode`.
+2. **Built-in Presets (`ThemePreset`):** `native` (inherits ProcessWire `--pw-*` variables directly), `neutral`, `slate`, `stone`, `ocean`, `indigo`, `teal`, and `custom` ([ThemePreset.php](../src/Theme/ThemePreset.php#L13-L60)).
+3. **Precedence:** Personal user override (`{user-id}.json` `themePreset`) -> site-wide default configured under `Modules > Configure > React` (`themePreset`) -> `native` fallback. Passing `""` or `'default'` to `set_theme_preset` clears the personal override ([ReactGatewayRouter.php](../src/Http/ReactGatewayRouter.php#L613-L629)).
 4. **Validated Custom CSS Tokens (`ThemeTokenParser`):** Parses `:root { ... }`, `.dark { ... }`, and `@media (prefers-color-scheme: dark)` blocks from `themeCustomTokens` into an allowlist of color, radius, font, and shadow tokens, rejecting `url()`, `expression()`, `@import`, CSS escapes, and markup-breaking characters ([API.md](../API.md#L88)). Custom tokens must define at least `--background`, `--foreground`, `--primary`, and `--primary-foreground` (`ThemeTokenParser::isComplete()`).
 5. **Derived & Surface Mapping:** [`ThemeManager`](../src/Theme/ThemeManager.php#L39-L82) automatically derives card, popover, sidebar, button, masthead, and `--radius-button` tokens so partial palettes stay cohesive in both light and dark modes.
 

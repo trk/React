@@ -35,15 +35,15 @@ Architectural baseline and local-checkout audit for `ProcessWire\React` (`Totogl
 | **Autoload Module Boot** | `React::__construct()`, `init()`, `ready()` | Registers `Totoglu\React\` autoloader, attaches `/_react/*` URL hooks, registers core hooks, and injects active theme tokens + admin vector icon CSS into admin pages | [React.module.php](../React.module.php#L157-L164), [#L328-L342](../React.module.php#L328-L342), [#L666-L685](../React.module.php#L666-L685) |
 | **Optional Hub Process** | `ProcessReactWorkspace` (`extends WorkspaceLauncherProcess`) | Mounts `Admin > Workspace` when explicitly installed (not auto-installed by `React`) | [ProcessReactWorkspace.module.php](../ProcessReactWorkspace.module.php#L20-L50) |
 | **Installed Companion Modules (14)** | `MarkupReact*` (3), `InputfieldReact*` (9), `InputfieldTiptap`, `TextformatterTiptapMiniBlocks` | Auto-installed by `React`; each loads only its own isolated bundle(s) on demand | [React.module.php](../React.module.php#L119-L134) |
-| **HTTP URL Hooks (7)** | `/_react/viewport`, `workspace-prefs`, `presence`, `relation`, `media`, `tiptap`, `icons` | Signed JSON / multipart action endpoints routed through `ReactGatewayRouter` | [React.module.php](../React.module.php#L333-L339), [ReactGatewayRouter.php](../src/Http/ReactGatewayRouter.php#L20-L26) |
-| **Frontend Build Entries** | 6 core JS + 4 core CSS + 18 isolated JS passes | Compiled via `vite.config.ts` and `build-bundles.mjs` into `dist/` | [entries.manifest.mjs](../resources/entries.manifest.mjs#L1-L48), [build-bundles.mjs](../resources/build-bundles.mjs#L1-L37) |
+| **HTTP URL Hooks (8)** | `/_react/viewport`, `workspace-prefs`, `presence`, `relation`, `media`, `tiptap`, `icons`, `command-search` | Signed JSON, search, and multipart endpoints routed through `ReactGatewayRouter` | [React.module.php](../React.module.php#L351-L358), [ReactGatewayRouter.php](../src/Http/ReactGatewayRouter.php) |
+| **Frontend Build Entries** | 6 core JS + 4 core CSS + 20 isolated JS passes | Compiled via `vite.config.ts` and `build-bundles.mjs` into `dist/` | [entries.manifest.mjs](../resources/entries.manifest.mjs#L1-L50), [build-bundles.mjs](../resources/build-bundles.mjs#L1-L37) |
 | **Standalone HTML Root** | `views/admin.php` | Full-screen HTML document shell used when `shellMode === 'workspace'` | [views/admin.php](../views/admin.php#L1-L106) |
 
 ---
 
 ### Commands & Verification Inventory
 
-All commands run from the workspace root (`/Users/iskender/Code/php-prod/processwire`) unless noted otherwise. PHP/DB suites run sequentially against the shared database ([AGENTS.md](../AGENTS.md#L49-L55)).
+All commands run from the ProcessWire project root unless noted otherwise. PHP/DB suites run sequentially against the shared database ([AGENTS.md](../AGENTS.md#L52-L58)).
 
 | Category | Command | Purpose | Evidence |
 |---|---|---|---|
@@ -52,10 +52,10 @@ All commands run from the workspace root (`/Users/iskender/Code/php-prod/process
 | **Cold CLI Boot** | `php vendor/bin/wire version --json` | Verifies ProcessWire & CLI boot with exit code `0` | [AGENTS.md](../AGENTS.md#L50) |
 | **Static Analysis** | `./vendor/bin/phpstan analyse -c site/modules/React/phpstan.neon --no-progress --memory-limit=1G` | Runs PHPStan Level 8 across root `.module.php` files and `src/` | [phpstan.neon](../phpstan.neon#L1-L26), [AGENTS.md](../AGENTS.md#L51) |
 | **Typecheck** | `npm --prefix site/modules/React run typecheck` | Runs `tsc --noEmit` in strict mode | [package.json](../package.json#L8) |
-| **Production Build** | `npm --prefix site/modules/React run build` | Typechecks, builds core runtime (`dist/vector-icons.json` + CSS cascade layers), then runs 18 isolated bundle passes | [package.json](../package.json#L7), [build-bundles.mjs](../resources/build-bundles.mjs#L23-L37) |
-| **Frontend Unit Tests** | `npm --prefix site/modules/React run test:unit` | Executes all 10 Vitest specs (`tests/ts/**/*.test.ts`) | [package.json](../package.json#L9), [vitest.config.ts](../vitest.config.ts#L3-L7) |
+| **Production Build** | `npm --prefix site/modules/React run build` | Typechecks, builds core runtime (`dist/vector-icons.json` + CSS cascade layers), then runs 20 isolated bundle passes | [package.json](../package.json#L7), [build-bundles.mjs](../resources/build-bundles.mjs#L23-L37) |
+| **Frontend Unit Tests** | `npm --prefix site/modules/React run test:unit` | Executes all 18 Vitest specs (`tests/ts/**/*.test.ts`) | [package.json](../package.json#L9), [vitest.config.ts](../vitest.config.ts#L3-L7) |
 | **Single TS Test** | `npx --prefix site/modules/React vitest run tests/ts/icons.test.ts` | Runs a single Vitest unit file (`[INFERRED]` CLI filter pattern from `vitest.config.ts`) | [vitest.config.ts](../vitest.config.ts#L5) |
-| **Backend Pest Suite** | `php vendor/bin/wire test site/modules/React/tests --json` | Executes all 16 PHP Unit & Feature test suites against ProcessWire | [AGENTS.md](../AGENTS.md#L54) |
+| **Backend Pest Suite** | `php vendor/bin/wire test site/modules/React/tests --json` | Executes all 22 PHP Unit & Feature test suites against ProcessWire | [AGENTS.md](../AGENTS.md#L54) |
 | **Single PHP Test** | `php vendor/bin/wire test site/modules/React/tests/Unit/LayeringTest.php --json` | Executes a targeted Pest test file (layering & brand checks) | [LayeringTest.php](../tests/Unit/LayeringTest.php#L333-L380) |
 | **E2E & A11y** | `php vendor/bin/wire test:e2e --module=React --json` | Runs the 2 Playwright + WCAG 2.1 AA browser specs | [AGENTS.md](../AGENTS.md#L55) |
 | **Boost Check** | `php vendor/bin/wire boost:validate --module=React --strict --json` | Validates `API.md`, `AGENTS.md`, and `.agents/skills` parity `[pw-docs-architect]` | [AGENTS.md](../AGENTS.md#L1-L3) |
@@ -71,14 +71,14 @@ Exact file counts verified across `site/modules/React/` (excluding `node_modules
 | Path | Count | Purpose |
 |---|---|---|
 | Root `*.module.php` | 16 files | `React.module.php`, optional `ProcessReactWorkspace.module.php`, and 14 companion UI/field modules |
-| `src/` (`17` subdirs) | 70 PHP files | `Contract` (10), `Data` (2), `Form` (1), `Hook` (1), `Http` (1), `I18n` (1), `Icon` (2), `Inertia` (5), `Media` (6), `Provider` (3), `Relation` (14), `Security` (3), `Support` (1), `Theme` (3), `Tiptap` (8), `Viewport` (2), `Workspace` (7) |
-| `resources/ts/` | 204 TS/TSX files | Entries (`entries/`), SDK (`sdk/`), UI primitives (`ui/`), layout (`layout/`), forms/controls (`fields/`), viewports (`viewports/`), optional engines (`engines/`), Tiptap (`tiptap/`), icons (`icons/`), hooks/utils (`hooks/`, `lib/`, `portal/`) |
+| `src/` (`17` subdirs) | 74 PHP files | `Contract` (9), `Data` (2), `Form` (1), `Hook` (1), `Http` (1), `I18n` (1), `Icon` (2), `Inertia` (5), `Media` (6), `Provider` (3), `Relation` (14), `Security` (3), `Support` (2), `Theme` (3), `Tiptap` (8), `Viewport` (2), `Workspace` (11) |
+| `resources/ts/` | 228 TS/TSX files | Entries (`entries/`), SDK (`sdk/`), UI primitives (`ui/`), layout (`layout/`), forms/controls (`fields/`), viewports (`viewports/`), optional engines (`engines/`), Tiptap (`tiptap/`), icons (`icons/`), hooks/utils (`hooks/`, `lib/`, `portal/`) |
 | `resources/css/` | 7 CSS files | Core/sub-bundle entries (`entries/`), shared theme variables (`theme-inline.css`), design tokens (`tokens.css`), and downstream mixin (`module-delta.css`) |
-| `dist/` | 29 built files | Core JS/CSS, `vector-icons.json` (2.4M), and 18 isolated JS/CSS companion bundles |
+| `dist/` | 31 built files | Core JS/CSS, `vector-icons.json` (2.4M), and 20 isolated JS/CSS companion bundles |
 | `languages/` | 6 CSV files | `LanguagePorter::exportCsv` translation packs for `en`, `tr`, `de`, `fr`, `es`, `ru` |
-| `tests/` | 28 spec files | 16 Pest PHP files (`Unit/` + `Feature/`), 10 Vitest files (`tests/ts/`), 2 Playwright E2E specs (`tests/e2e/`), plus bootstraps |
+| `tests/` | 45 spec files | 22 Pest PHP files (`Unit/` + `Feature/`), 18 Vitest files (`tests/ts/`), 2 Playwright E2E specs (`tests/e2e/`), plus 3 bootstraps/helpers |
 | `views/` | 1 PHP view | `views/admin.php` standalone Workspace HTML document shell |
-| `.github/` | 6 files | GitHub CI (`workflows/ci.yml`), release workflow (`workflows/release.yml`), templates, and `dependabot.yml` |
+| `.github/` | 8 files | GitHub CI (`workflows/ci.yml`), release workflow (`workflows/release.yml`), templates, and `dependabot.yml` |
 | `.agents/skills/pw-react/` | 1 skill | ProcessWire Boost consumer skill playbook (`SKILL.md`) |
 
 ---
@@ -92,10 +92,10 @@ Exact file counts verified across `site/modules/React/` (excluding `node_modules
 | **PHP Runtime (Prod & CI)** | `>= 8.4` (`8.4` / `8.5` tested in CI; PHPStan targets `80400`) | [composer.json](../composer.json#L29), [phpstan.neon](../phpstan.neon#L3), [ci.yml](../.github/workflows/ci.yml#L22) |
 | **Node Build Runtime (Build / CI)** | Node `22` (`setup-node@v7` in CI) | [ci.yml](../.github/workflows/ci.yml#L53) |
 | **ProcessWire & `Inertia`** | ProcessWire `>= 3.0.271`, `trk/processwire-inertia ^1.0` | [React.module.php](../React.module.php#L114-L118), [composer.json](../composer.json#L30) |
-| **Per-User Workspace & Theme Prefs** | `site/assets/cache/React/workspaces/{user-id}.json` | Persisted by `WorkspacePreferenceStore`; purged on uninstall ([WorkspacePreferenceStore.php](../src/Workspace/WorkspacePreferenceStore.php#L13-L46), [React.module.php](../React.module.php#L1424-L1435)) |
-| **Edit Co-Presence Locks** | `site/assets/cache/React/presence/{sha256}.json` | Atomic `flock()` heartbeat files (`45s` TTL); purged on uninstall ([EditPresenceStore.php](../src/Workspace/EditPresenceStore.php#L17-L62)) |
-| **Viewport User Preferences** | Session `ReactViewPrefs` + `pages_meta` (`react_view_prefs_%`) | Saved per user & viewport; deleted on uninstall ([ReactViewPreferenceStore.php](../src/Viewport/ReactViewPreferenceStore.php#L19-L84), [React.module.php](../React.module.php#L1414-L1422)) |
-| **Admin Vector Icon CSS** | `site/assets/vector-icons/VectorIcons.css` | Generated lazily by `IconManager::generateAdminCss()` (`rwv--*` CSS `mask-image` rules); directory removed on uninstall ([React.module.php](../React.module.php#L1428-L1431)) |
+| **Per-User Workspace & Theme Prefs** | `site/assets/cache/React/workspaces/{user-id}.json` | Persisted by `WorkspacePreferenceStore`; purged on uninstall ([WorkspacePreferenceStore.php](../src/Workspace/WorkspacePreferenceStore.php), [React.module.php](../React.module.php#L1704-L1715)) |
+| **Edit Co-Presence Locks** | `site/assets/cache/React/presence/{sha256}.json` | Atomic `flock()` heartbeat files (`45s` TTL); purged on uninstall ([EditPresenceStore.php](../src/Workspace/EditPresenceStore.php)) |
+| **Viewport User Preferences** | Session `ReactViewPrefs` + `pages_meta` (`react_view_prefs_%`) | Saved per user & viewport; deleted on uninstall ([ReactViewPreferenceStore.php](../src/Viewport/ReactViewPreferenceStore.php), [React.module.php](../React.module.php#L1694-L1702)) |
+| **Admin Vector Icon CSS** | `site/assets/vector-icons/VectorIcons.css` | Generated lazily by `IconManager::generateAdminCss()` (`rwv--*` CSS `mask-image` rules); directory removed on uninstall ([React.module.php](../React.module.php#L1708-L1711)) |
 | **Link Media Isolation Dir** | `site/assets/files/{pageId}/links/{fieldName}/` | Isolated per-page/per-field media assets managed by `PageLinkMediaHostAdapter` ([API.md](../API.md#L152)) |
 
 ---
@@ -132,16 +132,16 @@ Exact file counts verified across `site/modules/React/` (excluding `node_modules
 
 ### Developer Gotchas
 
-1. **Multi-pass Vite build invariant:** `npm run build` executes 19 builds (1 core pass + 18 isolated entries in [build-bundles.mjs](../resources/build-bundles.mjs#L23-L26)). It automatically strips `*.style.js` artifacts and **throws an error if any shared `ReactInertia-*.js` chunk appears in `dist/`** (`#L32-L34`).
-2. **Non-translatable PHP test header:** Every PHP file inside `tests/` must begin with `<?php // __(file-not-translatable)` on line 1 (`AGENTS.md#L47`).
-3. **Six-locale CSV parity:** Modifying any `$this->_('...')` / `__('...')` or `___translations()` entry requires regenerating and matching all 6 `languages/{en,tr,de,fr,es,ru}.csv` files row-for-row against `LanguagePorter::exportCsv`, verified by `ReactTranslationsTest.php` ([AGENTS.md](../AGENTS.md#L46)).
-4. **Sequential PHP/DB verification:** PHPStan, Pest tests, and Playwright E2E touch a shared ProcessWire database and must be run one after another, never concurrently ([AGENTS.md](../AGENTS.md#L49)).
+1. **Multi-pass Vite build invariant:** `npm run build` executes 21 passes (1 core pass + 20 isolated entries in [build-bundles.mjs](../resources/build-bundles.mjs#L23-L37)). It automatically strips `*.style.js` artifacts and **throws an error if any shared `ReactInertia-*.js` chunk appears in `dist/`** (`#L32-L34`).
+2. **Non-translatable PHP test header:** Every PHP file inside `tests/` must begin with `<?php // __(file-not-translatable)` on line 1 (`AGENTS.md#L50`).
+3. **Six-locale CSV parity:** Modifying any `$this->_('...')` / `__('...')` or `___translations()` entry requires regenerating and matching all 6 `languages/{en,tr,de,fr,es,ru}.csv` files row-for-row against `LanguagePorter::exportCsv`, verified by `ReactTranslationsTest.php` ([AGENTS.md](../AGENTS.md#L48-L50)).
+4. **Sequential PHP/DB verification:** PHPStan, Pest tests, and Playwright E2E touch a shared ProcessWire database and must be run one after another, never concurrently ([AGENTS.md](../AGENTS.md#L52-L58)).
 5. **Tiptap `LanguageSupport` wrap avoidance:** `FieldIntegrationHooks` temporarily clears `InputfieldTiptap::$useLanguages` at hook priority `50.0` and restores it at priority `150.0` around `Inputfield::render` / `renderValue` so ProcessWire core `LanguageSupport` (priority `100`) does not render duplicate per-language wrapper inputs around the React editor island ([FieldIntegrationHooks.php](../src/Hook/FieldIntegrationHooks.php#L77-L80,L131-L150)).
 6. **Strict brand neutrality & zero upward coupling:** [`LayeringTest.php`](../tests/Unit/LayeringTest.php#L337-L380) scans source files and documentation (`README.md`, `API.md`, `AGENTS.md`, `SKILL.md`) for disallowed third-party brand names and sibling/upper module identifiers.
 
 ### Disk-Visible Ecosystem Role
 
-`React` sits in the UI runtime layer strictly above ProcessWire core and `Inertia`. It declares `['PHP>=8.4', 'ProcessWire>=3.0.271', 'Inertia']` in `React::getModuleInfo()['requires']` ([React.module.php](../React.module.php#L114-L118)). Upper-layer domain modules depend on `React` exclusively through domain-agnostic extension seams (`ProcessReact`, `InputfieldReact`, `MarkupReactViewport`, `React::defer*Registration()`, `@pw/react/*`, and `module-delta.css`), keeping zero upward references inside `React` ([AGENTS.md](../AGENTS.md#L13)).
+`React` sits in the UI runtime layer strictly above ProcessWire core and `Inertia`. It declares `['PHP>=8.4', 'ProcessWire>=3.0.271', 'Inertia']` in `React::getModuleInfo()['requires']` ([React.module.php](../React.module.php#L114-L118)). Upper-layer domain modules depend on `React` exclusively through domain-agnostic extension seams (`ProcessReact`, `InputfieldReact`, `MarkupReactViewport`, `React::defer*Registration()`, `@pw/react/*`, and `module-delta.css`), keeping zero upward references inside `React` ([AGENTS.md](../AGENTS.md#L15)).
 
 ---
 
@@ -165,14 +165,14 @@ flowchart TD
     subgraph PHP["PHP 8.4+ Backend (site/modules/React/)"]
         MOD["React.module.php + 14 Companion Modules + Optional ProcessReactWorkspace"]
         SHELL["Inertia Shell (ProcessReact, InteractWithReact, EmbeddedAdminPageResponse)"]
-        GW["HTTP Gateways (ReactGatewayRouter -> 7 /_react/* URL Hooks)"]
+        GW["HTTP Gateways (ReactGatewayRouter -> 8 /_react/* URL Hooks)"]
         SEC["Security (SignedTokenCodec, AccessGuard, UrlSanitizer)"]
         ENG["Backend Services (FormSchemaSerializer, MarkupReactViewport, IconManager, MediaGateway, RelationResourceRegistry, ThemeManager, Tiptap*)"]
     end
 
     subgraph BUILD["Vite 8 + Tailwind v4 Client Build (dist/)"]
         COREJS["dist/ReactInertia.js (window.ReactWorkspaceRuntime) + dist/ReactInertia.css"]
-        SUBJS["18 Self-Contained IIFE Companion & Engine Bundles"]
+        SUBJS["20 Self-Contained IIFE Companion & Engine Bundles"]
         SDK["Typed @pw/react/* SDK Shims + module-delta.css + 32 Utility Sub-Layers"]
     end
 
@@ -195,7 +195,7 @@ sequenceDiagram
     participant RM as React Service
     participant RT as dist/ReactInertia.js
 
-    B->>PW: GET /admin/setup/<module>/ (no ?ws=1, not X-Inertia)
+    B->>PW: GET /admin/setup/{module}/ (no ?ws=1, not X-Inertia)
     PW->>PR: execute() via ProcessController
     PR->>RM: resolveShellMode() -> "admin"
     PR->>RM: inertiaRender("Mod/Page", props) -> EmbeddedAdminPageResponse
@@ -220,25 +220,25 @@ sequenceDiagram
 
 | Concern | Mechanism | Evidence |
 |---|---|---|
-| **Authentication** | `AccessGuard::isAuthenticated($user)` rejects guests across all gateways; `React::checkAccess()` gates `/processwire/workspace/` & `/_react/presence` | [AccessGuard.php](../src/Security/AccessGuard.php#L17-L34), [React.module.php](../React.module.php#L181-L201) |
+| **Authentication** | `AccessGuard::isAuthenticated($user)` rejects guests across all gateways; `React::checkAccess()` gates `/processwire/workspace/` & `/_react/presence` | [AccessGuard.php](../src/Security/AccessGuard.php#L12-L34), [React.module.php](../React.module.php#L196-L220) |
 | **Token Signing & Anti-Replay** | `SignedTokenCodec` derives HMAC-SHA256 from `$config->userAuthSalt` (`>= 16` chars), binds `$user->id` (`uid`), checks `iat` TTL (`86400s`) and clock skew (`300s`), separates domain `typ` (`viewport`, `relation`, `media`, `tiptap`) | [SignedTokenCodec.php](../src/Security/SignedTokenCodec.php#L14-L114) |
-| **CSRF & Demo Protection** | `ReactGatewayRouter::verifyRequestCsrf()` checks `X-CSRF-TOKEN`, `X-XSRF-TOKEN`, or payload token (`hash_equals`); mutating gateway actions reject `GET` (`405`) and `$config->demo === true` (`403`) | [ReactGatewayRouter.php](../src/Http/ReactGatewayRouter.php#L107-L148,L271-L286) |
-| **Request Bounds & Sanitization** | JSON bodies capped at `2 MiB` / depth `64`; `UrlSanitizer` validates href/URL schemes; `MediaGateway` caps images at `64 MP` / `16,384 px` per axis; `TiptapContentPolicy` enforces purifier/allowlist sanitization | [ReactGatewayRouter.php](../src/Http/ReactGatewayRouter.php#L78-L100), [MediaGateway.php](../src/Media/MediaGateway.php#L50-L65) |
-| **Configuration** | Module settings stored on `React` and `InputfieldTiptap` module configs via `getModuleConfigInputfields()`; `themePreset` / `themeMode` overridable per user | [React.module.php](../React.module.php#L1771-L1882) |
-| **Theming** | `ThemeManager` compiles `--pw-*` variables and `ThemePreset` tokens into `light-dark()` stylesheets across workspace root views, embedded admin heads, and top-layer `<dialog>` portals | [ThemeManager.php](../src/Theme/ThemeManager.php#L27-L82), [ThemePreset.php](../src/Theme/ThemePreset.php#L13-L69) |
+| **CSRF & Demo Protection** | `ReactGatewayRouter::verifyRequestCsrf()` checks `X-CSRF-TOKEN`, `X-XSRF-TOKEN`, or request token (`hash_equals`); mutating gateway actions reject `GET` (`405`) and `$config->demo === true` (`403`) | [ReactGatewayRouter.php](../src/Http/ReactGatewayRouter.php) |
+| **Request Bounds & Sanitization** | JSON bodies capped at `2 MiB` / depth `64`; `UrlSanitizer` validates href/URL schemes; `MediaGateway` caps images at `64 MP` / `16,384 px` per axis; `TiptapContentPolicy` enforces purifier/allowlist sanitization | [ReactGatewayRouter.php](../src/Http/ReactGatewayRouter.php), [MediaGateway.php](../src/Media/MediaGateway.php) |
+| **Configuration** | Module settings stored on `React` and `InputfieldTiptap` module configs via `getModuleConfigInputfields()`; `themePreset` / `themeMode` / `shellLayout` overridable per user | [React.module.php](../React.module.php#L2067-L2191) |
+| **Theming** | `ThemeManager` compiles `--pw-*` variables and `ThemePreset` tokens into `light-dark()` stylesheets across workspace root views, embedded admin heads, and top-layer `<dialog>` portals | [ThemeManager.php](../src/Theme/ThemeManager.php#L27-L82), [ThemePreset.php](../src/Theme/ThemePreset.php#L13-L60) |
 | **Multi-Language (`i18n`)** | `TranslationCatalogService` resolves native `LanguageTranslator` entries into locale-scoped `OnceProp` objects (`rw_i18n:{locale}:{ns}`); `languages/*.csv` serve as `LanguagePorter` packs | [TranslationCatalogService.php](../src/I18n/TranslationCatalogService.php#L13-L35) |
-| **Logging & Errors** | Exceptions in gateway dispatch log to `$this->wire()->log->error(...)` while masking internal tracebacks in non-debug mode | [ReactGatewayRouter.php](../src/Http/ReactGatewayRouter.php#L365-L374) |
+| **Logging & Errors** | Exceptions in gateway dispatch log to `$this->wire()->log->error(...)` while masking internal tracebacks in non-debug mode | [ReactGatewayRouter.php](../src/Http/ReactGatewayRouter.php) |
 
 ---
 
 ### Inferred Architectural Decision Records (ADRs)
 
-- **ADR-01 — Host-Injected Runtime (`window.ReactWorkspaceRuntime`) Over Shared ESM Chunks `[INFERRED]`:** Downstream modules and the 18 companion bundles map React 19, Inertia, UI primitives, and hooks via Vite virtual aliases onto `window.ReactWorkspaceRuntime` instead of bundling duplicate React copies or Rollup `ReactInertia-*.js` chunks ([vite.config.ts](../vite.config.ts#L34-L91,L222-L633), [build-bundles.mjs](../resources/build-bundles.mjs#L32-L34)). **Consequence:** Classic `<script>` loading order matters (`EmbeddedAdminPageResponse::enqueueOrderedScripts` enforces `ReactInertia.js` before module scripts); companion widgets add only 8–95 kB per active control.
-- **ADR-02 — Dual-Context Rendering from One Component (`EmbeddedAdminPageResponse` vs `views/admin.php`) `[INFERRED]`:** Opening a module from `Setup > <Module>` runs inline inside ProcessWire's native `AdminTheme`, whereas `?ws=1` / `ProcessReactWorkspace` renders the standalone full-screen React shell ([InteractWithReact.php](../src/Inertia/InteractWithReact.php#L25-L32,L60-L146)). **Consequence:** Modules avoid duplicating views per shell, and `ProcessReactWorkspace` remains strictly optional.
-- **ADR-03 — Lazy Callback Registration (`React::defer*Registration`) Over Eager Module Scanning:** `autoload` modules register workspaces, widgets, providers, relations, and media hosts inside closures that fire only when the registry is first requested ([React.module.php](../React.module.php#L558,L942,L1234,L1314), [AGENTS.md](../AGENTS.md#L16-L18)). **Consequence:** Frontend and unrelated admin requests incur zero workspace stat queries or adapter instantiation cost.
+- **ADR-01 — Host-Injected Runtime (`window.ReactWorkspaceRuntime`) Over Shared ESM Chunks `[INFERRED]`:** Downstream modules and the 20 companion bundles map React 19, Inertia, UI primitives, and hooks via Vite virtual aliases onto `window.ReactWorkspaceRuntime` instead of bundling duplicate React copies or Rollup `ReactInertia-*.js` chunks ([vite.config.ts](../vite.config.ts#L34-L91,L222-L633), [build-bundles.mjs](../resources/build-bundles.mjs#L32-L34)). **Consequence:** Classic `<script>` loading order matters (`EmbeddedAdminPageResponse::enqueueOrderedScripts` enforces `ReactInertia.js` before module scripts); companion widgets add only 8–96 kB per active control.
+- **ADR-02 — Dual-Context Rendering from One Component (`EmbeddedAdminPageResponse` vs `views/admin.php`) `[INFERRED]`:** Opening a module from `Setup > <Module>` runs inline inside ProcessWire's native `AdminTheme`, whereas `?ws=1` / `ProcessReactWorkspace` renders the standalone full-screen React shell ([InteractWithReact.php](../src/Inertia/InteractWithReact.php#L25-L32)). **Consequence:** Modules avoid duplicating views per shell, and `ProcessReactWorkspace` remains strictly optional.
+- **ADR-03 — Lazy Callback Registration (`React::defer*Registration`) Over Eager Module Scanning:** `autoload` modules register workspaces, widgets, shell layouts, command search providers, viewport providers, relations, and media hosts inside closures that fire only when the registry is first requested ([React.module.php](../React.module.php#L579,L984,L1166,L1224,L1479,L1576), [AGENTS.md](../AGENTS.md#L16-L18)). **Consequence:** Frontend and unrelated admin requests incur zero workspace stat queries or adapter instantiation cost.
 - **ADR-04 — Deterministically Layered Delta Stylesheets Over Global Tailwind Scanning:** `ReactInertia.css` compiles only `React` sources, while consumer stylesheets import `module-delta.css` and share 32 identically ordered `@layer utilities.*` sub-layers ([tailwind-layers.mjs](../resources/tailwind-layers.mjs#L11-L44), [module-delta.css](../resources/css/module-delta.css#L1-L7)). **Consequence:** Core CSS never bloats as downstream modules grow, and late-loaded module utilities cannot override responsive or state variants from `ReactInertia.css`.
-- **ADR-05 — Native ProcessWire File/Meta/Session Storage Over Custom SQL Schema:** User preferences, edit locks, view prefs, and link media reuse `site/assets/cache/React/`, `$session`, `pages_meta`, and `site/assets/files/{pageId}/links/` with full cleanup on `___uninstall()` ([React.module.php](../React.module.php#L1411-L1455)). **Consequence:** Zero custom DDL migrations are needed, but multi-server clustered deployments would need shared cache/assets storage for JSON presence/preference files `[INFERRED]`.
-- **ADR-06 — Native Top-Layer `<dialog>` + CSS `mask-image` Vector Icons Over Legacy Font Icons:** Modals render in HTML `<dialog>` top layers, and admin menu/template/field icons render via generated `VectorIcons.css` `mask-image` rules alongside serialized `<svg>` payloads ([ThemeManager.php](../src/Theme/ThemeManager.php#L27), [IconManager.php](../src/Icon/IconManager.php#L1205)). **Consequence:** Flyout admin icons rendered on non-module pages must be registered upfront via `IconManager::registerAdminIcons()` during module `init()`.
+- **ADR-05 — Native ProcessWire File/Meta/Session Storage Over Custom SQL Schema:** User preferences, edit locks, view prefs, and link media reuse `site/assets/cache/React/`, `$session`, `pages_meta`, and `site/assets/files/{pageId}/links/` with full cleanup on `___uninstall()` ([React.module.php](../React.module.php#L1676-L1750)). **Consequence:** Zero custom DDL migrations are needed, but multi-server clustered deployments would need shared cache/assets storage for JSON presence/preference files `[INFERRED]`.
+- **ADR-06 — Native Top-Layer `<dialog>` + CSS `mask-image` Vector Icons Over Classic Font Icons:** Modals render in HTML `<dialog>` top layers, and admin menu/template/field icons render via generated `VectorIcons.css` `mask-image` rules alongside serialized `<svg>` payloads ([ThemeManager.php](../src/Theme/ThemeManager.php#L27), [IconManager.php](../src/Icon/IconManager.php)). **Consequence:** Flyout admin icons rendered on non-module pages must be registered upfront via `IconManager::registerAdminIcons()` during module `init()`.
 
 ---
 
@@ -249,7 +249,7 @@ Each complex subsystem has a dedicated architectural guide:
 1. **Dual-Context Admin Shell, Hub Dashboard, Flyout Nav & Central Theming** -> [02 — Workspaces, Dual-Context Shell & Themes](./02-workspaces-and-admin-shell.md)
 2. **Schema Form Serializer, Dual-Mode Inputfields, Media Studio, Icon Engine & Tiptap Capability Packs** -> [03 — Inputfields, Forms & Rich Text (`InputfieldTiptap`)](./03-inputfields-forms-and-tiptap.md)
 3. **Interactive Data Viewports, Capability Provider Contracts & Preference Persistence** -> [04 — Viewports & Data Providers](./04-viewports-and-data-providers.md)
-4. **19-Pass Self-Contained Vite Build, `@pw/react/*` SDK, 32 CSS Cascade Layers & Token Security** -> [05 — Frontend Runtime, Typed SDK, i18n & Security](./05-frontend-runtime-sdk-and-security.md)
+4. **21-Pass Self-Contained Vite Build, `@pw/react/*` SDK, 32 CSS Cascade Layers & Token Security** -> [05 — Frontend Runtime, Typed SDK, i18n & Security](./05-frontend-runtime-sdk-and-security.md)
 
 ---
 

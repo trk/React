@@ -11,15 +11,15 @@ date_added: "2026-11-18"
 
 Shared React 19 + Inertia v3 + Tailwind CSS v4 UI runtime (`--pw-*` semantic tokens), admin shell (`ProcessReact`), dual-mode form/media/relation/icon/rich-text `Inputfield`s, interactive data viewports, and optional `ProcessReactWorkspace` (`Admin > Workspace`) hub (`site/modules/React/`).
 
-For complete class and method signatures, read `site/modules/React/API.md`.
+For complete class and method signatures, read `site/modules/React/API.md`, and for architectural boundaries and multi-shell/Vite build details, read `site/modules/React/docs/ARCHITECTURE.md` and `site/modules/React/AGENTS.md`.
 
 ## 1. Execution Workflow & Completion Criteria
 
 1. **Verify active modules and schema:**
    - Run `pw_module_list` and `pw_schema_read` (MCP) or `php vendor/bin/wire module:list --json` to confirm `Inertia` and `React` are installed (`ProcessReactWorkspace` is optional).
    - _Criterion:_ Downstream modules list `'React'` (never `'ProcessReactWorkspace'`) in `requires` so they operate both standalone (`Setup > <Module>`) and inside the optional `Workspace` hub.
-2. **Register workspaces, widgets, providers, relations, and media hosts lazily:**
-   - Inside an `autoload` module's `init()` / `ready()`, wrap registrations in `React::deferModuleRegistration()`, `deferProviderRegistration()`, `deferRelationRegistration()`, or `deferMediaHostRegistration()`.
+2. **Register workspaces, widgets, shell layouts, command search providers, providers, relations, and media hosts lazily:**
+   - Inside an `autoload` module's `init()` / `ready()`, wrap registrations in `React::deferModuleRegistration()`, `deferShellLayoutRegistration()`, `deferCommandSearchRegistration()`, `deferProviderRegistration()`, `deferRelationRegistration()`, or `deferMediaHostRegistration()`.
    - _Criterion:_ Zero workspace stat queries, widget callbacks, or adapter instantiations run on frontend or unrelated admin requests, and zero `\ReflectionProperty` workarounds are used.
 3. **Extend `ProcessReact` for dual-context admin modules and `MarkupReactViewport` / `FormSchemaSerializer` for views:**
    - Extend `Totoglu\React\Inertia\ProcessReact`, return `$this->inertiaRender('Module/Workspace', [...])` wrapped in `<AppShell>`, and expose module UI strings from `public function ___translations(): array`.
@@ -94,6 +94,38 @@ class ProcessInventory extends ProcessReact
 				]);
 			}
 		);
+
+		React::deferCommandSearchRegistration(
+			$this,
+			function (\Totoglu\React\Workspace\CommandSearchRegistry $registry): void {
+				$registry->register('inventory-items', function (string $query, User $user, int $limit): array {
+					$pages = $this->wire()->pages;
+					$sanitizer = $this->wire()->sanitizer;
+					$adminUrl = rtrim((string) $this->wire()->config->urls->admin, '/') . '/';
+					$matches = $pages->find("template=inventory-item, title%={$sanitizer->selectorValue($query)}, limit={$limit}");
+					$items = [];
+					foreach ($matches as $item) {
+						if ($item->editable()) {
+							$items[] = [
+								'id' => 'inv-' . $item->id,
+								'label' => (string) $item->title,
+								'subtitle' => (string) $item->path,
+								'badge' => $this->_('Inventory'),
+								'group' => $this->_('Inventory Items'),
+								'icon' => 'package',
+								'href' => $adminUrl . 'inventory/edit/?id=' . (int) $item->id,
+								'isInertia' => true,
+							];
+						}
+					}
+					return $items;
+				}, [
+					'permission' => 'inventory-manage',
+					'label' => $this->_('Inventory Items'),
+					'order' => 100,
+				]);
+			}
+		);
 	}
 
 	public function ___execute(): string
@@ -154,6 +186,11 @@ $schema = $react->serializeForm($form, [
 ]);
 
 // Declarative array definitions -> SchemaForm JSON schema
+// Canonical controls: text, textarea, number, email, url, tel, date, time, datetime,
+// daterange, color, tags, combobox, unit_number (or currency / unitVariant: 'currency'),
+// segmented, spacing, range, range_slider, colspan, otp, password, markdown, rating,
+// signature, calculation, select, radios, checkboxes, asmselect, multiselect, checkbox,
+// toggle, repeater, keyvalue, link, icon, relation (m2o/m2m/o2m/m2a), file, image, tiptap.
 $declarativeSchema = $react->serializeFormDefinitions([
 	[
 		'name' => 'title',
@@ -170,6 +207,16 @@ $declarativeSchema = $react->serializeFormDefinitions([
 		'width' => 50,
 	],
 	[
+		'name' => 'deposit',
+		'type' => 'unit_number',
+		'unitVariant' => 'currency',
+		'label' => $this->_('Deposit'),
+		'units' => ['EUR', 'USD', 'GBP'],
+		'defaultUnit' => 'EUR',
+		'precision' => 2,
+		'width' => 50,
+	],
+	[
 		'name' => 'cta_link',
 		'type' => 'link',
 		'label' => $this->_('Call to Action'),
@@ -177,6 +224,8 @@ $declarativeSchema = $react->serializeFormDefinitions([
 	],
 ]);
 ```
+
+For native ProcessWire `Inputfield`s serialized through `$react->serializeForm($form)` **or rendered directly on classic ProcessWire Page Edit / User Edit / `Setup > Fields` forms**, set `$field->set('rwControl', '<canonical_type>')` (e.g. `time`, `date`, `datetime`, `daterange`, `color`, `tags`, `combobox`, `phone`, `country`, `countries`, `timezone`, `currency_code`, `unit_number` with `'unitVariant' => 'currency'` or `'currency'`, `segmented`, `spacing`, `range`, `range_slider`, `colspan`, `otp`, `password`, `markdown`, `rating`, `signature`, `calculation`, `toggle`, `slug`, `secret`, `condition_builder`) along with extended control props (`swatches`, `allowAlpha`, `suggestions`, `comboboxOptions`, `segmentedOptions`, `defaultCountry`, `preferredCountries`, `phoneCountries`, `only`, `exclude`, `preferred`, `regions`, `includeOffset`, `units`, `currencies`, `defaultUnit`, `unitVariant`, `currency`, `precision`, `locale`, `hourFormat`, `minuteStep`, `showSeconds`, `timezone`, `minTime`, `maxTime`, `multiple`, `secretPrefix`, `secretBytes`, `secretAutoGenerate`) and `Totoglu\React\Support\IntlCatalog` (`countryOptions`, `phoneCountryItems`, `normalizePhoneE164`, `isValidPhoneE164`, `currencyOptions`, `timezoneOptions`). Compatible standard Fieldtypes (`FieldtypeText`, `FieldtypeTextarea`, `FieldtypeInteger`, `FieldtypeFloat`, `FieldtypeDecimal`, `FieldtypeDatetime`, `FieldtypeOptions`) also expose a `React Control` (`rwControlFieldset`) configuration panel directly in `Setup > Fields`; classic renders automatically hydrate via `ReactControlRegistry` (`ReactWorkspace/ExtraFieldControl` in `ReactExtraFields.js` without `SchemaForm.js`, or `ReactWorkspace/FieldControl` in `SchemaForm.js`).
 
 ### Concurrent Co-Editor Presence Notification
 
@@ -213,18 +262,18 @@ React::instance($this)->notifyResourceSaved(
 
 ## 4. Client Runtime, Typed SDK (`@pw/react/*`), Central Theme & UX Standards
 
-- **Typed SDK & Runtime Global (`@pw/react/*` / `window.ReactWorkspaceRuntime`):** Downstream extension modules compile with `defineWireModuleConfig(import.meta.dirname, { jsx: 'automatic', tailwind: true })` and import directly from typed subpaths: `@pw/react/core` (React hooks, Inertia router/`Link`, `DynamicIcon`, `cn`, `registerPages`/`registerIslands`), `@pw/react/ui` (`Button`, `Badge`, `Card`, `Dialog`, `Sheet`, `ConfirmDialog`, `Tabs`, `Input`, `Select`, `Switch`, `DropdownMenu`, `CliBox` with `wrap`, `EmptyState`, sortable/overlay helpers), `@pw/react/layout` (`AppShell`, unified account menu + theme/shortcut shell controls, `RecordHeader`, `EditPresenceBanner`), `@pw/react/viewports` (`DataViewport`, lazy `viewScripts`/`viewStyles` loading, `/`/`n`/`r` keyboard shortcuts), `@pw/react/fields` (`SchemaForm`, lazy field controls, `mod+s`/`mod+shift+s` shortcuts, condition helpers), `@pw/react/hooks` (`useTranslations`, `useTheme`, `useKeyboardShortcuts`, `KeyboardShortcutsProvider`, `useRegisteredKeyboardShortcuts`, `formatShortcutKeys`, `getCsrfToken`, gateway helpers), and optional `@pw/react/{dnd,grid,calendar,optional}` adapters. Shared media components live in `dist/ReactMedia.js` (`window.ReactMediaRuntime`) and `dist/ReactMedia.css`, loaded only on pages using media Inputfields or interactive media inspection; Tiptap addon resolution lives inside `dist/TiptapCore.js` via `window.ReactTiptapRuntime.ensureBundles()`.
-- **Semantic Tokens (`ReactInertia.css`), Delta CSS & Central Theme (`ThemeManager`):** `ReactInertia.css` maps ProcessWire `--pw-*` variables into semantic tokens (`--background`, `--foreground`, `--card`, `--primary`, `--primary-ink`, `--primary-foreground`, `--muted`, `--border`, `--destructive`, `--success`, `--warning`) with WCAG 2.1 AA contrast across light and dark modes, without scanning sibling modules. Site-wide theme defaults (`native`, `neutral`, `slate`, `ocean`, `emerald`, `violet`, `rose`, `amber`, or `custom`) live in `React` module config, while authenticated users can override both light/dark/system mode and color scheme preset (or reset to site default) in per-user `{user-id}.json` preferences via the unified account dropdown and `/_react/workspace-prefs` (`set_theme_mode` / `set_theme_preset`). Downstream modules import `site/modules/React/resources/css/module-delta.css` in their entry CSS so `resources/tailwind-layers.mjs` emits module-only delta utilities into ordered `@layer utilities.*` sub-layers.
+- **Shell Navigation (`TopbarShellLayout` / `SidebarShellLayout`) & Typed SDK (`@pw/react/*`):** `TopbarShellLayout` shows up to `5` favorite-sorted inline workspace links alongside a `+N` `"More"` overflow `ModuleSwitcher` popover, whereas `SidebarShellLayout` pins the collapsible rail (`Cmd/Ctrl+B`) and desktop bottom `UserAccountMenu`. Downstream extension modules compile with `defineWireModuleConfig(import.meta.dirname, { jsx: 'automatic', tailwind: true })` and import directly from typed subpaths: `@pw/react/core` (React hooks, Inertia router/`Link`, `DynamicIcon`, `cn`, `registerPages`/`registerIslands`), `@pw/react/ui` (`Button`, `Badge`, `Card`, `Dialog`, `Sheet`, `ConfirmDialog`, `Tabs`, `Input`, `Select`, `Switch`, `DropdownMenu`, `CliBox` with `wrap`, `EmptyState`, sortable/overlay helpers), `@pw/react/layout` (`AppShell`, `TopbarShellLayout`, `SidebarShellLayout`, `ModuleSwitcher`, `UserAccountMenu`, `RecordHeader`, `EditPresenceBanner`, `CommandPaletteItem`, `registerShellLayout`, `getShellLayout`, `listShellLayouts`, `resolveShellLayoutDefinition`, `useShellLayout`, plus grouped Command Palette 2.0 actions for Shell Layout, Sidebar collapse, Color Scheme, nested sections, and `/_react/command-search` record results), `@pw/react/viewports` (`DataViewport`, lazy `viewScripts`/`viewStyles` loading, `/`/`n`/`r` keyboard shortcuts), `@pw/react/fields` (`SchemaForm`, lazy field controls, `mod+s`/`mod+shift+s` shortcuts, condition helpers), `@pw/react/hooks` (`useTranslations`, `useTheme`, `useKeyboardShortcuts`, `KeyboardShortcutsProvider`, `useRegisteredKeyboardShortcuts`, `formatShortcutKeys`, `getCsrfToken`, gateway helpers), and optional `@pw/react/{dnd,grid,calendar,optional}` adapters. Shared media components live in `dist/ReactMedia.js` (`window.ReactMediaRuntime`) and `dist/ReactMedia.css`, loaded only on pages using media Inputfields or interactive media inspection; Tiptap addon resolution lives inside `dist/TiptapCore.js` via `window.ReactTiptapRuntime.ensureBundles()`.
+- **Semantic Tokens (`ReactInertia.css`), Delta CSS, Central Theme (`ThemeManager`) & Multi-Shell Navigation (`ShellLayoutRegistry`):** `ReactInertia.css` maps ProcessWire `--pw-*` variables into semantic tokens (`--background`, `--foreground`, `--card`, `--primary`, `--primary-ink`, `--primary-foreground`, `--muted`, `--border`, `--destructive`, `--success`, `--warning`, plus distinct `--sidebar*` preset surface tokens) with WCAG 2.1 AA contrast across light and dark modes, without scanning sibling modules. It also ships domain-agnostic surface/markup contracts consumed by `SchemaForm`, revision viewers, and `SchemaMarkupNode`: `[data-rw-card-tabs="above"]` (flush top tablist strip rendered directly above `<Card data-rw-form-card="">` when `surface === 'card'` has 2+ visible tabs), responsive `[data-rw-meta-grid]` / `[data-rw-meta-item]` / `[data-rw-meta-label]` / `[data-rw-meta-value]` / `[data-rw-meta-copy]` (paired with `SchemaMarkupNode` `[data-copy-text]` `1500ms` `data-copied="1"` + polite `aria-live` clipboard feedback), `[data-rw-ref-list]` / `[data-rw-ref-item]`, `[data-rw-rev-table]` / `[data-rw-diff-pill]`, and light/dark WCAG 2.1 AA diff selectors `[data-rw-diff-ins]`, `[data-rw-diff-del]`, `[data-rw-diff-code]`, `[data-rw-diff-line="add|del|ctx"]`, `[data-rw-diff-gap]`, `[data-rw-diff-lang-unchanged]`. Site-wide theme (`native`, `neutral`, `slate`, `stone`, `ocean`, `indigo`, `teal`, `custom`) and `defaultShellLayout` (`topbar`, `sidebar`, or registered custom layout ID) defaults live in `React` module config, while authenticated users override `themeMode`, `themePreset`, `shellLayout` (or reset to site default), and `sidebarCollapsed` in per-user `{user-id}.json` preferences via the unified account dropdown, Command Palette 2.0, and `/_react/workspace-prefs` (`set_theme_mode`, `set_theme_preset`, `set_shell_layout`, `set_sidebar_collapsed`). Register additional server/client shell layouts and command search providers lazily with `React::deferShellLayoutRegistration()`, `React::deferCommandSearchRegistration()`, and `@pw/react/layout`'s `registerShellLayout()`. Downstream modules import `site/modules/React/resources/css/module-delta.css` in their entry CSS so `resources/tailwind-layers.mjs` emits module-only delta utilities into ordered `@layer utilities.*` sub-layers.
 - **Zero Layout Shift & Rhythm:** Align side-by-side form controls (`width` / `columnWidth` / `colSpan`) to consistent input heights and spacing rhythm; render drawers, popovers, and inspector panels as overlays (`Sheet` / `Dialog`) so opening them never pushes form content downward.
 - **Actionable UX Copy & States:** Write jargon-free, user-oriented labels, `EmptyState` guidance, loading, saving/optimistic, and validation error messages that tell the user what to do next without leaking internal class or third-party library names.
-- **WCAG 2.1 AA & Keyboard Mastery:** Enforce at least `4.5:1` contrast on small text and active button/tab states, explicit `<label>` bindings on every form input, `aria-label` on every icon-only button, focus trap + focus restoration on modals/drawers, and consistent keyboard shortcuts (`Cmd/Ctrl+K` Quick Switcher, `?` / `Cmd/Ctrl+/` Keyboard Shortcuts Help, `Alt+1..9` tabs, `Alt+Left` back, `mod+s` / `mod+shift+s` form save, `/` / `n` / `r` viewports, `g w` / `g a` navigation chords, and `Escape`). Audit UI components with `impeccable detect --json` when available.
+- **WCAG 2.1 AA & Keyboard Mastery:** Enforce at least `4.5:1` contrast on small text and active button/tab states, explicit `<label>` bindings on every form input, `aria-label` on every icon-only button, focus trap + focus restoration on modals/drawers, and consistent keyboard shortcuts (`Cmd/Ctrl+K` Quick Switcher, `Cmd/Ctrl+B` toggle collapsible sidebar, `?` / `Cmd/Ctrl+/` Keyboard Shortcuts Help, `Alt+1..9` tabs, `Alt+Left` back, `mod+s` / `mod+shift+s` form save, `/` / `n` / `r` viewports, `g w` / `g a` navigation chords, and `Escape`). Audit UI components with `impeccable detect --json` when available.
 - **Signed State & Native `LanguageTranslator` Parity:** Sign client-roundtripped viewport/relation/media state envelopes with HMAC (`SignedTokenCodec`), reject `guest` users (`403`) on workspace endpoints, declare module strings in `___translations()` resolved directly via ProcessWire's native `LanguageTranslator` (`Setup > Languages`, with zero runtime CSV file fallback), and keep `languages/{en,tr,de,fr,es,ru}.csv` `LanguagePorter` import packs synchronized with intact `{placeholder}` / `%s` tokens.
 
 ---
 
 ## 5. Anti-Patterns & Loophole Closing
 
-- ❌ **Calling `$react->workspaces()->register()` eagerly inside `init()` on `autoload => true` modules:** Evaluates workspace/widget closures on every frontend request. Always use `React::deferModuleRegistration($this, ...)`.
+- ❌ **Calling `$react->workspaces()->register()` eagerly inside `init()` on `autoload => true` modules:** Evaluates workspace/widget closures on every frontend request. Always use `React::deferModuleRegistration($this, ...)`, and clean up with `React::forgetSharedWorkspace()`, `React::forgetSharedWidget()`, and `React::forgetDeferredRegistrations($this)` inside `___uninstall()`.
 - ❌ **Hardcoding raw hex colors or `text-primary` on subtle `bg-primary/10` pills:** Fails WCAG 2.1 AA `4.5:1` contrast when `--pw-main-color` is a mid-tone accent. Use semantic tokens (`bg-primary text-primary-foreground` for solid pills, `bg-primary/12 text-primary-ink` for subtle pills, `bg-[var(--button-bg)] text-[var(--button-fg)]` via `<Button>`).
 - ❌ **Rendering user-supplied `href` attributes without `sanitizeHref()` / `UrlSanitizer::sanitizeHref()`:** Allows `javascript:` / `data:` XSS vectors. Always pass untrusted links through `sanitizeHref()`.
 - ❌ **Skipping `<?php // __(file-not-translatable)` on line 1 of PHP test files:** Causes `LanguagePorter` to extract test fixture strings into `languages/*.csv`. Every PHP file under `tests/` must begin with `<?php // __(file-not-translatable)`.
