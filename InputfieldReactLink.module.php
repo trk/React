@@ -573,16 +573,16 @@ class InputfieldReactLink extends InputfieldReact
 			: $fallbackType;
 		$pageId = isset($value['pageId']) && is_numeric($value['pageId'])
 			? max(0, (int) $value['pageId'])
-			: (isset($value['page_id']) && is_numeric($value['page_id']) ? max(0, (int) $value['page_id']) : 0);
+			: 0;
 		$entryType = isset($value['entryType']) && is_string($value['entryType'])
 			? trim($value['entryType'])
-			: (isset($value['entry_type']) && is_string($value['entry_type']) ? trim($value['entry_type']) : '');
+			: '';
 		$entryId = isset($value['entryId']) && is_scalar($value['entryId'])
 			? trim((string) $value['entryId'])
-			: (isset($value['entry_id']) && is_scalar($value['entry_id']) ? trim((string) $value['entry_id']) : '');
+			: '';
 		$rawUrl = isset($value['url']) && is_scalar($value['url'])
 			? trim((string) $value['url'])
-			: (isset($value['href']) && is_scalar($value['href']) ? trim((string) $value['href']) : '');
+			: '';
 		$rawFile = isset($value['file']) && is_scalar($value['file']) ? trim((string) $value['file']) : '';
 		$rawQuery = isset($value['query']) && is_scalar($value['query']) ? ltrim(trim((string) $value['query']), '?') : '';
 		$rawAnchor = isset($value['anchor']) && is_scalar($value['anchor']) ? ltrim(trim((string) $value['anchor']), '#') : '';
@@ -609,9 +609,9 @@ class InputfieldReactLink extends InputfieldReact
 		if ($label === '' && isset($labels['default'])) {
 			$label = $labels['default'];
 		}
-		$rawAriaLabel = $value['ariaLabel'] ?? $value['aria_label'] ?? null;
+		$rawAriaLabel = $value['ariaLabel'] ?? null;
 		$ariaLabel = is_scalar($rawAriaLabel) ? trim((string) $rawAriaLabel) : '';
-		$rawAriaLabels = $value['ariaLabels'] ?? $value['aria_labels'] ?? null;
+		$rawAriaLabels = $value['ariaLabels'] ?? null;
 		$ariaLabels = self::normalizeLocalizedTextMap($rawAriaLabels, $ariaLabel);
 		if ($ariaLabel === '' && isset($ariaLabels['default'])) {
 			$ariaLabel = $ariaLabels['default'];
@@ -804,7 +804,7 @@ class InputfieldReactLink extends InputfieldReact
 	}
 
 	/**
-	 * Normalize link sub-field enablement flags from camelCase or snake_case config arrays.
+	 * Normalize link sub-field enablement flags from canonical camelCase config arrays.
 	 *
 	 * @param array<string, mixed> $config
 	 * @return array{
@@ -819,12 +819,12 @@ class InputfieldReactLink extends InputfieldReact
 	public static function normalizeFeatureFlags(array $config): array
 	{
 		return [
-			'enableLabel' => (bool) ($config['enableLabel'] ?? $config['enable_label'] ?? true),
-			'enableAriaLabel' => (bool) ($config['enableAriaLabel'] ?? $config['enable_aria_label'] ?? true),
-			'enableTarget' => (bool) ($config['enableTarget'] ?? $config['enable_target'] ?? true),
-			'enableRel' => (bool) ($config['enableRel'] ?? $config['enable_rel'] ?? true),
-			'enableAnchor' => (bool) ($config['enableAnchor'] ?? $config['enable_anchor'] ?? true),
-			'enableQuery' => (bool) ($config['enableQuery'] ?? $config['enable_query'] ?? true),
+			'enableLabel' => (bool) ($config['enableLabel'] ?? true),
+			'enableAriaLabel' => (bool) ($config['enableAriaLabel'] ?? true),
+			'enableTarget' => (bool) ($config['enableTarget'] ?? true),
+			'enableRel' => (bool) ($config['enableRel'] ?? true),
+			'enableAnchor' => (bool) ($config['enableAnchor'] ?? true),
+			'enableQuery' => (bool) ($config['enableQuery'] ?? true),
 		];
 	}
 
@@ -931,6 +931,9 @@ class InputfieldReactLink extends InputfieldReact
 					$rawPageUrl = ($language instanceof Language && ($targetPage->hasHook('localUrl()') || method_exists($targetPage, 'localUrl')))
 						? (string) $targetPage->localUrl($language)
 						: (string) $targetPage->url;
+					if ($rawPageUrl === '' && (!$language instanceof Language || $language->isDefault()) && (string) $targetPage->url !== '') {
+						$rawPageUrl = (string) $targetPage->url;
+					}
 					$href = self::appendQueryAndAnchor(self::sanitizeHref($rawPageUrl), $norm['query'], $norm['anchor']);
 					$localizedTitle = $language instanceof Language
 						? trim((string) $targetPage->getLanguageValue($language, 'title'))
@@ -1372,12 +1375,29 @@ class InputfieldReactLink extends InputfieldReact
 			$inputfields->add($typesField);
 		}
 
-		/** @var InputfieldText|null $defTypeField */
-		$defTypeField = $modules->get('InputfieldText');
+		/** @var InputfieldSelect|null $defTypeField */
+		$defTypeField = $modules->get('InputfieldSelect');
 		if ($defTypeField) {
 			$defTypeField->attr('name', 'defaultType');
 			$defTypeField->label = $this->_('Default Target Type');
-			$defTypeField->val((string) ($this->getSetting('defaultType') ?: 'page'));
+			$defTypeField->addOption('page', $this->_('Page'));
+			$defTypeField->addOption('entry', $this->_('Entry'));
+			$defTypeField->addOption('url', $this->_('URL & Anchor (#)'));
+			$defTypeField->addOption('tel', $this->_('Phone (+ & digits)'));
+			$defTypeField->addOption('email', $this->_('Email'));
+			$defTypeField->addOption('file', $this->_('Media: File'));
+			$defTypeField->addOption('image', $this->_('Media: Image'));
+			$defTypeField->addOption('video', $this->_('Media: Video'));
+			$currentDefaultType = strtolower(trim((string) ($this->getSetting('defaultType') ?: 'page')));
+			foreach (self::normalizeTypeList($this->getSetting('linkTypes') ?? self::DEFAULT_TYPES) as $ct) {
+				if (!isset($defTypeField->getOptions()[$ct])) {
+					$defTypeField->addOption($ct, ucfirst($ct));
+				}
+			}
+			if ($currentDefaultType !== '' && !isset($defTypeField->getOptions()[$currentDefaultType])) {
+				$defTypeField->addOption($currentDefaultType, ucfirst($currentDefaultType));
+			}
+			$defTypeField->val($currentDefaultType !== '' ? $currentDefaultType : 'page');
 			$defTypeField->columnWidth = 35;
 			$inputfields->add($defTypeField);
 		}

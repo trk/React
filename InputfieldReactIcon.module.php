@@ -333,6 +333,7 @@ class InputfieldReactIcon extends InputfieldReact
 			]);
 			$rawMode = strtolower(trim((string) ($this->getSetting('iconPrefixMode') ?: 'none')));
 			$prefixField->val(in_array($rawMode, ['none', 'vector'], true) ? $rawMode : 'none');
+			$prefixField->set('rwControl', 'segmented');
 			$prefixField->columnWidth = 50;
 			$inputfields->add($prefixField);
 		}

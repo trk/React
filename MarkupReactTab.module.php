@@ -700,6 +700,7 @@ class MarkupReactTab extends InputfieldFieldset implements InertiaSerializable
 			$variantField->addOption('segmented', $this->_('Segmented (Compact Pill Bar)'));
 			$variantField->addOption('vertical', $this->_('Vertical (Side Navigation)'));
 			$variantField->val((string) ($this->getSetting('variant') ?: 'line'));
+			$variantField->set('rwControl', 'segmented');
 			$variantField->columnWidth = 34;
 			$inputfields->add($variantField);
 		}

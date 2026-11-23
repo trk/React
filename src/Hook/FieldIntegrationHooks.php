@@ -37,10 +37,17 @@ final class FieldIntegrationHooks extends Wire
 {
 	private bool $registered = false;
 	private bool $executingProcessController = false;
+	/** @var list<string> */
+	private array $hookIds = [];
 
 	public function __construct(private React $react)
 	{
 		parent::__construct();
+	}
+
+	public function isRegistered(): bool
+	{
+		return $this->registered;
 	}
 
 	/**
@@ -54,30 +61,50 @@ final class FieldIntegrationHooks extends Wire
 		$this->registered = true;
 
 		$wire = $this->wire();
-		$wire->addHookAfter('FieldtypeTextarea::getFieldSetups', $this, 'hookFieldtypeTextareaGetFieldSetups');
-		$wire->addHookBefore('InputfieldPage::getConfigInputfields', $this, 'hookInputfieldPageClasses');
-		$wire->addHookBefore('InputfieldPage::getInputfield', $this, 'hookInputfieldPageClasses');
-		$wire->addHookAfter('FieldtypeFile::getConfigInputfields', $this, 'hookFieldtypeFileConfigInputfields');
-		$wire->addHookAfter('FieldtypeText::getConfigInputfields', $this, 'hookFieldtypeTextConfigInputfields');
-		$wire->addHookBefore('FieldtypeText::sleepValue', $this, 'hookFieldtypeTextSleepValue');
-		$wire->addHookBefore('FieldtypeText::formatValue', $this, 'hookFieldtypeTextFormatValue');
-		$wire->addHookBefore('FieldtypeText::markupValue', $this, 'hookFieldtypeTextMarkupValue');
-		$wire->addHookBefore('Field::getInputfield', $this, 'hookFieldBeforeGetInputfield');
-		$wire->addHookAfter('Field::getInputfield', $this, 'hookFieldAfterGetInputfield');
-		$wire->addHookAfter('Pages::saved', $this, 'hookPagesSavedLinkMedia');
-		$wire->addHookAfter('ProcessField::buildEditForm, ProcessTemplate::buildEditForm', $this, 'hookAdminIconBuildEditForm');
-		$wire->addHookBefore('Fields::save', $this, 'hookAdminIconFieldSave');
-		$wire->addHookBefore('Fields::saveFieldgroupContext', $this, 'hookAdminIconFieldContextSave');
-		$wire->addHookBefore('Templates::save', $this, 'hookAdminIconTemplateSave');
-		$wire->addHookAfter('Pages::saved', $this, 'hookAdminIconPageSaved');
-		$wire->addHookBefore('Session::redirect', $this, 'hookSessionRedirectPreserveWorkspace');
-		$wire->addHookBefore('ProcessController::execute', $this, 'hookBeforeProcessControllerExecute');
-		$wire->addHookAfter('ProcessController::execute', $this, 'hookAfterProcessControllerExecute');
-		$wire->addHookAfter('Page::render', $this, 'hookAfterProcessControllerExecute');
-		$wire->addHookAfter('Inputfield::render', $this, 'hookTiptapPauseLanguageSupportWrap', ['priority' => '50.0']);
-		$wire->addHookAfter('Inputfield::render', $this, 'hookTiptapRestoreLanguageSupportWrap', ['priority' => '150.0']);
-		$wire->addHookAfter('Inputfield::renderValue', $this, 'hookTiptapPauseLanguageSupportWrap', ['priority' => '50.0']);
-		$wire->addHookAfter('Inputfield::renderValue', $this, 'hookTiptapRestoreLanguageSupportWrap', ['priority' => '150.0']);
+		$this->hookIds = [
+			(string) $wire->addHookAfter('FieldtypeTextarea::getFieldSetups', $this, 'hookFieldtypeTextareaGetFieldSetups'),
+			(string) $wire->addHookBefore('InputfieldPage::getConfigInputfields', $this, 'hookInputfieldPageClasses'),
+			(string) $wire->addHookBefore('InputfieldPage::getInputfield', $this, 'hookInputfieldPageClasses'),
+			(string) $wire->addHookAfter('FieldtypeFile::getConfigInputfields', $this, 'hookFieldtypeFileConfigInputfields'),
+			(string) $wire->addHookAfter('FieldtypeText::getConfigInputfields', $this, 'hookFieldtypeTextConfigInputfields'),
+			(string) $wire->addHookBefore('FieldtypeText::sleepValue', $this, 'hookFieldtypeTextSleepValue'),
+			(string) $wire->addHookBefore('FieldtypeText::formatValue', $this, 'hookFieldtypeTextFormatValue'),
+			(string) $wire->addHookBefore('FieldtypeText::markupValue', $this, 'hookFieldtypeTextMarkupValue'),
+			(string) $wire->addHookBefore('Field::getInputfield', $this, 'hookFieldBeforeGetInputfield'),
+			(string) $wire->addHookAfter('Field::getInputfield', $this, 'hookFieldAfterGetInputfield'),
+			(string) $wire->addHookAfter('Field::getConfigInputfields', $this, 'hookFieldGetConfigInputfields'),
+			(string) $wire->addHookAfter('Inputfield::renderReadyHook', $this, 'hookRwControlRenderReady'),
+			(string) $wire->addHookAfter('Inputfield::render', $this, 'hookRwControlAfterRender', ['priority' => '40.0']),
+			(string) $wire->addHookAfter('Inputfield::renderValue', $this, 'hookRwControlAfterRenderValue', ['priority' => '40.0']),
+			(string) $wire->addHookBefore('Inputfield::processInput', $this, 'hookRwControlBeforeProcessInput'),
+			(string) $wire->addHookAfter('Pages::saved', $this, 'hookPagesSavedLinkMedia'),
+			(string) $wire->addHookAfter('ProcessField::buildEditForm, ProcessTemplate::buildEditForm', $this, 'hookAdminIconBuildEditForm'),
+			(string) $wire->addHookBefore('Fields::save', $this, 'hookAdminIconFieldSave'),
+			(string) $wire->addHookBefore('Fields::saveFieldgroupContext', $this, 'hookAdminIconFieldContextSave'),
+			(string) $wire->addHookBefore('Templates::save', $this, 'hookAdminIconTemplateSave'),
+			(string) $wire->addHookAfter('Pages::saved', $this, 'hookAdminIconPageSaved'),
+			(string) $wire->addHookBefore('Session::redirect', $this, 'hookSessionRedirectPreserveWorkspace'),
+			(string) $wire->addHookBefore('ProcessController::execute', $this, 'hookBeforeProcessControllerExecute'),
+			(string) $wire->addHookAfter('ProcessController::execute', $this, 'hookAfterProcessControllerExecute'),
+			(string) $wire->addHookAfter('Page::render', $this, 'hookAfterProcessControllerExecute'),
+			(string) $wire->addHookAfter('Inputfield::render', $this, 'hookTiptapPauseLanguageSupportWrap', ['priority' => '50.0']),
+			(string) $wire->addHookAfter('Inputfield::render', $this, 'hookTiptapRestoreLanguageSupportWrap', ['priority' => '150.0']),
+			(string) $wire->addHookAfter('Inputfield::renderValue', $this, 'hookTiptapPauseLanguageSupportWrap', ['priority' => '50.0']),
+			(string) $wire->addHookAfter('Inputfield::renderValue', $this, 'hookTiptapRestoreLanguageSupportWrap', ['priority' => '150.0']),
+		];
+	}
+
+	/**
+	 * Detach all registered lifecycle hooks and reset registration state cleanly.
+	 */
+	public function unregister(): void
+	{
+		if ($this->hookIds !== []) {
+			$this->wire()->removeHook($this->hookIds);
+			$this->hookIds = [];
+		}
+		$this->registered = false;
+		$this->executingProcessController = false;
 	}
 
 	/**
@@ -146,6 +173,11 @@ final class FieldIntegrationHooks extends Wire
 		if ($inputfield instanceof InputfieldTiptap && $inputfield->get('_tiptapRestoreUseLanguages')) {
 			$inputfield->setQuietly('useLanguages', true);
 			$inputfield->setQuietly('_tiptapRestoreUseLanguages', null);
+			return;
+		}
+		if ($inputfield instanceof Inputfield && $inputfield->get('_rwRestoreUseLanguages')) {
+			$inputfield->setQuietly('useLanguages', true);
+			$inputfield->setQuietly('_rwRestoreUseLanguages', null);
 		}
 	}
 
@@ -320,6 +352,13 @@ final class FieldIntegrationHooks extends Wire
 		if ($cls === 'inputfieldreacticon') {
 			$event->replace = true;
 			$event->return = InputfieldReactIcon::encodeStorageValue($event->arguments(2), $field);
+			return;
+		}
+
+		$encoded = $this->react->controls()->handleFieldtypeTextSleepValue($field, $event->arguments(2));
+		if ($encoded !== null) {
+			$event->replace = true;
+			$event->return = $encoded;
 		}
 	}
 
@@ -358,6 +397,13 @@ final class FieldIntegrationHooks extends Wire
 		if ($cls === 'inputfieldreacticon') {
 			$event->replace = true;
 			$event->return = InputfieldReactIcon::resolveValue($event->arguments(2));
+			return;
+		}
+
+		[$handled, $formatted] = $this->react->controls()->handleFieldtypeTextFormatValue($field, $event->arguments(2));
+		if ($handled) {
+			$event->replace = true;
+			$event->return = $formatted;
 		}
 	}
 
@@ -367,15 +413,7 @@ final class FieldIntegrationHooks extends Wire
 	public function hookFieldtypeTextMarkupValue(HookEvent $event): void
 	{
 		$field = $event->arguments(1);
-		if (
-			!$field instanceof Field
-			|| $field->type instanceof FieldtypeLanguageInterface
-		) {
-			return;
-		}
-
-		$cls = strtolower(trim((string) ($field->get('inputfieldClass') ?? '')));
-		if (!in_array($cls, ['inputfieldreactkeyvalue', 'inputfieldreactlink', 'inputfieldreacticon'], true)) {
+		if (!$field instanceof Field) {
 			return;
 		}
 
@@ -385,26 +423,38 @@ final class FieldIntegrationHooks extends Wire
 			$rawValue = $page->getUnformatted($field->name);
 		}
 		$property = (string) ($event->arguments(3) ?? '');
+		$cls = strtolower(trim((string) ($field->get('inputfieldClass') ?? '')));
 
-		if ($cls === 'inputfieldreactkeyvalue') {
-			$event->replace = true;
-			$event->return = InputfieldReactKeyValue::renderPairsMarkup($rawValue, $property);
-			return;
+		if (!$field->type instanceof FieldtypeLanguageInterface) {
+			if ($cls === 'inputfieldreactkeyvalue') {
+				$event->replace = true;
+				$event->return = InputfieldReactKeyValue::renderPairsMarkup($rawValue, $property);
+				return;
+			}
+
+			if ($cls === 'inputfieldreactlink') {
+				$event->replace = true;
+				$event->return = InputfieldReactLink::renderLinkMarkup(
+					$rawValue,
+					$page instanceof Page ? $page : null,
+					$field,
+					$property,
+				);
+				return;
+			}
+
+			if ($cls === 'inputfieldreacticon') {
+				$event->replace = true;
+				$event->return = InputfieldReactIcon::renderIconMarkup($rawValue, $property);
+				return;
+			}
 		}
 
-		if ($cls === 'inputfieldreactlink') {
+		$rendered = $this->react->controls()->renderTextMarkupValue($field, $rawValue, $property);
+		if ($rendered !== null) {
 			$event->replace = true;
-			$event->return = InputfieldReactLink::renderLinkMarkup(
-				$rawValue,
-				$page instanceof Page ? $page : null,
-				$field,
-				$property,
-			);
-			return;
+			$event->return = $rendered;
 		}
-
-		$event->replace = true;
-		$event->return = InputfieldReactIcon::renderIconMarkup($rawValue, $property);
 	}
 
 	/**
@@ -470,19 +520,94 @@ final class FieldIntegrationHooks extends Wire
 	}
 
 	/**
-	 * Restore `$field->inputfieldClass` immediately after `Field::getInputfield` finishes.
+	 * Restore `$field->inputfieldClass` immediately after `Field::getInputfield` finishes
+	 * and forward `rwControl` / `rw*` settings onto native ProcessWire `Inputfield` instances.
 	 */
 	public function hookFieldAfterGetInputfield(HookEvent $event): void
 	{
 		$field = $event->object;
-		if (!$field instanceof Field || !$field->get('_rwSwappedInputfieldClass')) {
+		if (!$field instanceof Field) {
 			return;
 		}
 
-		$orig = $field->get('_rwOrigInputfieldClass');
-		$field->setQuietly('inputfieldClass', $orig);
-		$field->setQuietly('_rwSwappedInputfieldClass', null);
-		$field->setQuietly('_rwOrigInputfieldClass', null);
+		if ($field->get('_rwSwappedInputfieldClass')) {
+			$orig = $field->get('_rwOrigInputfieldClass');
+			$field->setQuietly('inputfieldClass', $orig);
+			$field->setQuietly('_rwSwappedInputfieldClass', null);
+			$field->setQuietly('_rwOrigInputfieldClass', null);
+		}
+
+		$inputfield = $event->return;
+		if ($inputfield instanceof Inputfield) {
+			$this->react->controls()->applyFieldSettingsToInputfield($field, $inputfield);
+		}
+	}
+
+	/**
+	 * Expose the `React Control` configuration fieldset in `Setup > Fields` for compatible Fieldtypes.
+	 */
+	public function hookFieldGetConfigInputfields(HookEvent $event): void
+	{
+		$field = $event->object;
+		$wrapper = $event->return;
+		if (!$field instanceof Field || !$wrapper instanceof InputfieldWrapper) {
+			return;
+		}
+
+		$this->react->controls()->buildFieldConfigInputfields($field, $wrapper);
+	}
+
+	/**
+	 * Enqueue the minimal React control bundle scripts/styles during classic `Inputfield::renderReadyHook`.
+	 */
+	public function hookRwControlRenderReady(HookEvent $event): void
+	{
+		$inputfield = $event->object;
+		if (!$inputfield instanceof Inputfield) {
+			return;
+		}
+
+		$this->react->controls()->enqueueAssetsForInputfield($inputfield);
+	}
+
+	/**
+	 * Render standalone React control islands in place of native `<input>` / `<select>` markup when `rwControl` is set.
+	 */
+	public function hookRwControlAfterRender(HookEvent $event): void
+	{
+		$inputfield = $event->object;
+		if (!$inputfield instanceof Inputfield) {
+			return;
+		}
+
+		$islandHtml = $this->react->controls()->renderControlIsland($inputfield, false);
+		if ($islandHtml !== null) {
+			$event->return = $islandHtml;
+		}
+	}
+
+	/**
+	 * Render read-only standalone React control islands for `Inputfield::renderValue()` when `rwControl` is set.
+	 */
+	public function hookRwControlAfterRenderValue(HookEvent $event): void
+	{
+		$inputfield = $event->object;
+		if (!$inputfield instanceof Inputfield) {
+			return;
+		}
+
+		$islandHtml = $this->react->controls()->renderControlIsland($inputfield, true);
+		if ($islandHtml !== null) {
+			$event->return = $islandHtml;
+		}
+	}
+
+	/**
+	 * Normalize multi-select arrays, `{name}_present` empty markers, and ISO datetimes before native `processInput`.
+	 */
+	public function hookRwControlBeforeProcessInput(HookEvent $event): void
+	{
+		$this->react->controls()->normalizeProcessInput($event);
 	}
 
 	/**
@@ -576,9 +701,10 @@ final class FieldIntegrationHooks extends Wire
 		if (
 			$input->requestMethod('POST')
 			&& isset($_POST['vectorIcon'])
+			&& is_string($_POST['vectorIcon'])
 			&& (int) ($input->post('id') ?: $input->get('id')) === (int) $field->id
 		) {
-			$rawVector = (string) $_POST['vectorIcon'];
+			$rawVector = $_POST['vectorIcon'];
 		}
 
 		if ($rawVector === null) {
@@ -629,9 +755,10 @@ final class FieldIntegrationHooks extends Wire
 		if (
 			$input->requestMethod('POST')
 			&& isset($_POST['vectorIcon'])
+			&& is_string($_POST['vectorIcon'])
 			&& (int) ($input->post('id') ?: $input->get('id')) === (int) $field->id
 		) {
-			$rawVector = (string) $_POST['vectorIcon'];
+			$rawVector = $_POST['vectorIcon'];
 		}
 
 		if ($rawVector === null) {
@@ -684,9 +811,10 @@ final class FieldIntegrationHooks extends Wire
 		if (
 			$input->requestMethod('POST')
 			&& isset($_POST['vectorIcon'])
+			&& is_string($_POST['vectorIcon'])
 			&& (int) ($input->post('id') ?: $input->get('id')) === (int) $template->id
 		) {
-			$rawVector = (string) $_POST['vectorIcon'];
+			$rawVector = $_POST['vectorIcon'];
 		}
 
 		if ($rawVector === null) {

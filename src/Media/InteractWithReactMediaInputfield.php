@@ -137,7 +137,9 @@ trait InteractWithReactMediaInputfield
 	public function renderReady(?Inputfield $parent = null, $renderValueMode = false): bool
 	{
 		$this->checkFormEnctype();
-		$result = (bool) Inputfield::renderReady($parent, (bool) $renderValueMode);
+		$result = str_contains(static::class, "\0")
+			? false
+			: (bool) Inputfield::renderReady($parent, (bool) $renderValueMode);
 
 		return $this->enqueueInertiaIslandAssets() || $result;
 	}

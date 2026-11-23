@@ -34,11 +34,13 @@ use ProcessWire\Page;
 use ProcessWire\Pagefile;
 use ProcessWire\Pagefiles;
 use ProcessWire\React;
+use ProcessWire\SelectableOption;
 use ProcessWire\Wire;
 use Totoglu\React\Icon\IconManager;
 use Totoglu\React\Inertia\InputfieldReact;
 use Totoglu\React\Media\PageLinkMediaHostAdapter;
 use Totoglu\React\Relation\AbstractInputfieldReactRelation;
+use Totoglu\React\Support\IntlCatalog;
 use Totoglu\React\Tiptap\TiptapContentPolicy;
 use Totoglu\React\Security\AccessGuard;
 
@@ -59,6 +61,20 @@ class FormSchemaSerializer extends Wire
 	 * @return array<string, mixed>
 	 */
 	public function serialize(InputfieldWrapper $wrapper, array $options = []): array
+	{
+		$this->serializeDepth++;
+		try {
+			return $this->serializeWrapperPayload($wrapper, $options);
+		} finally {
+			$this->serializeDepth = max(0, $this->serializeDepth - 1);
+		}
+	}
+
+	/**
+	 * @param array<string, mixed> $options
+	 * @return array<string, mixed>
+	 */
+	private function serializeWrapperPayload(InputfieldWrapper $wrapper, array $options = []): array
 	{
 		if (isset($options['deleteTab']) && is_array($options['deleteTab']) && ($options['deleteTab']['enabled'] ?? true) !== false) {
 			$this->appendDeleteTab($wrapper, $options['deleteTab']);
@@ -150,6 +166,9 @@ class FormSchemaSerializer extends Wire
 
 			if ($this->isWireTabWrapper($child)) {
 				/** @var InputfieldWrapper $child */
+				if ((int) ($child->collapsed ?? 0) === Inputfield::collapsedHidden) {
+					continue;
+				}
 				$childId = $this->strAttr($child, 'id');
 				$childName = $this->strAttr($child, 'name');
 				$childTitle = $this->strAttr($child, 'title');
@@ -159,8 +178,17 @@ class FormSchemaSerializer extends Wire
 					ENT_QUOTES,
 					'UTF-8'
 				);
-				$confirmDelete = $this->findDataAttribute($child->getAttributes(), 'confirm-delete') === '1'
+				$confirmDelete = (bool) $child->get('confirmDelete')
+					|| $this->findDataAttribute($child->getAttributes(), 'confirm-delete') === '1'
 					|| str_contains(strtolower($tabId), 'delete');
+				$tabConditions = $this->extractConditionsFromInputfield($child);
+				$tabIcon = $this->normalizeIcon((string) (
+					$child->icon
+					?? $child->getSetting('icon')
+					?? $this->findDataAttribute($child->getAttributes(), 'icon', '')
+					?? ''
+				));
+				$tabCollapsed = $this->isCollapsed($child);
 
 				$hasHoistableGroup = false;
 				foreach ($child->children() as $subChild) {
@@ -239,11 +267,16 @@ class FormSchemaSerializer extends Wire
 					if ($looseFields !== []) {
 						$tabs[] = [
 							'id' => $tabId,
+							'name' => $childName !== '' ? $childName : $tabId,
 							'label' => $tabLabel,
-							'icon' => $this->normalizeIcon((string) ($child->icon ?? '')),
+							'icon' => $tabIcon,
+							'description' => (string) ($child->description ?? ''),
+							'notes' => (string) ($child->notes ?? ''),
+							'collapsed' => $tabCollapsed,
 							'confirmDelete' => $confirmDelete,
-							'showIf' => trim((string) ($child->getSetting('showIf') ?? '')),
-							'conditions' => $this->extractConditionsFromInputfield($child),
+							'showIf' => $tabConditions['show'],
+							'hideIf' => $tabConditions['hide'],
+							'conditions' => $tabConditions,
 							'fields' => $looseFields,
 						];
 					}
@@ -265,11 +298,16 @@ class FormSchemaSerializer extends Wire
 
 				$tabs[] = [
 					'id' => $tabId,
+					'name' => $childName !== '' ? $childName : $tabId,
 					'label' => $tabLabel,
-					'icon' => $this->normalizeIcon((string) ($child->icon ?? '')),
+					'icon' => $tabIcon,
+					'description' => (string) ($child->description ?? ''),
+					'notes' => (string) ($child->notes ?? ''),
+					'collapsed' => $tabCollapsed,
 					'confirmDelete' => $confirmDelete,
-					'showIf' => trim((string) ($child->getSetting('showIf') ?? '')),
-					'conditions' => $this->extractConditionsFromInputfield($child),
+					'showIf' => $tabConditions['show'],
+					'hideIf' => $tabConditions['hide'],
+					'conditions' => $tabConditions,
 					'fields' => $tabFields,
 				];
 				continue;
@@ -318,6 +356,7 @@ class FormSchemaSerializer extends Wire
 
 		$surfaceRaw = strtolower(trim((string) ($options['surface'] ?? $wrapper->attr('data-rw-surface') ?? '')));
 		$surface = $surfaceRaw === 'card' ? 'card' : null;
+		$tabsLayout = $this->normalizeTabsLayout($options['tabsLayout'] ?? $wrapper->attr('data-rw-tabs-layout'));
 
 		return [
 			'id' => $formId,
@@ -328,6 +367,7 @@ class FormSchemaSerializer extends Wire
 			'isFragment' => $isFragment,
 			'dirtyGuard' => $dirtyGuard,
 			'surface' => $surface,
+			'tabsLayout' => $tabsLayout,
 			'presenceKey' => !$isFragment && $presenceKey !== '' ? $presenceKey : null,
 			'presenceEndpoint' => $presenceEndpoint !== '' ? $presenceEndpoint : null,
 			'csrf' => $csrf,
@@ -349,6 +389,21 @@ class FormSchemaSerializer extends Wire
 	 * @return array<string, mixed>
 	 */
 	public function serializeDefinitions(iterable $definitions, array $options = []): array
+	{
+		$this->serializeDepth++;
+		try {
+			return $this->serializeDefinitionsPayload($definitions, $options);
+		} finally {
+			$this->serializeDepth = max(0, $this->serializeDepth - 1);
+		}
+	}
+
+	/**
+	 * @param iterable<mixed> $definitions
+	 * @param array<string, mixed> $options
+	 * @return array<string, mixed>
+	 */
+	private function serializeDefinitionsPayload(iterable $definitions, array $options = []): array
 	{
 		$formId = trim((string) ($options['id'] ?? 'rw-schema-form'));
 		$formName = trim((string) ($options['name'] ?? $formId));
@@ -473,23 +528,15 @@ class FormSchemaSerializer extends Wire
 				: (string) ($raw['accept'] ?? (($type === 'image' || $type === 'images') ? 'image/*' : ''));
 			$maxFiles = max(0, (int) ($raw['maxFiles'] ?? $raw['max_files'] ?? $raw['maxItems'] ?? $raw['max_items'] ?? (($type === 'images' || $type === 'files') ? 0 : 1)));
 
-			$normalizedOptions = [];
-			if (isset($raw['options']) && is_array($raw['options'])) {
-				foreach ($raw['options'] as $optKey => $optVal) {
-					if (is_array($optVal) && isset($optVal['value'])) {
-						$normalizedOptions[] = [
-							'value' => (string) $optVal['value'],
-							'label' => (string) ($optVal['label'] ?? $optVal['value']),
-							'disabled' => !empty($optVal['disabled']),
-						];
-					} else {
-						$normalizedOptions[] = [
-							'value' => (string) $optKey,
-							'label' => (string) $optVal,
-						];
-					}
-				}
-			}
+			$rawOptionsInput = $raw['options']
+				?? $raw['comboboxOptions']
+				?? $raw['combobox_options']
+				?? $raw['segmentedOptions']
+				?? $raw['segmented_options']
+				?? null;
+			$normalizedOptions = is_array($rawOptionsInput)
+				? $this->normalizeOptionItems($rawOptionsInput)
+				: [];
 
 			$subfields = [];
 			if (isset($raw['subfields']) && is_array($raw['subfields'])) {
@@ -547,6 +594,10 @@ class FormSchemaSerializer extends Wire
 					'stepTitle' => (string) ($raw['stepTitle'] ?? $raw['step_title'] ?? ''),
 					'error' => $err,
 				];
+				$rawReset = $raw['resetValue'] ?? ($raw['default'] ?? null);
+				if ($rawReset !== null) {
+					$linkBase['resetValue'] = $rawReset;
+				}
 				$serializedLink = $this->serializeLinkControl(
 					$linkBase,
 					$rawLinkCfg,
@@ -608,6 +659,10 @@ class FormSchemaSerializer extends Wire
 					'stepTitle' => (string) ($raw['stepTitle'] ?? $raw['step_title'] ?? ''),
 					'error' => $err,
 				];
+				$rawIconReset = $raw['resetValue'] ?? ($raw['default'] ?? null);
+				if ($rawIconReset !== null) {
+					$iconNode['resetValue'] = $rawIconReset;
+				}
 				$values[$name] = $iconValue;
 				$fields[] = $iconNode;
 				continue;
@@ -627,17 +682,36 @@ class FormSchemaSerializer extends Wire
 				continue;
 			}
 
-			$controlType = match ($type) {
-				'slug' => 'text',
-				'col_span', 'col-span' => 'colspan',
-				'slider' => 'range',
-				'keyvalue', 'key_value', 'key-value', 'inputfieldreactkeyvalue', 'inputfieldkeyvalue' => 'keyvalue',
-				'richtext', 'richtext_language', 'richtext-language', 'richtextlanguage',
-				'tiptap', 'tiptap_language', 'tiptap-language', 'tiptaplanguage', 'inputfieldtiptap',
-				'html', 'html_language', 'html-language',
-				'wysiwyg', 'wysiwyg_language', 'wysiwyg-language' => 'tiptap',
-				default => $type,
-			};
+			$controlType = $this->canonicalControlType($type);
+			if ($controlType === 'range' && (!empty($raw['dual']) || strtolower(trim((string) ($raw['rangeMode'] ?? $raw['range_mode'] ?? ''))) === 'dual')) {
+				$controlType = 'range_slider';
+			}
+			if ($controlType === 'textarea' && strtolower(trim((string) ($raw['editorMode'] ?? $raw['editor_mode'] ?? ''))) === 'markdown') {
+				$controlType = 'markdown';
+			}
+			if ($controlType === 'daterange') {
+				$val = $this->normalizeDateRangeValue($val);
+				$values[$name] = $val;
+			} elseif ($controlType === 'tags') {
+				$val = $this->normalizeTagListValue($val);
+				$values[$name] = $val;
+			} elseif ($controlType === 'unit_number') {
+				$fallbackUnit = $this->resolveUnitNumberFallbackUnit($raw, $type);
+				$val = $this->normalizeUnitNumberValue($val, $fallbackUnit);
+				$values[$name] = $val;
+			} elseif ($controlType === 'spacing') {
+				$fallbackUnit = trim((string) ($raw['defaultUnit'] ?? $raw['default_unit'] ?? 'px')) ?: 'px';
+				$val = $this->normalizeSpacingValue($val, $fallbackUnit);
+				$values[$name] = $val;
+			} elseif ($controlType === 'range_slider') {
+				$val = $this->normalizeRangeSliderValue($val);
+				$values[$name] = $val;
+			} elseif ($controlType === 'condition_builder') {
+				$useLanguages = false;
+				$langTabs = [];
+				$val = $this->normalizeConditionBuilderValue($val);
+				$values[$name] = $val;
+			}
 			$kvRows = [];
 			if ($controlType === 'keyvalue') {
 				$useLanguages = false;
@@ -698,10 +772,19 @@ class FormSchemaSerializer extends Wire
 				? (int) ($connection['precision'] ?? 2)
 				: (int) ($raw['precision'] ?? 2);
 
-			$fields[] = [
+			$defaultInputType = match ($controlType) {
+				'email', 'url', 'tel', 'phone' => $controlType === 'phone' ? 'tel' : $controlType,
+				'range', 'colspan' => 'range',
+				'date' => 'date',
+				'time' => 'time',
+				'datetime' => 'datetime-local',
+				default => 'text',
+			};
+
+			$fieldNode = [
 				'kind' => 'control',
 				'type' => $controlType,
-				'inputType' => (string) ($raw['inputType'] ?? ($type === 'email' || $type === 'url' || $type === 'tel' ? $type : ($controlType === 'range' || $controlType === 'colspan' ? 'range' : 'text'))),
+				'inputType' => (string) ($raw['inputType'] ?? $defaultInputType),
 				'id' => (string) ($raw['id'] ?? 'Inputfield_' . $name),
 				'name' => $name,
 				'label' => (string) ($raw['label'] ?? $name),
@@ -807,6 +890,33 @@ class FormSchemaSerializer extends Wire
 				'tiptapConfig' => $tiptapConfig,
 				'error' => $err,
 			];
+			$rawNodeReset = $raw['resetValue'] ?? ($raw['default'] ?? null);
+			if ($rawNodeReset !== null) {
+				$fieldNode['resetValue'] = $rawNodeReset;
+			}
+
+			if (array_key_exists('isSecret', $raw) || $type === 'secret') {
+				$isSecretDecl = array_key_exists('isSecret', $raw) ? !empty($raw['isSecret']) : true;
+				$secretAutogenRaw = $raw['secretAutoGenerate']
+					?? $raw['secret_auto_generate']
+					?? $raw['autoGenerate']
+					?? $raw['auto_generate']
+					?? true;
+				$fieldNode = array_merge(
+					$fieldNode,
+					$this->resolveSecretSerializationMeta(
+						$isSecretDecl,
+						$raw['secretMasked'] ?? $raw['secret_masked'] ?? $raw['masked'] ?? false,
+						$raw['secretPrefix'] ?? $raw['secret_prefix'] ?? $raw['prefix'] ?? '',
+						$raw['secretBytes'] ?? $raw['secret_bytes'] ?? $raw['bytes'] ?? 32,
+						$secretAutogenRaw,
+					),
+				);
+			}
+
+			$this->applyExtendedControlOptions($controlType, $fieldNode, $raw, $type);
+
+			$fields[] = $fieldNode;
 		}
 
 		if ($hasFile && $encType === '') {
@@ -853,6 +963,7 @@ class FormSchemaSerializer extends Wire
 
 		$surfaceRaw = strtolower(trim((string) ($options['surface'] ?? '')));
 		$surface = $surfaceRaw === 'card' ? 'card' : null;
+		$tabsLayout = $this->normalizeTabsLayout($options['tabsLayout'] ?? null);
 
 		return [
 			'id' => $formId,
@@ -863,6 +974,7 @@ class FormSchemaSerializer extends Wire
 			'isFragment' => $isFragment,
 			'dirtyGuard' => $dirtyGuard,
 			'surface' => $surface,
+			'tabsLayout' => $tabsLayout,
 			'presenceKey' => !$isFragment && $presenceKey !== '' ? $presenceKey : null,
 			'presenceEndpoint' => $presenceEndpoint !== '' ? $presenceEndpoint : null,
 			'csrf' => $csrf,
@@ -1072,6 +1184,16 @@ class FormSchemaSerializer extends Wire
 		return $items;
 	}
 
+	private int $serializeDepth = 0;
+
+	/**
+	 * Report whether `FormSchemaSerializer` is currently inside a serialization pass.
+	 */
+	public function isSerializing(): bool
+	{
+		return $this->serializeDepth > 0;
+	}
+
 	/**
 	 * Serialize a single standalone `Inputfield` into its `SchemaForm` node representation.
 	 *
@@ -1084,7 +1206,12 @@ class FormSchemaSerializer extends Wire
 		$errors = [];
 		$hasFileField = false;
 
-		return $this->serializeInputfield($inputfield, $hiddenInputs, $values, $errors, $hasFileField) ?? [];
+		$this->serializeDepth++;
+		try {
+			return $this->serializeInputfield($inputfield, $hiddenInputs, $values, $errors, $hasFileField) ?? [];
+		} finally {
+			$this->serializeDepth = max(0, $this->serializeDepth - 1);
+		}
 	}
 
 	/**
@@ -1466,6 +1593,9 @@ class FormSchemaSerializer extends Wire
 			if (!$pane instanceof MarkupReactTab) {
 				continue;
 			}
+			if ((int) ($pane->collapsed ?? 0) === Inputfield::collapsedHidden) {
+				continue;
+			}
 			$rawName = $this->strAttr($pane, 'name') ?: ($this->strAttr($pane, 'id') ?: ('tab_' . $idx));
 			$tabId = (string) preg_replace('/[^a-zA-Z0-9_-]/', '_', $rawName);
 			if ($firstId === '') {
@@ -1479,7 +1609,8 @@ class FormSchemaSerializer extends Wire
 			$paneFields = $this->serializeChildren($pane, $hiddenInputs, $values, $errors, $hasFileField);
 			$paneLabel = trim((string) ($pane->getSetting('label') ?: $pane->label ?: $rawName));
 			$paneConditions = $this->extractConditionsFromInputfield($pane);
-			$confirmDelete = $this->findDataAttribute($pane->getAttributes(), 'confirm-delete') === '1'
+			$confirmDelete = (bool) $pane->get('confirmDelete')
+				|| $this->findDataAttribute($pane->getAttributes(), 'confirm-delete') === '1'
 				|| str_contains(strtolower($tabId), 'delete');
 
 			$tabs[] = [
@@ -1490,6 +1621,7 @@ class FormSchemaSerializer extends Wire
 				'badge' => $badge,
 				'description' => (string) ($pane->description ?? ''),
 				'notes' => (string) ($pane->notes ?? ''),
+				'collapsed' => $this->isCollapsed($pane),
 				'showIf' => $paneConditions['show'],
 				'hideIf' => $paneConditions['hide'],
 				'conditions' => $paneConditions,
@@ -1659,10 +1791,7 @@ class FormSchemaSerializer extends Wire
 		$control = null;
 
 		if ($inputfield instanceof InputfieldTextarea || $shortClass === 'InputfieldTextarea') {
-			$rwTextareaControl = strtolower((string) (
-				$this->findDataAttribute($attrs, 'rw-control', '')
-				?: ($inputfield->get('rwControl') ?? '')
-			));
+			$rwTextareaControl = $this->canonicalControlType($this->resolveInputfieldRwControl($inputfield, $attrs));
 			$val = (string) ($attrs['value'] ?? $inputfield->val() ?? '');
 
 			if ($rwTextareaControl === 'signature') {
@@ -1671,6 +1800,14 @@ class FormSchemaSerializer extends Wire
 					'defaultValue' => $val,
 					'value' => $val,
 				]);
+			} elseif ($rwTextareaControl === 'condition_builder') {
+				$normalizedCb = $this->normalizeConditionBuilderValue($inputfield->val() ?? $val);
+				$control = array_merge($base, [
+					'type' => 'condition_builder',
+					'defaultValue' => $normalizedCb,
+					'value' => $normalizedCb,
+				]);
+				$this->applyExtendedControlOptions('condition_builder', $control, $this->collectInputfieldExtendedBag($inputfield, $attrs), $rwTextareaControl);
 			} elseif ($rwTextareaControl === 'repeater') {
 				$rawRepeaterVal = $inputfield->val();
 				$decodedRows = [];
@@ -1711,45 +1848,94 @@ class FormSchemaSerializer extends Wire
 			} else {
 				$codeLang = (string) $this->findDataAttribute($attrs, 'code-editor', '');
 				$explicitMode = strtolower((string) ($inputfield->get('editorMode') ?? ''));
-				$isMarkdown = $this->findDataAttribute($attrs, 'md-editor') === '1' || $explicitMode === 'markdown';
+				$isMarkdown = $rwTextareaControl === 'markdown' || $this->findDataAttribute($attrs, 'md-editor') === '1' || $explicitMode === 'markdown';
 				$isJson = $this->findDataAttribute($attrs, 'json-editor') === '1' || $explicitMode === 'json';
 				$rows = (int) ($attrs['rows'] ?? $inputfield->getSetting('rows') ?? 5);
 
 				$control = array_merge($base, [
-					'type' => 'textarea',
+					'type' => $isMarkdown ? 'markdown' : 'textarea',
 					'defaultValue' => $val,
 					'value' => $val,
 					'rows' => $rows > 0 ? $rows : 5,
-					'monospace' => $codeLang !== '' || $isJson || str_contains((string) ($attrs['class'] ?? ''), 'mono'),
+					'monospace' => !$isMarkdown && ($codeLang !== '' || $isJson || str_contains((string) ($attrs['class'] ?? ''), 'mono')),
 					'editorMode' => $isMarkdown ? 'markdown' : ($isJson ? 'json' : ($codeLang !== '' ? 'code' : 'plain')),
 					'codeLanguage' => $codeLang,
 				]);
-			}
-		} elseif ($inputfield instanceof InputfieldDatetime || $shortClass === 'InputfieldDatetime') {
-			$rawVal = $attrs['value'] ?? $inputfield->val() ?? '';
-			$dateFormat = (string) ($inputfield->getSetting('dateInputFormat') ?? 'Y-m-d');
-			$timeFormat = trim((string) ($inputfield->getSetting('timeInputFormat') ?? ''));
-			$hasTime = $timeFormat !== '';
-			$hasDate = trim($dateFormat) !== '';
-
-			$formattedVal = '';
-			if (is_int($rawVal) && $rawVal > 0) {
-				$formattedVal = date($hasDate && $hasTime ? 'Y-m-d\TH:i' : ($hasDate ? 'Y-m-d' : 'H:i'), $rawVal);
-			} elseif (is_string($rawVal) && trim($rawVal) !== '') {
-				$trimmed = trim($rawVal);
-				if ($hasDate && $hasTime && preg_match('/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/', $trimmed) === 1) {
-					$formattedVal = substr((string) preg_replace('/\s+/', 'T', $trimmed), 0, 16);
-				} else {
-					$formattedVal = $trimmed;
+				if ($isMarkdown) {
+					$this->applyExtendedControlOptions('markdown', $control, $this->collectInputfieldExtendedBag($inputfield, $attrs));
 				}
 			}
+		} elseif ($inputfield instanceof InputfieldDatetime || $shortClass === 'InputfieldDatetime') {
+			$rwDateControl = $this->canonicalControlType($this->resolveInputfieldRwControl($inputfield, $attrs));
+			$rawVal = $attrs['value'] ?? $inputfield->val() ?? '';
+			$dtBag = $this->collectInputfieldExtendedBag($inputfield, $attrs);
 
-			$control = array_merge($base, [
-				'type' => 'datetime',
-				'inputType' => ($hasDate && $hasTime) ? 'datetime-local' : ($hasTime && !$hasDate ? 'time' : 'date'),
-				'defaultValue' => $formattedVal,
-				'value' => $formattedVal,
-			]);
+			if ($rwDateControl === 'daterange') {
+				$normalizedRange = $this->normalizeDateRangeValue($rawVal);
+				$control = array_merge($base, [
+					'type' => 'daterange',
+					'inputType' => 'text',
+					'defaultValue' => $normalizedRange,
+					'value' => $normalizedRange,
+				]);
+				$this->applyExtendedControlOptions('daterange', $control, $dtBag, $rwDateControl);
+			} else {
+				$dateFormat = (string) ($inputfield->getSetting('dateInputFormat') ?? 'Y-m-d');
+				$timeFormat = trim((string) ($inputfield->getSetting('timeInputFormat') ?? ''));
+				$hasTime = $timeFormat !== '';
+				$hasDate = trim($dateFormat) !== '';
+				if ($rwDateControl === 'time') {
+					$hasDate = false;
+					$hasTime = true;
+				} elseif ($rwDateControl === 'date') {
+					$hasDate = true;
+					$hasTime = false;
+				} elseif ($rwDateControl === 'datetime') {
+					$hasDate = true;
+					$hasTime = true;
+				}
+
+				if ($timeFormat !== '' && !array_key_exists('showSeconds', $dtBag) && !array_key_exists('show_seconds', $dtBag) && str_contains($timeFormat, 's')) {
+					$dtBag['showSeconds'] = true;
+				}
+				if ($timeFormat !== '' && !array_key_exists('hourFormat', $dtBag) && !array_key_exists('hour_format', $dtBag) && preg_match('/[hgaA]/', $timeFormat) === 1) {
+					$dtBag['hourFormat'] = '12h';
+				}
+
+				$resolvedDateType = ($hasDate && $hasTime) ? 'datetime' : ($hasTime && !$hasDate ? 'time' : 'date');
+				$resolvedHtmlType = ($hasDate && $hasTime) ? 'datetime-local' : ($hasTime && !$hasDate ? 'time' : 'date');
+				$showSeconds = !empty($dtBag['showSeconds'] ?? $dtBag['show_seconds'] ?? null);
+
+				$formattedVal = '';
+				if (is_int($rawVal) && $rawVal > 0) {
+					$formattedVal = date(
+						$resolvedDateType === 'datetime'
+							? ($showSeconds ? 'Y-m-d\TH:i:s' : 'Y-m-d\TH:i')
+							: ($resolvedDateType === 'time' ? ($showSeconds ? 'H:i:s' : 'H:i') : 'Y-m-d'),
+						$rawVal,
+					);
+				} elseif (is_string($rawVal) && trim($rawVal) !== '') {
+					$trimmed = trim($rawVal);
+					if ($hasDate && $hasTime && preg_match('/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/', $trimmed) === 1) {
+						$formattedVal = substr((string) preg_replace('/\s+/', 'T', $trimmed), 0, $showSeconds ? 19 : 16);
+					} else {
+						$formattedVal = $trimmed;
+					}
+				}
+
+				$minDateAttr = $attrs['min'] ?? $inputfield->getSetting('minDate') ?? null;
+				$maxDateAttr = $attrs['max'] ?? $inputfield->getSetting('maxDate') ?? null;
+
+				$control = array_merge($base, [
+					'type' => $resolvedDateType,
+					'inputType' => $resolvedHtmlType,
+					'defaultValue' => $formattedVal,
+					'value' => $formattedVal,
+					'min' => $minDateAttr !== null && $minDateAttr !== '' ? (string) $minDateAttr : null,
+					'max' => $maxDateAttr !== null && $maxDateAttr !== '' ? (string) $maxDateAttr : null,
+				]);
+				$this->applyExtendedControlOptions($resolvedDateType, $control, $dtBag, $rwDateControl);
+			}
 		} elseif ($inputfield instanceof InputfieldToggle || $shortClass === 'InputfieldToggle') {
 			$rawVal = $attrs['value'] ?? $inputfield->val() ?? 0;
 			$useOther = (bool) $inputfield->getSetting('useOther');
@@ -1805,13 +1991,39 @@ class FormSchemaSerializer extends Wire
 				'InputfieldTextTags',
 			], true)
 		) {
+			$rawSelectControl = $this->resolveInputfieldRwControl($inputfield, $attrs);
+			$rwSelectControl = $this->canonicalControlType($rawSelectControl);
 			$isMultiple = $inputfield instanceof InputfieldHasArrayValue
-				|| in_array($shortClass, ['InputfieldCheckboxes', 'InputfieldAsmSelect', 'InputfieldSelectMultiple'], true);
+				|| in_array($shortClass, ['InputfieldCheckboxes', 'InputfieldAsmSelect', 'InputfieldSelectMultiple', 'InputfieldTextTags'], true)
+				|| (bool) ($inputfield->get('multiple') ?? $inputfield->getSetting('multiple'));
+			$variant = match (true) {
+				$rwSelectControl === 'segmented' => 'segmented',
+				$rwSelectControl === 'combobox' => 'combobox',
+				$rwSelectControl === 'tags', $shortClass === 'InputfieldTextTags' => 'tags',
+				$shortClass === 'InputfieldRadios' => 'radios',
+				$shortClass === 'InputfieldCheckboxes' => 'checkboxes',
+				$shortClass === 'InputfieldAsmSelect' => 'asmselect',
+				$shortClass === 'InputfieldSelectMultiple' => 'multiselect',
+				default => $isMultiple ? 'multiselect' : 'select',
+			};
+			if ($variant === 'tags') {
+				$isMultiple = true;
+			} elseif ($variant === 'radios' || $variant === 'select') {
+				$isMultiple = false;
+			}
+
 			$rawVal = $attrs['value'] ?? $inputfield->val();
 			$selectedValues = [];
-			if (is_array($rawVal)) {
+			if ($variant === 'tags') {
+				$delimiter = (string) ($inputfield->getSetting('delimiter') ?? ($shortClass === 'InputfieldTextTags' ? ' ' : ','));
+				$selectedValues = $this->normalizeTagListValue($rawVal, $delimiter);
+			} elseif ($rawVal instanceof SelectableOption) {
+				$selectedValues[] = (string) $rawVal->id;
+			} elseif (is_iterable($rawVal)) {
 				foreach ($rawVal as $v) {
-					if (is_scalar($v)) {
+					if ($v instanceof SelectableOption) {
+						$selectedValues[] = (string) $v->id;
+					} elseif (is_scalar($v)) {
 						$selectedValues[] = (string) $v;
 					}
 				}
@@ -1821,76 +2033,103 @@ class FormSchemaSerializer extends Wire
 
 			$options = $this->extractSelectOptions($inputfield);
 			$optionColumns = (int) ($inputfield->getSetting('optionColumns') ?? 0);
-
-			$variant = match ($shortClass) {
-				'InputfieldRadios' => 'radios',
-				'InputfieldCheckboxes' => 'checkboxes',
-				'InputfieldAsmSelect' => 'asmselect',
-				'InputfieldSelectMultiple' => 'multiselect',
-				default => $isMultiple ? 'multiselect' : 'select',
-			};
+			$selectBag = in_array($variant, ['tags', 'combobox', 'segmented'], true)
+				? $this->collectInputfieldExtendedBag($inputfield, $attrs)
+				: [];
+			if ($variant === 'combobox' || $variant === 'segmented') {
+				$rawStructuredOpts = $variant === 'segmented'
+					? ($selectBag['segmentedOptions'] ?? $selectBag['comboboxOptions'] ?? $selectBag['options'] ?? null)
+					: ($selectBag['comboboxOptions'] ?? $selectBag['segmentedOptions'] ?? $selectBag['options'] ?? null);
+				if (is_array($rawStructuredOpts) && $rawStructuredOpts !== []) {
+					$options = $this->mergeStructuredSelectOptions($options, $this->normalizeOptionItems($rawStructuredOpts));
+				}
+			}
 
 			$control = array_merge($base, [
 				'type' => $variant,
 				'multiple' => $isMultiple,
 				'defaultValue' => $isMultiple ? $selectedValues : ($selectedValues[0] ?? ''),
-				'value' => $selectedValues[0] ?? '',
+				'value' => ($variant === 'tags' || ($isMultiple && in_array($variant, ['combobox', 'segmented'], true)))
+					? $selectedValues
+					: ($selectedValues[0] ?? ''),
 				'values' => $selectedValues,
 				'options' => $options,
 				'optionColumns' => $optionColumns,
 			]);
+			if (in_array($variant, ['tags', 'combobox', 'segmented'], true)) {
+				if ($variant === 'tags') {
+					$tagsList = self::normalizeMediaTokenList($selectBag['tagsList'] ?? $selectBag['suggestions'] ?? [], false);
+					if ($tagsList !== []) {
+						$selectBag['suggestions'] = $tagsList;
+					}
+					$allowUserTags = $inputfield->getSetting('allowUserTags');
+					if ($allowUserTags !== null && !array_key_exists('allowCustom', $selectBag)) {
+						$selectBag['allowCustom'] = (bool) $allowUserTags;
+					}
+				}
+				$this->applyExtendedControlOptions($variant, $control, $selectBag, $rawSelectControl);
+			}
 		} elseif (in_array($shortClass, ['InputfieldInteger', 'InputfieldFloat', 'InputfieldDecimal'], true)) {
 			$rawVal = $attrs['value'] ?? $inputfield->val() ?? '';
 			$min = $attrs['min'] ?? $inputfield->getSetting('min');
 			$max = $attrs['max'] ?? $inputfield->getSetting('max');
 			$step = $attrs['step'] ?? $inputfield->getSetting('step') ?? ($shortClass === 'InputfieldInteger' ? '1' : 'any');
 			$valStr = is_scalar($rawVal) ? (string) $rawVal : '';
-			$rwControl = strtolower((string) (
-				$this->findDataAttribute($attrs, 'rw-control', '')
-				?: ($inputfield->get('rwControl') ?? '')
-			));
+			$rawRwControl = $this->resolveInputfieldRwControl($inputfield, $attrs);
+			$rwControl = $this->canonicalControlType($rawRwControl);
 			$rawInputType = strtolower((string) ($attrs['type'] ?? $inputfield->get('inputType') ?? ''));
 			$valueMode = (string) (
 				$this->findDataAttribute($attrs, 'rw-value-mode', '')
 				?: ($inputfield->get('valueMode') ?? '')
 			);
-			$resolvedType = 'number';
-			if ($rwControl === 'colspan' || $rawInputType === 'colspan') {
-				$resolvedType = 'colspan';
-			} elseif ($rwControl === 'range' || $rawInputType === 'range') {
-				$resolvedType = 'range';
-			} elseif ($rwControl === 'rating') {
-				$resolvedType = 'rating';
-			} elseif ($rwControl === 'calculation') {
-				$resolvedType = 'calculation';
-			}
+			$resolvedType = match (true) {
+				$rwControl === 'colspan', $rawInputType === 'colspan' => 'colspan',
+				$rwControl === 'range', $rawInputType === 'range' => 'range',
+				$rwControl === 'range_slider' => 'range_slider',
+				$rwControl === 'unit_number' => 'unit_number',
+				$rwControl === 'rating' => 'rating',
+				$rwControl === 'calculation' => 'calculation',
+				default => 'number',
+			};
 
 			$extraNumericProps = [];
+			$normalizedNumericVal = $valStr;
+			$numBag = in_array($resolvedType, ['range_slider', 'unit_number'], true)
+				? $this->collectInputfieldExtendedBag($inputfield, $attrs)
+				: [];
 			if ($resolvedType === 'rating') {
 				$extraNumericProps['maxStars'] = max(2, min(10, (int) ($inputfield->get('maxStars') ?: $max ?: 5)));
 			} elseif ($resolvedType === 'calculation') {
-				$extraNumericProps['formula'] = (string) ($inputfield->get('formula') ?? '');
-				$extraNumericProps['precision'] = (int) ($inputfield->get('precision') ?? 2);
+				$rawFormula = $inputfield->get('formula') ?? $inputfield->getSetting('formula') ?? $this->findDataAttribute($attrs, 'formula');
+				$rawPrec = $inputfield->get('precision') ?? $inputfield->getSetting('precision') ?? $this->findDataAttribute($attrs, 'precision');
+				$extraNumericProps['formula'] = is_scalar($rawFormula) ? (string) $rawFormula : '';
+				$extraNumericProps['precision'] = is_numeric($rawPrec) ? (int) $rawPrec : 2;
+			} elseif ($resolvedType === 'range_slider') {
+				$normalizedNumericVal = $this->normalizeRangeSliderValue($rawVal);
+			} elseif ($resolvedType === 'unit_number') {
+				$fallbackUnit = $this->resolveUnitNumberFallbackUnit($numBag, $rawRwControl);
+				$normalizedNumericVal = $this->normalizeUnitNumberValue($rawVal, $fallbackUnit);
 			}
 
 			$control = array_merge($base, [
 				'type' => $resolvedType,
-				'inputType' => ($resolvedType === 'range' || $resolvedType === 'colspan') ? 'range' : 'number',
-				'defaultValue' => $valStr,
-				'value' => $valStr,
+				'inputType' => in_array($resolvedType, ['range', 'colspan', 'range_slider'], true) ? 'range' : 'number',
+				'defaultValue' => $normalizedNumericVal,
+				'value' => $normalizedNumericVal,
 				'min' => $min !== null && $min !== '' ? (string) $min : null,
 				'max' => $max !== null && $max !== '' ? (string) $max : null,
 				'step' => (string) $step,
 				'valueMode' => $valueMode !== '' ? $valueMode : null,
 			], $extraNumericProps);
+			if (in_array($resolvedType, ['range_slider', 'unit_number'], true)) {
+				$this->applyExtendedControlOptions($resolvedType, $control, $numBag, $rawRwControl);
+			}
 		} elseif (
 			$inputfield instanceof InputfieldText
 			|| in_array($shortClass, ['InputfieldText', 'InputfieldEmail', 'InputfieldURL', 'InputfieldPageTitle', 'InputfieldName'], true)
 		) {
-			$rwTextControl = strtolower((string) (
-				$this->findDataAttribute($attrs, 'rw-control', '')
-				?: ($inputfield->get('rwControl') ?? '')
-			));
+			$rawTextControl = $this->resolveInputfieldRwControl($inputfield, $attrs);
+			$rwTextControl = $this->canonicalControlType($rawTextControl);
 			if ($rwTextControl === 'link') {
 				$rawLinkCfg = $inputfield->get('linkConfig');
 				$rawLinkVal = $inputfield->get('linkValue') ?? $attrs['value'] ?? $inputfield->val();
@@ -1901,6 +2140,28 @@ class FormSchemaSerializer extends Wire
 					$readOnly || $disabled,
 					$inputfield,
 				);
+			} elseif (in_array($rwTextControl, [
+				'date',
+				'time',
+				'datetime',
+				'phone',
+				'color',
+				'combobox',
+				'segmented',
+				'tags',
+				'daterange',
+				'unit_number',
+				'spacing',
+				'otp',
+				'password',
+				'range_slider',
+				'markdown',
+				'rating',
+				'signature',
+				'calculation',
+				'condition_builder',
+			], true)) {
+				$control = $this->serializeExtendedTextInputfield($inputfield, $attrs, $base, $rwTextControl, $rawTextControl);
 			} else {
 				$rawType = strtolower((string) ($attrs['type'] ?? ''));
 				if ($rawType === '') {
@@ -1924,8 +2185,17 @@ class FormSchemaSerializer extends Wire
 				$slugLocked = $this->findDataAttribute($attrs, 'slug-locked') === '1'
 					|| (bool) $inputfield->get('slugLocked')
 					|| ($slugFrom !== '' && $allSlugPopulated);
-				$secretMasked = $this->findDataAttribute($attrs, 'secret-masked');
-				$isSecret = $secretMasked !== null || $rawType === 'password';
+				$secretMaskedAttr = $this->findDataAttribute($attrs, 'secret-masked');
+				$isSecret = $secretMaskedAttr !== null || (bool) $inputfield->get('isSecret') || $rawType === 'password';
+				$secretMeta = $this->resolveSecretSerializationMeta(
+					$isSecret,
+					$secretMaskedAttr ?? ($rawType === 'password' ? true : $inputfield->get('secretMasked')),
+					$this->findDataAttribute($attrs, 'secret-prefix') ?? $inputfield->get('secretPrefix'),
+					$this->findDataAttribute($attrs, 'secret-bytes') ?? $inputfield->get('secretBytes'),
+					$this->findDataAttribute($attrs, 'secret-autogen')
+						?? $inputfield->get('secretAutoGenerate')
+						?? $inputfield->get('autoGenerate'),
+				);
 
 				$rawPattern = trim((string) ($attrs['pattern'] ?? $inputfield->getSetting('pattern') ?? ''));
 
@@ -1938,9 +2208,7 @@ class FormSchemaSerializer extends Wire
 					'slugFrom' => $slugFrom !== '' ? $slugFrom : null,
 					'slugSeparator' => $slugSeparator !== '' ? $slugSeparator : '-',
 					'slugLocked' => $slugLocked,
-					'isSecret' => $isSecret,
-					'secretMasked' => $secretMasked === '1' || $rawType === 'password',
-				]);
+				], $secretMeta);
 			}
 		} elseif ($inputfield instanceof InputfieldFile || $shortClass === 'InputfieldFile' || $shortClass === 'InputfieldImage') {
 			$isImage = $inputfield instanceof InputfieldImage || $shortClass === 'InputfieldImage';
@@ -2297,7 +2565,7 @@ class FormSchemaSerializer extends Wire
 			?? ($this->findDataAttribute($attrs, 'no-wrap') === '1')
 		);
 
-		return [
+		$meta = [
 			'id' => $id,
 			'name' => $name,
 			'label' => $label,
@@ -2320,6 +2588,12 @@ class FormSchemaSerializer extends Wire
 			'conditions' => $conditions,
 			'error' => $errorStr,
 		];
+		$resetValue = $inputfield->getSetting('resetValue') ?? $inputfield->get('resetValue');
+		if ($resetValue !== null) {
+			$meta['resetValue'] = $resetValue;
+		}
+
+		return $meta;
 	}
 
 	/**
@@ -3013,6 +3287,1074 @@ class FormSchemaSerializer extends Wire
 	}
 
 	/**
+	 * Normalize secret-control metadata from either Inputfield attributes or declarative definitions.
+	 *
+	 * @return array{
+	 *     isSecret: bool,
+	 *     secretMasked: bool,
+	 *     secretPrefix: string,
+	 *     secretBytes: int,
+	 *     secretAutoGenerate: bool
+	 * }
+	 */
+	private function resolveSecretSerializationMeta(
+		bool $isSecret,
+		mixed $maskedRaw,
+		mixed $prefixRaw,
+		mixed $bytesRaw,
+		mixed $autogenRaw,
+	): array {
+		$parseBool = static function (mixed $raw, bool $default): bool {
+			if ($raw === null || $raw === '') {
+				return $default;
+			}
+			if (is_bool($raw)) {
+				return $raw;
+			}
+			if (is_int($raw) || is_float($raw)) {
+				return (int) $raw !== 0;
+			}
+			$norm = strtolower(trim((string) $raw));
+			if (in_array($norm, ['0', 'false', 'no', 'off'], true)) {
+				return false;
+			}
+			if (in_array($norm, ['1', 'true', 'yes', 'on'], true)) {
+				return true;
+			}
+			return $default;
+		};
+
+		$bytesInt = is_numeric($bytesRaw) ? (int) $bytesRaw : 32;
+		$bytesClamped = max(8, min(128, $bytesInt > 0 ? $bytesInt : 32));
+
+		return [
+			'isSecret' => $isSecret,
+			'secretMasked' => $isSecret && $parseBool($maskedRaw, false),
+			'secretPrefix' => $isSecret && is_scalar($prefixRaw) ? (string) $prefixRaw : '',
+			'secretBytes' => $isSecret ? $bytesClamped : 32,
+			'secretAutoGenerate' => $isSecret ? $parseBool($autogenRaw, true) : true,
+		];
+	}
+
+	/**
+	 * Map alias control names onto canonical `SchemaForm` control types.
+	 */
+	private function canonicalControlType(string $type): string
+	{
+		return ReactControlRegistry::canonicalControlType($type);
+	}
+
+	/**
+	 * Resolve an explicit `data-rw-control` attribute or `rwControl` setting from a ProcessWire `Inputfield`.
+	 *
+	 * @param array<string, mixed> $attrs
+	 */
+	private function resolveInputfieldRwControl(Inputfield $inputfield, array $attrs): string
+	{
+		return strtolower(trim((string) (
+			$this->findDataAttribute($attrs, 'control', '')
+			?: $this->findDataAttribute($attrs, 'rw-control', '')
+			?: ($inputfield->get('rwControl') ?? '')
+		)));
+	}
+
+	/**
+	 * Normalize associative or structured option lists into `SchemaForm` option entries.
+	 *
+	 * @param array<mixed, mixed> $rawOptions
+	 * @return list<array<string, mixed>>
+	 */
+	private function normalizeOptionItems(array $rawOptions): array
+	{
+		$normalizedOptions = [];
+		foreach ($rawOptions as $optKey => $optVal) {
+			if (is_array($optVal) && isset($optVal['value'])) {
+				$optEntry = [
+					'value' => (string) $optVal['value'],
+					'label' => (string) ($optVal['label'] ?? $optVal['value']),
+					'disabled' => !empty($optVal['disabled']),
+				];
+				if (!empty($optVal['icon']) && is_string($optVal['icon'])) {
+					$optEntry['icon'] = $this->normalizeIcon($optVal['icon']);
+				}
+				if (isset($optVal['description']) && is_string($optVal['description']) && $optVal['description'] !== '') {
+					$optEntry['description'] = $optVal['description'];
+				}
+				if (isset($optVal['subtitle']) && is_string($optVal['subtitle']) && $optVal['subtitle'] !== '') {
+					$optEntry['subtitle'] = $optVal['subtitle'];
+				}
+				if (isset($optVal['group']) && is_string($optVal['group']) && $optVal['group'] !== '') {
+					$optEntry['group'] = $optVal['group'];
+				}
+				$normalizedOptions[] = $optEntry;
+			} else {
+				$normalizedOptions[] = [
+					'value' => (string) $optKey,
+					'label' => (string) $optVal,
+				];
+			}
+		}
+
+		return $normalizedOptions;
+	}
+
+	/**
+	 * Normalize tag values into a deduplicated-order list of non-empty strings.
+	 *
+	 * @return list<string>
+	 */
+	private function normalizeTagListValue(mixed $val, string $delimiter = ''): array
+	{
+		if (is_string($val)) {
+			$trimmed = trim($val);
+			if ($trimmed === '') {
+				return [];
+			}
+			$parts = $delimiter !== ''
+				? explode($delimiter === 'c' ? ',' : $delimiter, $trimmed)
+				: (preg_split('/[,;\r\n]+/', $trimmed) ?: []);
+			return array_values(array_filter(array_map('trim', $parts), static fn(string $s): bool => $s !== ''));
+		}
+		if (is_array($val)) {
+			return array_values(array_filter(
+				array_map(static fn(mixed $item): string => is_scalar($item) ? trim((string) $item) : '', $val),
+				static fn(string $s): bool => $s !== '',
+			));
+		}
+		return [];
+	}
+
+	/**
+	 * Normalize a `daterange` value (`['from', 'to']`, JSON string, or `YYYY-MM-DD..YYYY-MM-DD`).
+	 */
+	private function normalizeDateRangeValue(mixed $val): mixed
+	{
+		if (is_string($val)) {
+			$trimmedRange = trim($val);
+			if ($trimmedRange !== '' && str_starts_with($trimmedRange, '{')) {
+				$decodedRange = json_decode($trimmedRange, true);
+				if (is_array($decodedRange)) {
+					$val = $decodedRange;
+				}
+			} elseif ($trimmedRange !== '' && preg_match('/^(\d{4}-\d{2}-\d{2})\s*(?:\.\.|\/|–)\s*(\d{4}-\d{2}-\d{2})$/', $trimmedRange, $rangeMatch) === 1) {
+				return ['from' => $rangeMatch[1], 'to' => $rangeMatch[2]];
+			}
+		}
+		if (is_array($val)) {
+			$fromStr = trim((string) ($val['from'] ?? ''));
+			$toStr = trim((string) ($val['to'] ?? ''));
+			return ($fromStr !== '' || $toStr !== '') ? ['from' => $fromStr, 'to' => $toStr] : '';
+		}
+		return $val;
+	}
+
+	/**
+	 * Normalize a `unit_number` value (`{value, unit}`, numeric scalar, JSON string, or `<number><unit>`).
+	 */
+	private function normalizeUnitNumberValue(mixed $val, string $fallbackUnit): mixed
+	{
+		if (is_string($val) && trim($val) !== '' && str_starts_with(trim($val), '{')) {
+			$decodedUnit = json_decode(trim($val), true);
+			if (is_array($decodedUnit)) {
+				$val = $decodedUnit;
+			}
+		}
+		if (is_array($val)) {
+			$numCandidate = $val['value'] ?? null;
+			$numNorm = is_numeric($numCandidate) ? (0 + $numCandidate) : null;
+			$unitNorm = trim((string) ($val['unit'] ?? $fallbackUnit)) ?: $fallbackUnit;
+			return $numNorm !== null ? ['value' => $numNorm, 'unit' => $unitNorm] : '';
+		}
+		if (is_int($val) || is_float($val)) {
+			return ['value' => $val, 'unit' => $fallbackUnit];
+		}
+		if (is_string($val) && trim($val) !== '' && preg_match('/^(-?\d+(?:\.\d+)?)\s*([A-Za-z%]+)?$/', trim($val), $um) === 1) {
+			$parsedNum = str_contains($um[1], '.') ? (float) $um[1] : (int) $um[1];
+			return ['value' => $parsedNum, 'unit' => trim((string) ($um[2] ?? $fallbackUnit)) ?: $fallbackUnit];
+		}
+		return $val;
+	}
+
+	/**
+	 * Normalize a `spacing` value (`{top, right, bottom, left, unit, linked}`, JSON, CSS shorthand, or scalar).
+	 */
+	private function normalizeSpacingValue(mixed $val, string $fallbackUnit): mixed
+	{
+		$extractSpacingToken = static function (string $tok): array {
+			$tr = trim($tok);
+			if ($tr === '') {
+				return ['val' => '', 'unit' => ''];
+			}
+			if (strtolower($tr) === 'auto') {
+				return ['val' => 'auto', 'unit' => ''];
+			}
+			if (preg_match('/^(-?\d+(?:\.\d+)?)\s*(px|rem|em|%|vw|vh|pt|ch)?$/i', $tr, $sm) === 1) {
+				return ['val' => $sm[1], 'unit' => isset($sm[2]) ? strtolower($sm[2]) : ''];
+			}
+			return ['val' => $tr, 'unit' => ''];
+		};
+		if (is_string($val) && trim($val) !== '' && str_starts_with(trim($val), '{')) {
+			$decodedSpacing = json_decode(trim($val), true);
+			if (is_array($decodedSpacing)) {
+				$val = $decodedSpacing;
+			}
+		}
+		if (is_array($val)) {
+			$tTok = $extractSpacingToken((string) ($val['top'] ?? ''));
+			$rTok = $extractSpacingToken((string) ($val['right'] ?? ''));
+			$bTok = $extractSpacingToken((string) ($val['bottom'] ?? ''));
+			$lTok = $extractSpacingToken((string) ($val['left'] ?? ''));
+			$unitNorm = trim((string) ($val['unit'] ?? $fallbackUnit)) ?: $fallbackUnit;
+			$linked = array_key_exists('linked', $val)
+				? (bool) $val['linked']
+				: ($tTok['val'] !== '' && $tTok['val'] === $rTok['val'] && $rTok['val'] === $bTok['val'] && $bTok['val'] === $lTok['val']);
+			return [
+				'top' => $tTok['val'],
+				'right' => $rTok['val'],
+				'bottom' => $bTok['val'],
+				'left' => $lTok['val'],
+				'unit' => $unitNorm,
+				'linked' => $linked,
+			];
+		}
+		if (is_string($val) && trim($val) !== '') {
+			$tokens = preg_split('/\s+/', trim($val)) ?: [];
+			$parsedTokens = array_map($extractSpacingToken, array_slice($tokens, 0, 4));
+			$detectedUnit = $fallbackUnit;
+			foreach ($parsedTokens as $pt) {
+				if ($pt['unit'] !== '') {
+					$detectedUnit = $pt['unit'];
+					break;
+				}
+			}
+			$cnt = count($parsedTokens);
+			$tVal = $parsedTokens[0]['val'] ?? '';
+			$rVal = $cnt === 1 ? $tVal : ($parsedTokens[1]['val'] ?? '');
+			$bVal = $cnt === 1 ? $tVal : ($cnt === 2 ? $tVal : ($parsedTokens[2]['val'] ?? ''));
+			$lVal = $cnt === 1 ? $tVal : ($cnt <= 3 ? $rVal : ($parsedTokens[3]['val'] ?? ''));
+			return [
+				'top' => $tVal,
+				'right' => $rVal,
+				'bottom' => $bVal,
+				'left' => $lVal,
+				'unit' => $detectedUnit,
+				'linked' => $cnt === 1 || ($tVal !== '' && $tVal === $rVal && $rVal === $bVal && $bVal === $lVal),
+			];
+		}
+		if (is_int($val) || is_float($val)) {
+			$nStr = (string) $val;
+			return ['top' => $nStr, 'right' => $nStr, 'bottom' => $nStr, 'left' => $nStr, 'unit' => $fallbackUnit, 'linked' => true];
+		}
+		return '';
+	}
+
+	/**
+	 * Normalize a dual `range_slider` value (`{min, max}`, JSON string, or `min..max` string).
+	 */
+	private function normalizeRangeSliderValue(mixed $val): mixed
+	{
+		$parseNumericToken = static function (mixed $candidate): int|float|null {
+			if (is_int($candidate) || is_float($candidate)) {
+				return $candidate;
+			}
+			if (is_string($candidate) && is_numeric(trim($candidate))) {
+				$tr = trim($candidate);
+				return str_contains($tr, '.') ? (float) $tr : (int) $tr;
+			}
+			return null;
+		};
+		if (is_string($val) && trim($val) !== '' && (str_starts_with(trim($val), '{') || str_starts_with(trim($val), '['))) {
+			$decodedRange = json_decode(trim($val), true);
+			if (is_array($decodedRange)) {
+				$val = $decodedRange;
+			}
+		}
+		if (is_array($val)) {
+			$rawMin = $val['min'] ?? $val['from'] ?? $val[0] ?? null;
+			$rawMax = $val['max'] ?? $val['to'] ?? $val[1] ?? null;
+			$numMin = $parseNumericToken($rawMin);
+			$numMax = $parseNumericToken($rawMax);
+			return ($numMin !== null && $numMax !== null) ? ['min' => $numMin, 'max' => $numMax] : '';
+		}
+		if (is_string($val) && trim($val) !== '' && preg_match('/^(-?\d+(?:\.\d+)?)\s*(?:\.\.|–|—|,|-)\s*(-?\d+(?:\.\d+)?)$/', trim($val), $rm) === 1) {
+			$numMin = str_contains($rm[1], '.') ? (float) $rm[1] : (int) $rm[1];
+			$numMax = str_contains($rm[2], '.') ? (float) $rm[2] : (int) $rm[2];
+			return ['min' => $numMin, 'max' => $numMax];
+		}
+		return $val;
+	}
+
+	/**
+	 * Normalize a condition builder rule tree into `{match: 'all'|'any', groups: [...]}`.
+	 *
+	 * @return array{match: string, groups: list<array{id: string, match: string, rules: list<array{id: string, field: string, operator: string, value: mixed}>}>}
+	 */
+	private function normalizeConditionBuilderValue(mixed $val): array
+	{
+		if (is_string($val)) {
+			$trimmed = trim($val);
+			if ($trimmed === '' || $trimmed === '[]') {
+				$val = [];
+			} else {
+				$decoded = json_decode($trimmed, true);
+				$val = is_array($decoded) ? $decoded : [];
+			}
+		}
+
+		if (!is_array($val)) {
+			return [
+				'match' => 'all',
+				'groups' => [],
+			];
+		}
+
+		$rootMatch = is_string($val['match'] ?? null) && strtolower(trim($val['match'])) === 'any'
+			? 'any'
+			: 'all';
+		$rawGroups = is_array($val['groups'] ?? null) ? $val['groups'] : [];
+		$groups = [];
+		$gIdx = 0;
+
+		foreach ($rawGroups as $rawGroup) {
+			if (!is_array($rawGroup)) {
+				continue;
+			}
+			$gIdx++;
+			$groupId = is_string($rawGroup['id'] ?? null) && trim($rawGroup['id']) !== ''
+				? trim($rawGroup['id'])
+				: 'grp_' . $gIdx;
+			$groupMatch = is_string($rawGroup['match'] ?? null) && strtolower(trim($rawGroup['match'])) === 'any'
+				? 'any'
+				: 'all';
+			$rawRules = is_array($rawGroup['rules'] ?? null) ? $rawGroup['rules'] : [];
+			$rules = [];
+			$rIdx = 0;
+
+			foreach ($rawRules as $rawRule) {
+				if (!is_array($rawRule)) {
+					continue;
+				}
+				$rIdx++;
+				$ruleId = is_string($rawRule['id'] ?? null) && trim($rawRule['id']) !== ''
+					? trim($rawRule['id'])
+					: 'rule_' . $gIdx . '_' . $rIdx;
+				$fieldKey = is_scalar($rawRule['field'] ?? null) ? trim((string) $rawRule['field']) : '';
+				$operator = is_scalar($rawRule['operator'] ?? null) && trim((string) $rawRule['operator']) !== ''
+					? trim((string) $rawRule['operator'])
+					: 'eq';
+				$rules[] = [
+					'id' => $ruleId,
+					'field' => $fieldKey,
+					'operator' => $operator,
+					'value' => array_key_exists('value', $rawRule) ? $rawRule['value'] : null,
+				];
+			}
+
+			$groups[] = [
+				'id' => $groupId,
+				'match' => $groupMatch,
+				'rules' => $rules,
+			];
+		}
+
+		return [
+			'match' => $rootMatch,
+			'groups' => $groups,
+		];
+	}
+
+	/**
+	 * Normalize declarative `conditionFields` definitions for `condition_builder` controls.
+	 *
+	 * @return list<array<string, mixed>>
+	 */
+	private function normalizeConditionFields(mixed $rawFields): array
+	{
+		if (is_string($rawFields)) {
+			$trimmed = trim($rawFields);
+			if ($trimmed === '') {
+				return [];
+			}
+			$decoded = json_decode($trimmed, true);
+			$rawFields = is_array($decoded) ? $decoded : [];
+		}
+
+		if (!is_array($rawFields)) {
+			return [];
+		}
+
+		$allowedTypes = ['text', 'number', 'select', 'boolean', 'country', 'currency', 'date'];
+		$seenKeys = [];
+		$normalized = [];
+
+		foreach ($rawFields as $entry) {
+			if (!is_array($entry)) {
+				continue;
+			}
+			$key = is_scalar($entry['key'] ?? null) ? trim((string) $entry['key']) : '';
+			if ($key === '' || isset($seenKeys[$key])) {
+				continue;
+			}
+			$seenKeys[$key] = true;
+
+			$label = is_scalar($entry['label'] ?? null) && trim((string) $entry['label']) !== ''
+				? trim((string) $entry['label'])
+				: $key;
+			$rawType = is_scalar($entry['type'] ?? null) ? strtolower(trim((string) $entry['type'])) : 'text';
+			$type = in_array($rawType, $allowedTypes, true) ? $rawType : 'text';
+
+			$spec = [
+				'key' => $key,
+				'label' => $label,
+				'type' => $type,
+			];
+
+			if (isset($entry['options']) && is_array($entry['options'])) {
+				$opts = [];
+				foreach ($this->normalizeOptionItems($entry['options']) as $optItem) {
+					$opts[] = [
+						'value' => (string) ($optItem['value'] ?? ''),
+						'label' => (string) ($optItem['label'] ?? $optItem['value'] ?? ''),
+					];
+				}
+				if ($opts !== []) {
+					$spec['options'] = $opts;
+				}
+			} elseif ($type === 'country') {
+				$opts = [];
+				foreach ($this->normalizeOptionItems(IntlCatalog::countryOptions()) as $optItem) {
+					$opts[] = [
+						'value' => (string) ($optItem['value'] ?? ''),
+						'label' => (string) ($optItem['label'] ?? $optItem['value'] ?? ''),
+					];
+				}
+				$spec['options'] = $opts;
+			} elseif ($type === 'currency') {
+				$opts = [];
+				foreach ($this->normalizeOptionItems(IntlCatalog::currencyOptions()) as $optItem) {
+					$opts[] = [
+						'value' => (string) ($optItem['value'] ?? ''),
+						'label' => (string) ($optItem['label'] ?? $optItem['value'] ?? ''),
+					];
+				}
+				$spec['options'] = $opts;
+			}
+
+			if (isset($entry['operators']) && is_array($entry['operators'])) {
+				$ops = self::normalizeStringList($entry['operators']);
+				if ($ops !== []) {
+					$spec['operators'] = $ops;
+				}
+			}
+
+			$normalized[] = $spec;
+		}
+
+		return $normalized;
+	}
+
+	/**
+	 * Resolve canonical unit-number fallback unit from explicit settings or currency variant hints.
+	 *
+	 * @param array<string, mixed> $raw
+	 */
+	private function resolveUnitNumberFallbackUnit(array $raw, string $explicitType = ''): string
+	{
+		$unitVariant = strtolower(trim((string) ($raw['unitVariant'] ?? $raw['unit_variant'] ?? '')));
+		$explicitCurrency = is_scalar($raw['currency'] ?? null) ? trim((string) $raw['currency']) : '';
+		$isCurrencyMode = $explicitType === 'currency'
+			|| $explicitType === 'money'
+			|| $unitVariant === 'currency'
+			|| $explicitCurrency !== ''
+			|| isset($raw['currencies']);
+
+		$unitsSource = $raw['units'] ?? $raw['currencies'] ?? null;
+		$firstUnit = '';
+		if (is_array($unitsSource)) {
+			foreach ($unitsSource as $unitCandidate) {
+				$cleanCandidate = trim((string) $unitCandidate);
+				if ($cleanCandidate !== '') {
+					$firstUnit = $cleanCandidate;
+					break;
+				}
+			}
+		}
+
+		foreach ([$raw['defaultUnit'] ?? null, $raw['default_unit'] ?? null, $explicitCurrency, $firstUnit] as $candidate) {
+			$clean = is_scalar($candidate) ? trim((string) $candidate) : '';
+			if ($clean !== '') {
+				return $clean;
+			}
+		}
+
+		return $isCurrencyMode ? 'EUR' : 'px';
+	}
+
+	/**
+	 * Merge structured option metadata (`icon`, `description`, `subtitle`, `group`, `disabled`) onto base select options.
+	 *
+	 * @param list<array<string, mixed>> $baseOptions
+	 * @param list<array<string, mixed>> $structuredOptions
+	 * @return list<array<string, mixed>>
+	 */
+	private function mergeStructuredSelectOptions(array $baseOptions, array $structuredOptions): array
+	{
+		if ($baseOptions === []) {
+			return $structuredOptions;
+		}
+		$byValue = [];
+		foreach ($structuredOptions as $entry) {
+			if (isset($entry['value'])) {
+				$byValue[(string) $entry['value']] = $entry;
+			}
+		}
+		if ($byValue === []) {
+			return $baseOptions;
+		}
+
+		$merged = [];
+		foreach ($baseOptions as $opt) {
+			$valKey = (string) ($opt['value'] ?? '');
+			if ($valKey !== '' && isset($byValue[$valKey])) {
+				$rich = $byValue[$valKey];
+				foreach (['icon', 'description', 'subtitle', 'group'] as $metaKey) {
+					if (!empty($rich[$metaKey])) {
+						$opt[$metaKey] = $rich[$metaKey];
+					}
+				}
+				if (!empty($rich['disabled'])) {
+					$opt['disabled'] = true;
+				}
+				if (isset($rich['label']) && is_string($rich['label']) && $rich['label'] !== '' && ($opt['label'] ?? '') === '') {
+					$opt['label'] = $rich['label'];
+				}
+			}
+			$merged[] = $opt;
+		}
+
+		return $merged;
+	}
+
+	/**
+	 * Collect extended React control settings from an `Inputfield` or `data-rw-*` attributes.
+	 *
+	 * @param array<string, mixed> $attrs
+	 * @return array<string, mixed>
+	 */
+	private function collectInputfieldExtendedBag(Inputfield $inputfield, array $attrs): array
+	{
+		$bag = [];
+		$keys = [
+			'datetimeMode', 'hourFormat', 'minuteStep', 'showSeconds', 'timezone',
+			'weekStartsOn', 'displayFormat', 'presets', 'numberOfMonths', 'minTime', 'maxTime',
+			'swatches', 'allowAlpha', 'clearable',
+			'suggestions', 'tagsList', 'allowDuplicates', 'allowCustom', 'delimiter', 'maxItems', 'maxSelectedItems',
+			'emptyText', 'comboboxOptions', 'segmentedOptions', 'options', 'multiple',
+			'defaultCountry', 'preferredCountries', 'phoneCountries', 'only', 'exclude', 'preferred', 'regions', 'includeOffset',
+			'units', 'currencies', 'defaultUnit', 'unitVariant', 'currency', 'locale', 'precision',
+			'iconOnly', 'fullWidth', 'useDeselect',
+			'sides', 'allowAuto', 'allowNegative',
+			'otpLength', 'length', 'otpMode', 'otpSeparatorAfter', 'mask',
+			'showStrength', 'showRequirements', 'allowGenerate', 'requireUppercase',
+			'requireLowercase', 'requireNumber', 'requireSymbol', 'confirmPassword', 'autoComplete',
+			'rangeMode', 'dual', 'minDistance',
+			'previewMode', 'allowSplit', 'showToolbar',
+			'maxStars', 'formula',
+			'conditionFields', 'condition_fields',
+		];
+		foreach ($keys as $key) {
+			$val = $inputfield->data($key);
+			if ($val === null) {
+				$settingVal = $inputfield->getSetting($key);
+				if (!$settingVal instanceof Wire) {
+					$val = $settingVal;
+				}
+			}
+			if ($val instanceof Wire) {
+				$val = null;
+			}
+			if ($val !== null) {
+				$bag[$key] = $val;
+				continue;
+			}
+			$kebab = strtolower((string) preg_replace('/([a-z])([A-Z])/', '$1-$2', $key));
+			$attrVal = $this->findDataAttribute($attrs, $kebab);
+			if ($attrVal === null) {
+				continue;
+			}
+			$trimmed = trim($attrVal);
+			if ($trimmed !== '' && ($trimmed[0] === '[' || $trimmed[0] === '{')) {
+				$decoded = json_decode($trimmed, true);
+				if (is_array($decoded)) {
+					$bag[$key] = $decoded;
+					continue;
+				}
+			}
+			$lower = strtolower($trimmed);
+			$bag[$key] = match ($lower) {
+				'true', '1' => true,
+				'false', '0' => false,
+				default => $attrVal,
+			};
+		}
+		return $bag;
+	}
+
+	/**
+	 * Apply type-specific extended control options onto a serialized control node.
+	 *
+	 * @param array<string, mixed> $fieldNode
+	 * @param array<string, mixed> $raw
+	 */
+	private function applyExtendedControlOptions(string $controlType, array &$fieldNode, array $raw, string $explicitType = ''): void
+	{
+		if (in_array($controlType, ['date', 'time', 'datetime', 'daterange'], true)) {
+			$rawDatetimeMode = $raw['datetimeMode'] ?? $raw['datetime_mode'] ?? null;
+			if (is_string($rawDatetimeMode) && in_array($rawDatetimeMode, ['picker', 'html', 'text'], true)) {
+				$fieldNode['datetimeMode'] = $rawDatetimeMode;
+			}
+			$rawHourFormat = $raw['hourFormat'] ?? $raw['hour_format'] ?? null;
+			if (is_string($rawHourFormat) && in_array($rawHourFormat, ['24h', '12h'], true)) {
+				$fieldNode['hourFormat'] = $rawHourFormat;
+			}
+			$rawMinuteStep = $raw['minuteStep'] ?? $raw['minute_step'] ?? null;
+			if ($rawMinuteStep !== null) {
+				$fieldNode['minuteStep'] = max(1, min(30, (int) $rawMinuteStep));
+			}
+			if (array_key_exists('showSeconds', $raw) || array_key_exists('show_seconds', $raw)) {
+				$fieldNode['showSeconds'] = !empty($raw['showSeconds'] ?? $raw['show_seconds'] ?? null);
+			}
+			$rawTimezone = trim((string) ($raw['timezone'] ?? ''));
+			if ($rawTimezone !== '') {
+				$fieldNode['timezone'] = $rawTimezone;
+			}
+			$rawWeekStartsOn = $raw['weekStartsOn'] ?? $raw['week_starts_on'] ?? null;
+			if ($rawWeekStartsOn !== null) {
+				$fieldNode['weekStartsOn'] = max(0, min(6, (int) $rawWeekStartsOn));
+			}
+			$rawDisplayFormat = trim((string) ($raw['displayFormat'] ?? $raw['display_format'] ?? ''));
+			if ($rawDisplayFormat !== '') {
+				$fieldNode['displayFormat'] = $rawDisplayFormat;
+			}
+			if (array_key_exists('presets', $raw)) {
+				$fieldNode['presets'] = (bool) $raw['presets'];
+			}
+			$rawNumberOfMonths = $raw['numberOfMonths'] ?? $raw['number_of_months'] ?? null;
+			if ($rawNumberOfMonths !== null) {
+				$fieldNode['numberOfMonths'] = max(1, min(3, (int) $rawNumberOfMonths));
+			}
+			$rawMinTime = trim((string) ($raw['minTime'] ?? $raw['min_time'] ?? ''));
+			if ($rawMinTime !== '') {
+				$fieldNode['minTime'] = $rawMinTime;
+			}
+			$rawMaxTime = trim((string) ($raw['maxTime'] ?? $raw['max_time'] ?? ''));
+			if ($rawMaxTime !== '') {
+				$fieldNode['maxTime'] = $rawMaxTime;
+			}
+		}
+
+		if ($controlType === 'color') {
+			if (isset($raw['swatches']) && is_array($raw['swatches'])) {
+				$fieldNode['swatches'] = array_values(array_filter(array_map('strval', $raw['swatches']), static fn(string $s): bool => trim($s) !== ''));
+			}
+			if (array_key_exists('allowAlpha', $raw) || array_key_exists('allow_alpha', $raw)) {
+				$fieldNode['allowAlpha'] = !empty($raw['allowAlpha'] ?? $raw['allow_alpha'] ?? null);
+			}
+			if (array_key_exists('clearable', $raw)) {
+				$fieldNode['clearable'] = (bool) $raw['clearable'];
+			}
+		} elseif ($controlType === 'tags') {
+			$rawSuggestions = $raw['suggestions'] ?? $raw['tagsList'] ?? $raw['tags_list'] ?? null;
+			if (is_array($rawSuggestions)) {
+				$fieldNode['suggestions'] = array_values(array_filter(array_map('strval', $rawSuggestions), static fn(string $s): bool => trim($s) !== ''));
+			} elseif (is_string($rawSuggestions) && trim($rawSuggestions) !== '') {
+				$fieldNode['suggestions'] = self::normalizeMediaTokenList($rawSuggestions, false);
+			}
+			if (array_key_exists('allowDuplicates', $raw) || array_key_exists('allow_duplicates', $raw)) {
+				$fieldNode['allowDuplicates'] = !empty($raw['allowDuplicates'] ?? $raw['allow_duplicates'] ?? null);
+			}
+			if (array_key_exists('allowCustom', $raw) || array_key_exists('allow_custom', $raw)) {
+				$fieldNode['allowCustom'] = (bool) ($raw['allowCustom'] ?? $raw['allow_custom'] ?? false);
+			}
+			$rawMaxItems = $raw['maxItems'] ?? $raw['max_items'] ?? $raw['maxSelectedItems'] ?? null;
+			if (is_numeric($rawMaxItems) && (int) $rawMaxItems > 0) {
+				$fieldNode['maxItems'] = (int) $rawMaxItems;
+			}
+		} elseif ($controlType === 'phone') {
+			$rawDefaultCountry = strtoupper(trim((string) ($raw['defaultCountry'] ?? $raw['default_country'] ?? '')));
+			if ($rawDefaultCountry !== '') {
+				$fieldNode['defaultCountry'] = $rawDefaultCountry;
+			}
+			$preferredList = self::normalizeStringList($raw['preferredCountries'] ?? $raw['preferred_countries'] ?? $raw['preferred'] ?? []);
+			if ($preferredList !== []) {
+				$fieldNode['preferredCountries'] = $preferredList;
+			}
+			if (array_key_exists('clearable', $raw)) {
+				$fieldNode['clearable'] = (bool) $raw['clearable'];
+			}
+			$rawPhoneCountries = $raw['phoneCountries'] ?? $raw['phone_countries'] ?? null;
+			if (is_array($rawPhoneCountries) && $rawPhoneCountries !== []) {
+				$fieldNode['phoneCountries'] = array_values($rawPhoneCountries);
+			} else {
+				$onlyList = self::normalizeStringList($raw['only'] ?? []);
+				$excludeList = self::normalizeStringList($raw['exclude'] ?? []);
+				$fieldNode['phoneCountries'] = IntlCatalog::phoneCountryItems($onlyList, $excludeList, $preferredList);
+			}
+		} elseif ($controlType === 'combobox') {
+			if (array_key_exists('clearable', $raw)) {
+				$fieldNode['clearable'] = (bool) $raw['clearable'];
+			}
+			$rawEmptyText = $raw['emptyText'] ?? $raw['empty_text'] ?? null;
+			if ($rawEmptyText !== null) {
+				$fieldNode['emptyText'] = (string) $rawEmptyText;
+			}
+			if (array_key_exists('allowCustom', $raw) || array_key_exists('allow_custom', $raw)) {
+				$fieldNode['allowCustom'] = !empty($raw['allowCustom'] ?? $raw['allow_custom'] ?? null);
+			}
+			$lowerExplicit = strtolower(trim($explicitType));
+			if (array_key_exists('multiple', $raw)) {
+				$fieldNode['multiple'] = !empty($raw['multiple']);
+			} elseif ($lowerExplicit === 'countries') {
+				$fieldNode['multiple'] = true;
+			}
+			if (empty($fieldNode['options'])) {
+				$onlyList = self::normalizeStringList($raw['only'] ?? []);
+				$excludeList = self::normalizeStringList($raw['exclude'] ?? []);
+				$preferredList = self::normalizeStringList($raw['preferred'] ?? $raw['preferredCountries'] ?? $raw['preferred_countries'] ?? []);
+				if (in_array($lowerExplicit, ['country', 'country_code', 'country-code', 'countries'], true)) {
+					$fieldNode['options'] = $this->normalizeOptionItems(IntlCatalog::countryOptions($onlyList, $excludeList, $preferredList));
+				} elseif (in_array($lowerExplicit, ['timezone', 'time_zone', 'time-zone', 'tz'], true)) {
+					$regionsList = self::normalizeStringList($raw['regions'] ?? []);
+					$includeOffset = !array_key_exists('includeOffset', $raw) && !array_key_exists('include_offset', $raw)
+						? true
+						: !empty($raw['includeOffset'] ?? $raw['include_offset'] ?? false);
+					$fieldNode['options'] = $this->normalizeOptionItems(IntlCatalog::timezoneOptions($regionsList, $includeOffset));
+				} elseif (in_array($lowerExplicit, ['currency_code', 'currency-code', 'currencycode', 'iso_currency', 'iso-currency'], true)) {
+					$fieldNode['options'] = $this->normalizeOptionItems(IntlCatalog::currencyOptions($onlyList, $excludeList, $preferredList));
+				}
+			}
+		} elseif ($controlType === 'unit_number') {
+			$rawUnits = $raw['units'] ?? $raw['currencies'] ?? null;
+			if (is_array($rawUnits)) {
+				$fieldNode['units'] = array_values(array_filter(array_map('strval', $rawUnits), static fn(string $s): bool => trim($s) !== ''));
+			} elseif (is_string($rawUnits) && trim($rawUnits) !== '') {
+				$fieldNode['units'] = self::normalizeMediaTokenList($rawUnits, false);
+			}
+			$rawDefaultUnit = trim((string) ($raw['defaultUnit'] ?? $raw['default_unit'] ?? ''));
+			if ($rawDefaultUnit !== '') {
+				$fieldNode['defaultUnit'] = $rawDefaultUnit;
+			}
+			$rawUnitVariant = strtolower(trim((string) ($raw['unitVariant'] ?? $raw['unit_variant'] ?? '')));
+			$rawExplicitCurrency = is_scalar($raw['currency'] ?? null) ? trim((string) $raw['currency']) : '';
+			$isCurrencyVariant = $rawUnitVariant === 'currency'
+				|| $explicitType === 'currency'
+				|| $explicitType === 'money'
+				|| $rawExplicitCurrency !== ''
+				|| isset($raw['currencies']);
+			if ($rawUnitVariant !== '') {
+				$fieldNode['unitVariant'] = $rawUnitVariant;
+			} elseif ($isCurrencyVariant) {
+				$fieldNode['unitVariant'] = 'currency';
+			}
+			$unitFallback = ($fieldNode['units'][0] ?? '');
+			$rawCurrency = $rawExplicitCurrency !== ''
+				? $rawExplicitCurrency
+				: ($isCurrencyVariant ? ($rawDefaultUnit !== '' ? $rawDefaultUnit : ($unitFallback !== '' ? $unitFallback : 'EUR')) : '');
+			if ($rawCurrency !== '') {
+				$fieldNode['currency'] = $rawCurrency;
+			}
+			if (isset($raw['precision']) && is_numeric($raw['precision'])) {
+				$fieldNode['precision'] = max(0, min(10, (int) $raw['precision']));
+			}
+			$rawLocale = trim((string) ($raw['locale'] ?? ''));
+			if ($rawLocale !== '') {
+				$fieldNode['locale'] = $rawLocale;
+			}
+		} elseif ($controlType === 'segmented') {
+			if (array_key_exists('iconOnly', $raw) || array_key_exists('icon_only', $raw)) {
+				$fieldNode['iconOnly'] = !empty($raw['iconOnly'] ?? $raw['icon_only'] ?? null);
+			}
+			if (array_key_exists('fullWidth', $raw) || array_key_exists('full_width', $raw)) {
+				$fieldNode['fullWidth'] = !empty($raw['fullWidth'] ?? $raw['full_width'] ?? null);
+			}
+			if (array_key_exists('useDeselect', $raw) || array_key_exists('use_deselect', $raw)) {
+				$fieldNode['useDeselect'] = !empty($raw['useDeselect'] ?? $raw['use_deselect'] ?? null);
+			}
+		} elseif ($controlType === 'spacing') {
+			if (isset($raw['units']) && is_array($raw['units'])) {
+				$fieldNode['units'] = array_values(array_filter(array_map('strval', $raw['units']), static fn(string $s): bool => trim($s) !== ''));
+			}
+			$rawDefaultUnit = trim((string) ($raw['defaultUnit'] ?? $raw['default_unit'] ?? ''));
+			if ($rawDefaultUnit !== '') {
+				$fieldNode['defaultUnit'] = $rawDefaultUnit;
+			}
+			if (isset($raw['sides']) && is_array($raw['sides'])) {
+				$fieldNode['sides'] = array_values(array_filter(array_map('strval', $raw['sides']), static fn(string $s): bool => in_array($s, ['top', 'right', 'bottom', 'left'], true)));
+			}
+			if (array_key_exists('allowAuto', $raw) || array_key_exists('allow_auto', $raw)) {
+				$fieldNode['allowAuto'] = !empty($raw['allowAuto'] ?? $raw['allow_auto'] ?? null);
+			}
+			if (array_key_exists('allowNegative', $raw) || array_key_exists('allow_negative', $raw)) {
+				$fieldNode['allowNegative'] = !empty($raw['allowNegative'] ?? $raw['allow_negative'] ?? null);
+			}
+			if (array_key_exists('clearable', $raw)) {
+				$fieldNode['clearable'] = (bool) $raw['clearable'];
+			}
+		} elseif ($controlType === 'otp') {
+			$rawOtpLen = $raw['otpLength'] ?? $raw['otp_length'] ?? $raw['length'] ?? null;
+			if (is_numeric($rawOtpLen)) {
+				$fieldNode['otpLength'] = max(4, min(12, (int) $rawOtpLen));
+			}
+			$rawOtpMode = strtolower(trim((string) ($raw['otpMode'] ?? $raw['otp_mode'] ?? '')));
+			if (in_array($rawOtpMode, ['numeric', 'alphanumeric'], true)) {
+				$fieldNode['otpMode'] = $rawOtpMode;
+			}
+			$rawSep = $raw['otpSeparatorAfter'] ?? $raw['otp_separator_after'] ?? null;
+			if (is_numeric($rawSep)) {
+				$fieldNode['otpSeparatorAfter'] = max(0, (int) $rawSep);
+			}
+			if (array_key_exists('mask', $raw)) {
+				$fieldNode['mask'] = !empty($raw['mask']);
+			}
+			if (array_key_exists('clearable', $raw)) {
+				$fieldNode['clearable'] = (bool) $raw['clearable'];
+			}
+		} elseif ($controlType === 'password') {
+			if (array_key_exists('showStrength', $raw) || array_key_exists('show_strength', $raw)) {
+				$fieldNode['showStrength'] = (bool) ($raw['showStrength'] ?? $raw['show_strength'] ?? false);
+			}
+			if (array_key_exists('showRequirements', $raw) || array_key_exists('show_requirements', $raw)) {
+				$fieldNode['showRequirements'] = (bool) ($raw['showRequirements'] ?? $raw['show_requirements'] ?? false);
+			}
+			if (array_key_exists('allowGenerate', $raw) || array_key_exists('allow_generate', $raw)) {
+				$fieldNode['allowGenerate'] = !empty($raw['allowGenerate'] ?? $raw['allow_generate'] ?? null);
+			}
+			if (array_key_exists('requireUppercase', $raw) || array_key_exists('require_uppercase', $raw)) {
+				$fieldNode['requireUppercase'] = (bool) ($raw['requireUppercase'] ?? $raw['require_uppercase'] ?? false);
+			}
+			if (array_key_exists('requireLowercase', $raw) || array_key_exists('require_lowercase', $raw)) {
+				$fieldNode['requireLowercase'] = (bool) ($raw['requireLowercase'] ?? $raw['require_lowercase'] ?? false);
+			}
+			if (array_key_exists('requireNumber', $raw) || array_key_exists('require_number', $raw)) {
+				$fieldNode['requireNumber'] = (bool) ($raw['requireNumber'] ?? $raw['require_number'] ?? false);
+			}
+			if (array_key_exists('requireSymbol', $raw) || array_key_exists('require_symbol', $raw)) {
+				$fieldNode['requireSymbol'] = !empty($raw['requireSymbol'] ?? $raw['require_symbol'] ?? null);
+			}
+			if (array_key_exists('confirmPassword', $raw) || array_key_exists('confirm_password', $raw)) {
+				$fieldNode['confirmPassword'] = !empty($raw['confirmPassword'] ?? $raw['confirm_password'] ?? null);
+			}
+			$rawAutoComplete = $raw['autoComplete'] ?? $raw['auto_complete'] ?? null;
+			if ($rawAutoComplete !== null) {
+				$fieldNode['autoComplete'] = (string) $rawAutoComplete;
+			}
+		} elseif ($controlType === 'range_slider') {
+			$fieldNode['rangeMode'] = 'dual';
+			$fieldNode['dual'] = true;
+			$rawMinDist = $raw['minDistance'] ?? $raw['min_distance'] ?? null;
+			if (is_numeric($rawMinDist)) {
+				$fieldNode['minDistance'] = str_contains((string) $rawMinDist, '.') ? (float) $rawMinDist : (int) $rawMinDist;
+			}
+		} elseif ($controlType === 'markdown') {
+			$rawPreviewMode = strtolower(trim((string) ($raw['previewMode'] ?? $raw['preview_mode'] ?? '')));
+			if (in_array($rawPreviewMode, ['write', 'preview', 'split'], true)) {
+				$fieldNode['previewMode'] = $rawPreviewMode;
+			}
+			if (array_key_exists('allowSplit', $raw) || array_key_exists('allow_split', $raw)) {
+				$fieldNode['allowSplit'] = (bool) ($raw['allowSplit'] ?? $raw['allow_split'] ?? false);
+			}
+			if (array_key_exists('showToolbar', $raw) || array_key_exists('show_toolbar', $raw)) {
+				$fieldNode['showToolbar'] = (bool) ($raw['showToolbar'] ?? $raw['show_toolbar'] ?? false);
+			}
+		} elseif ($controlType === 'condition_builder') {
+			$rawConditionFields = $raw['conditionFields'] ?? $raw['condition_fields'] ?? null;
+			if ($rawConditionFields !== null) {
+				$fieldNode['conditionFields'] = $this->normalizeConditionFields($rawConditionFields);
+			} elseif (!isset($fieldNode['conditionFields'])) {
+				$fieldNode['conditionFields'] = [];
+			}
+		}
+	}
+
+	/**
+	 * Serialize an `InputfieldText` configured via `rwControl` onto a rich extended control node.
+	 *
+	 * @param array<string, mixed> $attrs
+	 * @param array<string, mixed> $base
+	 * @return array<string, mixed>
+	 */
+	private function serializeExtendedTextInputfield(
+		Inputfield $inputfield,
+		array $attrs,
+		array $base,
+		string $controlType,
+		string $explicitControl = '',
+	): array {
+		$bag = $this->collectInputfieldExtendedBag($inputfield, $attrs);
+		$rawVal = $attrs['value'] ?? $inputfield->val() ?? '';
+		$valStr = is_scalar($rawVal) ? (string) $rawVal : '';
+		$min = $attrs['min'] ?? $inputfield->getSetting('min');
+		$max = $attrs['max'] ?? $inputfield->getSetting('max');
+		$step = $attrs['step'] ?? $inputfield->getSetting('step');
+		$fallbackUnit = $this->resolveUnitNumberFallbackUnit($bag, $explicitControl);
+
+		$control = match ($controlType) {
+			'date', 'time', 'datetime' => array_merge($base, [
+				'type' => $controlType,
+				'inputType' => $controlType === 'datetime' ? 'datetime-local' : $controlType,
+				'defaultValue' => $valStr,
+				'value' => $valStr,
+				'min' => $min !== null && $min !== '' ? (string) $min : null,
+				'max' => $max !== null && $max !== '' ? (string) $max : null,
+			]),
+			'combobox', 'segmented' => (function () use ($base, $controlType, $rawVal, $valStr, $bag, $explicitControl): array {
+				$isMulti = !empty($bag['multiple']) || strtolower(trim($explicitControl)) === 'countries';
+				$multiVals = [];
+				if ($isMulti) {
+					if (is_string($rawVal) && str_starts_with(trim($rawVal), '[')) {
+						$decodedMulti = json_decode(trim($rawVal), true);
+						if (is_array($decodedMulti)) {
+							$multiVals = $this->normalizeTagListValue($decodedMulti);
+						}
+					} else {
+						$multiVals = $this->normalizeTagListValue($rawVal);
+					}
+				}
+				$rawOptions = $controlType === 'segmented'
+					? ($bag['segmentedOptions'] ?? $bag['comboboxOptions'] ?? $bag['options'] ?? null)
+					: ($bag['comboboxOptions'] ?? $bag['segmentedOptions'] ?? $bag['options'] ?? null);
+				return array_merge($base, [
+					'type' => $controlType,
+					'multiple' => $isMulti,
+					'defaultValue' => $isMulti ? $multiVals : $valStr,
+					'value' => $isMulti ? $multiVals : $valStr,
+					'values' => $isMulti ? $multiVals : ($valStr !== '' ? [$valStr] : []),
+					'options' => $this->normalizeOptionItems(is_array($rawOptions) ? $rawOptions : []),
+				]);
+			})(),
+			'phone' => array_merge($base, [
+				'type' => 'phone',
+				'inputType' => 'tel',
+				'defaultValue' => $valStr,
+				'value' => $valStr,
+			]),
+			'tags' => (function () use ($base, $rawVal, &$bag): array {
+				$delimiter = (string) ($bag['delimiter'] ?? ',');
+				$tagsArr = $this->normalizeTagListValue($rawVal, $delimiter);
+				if (isset($bag['tagsList']) && !isset($bag['suggestions'])) {
+					$bag['suggestions'] = self::normalizeMediaTokenList($bag['tagsList'], false);
+				}
+				return array_merge($base, [
+					'type' => 'tags',
+					'multiple' => true,
+					'defaultValue' => $tagsArr,
+					'value' => $tagsArr,
+					'values' => $tagsArr,
+					'options' => [],
+				]);
+			})(),
+			'daterange' => (function () use ($base, $rawVal): array {
+				$rangeVal = $this->normalizeDateRangeValue($rawVal);
+				return array_merge($base, [
+					'type' => 'daterange',
+					'inputType' => 'text',
+					'defaultValue' => $rangeVal,
+					'value' => $rangeVal,
+				]);
+			})(),
+			'unit_number' => (function () use ($base, $rawVal, $fallbackUnit, $min, $max, $step): array {
+				$unitVal = $this->normalizeUnitNumberValue($rawVal, $fallbackUnit);
+				return array_merge($base, [
+					'type' => 'unit_number',
+					'inputType' => 'number',
+					'defaultValue' => $unitVal,
+					'value' => $unitVal,
+					'min' => $min !== null && $min !== '' ? (string) $min : null,
+					'max' => $max !== null && $max !== '' ? (string) $max : null,
+					'step' => $step !== null && $step !== '' ? (string) $step : null,
+				]);
+			})(),
+			'spacing' => (function () use ($base, $rawVal, $fallbackUnit, $min, $max, $step): array {
+				$spacingVal = $this->normalizeSpacingValue($rawVal, $fallbackUnit);
+				return array_merge($base, [
+					'type' => 'spacing',
+					'inputType' => 'text',
+					'defaultValue' => $spacingVal,
+					'value' => $spacingVal,
+					'min' => $min !== null && $min !== '' ? (string) $min : null,
+					'max' => $max !== null && $max !== '' ? (string) $max : null,
+					'step' => $step !== null && $step !== '' ? (string) $step : null,
+				]);
+			})(),
+			'range_slider' => (function () use ($base, $rawVal, $min, $max, $step): array {
+				$sliderVal = $this->normalizeRangeSliderValue($rawVal);
+				return array_merge($base, [
+					'type' => 'range_slider',
+					'inputType' => 'range',
+					'defaultValue' => $sliderVal,
+					'value' => $sliderVal,
+					'min' => $min !== null && $min !== '' ? (string) $min : null,
+					'max' => $max !== null && $max !== '' ? (string) $max : null,
+					'step' => $step !== null && $step !== '' ? (string) $step : null,
+				]);
+			})(),
+			'password' => (function () use ($attrs, $base, $valStr): array {
+				$secretMasked = $this->findDataAttribute($attrs, 'secret-masked');
+				return array_merge($base, [
+					'type' => 'password',
+					'inputType' => 'password',
+					'defaultValue' => $valStr,
+					'value' => $valStr,
+					'isSecret' => $secretMasked !== null,
+					'secretMasked' => $secretMasked === '1',
+				]);
+			})(),
+			'markdown' => array_merge($base, [
+				'type' => 'markdown',
+				'defaultValue' => $valStr,
+				'value' => $valStr,
+				'editorMode' => 'markdown',
+				'rows' => max(3, (int) ($attrs['rows'] ?? $inputfield->getSetting('rows') ?? 6)),
+			]),
+			'rating' => array_merge($base, [
+				'type' => 'rating',
+				'inputType' => 'number',
+				'defaultValue' => $valStr,
+				'value' => $valStr,
+				'maxStars' => max(2, min(10, (int) ($bag['maxStars'] ?? $max ?: 5))),
+				'min' => $min !== null && $min !== '' ? (string) $min : null,
+				'max' => $max !== null && $max !== '' ? (string) $max : null,
+			]),
+			'calculation' => array_merge($base, [
+				'type' => 'calculation',
+				'inputType' => 'number',
+				'defaultValue' => $valStr,
+				'value' => $valStr,
+				'formula' => is_scalar($bag['formula'] ?? null) ? (string) $bag['formula'] : '',
+				'precision' => is_numeric($bag['precision'] ?? null) ? (int) $bag['precision'] : 2,
+			]),
+			'condition_builder' => (function () use ($base, $rawVal): array {
+				$normalizedCb = $this->normalizeConditionBuilderValue($rawVal);
+				return array_merge($base, [
+					'type' => 'condition_builder',
+					'defaultValue' => $normalizedCb,
+					'value' => $normalizedCb,
+				]);
+			})(),
+			default => array_merge($base, [
+				'type' => $controlType,
+				'inputType' => 'text',
+				'defaultValue' => $valStr,
+				'value' => $valStr,
+			]),
+		};
+
+		$this->applyExtendedControlOptions($controlType, $control, $bag, $explicitControl);
+
+		return $control;
+	}
+
+	/**
 	 * Extract language tab entries for a multilingual `Inputfield`.
 	 *
 	 * @return list<array{id: int, name: string, title: string, isDefault: bool, inputName: string, value: string}>
@@ -3073,27 +4415,32 @@ class FormSchemaSerializer extends Wire
 		$optionAttrs = method_exists($inputfield, 'getOptionAttributes') ? $inputfield->getOptionAttributes() : [];
 		$result = [];
 
+		$buildOptionEntry = function (string $valStr, string $label, ?string $group = null) use ($optionAttrs): array {
+			$attrs = is_array($optionAttrs[$valStr] ?? null) ? $optionAttrs[$valStr] : [];
+			$entry = [
+				'value' => $valStr,
+				'label' => $label,
+				'disabled' => !empty($attrs['disabled']),
+			];
+			if ($group !== null) {
+				$entry['group'] = $group;
+			}
+			foreach (['data-icon' => 'icon', 'data-description' => 'description', 'data-subtitle' => 'subtitle'] as $attrKey => $propKey) {
+				if (isset($attrs[$attrKey]) && is_string($attrs[$attrKey]) && $attrs[$attrKey] !== '') {
+					$entry[$propKey] = $propKey === 'icon' ? $this->normalizeIcon($attrs[$attrKey]) : $attrs[$attrKey];
+				}
+			}
+			return $entry;
+		};
+
 		foreach ($rawOptions as $key => $labelOrGroup) {
 			if (is_array($labelOrGroup)) {
 				$groupLabel = (string) $key;
 				foreach ($labelOrGroup as $subVal => $subLabel) {
-					$valStr = (string) $subVal;
-					$attrs = is_array($optionAttrs[$valStr] ?? null) ? $optionAttrs[$valStr] : [];
-					$result[] = [
-						'value' => $valStr,
-						'label' => (string) $subLabel,
-						'disabled' => !empty($attrs['disabled']),
-						'group' => $groupLabel,
-					];
+					$result[] = $buildOptionEntry((string) $subVal, (string) $subLabel, $groupLabel);
 				}
 			} else {
-				$valStr = (string) $key;
-				$attrs = is_array($optionAttrs[$valStr] ?? null) ? $optionAttrs[$valStr] : [];
-				$result[] = [
-					'value' => $valStr,
-					'label' => (string) $labelOrGroup,
-					'disabled' => !empty($attrs['disabled']),
-				];
+				$result[] = $buildOptionEntry((string) $key, (string) $labelOrGroup);
 			}
 		}
 
@@ -3779,7 +5126,7 @@ class FormSchemaSerializer extends Wire
 	public function appendDeleteTab(InputfieldWrapper $form, array $config = []): void
 	{
 		$confirmName = trim((string) ($config['name'] ?? '_delete_confirm'));
-		if ($confirmName === '' || $form->getChildByName($confirmName) !== null) {
+		if ($confirmName === '' || $form->getChildByName($confirmName) !== null || $this->hasConfirmDeleteTab($form)) {
 			return;
 		}
 
@@ -3795,17 +5142,6 @@ class FormSchemaSerializer extends Wire
 		$generalLabel = trim((string) ($config['generalLabel'] ?? $this->_('Configuration')));
 		$generalIcon = trim((string) ($config['generalIcon'] ?? 'adjustments-horizontal'));
 
-		/** @var MarkupReactTab|null $deletePane */
-		$deletePane = $modules->get('MarkupReactTab');
-		if (!$deletePane instanceof MarkupReactTab) {
-			$deletePane = new MarkupReactTab();
-			$this->wire($deletePane);
-		}
-		$deletePane->attr('id+name', '_tab_delete');
-		$deletePane->attr('data-confirm-delete', '1');
-		$deletePane->label = $tabLabel;
-		$deletePane->icon = $tabIcon;
-
 		/** @var InputfieldCheckbox $confirm */
 		$confirm = $modules->get('InputfieldCheckbox');
 		$confirm->attr('id+name', $confirmName);
@@ -3819,15 +5155,54 @@ class FormSchemaSerializer extends Wire
 		} else {
 			$confirm->description = $defaultDesc;
 		}
-		$deletePane->add($confirm);
 
 		$existingTabGroup = null;
+		$hasWireTabs = false;
+		$firstSubmit = null;
 		foreach ($form->children() as $child) {
-			if ($child instanceof MarkupReactTab) {
+			if ($child instanceof InputfieldSubmit && $firstSubmit === null) {
+				$firstSubmit = $child;
+			}
+			if ($existingTabGroup === null && $child instanceof MarkupReactTab) {
 				$existingTabGroup = $child;
-				break;
+			}
+			if ($child instanceof Inputfield && $this->isWireTabWrapper($child)) {
+				$hasWireTabs = true;
 			}
 		}
+
+		if ($hasWireTabs && !$existingTabGroup instanceof MarkupReactTab) {
+			$deleteWireTab = new InputfieldWrapper();
+			$this->wire($deleteWireTab);
+			$deleteWireTab->attr('id+name', '_tab_delete');
+			$deleteWireTab->attr('title', $tabLabel);
+			$deleteWireTab->attr('data-confirm-delete', '1');
+			$deleteWireTab->set('confirmDelete', true);
+			$deleteWireTab->icon = $tabIcon;
+			$deleteWireTab->addClass('WireTab');
+			$deleteWireTab->add($confirm);
+
+			if ($firstSubmit instanceof InputfieldSubmit) {
+				$form->insertBefore($deleteWireTab, $firstSubmit);
+			} else {
+				$form->add($deleteWireTab);
+			}
+
+			return;
+		}
+
+		/** @var MarkupReactTab|null $deletePane */
+		$deletePane = $modules->get('MarkupReactTab');
+		if (!$deletePane instanceof MarkupReactTab) {
+			$deletePane = new MarkupReactTab();
+			$this->wire($deletePane);
+		}
+		$deletePane->attr('id+name', '_tab_delete');
+		$deletePane->attr('data-confirm-delete', '1');
+		$deletePane->set('confirmDelete', true);
+		$deletePane->label = $tabLabel;
+		$deletePane->icon = $tabIcon;
+		$deletePane->add($confirm);
 
 		if ($existingTabGroup instanceof MarkupReactTab) {
 			$existingTabGroup->add($deletePane);
@@ -3855,12 +5230,8 @@ class FormSchemaSerializer extends Wire
 		$configPane->icon = $generalIcon;
 
 		$movable = [];
-		$firstSubmit = null;
 		foreach ($form->children() as $child) {
 			if ($child instanceof InputfieldSubmit) {
-				if ($firstSubmit === null) {
-					$firstSubmit = $child;
-				}
 				continue;
 			}
 			if (!$child instanceof Inputfield || $child instanceof InputfieldHidden) {
@@ -3880,6 +5251,36 @@ class FormSchemaSerializer extends Wire
 		} else {
 			$form->add($tabGroup);
 		}
+	}
+
+	/**
+	 * Determine whether a wrapper already carries a `Delete` confirmation tab (`data-confirm-delete="1"` or `confirmDelete`).
+	 */
+	private function hasConfirmDeleteTab(InputfieldWrapper $form): bool
+	{
+		foreach ($form->children() as $child) {
+			if (!$child instanceof Inputfield) {
+				continue;
+			}
+			if ($this->isWireTabWrapper($child)) {
+				if ((bool) $child->get('confirmDelete') || $this->findDataAttribute($child->getAttributes(), 'confirm-delete') === '1') {
+					return true;
+				}
+				continue;
+			}
+			if ($child instanceof MarkupReactTab) {
+				if ((bool) $child->get('confirmDelete') || $this->findDataAttribute($child->getAttributes(), 'confirm-delete') === '1') {
+					return true;
+				}
+				foreach ($child->children() as $pane) {
+					if ($pane instanceof MarkupReactTab && ((bool) $pane->get('confirmDelete') || $this->findDataAttribute($pane->getAttributes(), 'confirm-delete') === '1')) {
+						return true;
+					}
+				}
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -3962,5 +5363,18 @@ class FormSchemaSerializer extends Wire
 		}
 
 		return $restored;
+	}
+
+	private function normalizeTabsLayout(mixed $raw): ?string
+	{
+		if (!is_string($raw) && !is_numeric($raw)) {
+			return null;
+		}
+		$normalized = strtolower(trim((string) $raw));
+		if ($normalized === 'vertical' || $normalized === 'horizontal') {
+			return $normalized;
+		}
+
+		return null;
 	}
 }
