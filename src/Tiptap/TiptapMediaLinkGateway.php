@@ -1111,10 +1111,17 @@ final class TiptapMediaLinkGateway extends Wire
 
 		$mediaToken = trim((string) ($payload['mediaToken'] ?? ''));
 		if ($mediaToken !== '') {
-			$resolved = React::instance($this)->media()->resolveVerifiedContext($mediaToken, $user, false);
+			$mediaGateway = React::instance($this)->media();
+			$resolved = $mediaGateway->resolveVerifiedContext($mediaToken, $user, false);
 			if (!empty($resolved['ok']) && isset($resolved['pagefiles']) && $resolved['pagefiles'] instanceof Pagefiles) {
 				$found = self::findPageimageInCollection($resolved['pagefiles'], $rawSrc);
 				if ($found instanceof Pageimage) {
+					$hostEnv = is_array($resolved['envelope'] ?? null) ? $resolved['envelope'] : [];
+					$canEditImages = empty($envelope['readOnly'])
+						&& !(bool) $this->wire()->config->demo
+						&& empty($hostEnv['readOnly'])
+						&& !empty($mediaGateway->resolveVerifiedContext($mediaToken, $user, true)['ok']);
+
 					return [
 						'ok' => true,
 						'found' => true,
@@ -1125,7 +1132,7 @@ final class TiptapMediaLinkGateway extends Wire
 						'originalWidth' => self::readImgWidth($found),
 						'originalHeight' => self::readImgHeight($found),
 						'description' => (string) ($found->description ?? ''),
-						'canEditImages' => true,
+						'canEditImages' => $canEditImages,
 					];
 				}
 			}
@@ -1196,9 +1203,17 @@ final class TiptapMediaLinkGateway extends Wire
 		$mediaToken = trim((string) ($payload['mediaToken'] ?? ''));
 
 		if ($mediaToken !== '') {
-			$resolved = React::instance($this)->media()->resolveVerifiedContext($mediaToken, $user, false);
+			$resolved = React::instance($this)->media()->resolveVerifiedContext($mediaToken, $user, true);
 			if (empty($resolved['ok'])) {
 				return $resolved;
+			}
+			$hostEnv = is_array($resolved['envelope'] ?? null) ? $resolved['envelope'] : [];
+			if (!empty($hostEnv['readOnly']) || !empty($envelope['readOnly']) || (bool) $this->wire()->config->demo) {
+				return [
+					'ok' => false,
+					'status' => 403,
+					'error' => $this->_('You do not have permission to resize images here.'),
+				];
 			}
 			/** @var Pagefiles $pfCollection */
 			$pfCollection = $resolved['pagefiles'];
@@ -1287,7 +1302,7 @@ final class TiptapMediaLinkGateway extends Wire
 			$origH = self::readImgHeight($workingImage);
 			if ($cw > 0 && $ch > 0 && $origW > 0 && $origH > 0) {
 				$cx = min($cx, max(0, $origW - 1));
-				$cy = min($cy, max(0, $origH - $cy > 0 ? $origH - 1 : 0));
+				$cy = min($cy, max(0, $origH - 1));
 				$cw = min($cw, $origW - $cx);
 				$ch = min($ch, $origH - $cy);
 				if ($cw > 0 && $ch > 0 && ($cx > 0 || $cy > 0 || $cw < $origW || $ch < $origH)) {
@@ -1656,6 +1671,8 @@ final class TiptapMediaLinkGateway extends Wire
 
 					$isValid = $sanitizer->validateFile($realCandidate, ['pagefile' => null]);
 					if ($isValid === false) {
+						self::rollbackAddedImages($existingCollection, $addedImages);
+
 						return [
 							'ok' => false,
 							'status' => 422,
@@ -1665,6 +1682,8 @@ final class TiptapMediaLinkGateway extends Wire
 
 					$dims = @getimagesize($realCandidate);
 					if (!is_array($dims) || $dims[0] <= 0 || $dims[1] <= 0) {
+						self::rollbackAddedImages($existingCollection, $addedImages);
+
 						return [
 							'ok' => false,
 							'status' => 422,
@@ -1676,6 +1695,8 @@ final class TiptapMediaLinkGateway extends Wire
 						|| $dims[1] > MediaGateway::MAX_RASTER_AXIS
 						|| ((int) $dims[0] * (int) $dims[1]) > MediaGateway::MAX_RASTER_PIXELS
 					) {
+						self::rollbackAddedImages($existingCollection, $addedImages);
+
 						return [
 							'ok' => false,
 							'status' => 422,
@@ -1714,14 +1735,7 @@ final class TiptapMediaLinkGateway extends Wire
 					try {
 						$page->save($imageField->name);
 					} catch (\Throwable $e) {
-						foreach ($addedImages as $rollbackImg) {
-							$rollbackImg->removeVariations();
-							$rollbackPath = $rollbackImg->filename();
-							$existingCollection->remove($rollbackImg);
-							if ($rollbackPath !== '' && is_file($rollbackPath)) {
-								@unlink($rollbackPath);
-							}
-						}
+						self::rollbackAddedImages($existingCollection, $addedImages);
 						$this->wire()->log->error('React Tiptap upload save failed: ' . $e->getMessage());
 
 						return [
@@ -2266,5 +2280,22 @@ final class TiptapMediaLinkGateway extends Wire
 		}
 
 		return [];
+	}
+
+	/**
+	 * Remove any already-copied `Pageimage` files and generated variations from disk and the page field collection.
+	 *
+	 * @param list<Pageimage> $addedImages
+	 */
+	private static function rollbackAddedImages(Pagefiles $collection, array $addedImages): void
+	{
+		foreach ($addedImages as $rollbackImg) {
+			$rollbackImg->removeVariations();
+			$rollbackPath = $rollbackImg->filename();
+			$collection->remove($rollbackImg);
+			if ($rollbackPath !== '' && is_file($rollbackPath)) {
+				unlink($rollbackPath);
+			}
+		}
 	}
 }

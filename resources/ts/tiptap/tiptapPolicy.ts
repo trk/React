@@ -139,9 +139,16 @@ export function sanitizeExtraCss(css?: string | null): string {
 		return String.fromCodePoint(code);
 	});
 	clean = clean.replace(/\\([^0-9a-fA-F\r\n])/g, '$1');
-	clean = clean.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, '');
-	clean = clean.replace(/<\s*\/?\s*(?:style|script)\b[^>]*>?/gi, '');
-	clean = clean.replace(/<\/|<style|<script/gi, '');
+	let prev = '';
+	do {
+		prev = clean;
+		clean = clean.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, '');
+		clean = clean.replace(/<\s*\/+\s*(?:style|script)\b[^>]*>?/gi, '');
+		clean = clean.replace(/<\s*\/?\s*(?:style|script)\b[^>]*>?/gi, '');
+		clean = clean.replace(/<\s*\/+/gi, '');
+		clean = clean.replace(/<\/|<style|<script/gi, '');
+	} while (clean !== prev);
+	clean = clean.replace(/</g, '');
 	clean = clean.replace(/@import\b[^;]*(?:;|$)/gi, '');
 	clean = clean.replace(/expression\s*\([^;{}]*\)/gi, 'none');
 	clean = clean.replace(/expression\s*\(/gi, 'blocked(');

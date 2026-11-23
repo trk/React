@@ -339,6 +339,7 @@ final class PageResourceAdapter extends AbstractRelationResource
 			}
 		}
 
+		$clauses[] = 'limit=500';
 		$found = $pages->find(implode(', ', $clauses));
 		/** @var array<string, Page> $byId */
 		$byId = [];
@@ -683,7 +684,15 @@ final class PageResourceAdapter extends AbstractRelationResource
 		$adminRootId = (int) ($this->wire()->config->adminRootPageID ?: 2);
 		$trashPageId = (int) ($this->wire()->config->trashPageID ?: 7);
 
-		$templateNames = $this->resolveTemplateNames($config);
+		$signedTemplates = $this->resolveTemplateNames($config);
+		$templateNames = $signedTemplates;
+		$parentId = (int) ($config['parentId'] ?? 0);
+		[$signedSelector] = PagesDataProvider::stripTopLevelPaginationClauses((string) ($config['selector'] ?? ''));
+		$targetsAdmin = $parentId === $adminRootId
+			|| in_array('admin', $signedTemplates, true)
+			|| str_contains($signedSelector, 'has_parent=' . $adminRootId)
+			|| str_contains($signedSelector, 'include=all');
+
 		$dependsParam = trim((string) ($config['dependsParam'] ?? ''));
 		$dependsVal = $params['dependsValue'] ?? null;
 
@@ -691,6 +700,12 @@ final class PageResourceAdapter extends AbstractRelationResource
 			$depStr = is_scalar($dependsVal) ? trim((string) $dependsVal) : '';
 			if ($depStr !== '') {
 				if ($dependsParam === 'template') {
+					if (
+						($signedTemplates !== [] && !in_array($depStr, $signedTemplates, true))
+						|| (strtolower($depStr) === 'admin' && !$targetsAdmin)
+					) {
+						return ['id=0'];
+					}
 					$templateNames = [$depStr];
 				} elseif ($dependsParam === 'parent' || $dependsParam === 'parent_id') {
 					if (ctype_digit($depStr) && (int) $depStr > 0) {
@@ -707,20 +722,13 @@ final class PageResourceAdapter extends AbstractRelationResource
 			$clauses[] = 'template=' . implode('|', $safeTpls);
 		}
 
-		$parentId = (int) ($config['parentId'] ?? 0);
 		if ($parentId > 0) {
 			$clauses[] = "has_parent={$parentId}";
 		}
 
-		[$signedSelector] = PagesDataProvider::stripTopLevelPaginationClauses((string) ($config['selector'] ?? ''));
 		if ($signedSelector !== '') {
 			$clauses[] = $signedSelector;
 		}
-
-		$targetsAdmin = $parentId === $adminRootId
-			|| in_array('admin', $templateNames, true)
-			|| str_contains($signedSelector, 'has_parent=' . $adminRootId)
-			|| str_contains($signedSelector, 'include=all');
 
 		if (!$targetsAdmin) {
 			$clauses[] = "has_parent!={$adminRootId}";

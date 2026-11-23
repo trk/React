@@ -467,10 +467,16 @@ final class TiptapContentPolicy
 		// Strip remaining CSS backslash escapes inside identifiers (`e\xpression`)
 		$clean = (string) preg_replace('/\\\\([^0-9a-fA-F\r\n])/', '$1', $clean);
 
-		// Strip embedded `<script>...</script>` / `<style>...</style>` elements with their bodies first, then any unclosed fragments
-		$clean = (string) preg_replace('~<(script|style)\b[^>]*>.*?</\1>~is', '', $clean);
-		$clean = (string) preg_replace('~<\s*/?\s*(?:style|script)\b[^>]*>?~is', '', $clean);
-		$clean = str_replace(['</', '<style', '<script', '<STYLE', '<SCRIPT'], '', $clean);
+		// Iteratively strip embedded `<script>` / `<style>` elements and any remaining tag openers so obfuscation cannot reassemble tags
+		do {
+			$prev = $clean;
+			$clean = (string) preg_replace('~<(script|style)\b[^>]*>.*?</\1>~is', '', $clean);
+			$clean = (string) preg_replace('~<\s*/+\s*(?:style|script)\b[^>]*>?~is', '', $clean);
+			$clean = (string) preg_replace('~<\s*/?\s*(?:style|script)\b[^>]*>?~is', '', $clean);
+			$clean = (string) preg_replace('~<\s*/+~i', '', $clean);
+			$clean = str_ireplace(['</', '<style', '<script'], '', $clean);
+		} while ($clean !== $prev);
+		$clean = str_replace('<', '', $clean);
 		$clean = (string) preg_replace('/@import\b[^;]*(?:;|$)/i', '', $clean);
 		$clean = (string) preg_replace('/expression\s*\([^;{}]*\)/i', 'none', $clean);
 		$clean = (string) preg_replace('/expression\s*\(/i', 'blocked(', $clean);
@@ -691,6 +697,12 @@ final class TiptapContentPolicy
 					continue;
 				}
 
+				$styleAlignTags = [
+					'p' => true, 'div' => true, 'h1' => true, 'h2' => true, 'h3' => true, 'h4' => true,
+					'h5' => true, 'h6' => true, 'blockquote' => true, 'pre' => true, 'li' => true,
+					'td' => true, 'th' => true, 'figure' => true, 'figcaption' => true, 'table' => true,
+				];
+				/** @var list<\DOMAttr> $attrsToRemove */
 				$attrsToRemove = [];
 				$attrsToUpdate = [];
 				$resolvedTarget = '';
@@ -700,17 +712,6 @@ final class TiptapContentPolicy
 						continue;
 					}
 					$attrName = strtolower($attr->name);
-					if (
-						str_starts_with($attrName, 'on')
-						|| $attrName === 'srcdoc'
-						|| $attrName === 'xmlns'
-						|| $attrName === 'action'
-						|| $attrName === 'formaction'
-						|| $attrName === 'xlink:href'
-					) {
-						$attrsToRemove[] = $attr->name;
-						continue;
-					}
 
 					if ($attrName === 'id' || $attrName === 'name') {
 						$allowAnchorAttr = ($attrName === 'id' && ($tag === 'a' || preg_match('/^h[1-6]$/', $tag) === 1))
@@ -721,7 +722,7 @@ final class TiptapContentPolicy
 							|| preg_match('/^[A-Za-z][A-Za-z0-9_.:-]{0,127}$/', $cleanAnchor) !== 1
 							|| str_starts_with(strtolower($cleanAnchor), '__rw_')
 						) {
-							$attrsToRemove[] = $attr->name;
+							$attrsToRemove[] = $attr;
 						} else {
 							$attrsToUpdate[$attr->name] = $cleanAnchor;
 						}
@@ -741,39 +742,109 @@ final class TiptapContentPolicy
 							}
 						}
 						if ($cleanClasses === []) {
-							$attrsToRemove[] = $attr->name;
+							$attrsToRemove[] = $attr;
 						} else {
 							$attrsToUpdate[$attr->name] = implode(' ', $cleanClasses);
 						}
 						continue;
 					}
 
+					if ($attrName === 'title') {
+						$cleanTitle = trim((string) preg_replace('/[\x00-\x1F\x7F]+/', '', $attr->value));
+						if ($cleanTitle === '') {
+							$attrsToRemove[] = $attr;
+						} else {
+							$attrsToUpdate[$attr->name] = $cleanTitle;
+						}
+						continue;
+					}
+
+					if ($attrName === 'dir') {
+						$cleanDir = strtolower(trim($attr->value));
+						if (in_array($cleanDir, ['ltr', 'rtl', 'auto'], true)) {
+							$attrsToUpdate[$attr->name] = $cleanDir;
+						} else {
+							$attrsToRemove[] = $attr;
+						}
+						continue;
+					}
+
+					if ($attrName === 'lang') {
+						$cleanLang = trim($attr->value);
+						if (preg_match('/^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/', $cleanLang) === 1) {
+							$attrsToUpdate[$attr->name] = $cleanLang;
+						} else {
+							$attrsToRemove[] = $attr;
+						}
+						continue;
+					}
+
 					if ($attrName === 'style') {
 						$rawStyle = trim($attr->value);
-						if (preg_match('/^text-align\s*:\s*(left|center|right|justify)\s*;?$/i', $rawStyle, $alignMatch) === 1) {
+						if (
+							isset($styleAlignTags[$tag])
+							&& preg_match('/^text-align\s*:\s*(left|center|right|justify)\s*;?$/i', $rawStyle, $alignMatch) === 1
+						) {
 							$attrsToUpdate[$attr->name] = 'text-align: ' . strtolower($alignMatch[1]);
 						} else {
-							$attrsToRemove[] = $attr->name;
+							$attrsToRemove[] = $attr;
 						}
 						continue;
 					}
 
 					if ($attrName === 'src') {
+						if ($tag !== 'img') {
+							$attrsToRemove[] = $attr;
+							continue;
+						}
 						$safeSrc = MiniBlockHtmlSanitizer::sanitizeImageUrl($attr->value);
 						if ($safeSrc === '') {
-							$attrsToRemove[] = $attr->name;
+							$attrsToRemove[] = $attr;
 						} else {
 							$attrsToUpdate[$attr->name] = $safeSrc;
 						}
 						continue;
 					}
 
+					if ($attrName === 'alt') {
+						if ($tag !== 'img') {
+							$attrsToRemove[] = $attr;
+						} else {
+							$attrsToUpdate[$attr->name] = (string) preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]+/', '', $attr->value);
+						}
+						continue;
+					}
+
+					if ($attrName === 'loading') {
+						$cleanLoading = strtolower(trim($attr->value));
+						if ($tag === 'img' && in_array($cleanLoading, ['lazy', 'eager'], true)) {
+							$attrsToUpdate[$attr->name] = $cleanLoading;
+						} else {
+							$attrsToRemove[] = $attr;
+						}
+						continue;
+					}
+
+					if ($attrName === 'decoding') {
+						$cleanDecoding = strtolower(trim($attr->value));
+						if ($tag === 'img' && in_array($cleanDecoding, ['async', 'sync', 'auto'], true)) {
+							$attrsToUpdate[$attr->name] = $cleanDecoding;
+						} else {
+							$attrsToRemove[] = $attr;
+						}
+						continue;
+					}
+
 					if ($attrName === 'href') {
+						if ($tag !== 'a') {
+							$attrsToRemove[] = $attr;
+							continue;
+						}
 						$decodedUri = html_entity_decode($attr->value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 						$strippedUri = (string) preg_replace('/[\x00-\x1F\x7F]+/', '', $decodedUri);
 						$safeUri = UrlSanitizer::sanitizeHref($strippedUri);
 						if ($safeUri === '') {
-							$attrsToRemove[] = $attr->name;
+							$attrsToRemove[] = $attr;
 						} else {
 							$attrsToUpdate[$attr->name] = $safeUri;
 						}
@@ -783,7 +854,7 @@ final class TiptapContentPolicy
 					if ($attrName === 'target') {
 						$cleanTarget = trim($attr->value);
 						if ($tag !== 'a' || preg_match('/^_[A-Za-z0-9_-]{1,32}$/', $cleanTarget) !== 1) {
-							$attrsToRemove[] = $attr->name;
+							$attrsToRemove[] = $attr;
 						} else {
 							$resolvedTarget = $cleanTarget;
 							$attrsToUpdate[$attr->name] = $cleanTarget;
@@ -793,7 +864,7 @@ final class TiptapContentPolicy
 
 					if ($attrName === 'rel') {
 						if ($tag !== 'a') {
-							$attrsToRemove[] = $attr->name;
+							$attrsToRemove[] = $attr;
 							continue;
 						}
 						foreach (preg_split('/\s+/', strtolower(trim($attr->value))) ?: [] as $relToken) {
@@ -802,7 +873,7 @@ final class TiptapContentPolicy
 							}
 						}
 						if ($resolvedRelTokens === []) {
-							$attrsToRemove[] = $attr->name;
+							$attrsToRemove[] = $attr;
 						}
 						continue;
 					}
@@ -812,19 +883,43 @@ final class TiptapContentPolicy
 						if (in_array($tag, ['img', 'table', 'td', 'th', 'col'], true) && preg_match('/^[1-9][0-9]{0,4}%?$/', $cleanDim) === 1) {
 							$attrsToUpdate[$attr->name] = $cleanDim;
 						} else {
-							$attrsToRemove[] = $attr->name;
+							$attrsToRemove[] = $attr;
 						}
 						continue;
 					}
 
-					if (str_starts_with($attrName, 'data-')) {
+					if ($attrName === 'colspan' || $attrName === 'rowspan') {
+						$cleanSpan = trim($attr->value);
+						if (in_array($tag, ['td', 'th'], true) && preg_match('/^[1-9][0-9]{0,2}$/', $cleanSpan) === 1) {
+							$attrsToUpdate[$attr->name] = $cleanSpan;
+						} else {
+							$attrsToRemove[] = $attr;
+						}
+						continue;
+					}
+
+					if ($attrName === 'scope') {
+						$cleanScope = strtolower(trim($attr->value));
+						if ($tag === 'th' && in_array($cleanScope, ['row', 'col', 'rowgroup', 'colgroup'], true)) {
+							$attrsToUpdate[$attr->name] = $cleanScope;
+						} else {
+							$attrsToRemove[] = $attr;
+						}
+						continue;
+					}
+
+					if ($attrName === 'data-type' || $attrName === 'data-checked') {
 						$allowedTaskAttr = ($tag === 'ul' && $attrName === 'data-type' && $attr->value === 'taskList')
 							|| ($tag === 'li' && $attrName === 'data-type' && $attr->value === 'taskItem')
 							|| ($tag === 'li' && $attrName === 'data-checked' && ($attr->value === 'true' || $attr->value === 'false'));
 						if (!$allowedTaskAttr) {
-							$attrsToRemove[] = $attr->name;
+							$attrsToRemove[] = $attr;
 						}
+						continue;
 					}
+
+					// Strip every unrecognized or unallowlisted attribute by default
+					$attrsToRemove[] = $attr;
 				}
 
 				if ($tag === 'a') {
@@ -840,8 +935,8 @@ final class TiptapContentPolicy
 					}
 				}
 
-				foreach ($attrsToRemove as $rmName) {
-					$el->removeAttribute($rmName);
+				foreach ($attrsToRemove as $rmAttr) {
+					$el->removeAttributeNode($rmAttr);
 				}
 				foreach ($attrsToUpdate as $upName => $upVal) {
 					$el->setAttribute($upName, $upVal);

@@ -127,6 +127,9 @@ final class UserResourceAdapter extends AbstractRelationResource
 		$names = [];
 
 		foreach ($values as $rawVal) {
+			if (count($orderedRefs) >= 500) {
+				break;
+			}
 			$strVal = trim((string) $rawVal);
 			if ($strVal === '' || $strVal === '0') {
 				continue;
@@ -186,6 +189,7 @@ final class UserResourceAdapter extends AbstractRelationResource
 			}
 		}
 
+		$clauses[] = 'limit=500';
 		$found = $users->find(implode(', ', $clauses));
 		/** @var array<string, User> $byId */
 		$byId = [];
@@ -246,9 +250,16 @@ final class UserResourceAdapter extends AbstractRelationResource
 		}
 
 		$roles = $this->normalizeStringList($config['roles'] ?? []);
+		$dependsParam = trim((string) ($config['dependsParam'] ?? ''));
 		$depVal = $params['dependsValue'] ?? null;
-		if (is_scalar($depVal) && trim((string) $depVal) !== '' && ($config['dependsParam'] ?? 'role') === 'role') {
-			$roles = [trim((string) $depVal)];
+		if (is_scalar($depVal) && trim((string) $depVal) !== '' && $dependsParam === 'role') {
+			$requestedRole = trim((string) $depVal);
+			if ($roles !== [] && !in_array($requestedRole, $roles, true)) {
+				$clauses[] = 'id=0';
+
+				return $clauses;
+			}
+			$roles = [$requestedRole];
 		}
 
 		if ($roles !== []) {

@@ -1387,10 +1387,14 @@ final class MediaGateway extends Wire
 				];
 			}
 		} catch (\Throwable $e) {
+			$this->wire()->log->error('React media transform failed: ' . $e->getMessage());
+
 			return [
 				'ok' => false,
 				'status' => 500,
-				'error' => $e->getMessage(),
+				'error' => (bool) $this->wire()->config->debug
+					? $e->getMessage()
+					: $this->_('Image transformation failed.'),
 			];
 		}
 
