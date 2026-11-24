@@ -637,6 +637,9 @@ final class TiptapMediaLinkGateway extends Wire
 				return true;
 			}
 			if ($field->type instanceof FieldtypeRepeater) {
+				if (!$page->viewable($field, false)) {
+					continue;
+				}
 				$repVal = $page->get($field->name);
 				if ($repVal instanceof Page) {
 					$repVal = [$repVal];
@@ -1540,8 +1543,15 @@ final class TiptapMediaLinkGateway extends Wire
 			$allowedExts = self::UPLOAD_IMAGE_EXTENSIONS;
 			if ($fieldInputfield instanceof InputfieldFile) {
 				$fieldExts = React::instance($this)->media()->resolveAllowedExtensions($fieldInputfield, [], true);
-				$intersected = array_values(array_intersect($fieldExts, self::UPLOAD_IMAGE_EXTENSIONS));
-				if ($intersected !== []) {
+				if ($fieldExts !== []) {
+					$intersected = array_values(array_intersect($fieldExts, self::UPLOAD_IMAGE_EXTENSIONS));
+					if ($intersected === []) {
+						return [
+							'ok' => false,
+							'status' => 422,
+							'error' => $this->_('No compatible raster image extensions are enabled on this field.'),
+						];
+					}
 					$allowedExts = $intersected;
 				}
 			}
@@ -1806,6 +1816,9 @@ final class TiptapMediaLinkGateway extends Wire
 					$items[] = $entry;
 				}
 			} elseif ($field->type instanceof FieldtypeRepeater) {
+				if (!$page->viewable($field, false)) {
+					continue;
+				}
 				$repVal = $page->get($field->name);
 				if ($repVal instanceof Page) {
 					$repVal = [$repVal];
@@ -1846,6 +1859,9 @@ final class TiptapMediaLinkGateway extends Wire
 				continue;
 			}
 			if ($field->type instanceof FieldtypeRepeater) {
+				if (!$page->viewable($field, false)) {
+					continue;
+				}
 				$repVal = $page->get($field->name);
 				if ($repVal instanceof Page) {
 					$repVal = [$repVal];
@@ -1914,6 +1930,9 @@ final class TiptapMediaLinkGateway extends Wire
 					return $matched;
 				}
 			} elseif ($ft instanceof FieldtypeRepeater) {
+				if (!$page->viewable($field, false)) {
+					continue;
+				}
 				$repVal = $page->get($field->name);
 				if ($repVal instanceof Page) {
 					$repVal = [$repVal];

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Totoglu\React\Provider;
 
 use Closure;
+use ProcessWire\Field;
 use ProcessWire\FieldtypeCheckbox;
 use ProcessWire\FieldtypeDatetime;
 use ProcessWire\FieldtypeLanguageInterface;
@@ -29,6 +30,7 @@ use Totoglu\React\Contract\ReactDataProviderInterface;
 use Totoglu\React\Contract\ReactQuickEditProvider;
 use Totoglu\React\Contract\ReactRecordActionsProvider;
 use Totoglu\React\Contract\ReactReorderProvider;
+use Totoglu\React\Data\ReactColumn;
 use Totoglu\React\Data\ReactPageResult;
 use Totoglu\React\Data\ReactRecord;
 use Totoglu\React\Icon\IconManager;
@@ -184,32 +186,10 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 			$this->title = (string) $options['title'];
 		}
 		if (is_array($options['columns'] ?? null) && $options['columns'] !== []) {
-			$normalizedCols = [];
-			$schemas = [];
-			foreach ($options['columns'] as $k => $v) {
-				if (is_int($k)) {
-					$colKey = is_array($v) ? (string) ($v['key'] ?? $v['name'] ?? '') : (string) $v;
-					if ($colKey !== '') {
-						$label = is_array($v)
-							? (string) ($v['label'] ?? ucfirst(str_replace('_', ' ', $colKey)))
-							: ucfirst(str_replace('_', ' ', $colKey));
-						$normalizedCols[$colKey] = $label;
-						if (is_array($v)) {
-							$schemas[$colKey] = array_replace($v, ['label' => $label]);
-						}
-					}
-				} elseif (is_array($v)) {
-					$colKey = (string) $k;
-					$label = (string) ($v['label'] ?? ucfirst(str_replace('_', ' ', $colKey)));
-					$normalizedCols[$colKey] = $label;
-					$schemas[$colKey] = array_replace($v, ['label' => $label]);
-				} else {
-					$normalizedCols[(string) $k] = (string) $v;
-				}
-			}
-			$this->columns = $normalizedCols;
-			if ($schemas !== []) {
-				$this->columnSchemas = array_replace($this->columnSchemas, $schemas);
+			$split = ReactColumn::splitColumnsAndSchemas($options['columns']);
+			$this->columns = $split['columns'];
+			if ($split['schemas'] !== []) {
+				$this->columnSchemas = array_replace($this->columnSchemas, $split['schemas']);
 			}
 		}
 		if (is_array($options['columnSchemas'] ?? null)) {
@@ -517,6 +497,34 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 	}
 
 	/**
+	 * Check whether `$fieldName` is viewable on `$page` for the active user, enforcing `$field->useRoles` RBAC.
+	 */
+	private function isFieldViewableOnPage(Page $page, string $fieldName, bool $isSuperuser): bool
+	{
+		if ($isSuperuser) {
+			return true;
+		}
+		$cleanName = trim($fieldName);
+		if ($cleanName === '') {
+			return false;
+		}
+		$field = $this->wire()->fields->get($cleanName);
+		if (!$field instanceof Field) {
+			return true;
+		}
+		$template = $page->template;
+		$contextField = $template instanceof Template && $template->fieldgroup !== null
+			? $template->fieldgroup->getFieldContext($field)
+			: null;
+		$effectiveField = $contextField instanceof Field ? $contextField : $field;
+		if (!(bool) $effectiveField->useRoles) {
+			return true;
+		}
+
+		return (bool) $page->viewable($field, false);
+	}
+
+	/**
 	 * Resolve allowlisted non-reserved queryable field keys permitted inside `criteria['fieldFilters']`.
 	 *
 	 * @return array<string, true>
@@ -543,6 +551,8 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 		}
 
 		$fields = $this->wire()->fields;
+		$user = $this->wire()->user;
+		$isSuperuser = (bool) $user->isSuperuser();
 		/** @var array<string, true> $allowed */
 		$allowed = [];
 		foreach ($candidates as $candidate) {
@@ -554,10 +564,14 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 			if (isset(self::RESERVED_FILTER_KEYS[$lower])) {
 				continue;
 			}
+			$fieldObj = $fields->get($key);
 			if (
 				!in_array($lower, ['title', 'name', 'created', 'modified', 'published'], true)
-				&& $fields->get($key) === null
+				&& !$fieldObj instanceof Field
 			) {
+				continue;
+			}
+			if (!$isSuperuser && $fieldObj instanceof Field && (bool) $fieldObj->useRoles && !$fieldObj->viewable(null, $user)) {
 				continue;
 			}
 			$allowed[$key] = true;
@@ -618,6 +632,8 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 		} elseif ($statusFilter === 'hidden' && $canViewUnpublished) {
 			$parts[] = 'include=hidden';
 			$parts[] = 'status&' . Page::statusHidden;
+		} elseif ($statusFilter === 'published') {
+			$parts[] = 'status<' . Page::statusHidden;
 		} else {
 			if ($user->isSuperuser()) {
 				$parts[] = 'include=all';
@@ -779,6 +795,10 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 			/** @var array<string, array<string, mixed>> $cells */
 			$cells = [];
 			foreach (array_keys($this->columns) as $colKey) {
+				if (!$this->isFieldViewableOnPage($p, (string) $colKey, $isSuperuser)) {
+					$values[$colKey] = '';
+					continue;
+				}
 				$formatter = $this->formatters[$colKey] ?? null;
 				if ($formatter !== null) {
 					$arity = $this->formatterArities[$colKey] ??= (new \ReflectionFunction($formatter))->getNumberOfParameters();
@@ -850,7 +870,7 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 
 			$recordIcon = '';
 			$iconFieldOpt = trim((string) ($this->options['iconField'] ?? ''));
-			if ($iconFieldOpt !== '') {
+			if ($iconFieldOpt !== '' && $this->isFieldViewableOnPage($p, $iconFieldOpt, $isSuperuser)) {
 				$rawIconField = $p->get($iconFieldOpt);
 				if ($rawIconField instanceof ReactIconValue) {
 					if (!$rawIconField->isEmpty()) {
@@ -869,16 +889,20 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 
 			$recordThumb = null;
 			$thumbFieldOpt = trim((string) ($this->options['thumbField'] ?? ''));
-			if ($thumbFieldOpt !== '') {
+			if ($thumbFieldOpt !== '' && $this->isFieldViewableOnPage($p, $thumbFieldOpt, $isSuperuser)) {
 				$recordThumb = self::extractPageThumb($p->getUnformatted($thumbFieldOpt), (string) ($p->title ?: $p->name));
 			}
 
 			$recordSubtitle = '';
 			$subtitleFieldOpt = trim((string) ($this->options['subtitleField'] ?? ''));
 			if ($subtitleFieldOpt !== '') {
-				$subVal = $subtitleFieldOpt === 'path' || $subtitleFieldOpt === 'url'
-					? $p->url
-					: $p->get($subtitleFieldOpt);
+				if ($subtitleFieldOpt === 'path' || $subtitleFieldOpt === 'url') {
+					$subVal = $p->url;
+				} elseif ($this->isFieldViewableOnPage($p, $subtitleFieldOpt, $isSuperuser)) {
+					$subVal = $p->get($subtitleFieldOpt);
+				} else {
+					$subVal = '';
+				}
 				if (is_scalar($subVal)) {
 					$recordSubtitle = trim((string) $subVal);
 				}
@@ -891,9 +915,13 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 				? UrlSanitizer::sanitizeHref((string) ($this->editUrlBuilder)($p), true)
 				: "{$adminUrl}/page/edit/?id={$p->id}";
 
+			$recordTitle = $this->isFieldViewableOnPage($p, 'title', $isSuperuser)
+				? (string) ($p->title ?: $p->name)
+				: (string) $p->name;
+
 			$records[] = new ReactRecord(
 				id: (string) $p->id,
-				title: (string) ($p->title ?: $p->name),
+				title: $recordTitle,
 				name: (string) $p->name,
 				status: $bitStatus,
 				statusVariant: $variant,

@@ -56,7 +56,7 @@ class InputfieldTiptap extends InputfieldTextarea implements ConfigurableModule,
 	use InteractWithInertia;
 	use InteractWithReactTranslations;
 
-	public const string tiptapVersion = '3.34.0';
+	public const string tiptapVersion = '3.35.0';
 
 	public const bool INERTIA_IS_MARKUP_FIELD = true;
 

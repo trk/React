@@ -166,9 +166,9 @@ final class MiniBlockHtmlSanitizer
 		$result = $html;
 		foreach ($replacements as $token => $blockHtml) {
 			$quoted = preg_quote($token, '~');
-			$replacedParagraph = preg_replace(
+			$replacedParagraph = preg_replace_callback(
 				'~<p(?:\s[^>]*)?>\s*' . $quoted . '\s*</p>~iu',
-				$blockHtml,
+				static fn(): string => $blockHtml,
 				$result,
 				1,
 				$count,
