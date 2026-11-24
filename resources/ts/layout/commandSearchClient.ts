@@ -59,8 +59,8 @@ export function normalizeRemoteCommandItems(
 			continue;
 		}
 
-		const isInertia = candidate.isInertia !== false;
-		const resolvedHref = isInertia
+		const wantsInertiaTarget = candidate.isInertia !== false;
+		const resolvedHref = wantsInertiaTarget
 			? withWorkspaceShellUrl(
 					safeHref,
 					options.showGlobalWorkspaceBar,
@@ -93,7 +93,7 @@ export function normalizeRemoteCommandItems(
 			group,
 			icon,
 			href: resolvedHref,
-			isInertia,
+			isInertia: options.showGlobalWorkspaceBar && wantsInertiaTarget,
 		});
 	}
 

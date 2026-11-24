@@ -42,11 +42,12 @@ export function isWorkspaceShellActive(): boolean {
 
 export function withWorkspaceShellUrl(
 	rawUrl: string,
-	forceWorkspace = false,
+	forceWorkspace?: boolean,
 	explicitAdminRoot?: string,
 	explicitLauncherUrl?: string
 ): string {
-	if (!rawUrl || (!forceWorkspace && !isWorkspaceShellActive())) {
+	const wantWorkspace = forceWorkspace === undefined ? isWorkspaceShellActive() : forceWorkspace;
+	if (!rawUrl || (!wantWorkspace && forceWorkspace !== false)) {
 		return rawUrl;
 	}
 
@@ -63,16 +64,7 @@ export function withWorkspaceShellUrl(
 		const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
 		const baseHref = typeof window !== 'undefined' ? window.location.href : `${origin}/`;
 		const parsed = new URL(trimmed, baseHref);
-		if (typeof window !== 'undefined' && parsed.origin !== window.location.origin) {
-			return rawUrl;
-		}
-
-		if (
-			parsed.searchParams.has('ws') ||
-			parsed.searchParams.get('modal') === '1' ||
-			parsed.searchParams.has('export') ||
-			parsed.searchParams.has('download_token')
-		) {
+		if (parsed.origin !== origin) {
 			return rawUrl;
 		}
 
@@ -99,12 +91,30 @@ export function withWorkspaceShellUrl(
 			? launcherAttr.replace(/\/+$/, '') + '/'
 			: `${adminRoot}workspace/`;
 
+		const isEligibleAdminModulePath =
+			normalizedPath.startsWith(adminRoot) &&
+			normalizedPath !== adminRoot &&
+			normalizedPath !== launcherPath &&
+			!normalizedPath.startsWith(`${adminRoot}login/`) &&
+			!normalizedPath.includes('/_react/');
+
+		if (!wantWorkspace) {
+			if (!parsed.searchParams.has('ws') || !isEligibleAdminModulePath) {
+				return rawUrl;
+			}
+			parsed.searchParams.delete('ws');
+			if (/^https?:\/\//i.test(trimmed)) {
+				return parsed.toString();
+			}
+			return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+		}
+
 		if (
-			!normalizedPath.startsWith(adminRoot) ||
-			normalizedPath === adminRoot ||
-			normalizedPath === launcherPath ||
-			normalizedPath.startsWith(`${adminRoot}login/`) ||
-			normalizedPath.includes('/_react/')
+			parsed.searchParams.has('ws') ||
+			parsed.searchParams.get('modal') === '1' ||
+			parsed.searchParams.has('export') ||
+			parsed.searchParams.has('download_token') ||
+			!isEligibleAdminModulePath
 		) {
 			return rawUrl;
 		}
@@ -125,14 +135,28 @@ export function setInertiaAdapter(adapter: InertiaAdapterSubset): void {
 		routerShellHookInstalled = true;
 		try {
 			adapter.router.on('before', (event: { detail?: { visit?: { headers?: Record<string, string> } } }) => {
-				if (!isWorkspaceShellActive()) {
+				const visit = event?.detail?.visit;
+				if (!visit || typeof visit !== 'object') {
 					return;
 				}
-				const visit = event?.detail?.visit;
-				if (visit && typeof visit === 'object') {
+				const existingHeaders = visit.headers || {};
+				if ('X-React-Shell' in existingHeaders || 'x-react-shell' in existingHeaders) {
+					return;
+				}
+				const docMode =
+					typeof document !== 'undefined'
+						? document.documentElement.getAttribute('data-rw-shell-mode')
+						: null;
+				const resolvedShell =
+					docMode === 'workspace' || docMode === 'admin'
+						? docMode
+						: isWorkspaceShellActive()
+							? 'workspace'
+							: '';
+				if (resolvedShell !== '') {
 					visit.headers = {
-						...(visit.headers || {}),
-						'X-React-Shell': 'workspace',
+						...existingHeaders,
+						'X-React-Shell': resolvedShell,
 					};
 				}
 			});

@@ -48,6 +48,7 @@ export function ModuleSwitcher({
 	const searchInputRef = useRef<HTMLInputElement | null>(null);
 	const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
+	const useSpaNavigation = shellMode === 'workspace';
 	const activeTitle = activeWorkspace?.title || title || t('shell.workspace', 'Workspace');
 	const activeSubtitle =
 		activeWorkspace?.category ||
@@ -128,7 +129,7 @@ export function ModuleSwitcher({
 		if (targetHref === '#') {
 			return;
 		}
-		if (ws.component && isInertiaAppActive()) {
+		if (useSpaNavigation && ws.component && isInertiaAppActive()) {
 			router.visit(targetHref);
 		} else if (typeof window !== 'undefined') {
 			window.location.href = targetHref;
@@ -230,7 +231,7 @@ export function ModuleSwitcher({
 				onMouseEnter={() => setActiveIndex(flatIndex)}
 				className="flex items-center gap-1"
 			>
-				{ws.component ? (
+				{useSpaNavigation && ws.component ? (
 					<Link
 						href={targetHref}
 						aria-current={isCurrent ? 'page' : undefined}
@@ -399,22 +400,43 @@ export function ModuleSwitcher({
 				{safeLauncherHref || safeAdminHref ? (
 					<div className="flex items-center justify-between gap-2 border-t border-border bg-muted/35 px-2.5 py-2">
 						{safeLauncherHref ? (
-							<Link
-								href={safeLauncherHref}
-								onClick={() => {
-									setOpen(false);
-									onNavigate?.();
-								}}
-								className={cn(
+							(() => {
+								const launcherClass = cn(
 									'inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-colors',
 									!activeWorkspace
 										? 'bg-primary/12 text-primary-ink font-semibold'
 										: 'text-foreground hover:bg-muted'
-								)}
-							>
-								<DynamicIcon name="layout-grid" className="size-3.5 text-primary" aria-hidden="true" />
-								<span>{t('shell.workspaceHub', 'Workspace Hub')}</span>
-							</Link>
+								);
+								const launcherContent = (
+									<>
+										<DynamicIcon name="layout-grid" className="size-3.5 text-primary" aria-hidden="true" />
+										<span>{t('shell.workspaceHub', 'Workspace Hub')}</span>
+									</>
+								);
+								return useSpaNavigation ? (
+									<Link
+										href={safeLauncherHref}
+										onClick={() => {
+											setOpen(false);
+											onNavigate?.();
+										}}
+										className={launcherClass}
+									>
+										{launcherContent}
+									</Link>
+								) : (
+									<a
+										href={safeLauncherHref}
+										onClick={() => {
+											setOpen(false);
+											onNavigate?.();
+										}}
+										className={launcherClass}
+									>
+										{launcherContent}
+									</a>
+								);
+							})()
 						) : null}
 						{safeAdminHref ? (
 							<a

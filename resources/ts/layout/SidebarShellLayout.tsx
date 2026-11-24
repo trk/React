@@ -582,14 +582,33 @@ function SidebarMobileDrawer({
 				{safeLauncherHref || (shellMode === 'workspace' && safeAdminHref) || (shellMode === 'admin' && openInWorkspaceHref) ? (
 					<div className="flex items-center justify-between gap-2 border-t border-border bg-muted/25 px-3 py-2.5 shrink-0">
 						{safeLauncherHref ? (
-							<Link
-								href={safeLauncherHref}
-								onClick={() => onOpenChange(false)}
-								className="inline-flex min-h-8 pointer-coarse:min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted no-underline"
-							>
-								<DynamicIcon name="layout-grid" className="size-3.5 text-primary" aria-hidden="true" />
-								<span>{t('shell.workspaceHub', 'Workspace Hub')}</span>
-							</Link>
+							(() => {
+								const launcherClass =
+									'inline-flex min-h-8 pointer-coarse:min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted no-underline';
+								const launcherContent = (
+									<>
+										<DynamicIcon name="layout-grid" className="size-3.5 text-primary" aria-hidden="true" />
+										<span>{t('shell.workspaceHub', 'Workspace Hub')}</span>
+									</>
+								);
+								return shellMode === 'workspace' ? (
+									<Link
+										href={safeLauncherHref}
+										onClick={() => onOpenChange(false)}
+										className={launcherClass}
+									>
+										{launcherContent}
+									</Link>
+								) : (
+									<a
+										href={safeLauncherHref}
+										onClick={() => onOpenChange(false)}
+										className={launcherClass}
+									>
+										{launcherContent}
+									</a>
+								);
+							})()
 						) : null}
 
 						{shellMode === 'workspace' && safeAdminHref ? (
