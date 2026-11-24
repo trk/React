@@ -28,153 +28,184 @@ test.describe('ProcessReactWorkspace Launcher, Cross-Panel SPA Navigation & Stan
 		const hasRuntime = await page.evaluate(() => Boolean((window as unknown as { ReactWorkspaceRuntime?: unknown }).ReactWorkspaceRuntime));
 		expect(hasRuntime).toBe(true);
 
-		// Verify Workspace header is visible
-		await expect(page.locator('h1')).toContainText('Workspace');
-
-		// Automated WCAG 2.1 AA accessibility scan scoped to ProcessReactWorkspace (#app), including full color-contrast verification
-		const axeResults = await new AxeBuilder({ page })
-			.include('#app')
-			.withTags(['wcag2a', 'wcag2aa'])
-			.analyze();
-		const criticalOrSerious = axeResults.violations.filter(
-			(v) => v.impact === 'critical' || v.impact === 'serious'
-		);
-		expect(criticalOrSerious).toEqual([]);
-
-		// Verify unified Account Menu dropdown: Theme (Light/Dark/System + Color Schemes), links, and per-user persistence
-		const userMenuTrigger = page.locator('[data-rw-user-menu-trigger]');
-		await expect(userMenuTrigger).toBeVisible();
-		const hadDarkInitially = await page.evaluate(() => document.documentElement.classList.contains('dark'));
-
-		await userMenuTrigger.click();
-		await expect(page.locator('[data-rw-theme-section]')).toBeVisible();
-		await expect(page.locator('[data-rw-user-view-site]')).toBeVisible();
-		await expect(page.locator('[data-rw-user-profile]')).toBeVisible();
-		await expect(page.locator('[data-rw-user-logout]')).toBeVisible();
-
-		const targetMode = hadDarkInitially ? 'light' : 'dark';
-		const modePrefResPromise = page.waitForResponse(
-			(res) => res.url().includes('/_react/workspace-prefs') && res.request().method() === 'POST'
-		);
-		await page.locator(`[data-rw-theme-mode-option="${targetMode}"]`).click();
-		expect((await modePrefResPromise).status()).toBe(200);
-		await expect(page.locator('html')).toHaveAttribute(
-			'class',
-			hadDarkInitially ? /^(?!.*\bdark\b).*$/ : /\bdark\b/
-		);
-
-		const presetPrefResPromise = page.waitForResponse(
-			(res) => res.url().includes('/_react/workspace-prefs') && res.request().method() === 'POST'
-		);
-		await page.locator('[data-rw-theme-preset-option="ocean"]').click();
-		expect((await presetPrefResPromise).status()).toBe(200);
-		await expect(page.locator('[data-rw-theme-preset-reset]')).toBeVisible();
-
-		// Reload and confirm per-user theme mode + color preset persisted across full navigation
-		await page.reload({ waitUntil: 'networkidle' });
-		await expect(page.locator('#app')).toBeVisible();
-		await expect(page.locator('html')).toHaveAttribute(
-			'class',
-			hadDarkInitially ? /^(?!.*\bdark\b).*$/ : /\bdark\b/
-		);
-
-		// Restore original theme mode & reset preset back to site default
-		await page.locator('[data-rw-user-menu-trigger]').click();
-		await expect(page.locator('[data-rw-theme-preset-reset]')).toBeVisible();
-		const resetPresetPromise = page.waitForResponse(
-			(res) => res.url().includes('/_react/workspace-prefs') && res.request().method() === 'POST'
-		);
-		await page.locator('[data-rw-theme-preset-reset]').click();
-		expect((await resetPresetPromise).status()).toBe(200);
-
-		const restoreModePromise = page.waitForResponse(
-			(res) => res.url().includes('/_react/workspace-prefs') && res.request().method() === 'POST'
-		);
-		await page.locator('[data-rw-theme-mode-option="system"]').click();
-		expect((await restoreModePromise).status()).toBe(200);
-		await page.keyboard.press('Escape');
-		await expect(page.locator('[data-rw-theme-section]')).toHaveCount(0);
-
-		// Verify Keyboard Shortcuts Help Dialog (?) opens and closes cleanly
-		await page.locator('h1').click();
-		await page.keyboard.press('?');
-		await expect(page.locator('[data-rw-shortcuts-dialog]')).toBeVisible();
-		await page.keyboard.press('Escape');
-		await expect(page.locator('[data-rw-shortcuts-dialog]')).toHaveCount(0);
-
-		// Verify responsive Mobile Drawer opens and closes at mobile viewport width, while topbar admin return stays hidden (< lg)
-		await page.setViewportSize({ width: 390, height: 844 });
-		await expect(page.locator('[data-rw-admin-return]')).toBeHidden();
-		const mobileTrigger = page.locator('[data-rw-mobile-menu-trigger]');
-		if (await mobileTrigger.isVisible()) {
-			await mobileTrigger.click();
-			await expect(page.locator('[data-rw-mobile-drawer]')).toBeVisible();
-			await expect(page.locator('[data-rw-mobile-drawer] a[href]').first()).toBeVisible();
+		const initialLayout =
+			(await page.locator('[data-rw-app-shell]').getAttribute('data-rw-shell-layout')) || 'topbar';
+		if (initialLayout !== 'topbar') {
+			await page.locator('[data-rw-user-menu-trigger]:visible').first().click();
+			await expect(page.locator('[data-rw-user-menu]')).toBeVisible();
+			const [layoutRes] = await Promise.all([
+				waitForWorkspacePrefsPost(page),
+				page.locator('[data-rw-shell-layout-option="topbar"]').click(),
+			]);
+			expect(layoutRes.status()).toBe(200);
 			await page.keyboard.press('Escape');
+			await expect(page.locator('[data-rw-app-shell][data-rw-shell-layout="topbar"]')).toBeVisible();
 		}
-		await page.setViewportSize({ width: 1280, height: 720 });
-		await expect(page.locator('[data-rw-admin-return]')).toBeVisible();
 
-		// Verify Command Palette (⌘K) opens and closes cleanly
-		await page.locator('[data-rw-command-trigger]').click();
-		await expect(page.locator('[data-rw-command-palette]')).toBeVisible();
-		await page.keyboard.press('Escape');
-		await expect(page.locator('[data-rw-command-palette]')).toHaveCount(0);
+		try {
+			// Verify Workspace header is visible
+			await expect(page.locator('h1')).toContainText('Workspace');
 
-		// Set an in-memory JS marker on window to prove Inertia SPA navigation does NOT trigger a full browser reload
-		await page.evaluate(() => {
-			(window as unknown as { __pwSpaSessionMarker?: string }).__pwSpaSessionMarker = 'spa-alive-1';
-		});
+			// Automated WCAG 2.1 AA accessibility scan scoped to ProcessReactWorkspace (#app), including full color-contrast verification
+			const axeResults = await new AxeBuilder({ page })
+				.include('#app')
+				.withTags(['wcag2a', 'wcag2aa'])
+				.analyze();
+			const criticalOrSerious = axeResults.violations.filter(
+				(v) => v.impact === 'critical' || v.impact === 'serious'
+			);
+			expect(criticalOrSerious).toEqual([]);
 
-		// Discover any registered workspace dynamically without hardcoding sibling modules
-		const targetWorkspace = await page.evaluate(() => {
-			const pageScript = document.querySelector('script[type="application/json"][data-page="app"]');
-			if (!pageScript?.textContent) return null;
-			try {
-				const parsed = JSON.parse(pageScript.textContent);
-				const list = parsed?.props?.workspaces || parsed?.props?.workspace?.workspaces || [];
-				const candidate = Array.isArray(list)
-					? list.find((w: { id?: string; url?: string; label?: string }) => w?.url && w.id !== 'workspace')
-					: null;
-				return candidate ? { label: String(candidate.label || ''), url: String(candidate.url) } : null;
-			} catch {
-				return null;
-			}
-		});
+			// Verify unified Account Menu dropdown: Theme (Light/Dark/System + Color Schemes), links, and per-user persistence
+			const userMenuTrigger = page.locator('[data-rw-user-menu-trigger]');
+			await expect(userMenuTrigger).toBeVisible();
+			const hadDarkInitially = await page.evaluate(() => document.documentElement.classList.contains('dark'));
 
-		if (targetWorkspace && targetWorkspace.url) {
-			const cleanSlug = targetWorkspace.url.replace(/\/+$/, '').split('/').pop() || '';
-			const inertiaResponsePromise = page.waitForResponse(
-				(res) => res.url().includes(cleanSlug) && res.request().headers()['x-inertia'] === 'true'
+			await userMenuTrigger.click();
+			await expect(page.locator('[data-rw-theme-section]')).toBeVisible();
+			await expect(page.locator('[data-rw-user-view-site]')).toBeVisible();
+			await expect(page.locator('[data-rw-user-profile]')).toBeVisible();
+			await expect(page.locator('[data-rw-user-logout]')).toBeVisible();
+
+			const targetMode = hadDarkInitially ? 'light' : 'dark';
+			const modePrefResPromise = page.waitForResponse(
+				(res) => res.url().includes('/_react/workspace-prefs') && res.request().method() === 'POST'
+			);
+			await page.locator(`[data-rw-theme-mode-option="${targetMode}"]`).click();
+			expect((await modePrefResPromise).status()).toBe(200);
+			await expect(page.locator('html')).toHaveAttribute(
+				'class',
+				hadDarkInitially ? /^(?!.*\bdark\b).*$/ : /\bdark\b/
 			);
 
-			const inlineLink = page.locator('header nav a', { hasText: targetWorkspace.label }).first();
-			if (await inlineLink.isVisible()) {
-				await inlineLink.click();
+			const presetPrefResPromise = page.waitForResponse(
+				(res) => res.url().includes('/_react/workspace-prefs') && res.request().method() === 'POST'
+			);
+			await page.locator('[data-rw-theme-preset-option="ocean"]').click();
+			expect((await presetPrefResPromise).status()).toBe(200);
+			await expect(page.locator('[data-rw-theme-preset-reset]')).toBeVisible();
+
+			// Reload and confirm per-user theme mode + color preset persisted across full navigation
+			await page.reload({ waitUntil: 'networkidle' });
+			await expect(page.locator('#app')).toBeVisible();
+			await expect(page.locator('html')).toHaveAttribute(
+				'class',
+				hadDarkInitially ? /^(?!.*\bdark\b).*$/ : /\bdark\b/
+			);
+
+			// Restore original theme mode & reset preset back to site default
+			await page.locator('[data-rw-user-menu-trigger]').click();
+			await expect(page.locator('[data-rw-theme-preset-reset]')).toBeVisible();
+			const resetPresetPromise = page.waitForResponse(
+				(res) => res.url().includes('/_react/workspace-prefs') && res.request().method() === 'POST'
+			);
+			await page.locator('[data-rw-theme-preset-reset]').click();
+			expect((await resetPresetPromise).status()).toBe(200);
+
+			const restoreModePromise = page.waitForResponse(
+				(res) => res.url().includes('/_react/workspace-prefs') && res.request().method() === 'POST'
+			);
+			await page.locator('[data-rw-theme-mode-option="system"]').click();
+			expect((await restoreModePromise).status()).toBe(200);
+			await page.keyboard.press('Escape');
+			await expect(page.locator('[data-rw-theme-section]')).toHaveCount(0);
+
+			// Verify Keyboard Shortcuts Help Dialog (?) opens and closes cleanly
+			await page.locator('h1').click();
+			await page.keyboard.press('?');
+			await expect(page.locator('[data-rw-shortcuts-dialog]')).toBeVisible();
+			await page.keyboard.press('Escape');
+			await expect(page.locator('[data-rw-shortcuts-dialog]')).toHaveCount(0);
+
+			// Verify responsive Mobile Drawer opens and closes at mobile viewport width, while topbar admin return stays hidden (< lg)
+			await page.setViewportSize({ width: 390, height: 844 });
+			await expect(page.locator('[data-rw-admin-return]')).toBeHidden();
+			const mobileTrigger = page.locator('[data-rw-mobile-menu-trigger]');
+			if (await mobileTrigger.isVisible()) {
+				await mobileTrigger.click();
+				await expect(page.locator('[data-rw-mobile-drawer]')).toBeVisible();
+				await expect(page.locator('[data-rw-mobile-drawer] a[href]').first()).toBeVisible();
+				await page.keyboard.press('Escape');
+			}
+			await page.setViewportSize({ width: 1280, height: 720 });
+			await expect(page.locator('[data-rw-admin-return]')).toBeVisible();
+
+			// Verify Command Palette (⌘K) opens and closes cleanly
+			await page.locator('[data-rw-command-trigger]').click();
+			await expect(page.locator('[data-rw-command-palette]')).toBeVisible();
+			await page.keyboard.press('Escape');
+			await expect(page.locator('[data-rw-command-palette]')).toHaveCount(0);
+
+			// Set an in-memory JS marker on window to prove Inertia SPA navigation does NOT trigger a full browser reload
+			await page.evaluate(() => {
+				(window as unknown as { __pwSpaSessionMarker?: string }).__pwSpaSessionMarker = 'spa-alive-1';
+			});
+
+			// Discover any registered workspace dynamically without hardcoding sibling modules
+			const targetWorkspace = await page.evaluate(() => {
+				const pageScript = document.querySelector('script[type="application/json"][data-page="app"]');
+				if (!pageScript?.textContent) return null;
+				try {
+					const parsed = JSON.parse(pageScript.textContent);
+					const list = parsed?.props?.workspaces || parsed?.props?.workspace?.workspaces || [];
+					const candidate = Array.isArray(list)
+						? list.find((w: { id?: string; url?: string; label?: string }) => w?.url && w.id !== 'workspace')
+						: null;
+					return candidate ? { label: String(candidate.label || ''), url: String(candidate.url) } : null;
+				} catch {
+					return null;
+				}
+			});
+
+			if (targetWorkspace && targetWorkspace.url) {
+				const cleanSlug = targetWorkspace.url.replace(/\/+$/, '').split('/').pop() || '';
+				const inertiaResponsePromise = page.waitForResponse(
+					(res) => res.url().includes(cleanSlug) && res.request().headers()['x-inertia'] === 'true'
+				);
+
+				const inlineLink = page.locator('header nav a', { hasText: targetWorkspace.label }).first();
+				if (await inlineLink.isVisible()) {
+					await inlineLink.click();
+				} else {
+					await page.locator('[data-rw-more-workspaces-trigger]').click();
+					await expect(page.locator('[data-rw-more-workspaces-menu]')).toBeVisible();
+					await page.locator('[data-rw-more-workspaces-menu] a', { hasText: targetWorkspace.label }).first().click();
+				}
+
+				const inertiaResponse = await inertiaResponsePromise;
+				expect(inertiaResponse.status()).toBe(200);
 			} else {
-				await page.locator('[data-rw-more-workspaces-trigger]').click();
-				await expect(page.locator('[data-rw-more-workspaces-menu]')).toBeVisible();
-				await page.locator('[data-rw-more-workspaces-menu] a', { hasText: targetWorkspace.label }).first().click();
+				// Self-contained fallback: trigger X-Inertia SPA visit to WorkspaceLauncher itself
+				const selfInertiaPromise = page.waitForResponse(
+					(res) => res.url().includes('/workspace') && res.request().headers()['x-inertia'] === 'true'
+				);
+				await page.evaluate((url) => {
+					(window as any).ReactWorkspaceRuntime.Inertia.router.visit(url);
+				}, getAdminUrl('workspace/'));
+				const selfRes = await selfInertiaPromise;
+				expect(selfRes.status()).toBe(200);
 			}
 
-			const inertiaResponse = await inertiaResponsePromise;
-			expect(inertiaResponse.status()).toBe(200);
-		} else {
-			// Self-contained fallback: trigger X-Inertia SPA visit to WorkspaceLauncher itself
-			const selfInertiaPromise = page.waitForResponse(
-				(res) => res.url().includes('/workspace') && res.request().headers()['x-inertia'] === 'true'
+			const markerAfterSpa = await page.evaluate(
+				() => (window as unknown as { __pwSpaSessionMarker?: string }).__pwSpaSessionMarker
 			);
-			await page.evaluate((url) => {
-				(window as any).ReactWorkspaceRuntime.Inertia.router.visit(url);
-			}, getAdminUrl('workspace/'));
-			const selfRes = await selfInertiaPromise;
-			expect(selfRes.status()).toBe(200);
+			expect(markerAfterSpa).toBe('spa-alive-1');
+		} finally {
+			if (initialLayout !== 'topbar') {
+				await page.goto(getAdminUrl('workspace/'), { waitUntil: 'networkidle' });
+				const trigger = page.locator('[data-rw-user-menu-trigger]:visible').first();
+				if (await trigger.isVisible().catch(() => false)) {
+					await trigger.click();
+					await expect(page.locator('[data-rw-user-menu]')).toBeVisible();
+					const resetLayoutBtn = page.locator('[data-rw-shell-layout-reset]');
+					if (await resetLayoutBtn.isVisible().catch(() => false)) {
+						const [resetRes] = await Promise.all([waitForWorkspacePrefsPost(page), resetLayoutBtn.click()]);
+						expect(resetRes.status()).toBe(200);
+					}
+					await page.keyboard.press('Escape').catch(() => {});
+				}
+			}
 		}
-
-		const markerAfterSpa = await page.evaluate(
-			() => (window as unknown as { __pwSpaSessionMarker?: string }).__pwSpaSessionMarker
-		);
-		expect(markerAfterSpa).toBe('spa-alive-1');
 
 		tracker.assertNoErrors();
 	});
@@ -1252,7 +1283,15 @@ test.describe('ProcessReactWorkspace Launcher, Cross-Panel SPA Navigation & Stan
 
 			await expect(page).toHaveURL(/[?&]ws=1\b/);
 			await expect(page.locator('[data-rw-app-shell=""]')).toBeVisible();
-			await expect(page.locator('[data-rw-admin-return]')).toBeVisible();
+			const activeWsLayout =
+				(await page.locator('[data-rw-app-shell=""]').getAttribute('data-rw-shell-layout')) || 'topbar';
+			if (activeWsLayout === 'sidebar') {
+				await page.locator('[data-rw-sidebar] [data-rw-module-switcher]').click();
+				await expect(page.locator('[data-rw-module-switcher-menu] [data-rw-admin-return]')).toBeVisible();
+				await page.keyboard.press('Escape');
+			} else {
+				await expect(page.locator('[data-rw-admin-return]')).toBeVisible();
+			}
 			await expect(page.locator('#pw-mastheads, #masthead')).toHaveCount(0);
 		}
 
@@ -1413,6 +1452,7 @@ test.describe('ProcessReactWorkspace Launcher, Cross-Panel SPA Navigation & Stan
 
 		const rootShell = page.locator('[data-rw-app-shell]');
 		await expect(rootShell).toBeVisible();
+		const initialShellLayout = (await rootShell.getAttribute('data-rw-shell-layout')) || 'topbar';
 
 		try {
 			// Open Command Palette and verify grouped landmarks
@@ -1518,16 +1558,16 @@ test.describe('ProcessReactWorkspace Launcher, Cross-Panel SPA Navigation & Stan
 					const [resetRes] = await Promise.all([waitForWorkspacePrefsPost(page), resetLayoutBtn.click()]);
 					expect(resetRes.status()).toBe(200);
 				} else {
-					const topbarBtn = page.locator('[data-rw-shell-layout-option="topbar"]');
-					if ((await topbarBtn.count()) > 0 && (await topbarBtn.getAttribute('aria-pressed')) !== 'true') {
-						await Promise.all([waitForWorkspacePrefsPost(page), topbarBtn.click()]);
+					const restoreOpt = page.locator(`[data-rw-shell-layout-option="${initialShellLayout}"]`);
+					if ((await restoreOpt.count()) > 0 && (await restoreOpt.getAttribute('aria-pressed')) !== 'true') {
+						await Promise.all([waitForWorkspacePrefsPost(page), restoreOpt.click()]);
 					}
 				}
 				await page.keyboard.press('Escape').catch(() => {});
 			}
 		}
 
-		await expect(page.locator('[data-rw-app-shell][data-rw-shell-layout="topbar"]')).toBeVisible();
+		await expect(page.locator(`[data-rw-app-shell][data-rw-shell-layout="${initialShellLayout}"]`)).toBeVisible();
 		tracker.assertNoErrors();
 	});
 });
@@ -1562,6 +1602,7 @@ test.describe('Multi-Shell Layouts & Collapsible Sidebar Navigation', () => {
 
 		const rootShell = page.locator('[data-rw-app-shell]');
 		await expect(rootShell).toBeVisible();
+		const initialShellLayout = (await rootShell.getAttribute('data-rw-shell-layout')) || 'topbar';
 
 		try {
 			// 1. Switch Topbar -> Sidebar via UserAccountMenu and verify reload persistence
@@ -1772,6 +1813,105 @@ test.describe('Multi-Shell Layouts & Collapsible Sidebar Navigation', () => {
 		await expect(page.locator('[data-rw-sidebar]')).toHaveCount(0);
 		await page.reload({ waitUntil: 'networkidle' });
 		await expect(page.locator('[data-rw-app-shell][data-rw-shell-layout="topbar"]')).toBeVisible();
+
+		tracker.assertNoErrors();
+	});
+
+	test('preserves classic AdminTheme shellMode when switching modules via ModuleSwitcher without ?ws=1', async ({
+		page,
+	}) => {
+		test.setTimeout(60_000);
+		const tracker = attachRuntimeErrorTracker(page);
+		await page.setViewportSize({ width: 1280, height: 720 });
+		await page.goto(getAdminUrl('workspace/'), { waitUntil: 'networkidle' });
+
+		// Ensure Sidebar layout is enabled so ModuleSwitcher renders inside classic Setup > <Module>
+		await page.locator('[data-rw-user-menu-trigger]:visible').first().click();
+		await expect(page.locator('[data-rw-user-menu]')).toBeVisible();
+		const sidebarOpt = page.locator('[data-rw-shell-layout-option="sidebar"]');
+		const wasAlreadySidebar = (await sidebarOpt.getAttribute('aria-pressed')) === 'true';
+		if (!wasAlreadySidebar) {
+			const [switchRes] = await Promise.all([waitForWorkspacePrefsPost(page), sidebarOpt.click()]);
+			expect(switchRes.status()).toBe(200);
+		} else {
+			await page.keyboard.press('Escape');
+		}
+
+		try {
+			const candidates = await page.evaluate(() => {
+				const pageScript = document.querySelector('script[type="application/json"][data-page="app"]');
+				if (!pageScript?.textContent) return [];
+				try {
+					const parsed = JSON.parse(pageScript.textContent);
+					const rawList = parsed?.props?.workspaces || parsed?.props?.workspace?.workspaces || [];
+					const list = Array.isArray(rawList) ? rawList : Object.values(rawList);
+					return list
+						.filter(
+							(w: { id?: string; url?: string; component?: string }) =>
+								Boolean(w?.url && w?.component && w.id !== 'workspace' && w.id !== 'commerce')
+						)
+						.map((w: { id: string; url: string }) => ({ id: String(w.id), url: String(w.url) }));
+				} catch {
+					return [];
+				}
+			});
+
+			expect(candidates.length).toBeGreaterThanOrEqual(2);
+			const sourceWs = candidates[0]!;
+			const targetWs = candidates[1]!;
+			expect(sourceWs.url).not.toMatch(/[?&]ws=1\b/);
+			expect(targetWs.url).not.toMatch(/[?&]ws=1\b/);
+
+			// Open source module in classic Setup > <Module> (admin shellMode)
+			await page.goto(sourceWs.url, { waitUntil: 'networkidle' });
+			await expect(page.locator('#pw-mastheads, #masthead').first()).toBeVisible();
+			await expect(page.locator('[data-rw-app-shell="admin"][data-rw-shell-layout="sidebar"]')).toBeVisible();
+			await expect(page.locator('html')).toHaveAttribute('data-rw-shell-mode', 'admin');
+
+			// Open ModuleSwitcher in classic admin mode and verify NO workspace item links contain ?ws=1
+			const sidebar = page.locator('[data-rw-sidebar]');
+			await sidebar.locator('[data-rw-module-switcher]').click();
+			const switcherMenu = page.locator('[data-rw-module-switcher-menu]');
+			await expect(switcherMenu).toBeVisible();
+
+			const switcherHrefs = await switcherMenu
+				.locator('[data-rw-module-switcher-item] a[href]')
+				.evaluateAll((els) => els.map((el) => el.getAttribute('href') || ''));
+			expect(switcherHrefs.length).toBeGreaterThan(0);
+			for (const href of switcherHrefs) {
+				expect(href).not.toMatch(/[?&]ws=1\b/);
+			}
+
+			// Switch to another module and confirm we stay in classic AdminTheme (NOT full-screen Workspace)
+			const targetLink = switcherMenu.locator(`[data-rw-module-switcher-item="${targetWs.id}"] a[href]`).first();
+			await expect(targetLink).toBeVisible();
+			const expectedTargetUrl = new URL(targetWs.url, page.url());
+			await Promise.all([
+				page.waitForURL((u) => u.pathname === expectedTargetUrl.pathname),
+				targetLink.click(),
+			]);
+			await page.waitForLoadState('networkidle');
+
+			expect(page.url()).not.toMatch(/[?&]ws=1\b/);
+			await expect(page.locator('#pw-mastheads, #masthead').first()).toBeVisible();
+			await expect(page.locator('[data-rw-app-shell="admin"]')).toBeVisible();
+			await expect(page.locator('html')).toHaveAttribute('data-rw-shell-mode', 'admin');
+		} finally {
+			if (!wasAlreadySidebar) {
+				await page.goto(getAdminUrl('workspace/'), { waitUntil: 'networkidle' });
+				const userMenuTrigger = page.locator('[data-rw-user-menu-trigger]:visible').first();
+				if (await userMenuTrigger.isVisible().catch(() => false)) {
+					await userMenuTrigger.click();
+					await expect(page.locator('[data-rw-user-menu]')).toBeVisible();
+					const topbarBtn = page.locator('[data-rw-shell-layout-option="topbar"]');
+					if ((await topbarBtn.count()) > 0 && (await topbarBtn.getAttribute('aria-pressed')) !== 'true') {
+						await Promise.all([waitForWorkspacePrefsPost(page), topbarBtn.click()]);
+					} else {
+						await page.keyboard.press('Escape');
+					}
+				}
+			}
+		}
 
 		tracker.assertNoErrors();
 	});

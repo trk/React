@@ -4,6 +4,8 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { AppShell } from '../../resources/ts/layout/AppShell';
+import { buildCommandPaletteItems } from '../../resources/ts/layout/CommandPaletteModal';
+import { ModuleSwitcher } from '../../resources/ts/layout/ModuleSwitcher';
 import { RecordHeader } from '../../resources/ts/layout/RecordHeader';
 import { SIDEBAR_SHELL_LAYOUT, SidebarShellLayout } from '../../resources/ts/layout/SidebarShellLayout';
 import { TOPBAR_SHELL_LAYOUT } from '../../resources/ts/layout/TopbarShellLayout';
@@ -525,5 +527,63 @@ describe('Shell Layout Registry and Multi-Shell SSR', () => {
 		);
 		expect(workspaceEntrySrc).toContain('data-rw-workspace-header-actions=""');
 		expect(workspaceEntrySrc).toContain('className="flex min-w-0 max-w-full flex-wrap items-center gap-2"');
+	});
+
+	it('gates ModuleSwitcher SPA links on shellMode === workspace and strips ?ws=1 in classic admin mode', () => {
+		const paymentsWithWs = makeWorkspaceDef({
+			id: 'payments',
+			title: 'Payments',
+			url: '/processwire/setup/payments/?ws=1',
+			component: 'Payments/Workspace',
+			order: 15,
+		});
+		const adminWorkspace = makeWorkspaceContext({
+			shellMode: 'admin',
+			shellLayout: 'sidebar',
+			workspaces: [makeWorkspaceDef(), paymentsWithWs],
+		});
+
+		const switcherHtml = renderToStaticMarkup(
+			React.createElement(ModuleSwitcher, {
+				workspace: adminWorkspace,
+				workspaces: adminWorkspace.workspaces ?? [],
+				activeWorkspace: adminWorkspace.activeWorkspace,
+				favorites: [],
+				isWorkspaceActive: (ws) => ws.id === 'forms',
+				toggleFavoriteWorkspace: () => {},
+				shellMode: 'admin',
+				returnLabel: 'Panel',
+			})
+		);
+		expect(switcherHtml).toContain('data-rw-module-switcher=""');
+
+		const adminPaletteItems = buildCommandPaletteItems({
+			workspaces: adminWorkspace.workspaces ?? [],
+			resolvedNavItems: [],
+			title: 'Forms',
+			workspace: adminWorkspace,
+			returnLabel: 'Panel',
+			commandQuery: '',
+			showGlobalWorkspaceBar: false,
+			availableShellLayouts: [],
+		});
+		const paymentsItem = adminPaletteItems.find((item) => item.id === 'ws-payments');
+		expect(paymentsItem).toBeDefined();
+		expect(paymentsItem?.href).toBe('/processwire/setup/payments/');
+		expect(paymentsItem?.isInertia).toBe(false);
+
+		const switcherSrc = readFileSync(
+			resolve(import.meta.dirname, '../../resources/ts/layout/ModuleSwitcher.tsx'),
+			'utf8'
+		);
+		const sidebarLayoutSrc = readFileSync(
+			resolve(import.meta.dirname, '../../resources/ts/layout/SidebarShellLayout.tsx'),
+			'utf8'
+		);
+		expect(switcherSrc).toContain("const useSpaNavigation = shellMode === 'workspace'");
+		expect(switcherSrc).toContain('if (useSpaNavigation && ws.component && isInertiaAppActive())');
+		expect(switcherSrc).toContain('{useSpaNavigation && ws.component ? (');
+		expect(switcherSrc).toContain('return useSpaNavigation ? (');
+		expect(sidebarLayoutSrc).toContain("return shellMode === 'workspace' ? (");
 	});
 });

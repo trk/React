@@ -1347,7 +1347,7 @@ test('ProcessReact executes Setup > Module inline via EmbeddedAdminPageResponse 
 			->toContain('<!DOCTYPE html>')
 			->toContain('data-rw-shell-mode="workspace"');
 
-		// 3. withWorkspaceQuery() appends ws=1 only to local admin module URLs
+		// 3. withWorkspaceQuery() / withoutWorkspaceQuery() manage ws=1 only on local admin module URLs
 		$adminBase = rtrim((string) ($config->urls->admin ?: '/processwire/'), '/') . '/';
 		expect($react->withWorkspaceQuery($adminBase . 'setup/catalog-demo/mappings/'))
 			->toBe($adminBase . 'setup/catalog-demo/mappings/?ws=1')
@@ -1358,7 +1358,72 @@ test('ProcessReact executes Setup > Module inline via EmbeddedAdminPageResponse 
 			->and($react->withWorkspaceQuery($react->resolveLauncherUrl()))
 			->toBe($react->resolveLauncherUrl())
 			->and($react->withWorkspaceQuery($adminBase . 'setup/catalog-demo/?export=csv'))
-			->toBe($adminBase . 'setup/catalog-demo/?export=csv');
+			->toBe($adminBase . 'setup/catalog-demo/?export=csv')
+			->and($react->withoutWorkspaceQuery($adminBase . 'setup/payments/?ws=1'))
+			->toBe($adminBase . 'setup/payments/')
+			->and($react->withoutWorkspaceQuery($adminBase . 'setup/payments/?tab=orders&ws=1#top'))
+			->toBe($adminBase . 'setup/payments/?tab=orders#top')
+			->and($react->withoutWorkspaceQuery('https://external.example' . $adminBase . 'setup/payments/?ws=1'))
+			->toBe('https://external.example' . $adminBase . 'setup/payments/?ws=1')
+			->and($react->withoutWorkspaceQuery('/frontend-page/?ws=1'))
+			->toBe('/frontend-page/?ws=1');
+
+		// 3b. WorkspaceRegistry::resolveUrl() & buildInertiaSharedContext() strip ?ws=1 from registered URLs
+		$react->registerWorkspace([
+			'id' => 'ws-leak-probe',
+			'title' => 'WS Leak Probe',
+			'description' => 'Probe URL normalization.',
+			'icon' => 'credit-card',
+			'url' => $adminBase . 'setup/ws-leak-probe/?ws=1&tab=ledger',
+			'permission' => 'page-edit',
+		]);
+		expect($react->workspaces()->resolveUrl('ws-leak-probe'))
+			->toBe($adminBase . 'setup/ws-leak-probe/?tab=ledger');
+
+		unset($input->get->ws, $_SERVER['HTTP_X_REACT_SHELL']);
+		$probeDef = $react->workspaces()->get('ws-leak-probe');
+		$adminShared = $react->buildInertiaSharedContext($demoProcess, $probeDef);
+		expect($adminShared['shellMode'] ?? null)->toBe('admin')
+			->and($adminShared['activeWorkspace']['url'] ?? null)->toBe($adminBase . 'setup/ws-leak-probe/?tab=ledger');
+		$matchedProbe = null;
+		foreach (($adminShared['workspaces'] ?? []) as $wsEntry) {
+			if (($wsEntry['id'] ?? '') === 'ws-leak-probe') {
+				$matchedProbe = $wsEntry;
+				break;
+			}
+		}
+		expect($matchedProbe['url'] ?? null)->toBe($adminBase . 'setup/ws-leak-probe/?tab=ledger');
+		$react->workspaces()->unregister('ws-leak-probe');
+
+		// 3c. views/admin.php derives data-rw-shell-mode from props.workspace.shellMode instead of hardcoding workspace
+		$templateFile = new \ProcessWire\TemplateFile(dirname(__DIR__, 2) . '/views/admin.php');
+		wire($templateFile);
+		$templateFile->setArray([
+			'locale' => 'en',
+			'title' => 'Admin View Check',
+			'themeMode' => 'light',
+			'colorSchemeCss' => '',
+			'themeCss' => '',
+			'head' => '',
+			'styles' => [],
+			'scripts' => [],
+			'inertia' => $demoProcess->inertia(),
+			'pageObject' => [
+				'component' => 'Demo/DualView',
+				'props' => ['workspace' => ['shellMode' => 'admin']],
+				'url' => $adminBase . 'setup/catalog-demo/',
+				'version' => '1',
+			],
+		]);
+		expect((string) $templateFile->render())->toContain('data-rw-shell-mode="admin"');
+
+		$templateFile->set('pageObject', [
+			'component' => 'Demo/DualView',
+			'props' => ['workspace' => ['shellMode' => 'workspace']],
+			'url' => $adminBase . 'setup/catalog-demo/?ws=1',
+			'version' => '1',
+		]);
+		expect((string) $templateFile->render())->toContain('data-rw-shell-mode="workspace"');
 
 		// 4. When ProcessReactWorkspace is uninstalled, even ?ws=1 resolves cleanly to 'admin' mode
 		$react->setWorkspaceHubEnabled(false);

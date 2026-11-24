@@ -376,6 +376,32 @@ describe('Command Search debounced client & URL sanitization', () => {
 			href: '/61admin/inventory/orders/5?ws=1',
 			isInertia: true,
 		});
+
+		const adminNormalized = normalizeRemoteCommandItems(
+			[
+				{
+					id: 'payment-9',
+					label: 'Invoice #9',
+					subtitle: 'Payments',
+					group: 'Payments',
+					icon: 'credit-card',
+					href: '/61admin/setup/payments/?tab=orders&ws=1',
+					isInertia: true,
+				},
+			],
+			{
+				defaultGroup: 'Matching Records',
+				showGlobalWorkspaceBar: false,
+				adminUrl: '/61admin/',
+				launcherUrl: '/61admin/react-workspace/',
+			}
+		);
+		expect(adminNormalized).toHaveLength(1);
+		expect(adminNormalized[0]).toMatchObject({
+			id: 'remote-payment-9',
+			href: '/61admin/setup/payments/?tab=orders',
+			isInertia: false,
+		});
 	});
 
 	it('skips network fetches when closed or query < 2 chars, debounces 180ms, and aborts superseded requests', async () => {

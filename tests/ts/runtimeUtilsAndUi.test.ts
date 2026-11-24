@@ -469,6 +469,36 @@ describe('Runtime Utilities, Formula Engine, i18n, Sortable Tree & Media Helpers
 		expect(withWorkspaceShellUrl('/processwire/setup/seo/?export=csv', true)).toBe(
 			'/processwire/setup/seo/?export=csv'
 		);
+		expect(withWorkspaceShellUrl('/processwire/setup/payments/?ws=1', false)).toBe(
+			'/processwire/setup/payments/'
+		);
+		expect(withWorkspaceShellUrl('/processwire/setup/payments/?tab=orders&ws=1#top', false)).toBe(
+			'/processwire/setup/payments/?tab=orders#top'
+		);
+		expect(
+			withWorkspaceShellUrl('/61admin/setup/payments/?ws=1', false, '/61admin/', '/61admin/workspace/')
+		).toBe('/61admin/setup/payments/');
+		expect(withWorkspaceShellUrl('https://external.example/setup/payments/?ws=1', false)).toBe(
+			'https://external.example/setup/payments/?ws=1'
+		);
+		const prevDoc = (globalThis as { document?: Document }).document;
+		try {
+			(globalThis as unknown as { document: unknown }).document = {
+				documentElement: {
+					getAttribute: (name: string) =>
+						name === 'data-rw-shell-mode' ? 'workspace' : null,
+				},
+			};
+			expect(withWorkspaceShellUrl('/processwire/setup/blocks/', false)).toBe(
+				'/processwire/setup/blocks/'
+			);
+		} finally {
+			if (prevDoc === undefined) {
+				delete (globalThis as { document?: Document }).document;
+			} else {
+				(globalThis as unknown as { document: Document }).document = prevDoc;
+			}
+		}
 
 		const baseWorkspace = {
 			appName: 'ProcessWire',
