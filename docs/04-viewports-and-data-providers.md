@@ -9,7 +9,7 @@ Guide to rendering interactive tables, card grids, and pluggable viewports (`Mar
 [`MarkupReactViewport`](../src/Viewport/MarkupReactViewport.php#L41-L110) (`extends Totoglu\Inertia\MarkupInertia`) powers both built-in viewports (`MarkupReactTable`, `MarkupReactCards`) and downstream custom viewports in two execution modes:
 
 1. **Full Inertia Page Prop (`$react->configureTable()` / `$react->configureCards()`):** Passed directly as an Inertia prop inside `$this->inertiaRender(...)`. `toInertiaProp()` serializes the configured records, column schemas, filter strips, view modes, and signed `stateToken`, while `inertiaViewData()` injects `ReactInertia.js/css`, `ReactViewports.js`, and the viewport module's canvas script (`MarkupReactTable.js` or `MarkupReactCards.js`).
-2. **Classic ProcessWire Island (`$react->renderTable()` / `$react->renderCards()`):** Called inside classic `AdminTheme` templates, frontend templates, or `InputfieldMarkup` panels via `___render()` ([MarkupReactViewport.php](../src/Viewport/MarkupReactViewport.php#L848)). Outputs a canonical `<div data-inertia-island="..." data-react-island="..." data-props="...">` mount element and registers scripts/styles cleanly in `$config->scripts` and `$config->styles`.
+2. **Classic ProcessWire Island (`$react->renderTable()` / `$react->renderCards()`):** Called inside classic `AdminTheme` templates, frontend templates, or `InputfieldMarkup` panels via `___render()` ([MarkupReactViewport.php](../src/Viewport/MarkupReactViewport.php#L1040)). Outputs a canonical `<div data-inertia-island="..." data-react-island="..." data-props="...">` mount element and registers scripts/styles cleanly in `$config->scripts` and `$config->styles`.
 
 ### Pluggable Viewport Modes & Lazy Adapter Bundles
 
@@ -17,7 +17,7 @@ Core `ReactInertia.js` and `ReactViewports.js` ship only the shared viewport she
 - `MarkupReactTable.module.php` -> `dist/MarkupReactTable.js` (`DataTableCanvas`)
 - `MarkupReactCards.module.php` -> `dist/MarkupReactCards.js` (`DataCardsCanvas`)
 - Optional interactive layout engines (`dist/ReactGrid.js`, `dist/ReactDnd.js`, `dist/ReactCalendar.js` + `dist/ReactCalendar.css`) load dynamically on demand via `viewScripts` and `viewStyles`.
-- Extension modules can register additional layout modes via [`$react->registerViewportMode(string $mode, string $moduleName, string $providerContract = '', array $meta = [])`](../React.module.php#L719).
+- Extension modules can register additional layout modes via [`$react->registerViewportMode(string $mode, string $moduleName, string $providerContract = '', array $meta = [])`](../React.module.php#L885).
 
 ---
 
@@ -27,9 +27,9 @@ Core `ReactInertia.js` and `ReactViewports.js` ship only the shared viewport she
 
 | Descriptor / Source | Adapter Class | Key Features |
 |---|---|---|
-| `'pages:<selector>'` or `PageArray` | [`PagesDataProvider`](../src/Provider/PagesDataProvider.php#L28-L135) | Runs selector queries with bounded top-level pagination (`stripTopLevelPaginationClauses()`), enforces ProcessWire `viewable()`/`editable()` RBAC, supports `columnSchemas()`, `iconField`, `thumbField`, `subtitleField`, `showTemplateIcon`, and mutates statuses (`OP_PUBLISH`, `OP_DRAFT`, `OP_TRASH`, `OP_RESTORE`, `OP_DELETE`, `OP_LOCK`, `OP_UNLOCK`). |
+| `'pages:<selector>'` or `PageArray` | [`PagesDataProvider`](../src/Provider/PagesDataProvider.php#L45-L150) | Runs selector queries with bounded top-level pagination (`stripTopLevelPaginationClauses()`), enforces ProcessWire `viewable()`/`editable()` RBAC, supports `columnSchemas()`, `iconField`, `thumbField`, `subtitleField`, `showTemplateIcon`, and mutates statuses (`OP_PUBLISH`, `OP_DRAFT`, `OP_TRASH`, `OP_RESTORE`, `OP_DELETE`, `OP_LOCK`, `OP_UNLOCK`). |
 | `'array:<id>'` or `array` / `Closure` | [`ArrayDataProvider`](../src/Provider/ArrayDataProvider.php#L28-L180) | Wraps in-memory or dynamic array datasets with uniform filtering, sorting, pagination, `columnSchemas()`, and record/cell visual descriptors. |
-| Custom `'namespace:key'` | Custom `ReactDataProviderInterface` | Register lazily via `React::deferProviderRegistration($this, function (ProviderRegistry $providers): void { $providers->registerFactory('custom:', ...); })` ([React.module.php](../React.module.php#L1479)). |
+| Custom `'namespace:key'` | Custom `ReactDataProviderInterface` | Register lazily via `React::deferProviderRegistration($this, function (ProviderRegistry $providers): void { $providers->registerFactory('custom:', ...); })` ([React.module.php](../React.module.php#L1812)). |
 
 ```php
 <?php
@@ -90,17 +90,17 @@ Every provider must implement `ReactDataProviderInterface` ([ReactDataProviderIn
 - **Column & Filter Configuration Options (`MarkupReactViewport`):**
   - Column schemas accept presentation hints (`type`, `align`, `valign`, `mono`, `tabular`, `nowrap`, `truncate`, `copyable`, `subtitleMono`, `maxBadges`), paired with table-level `rowValign` (`'middle' | 'top' | 'bottom'`).
   - Filter definitions support `display => 'pills'` with optional `counts`, `icons`, and `totalCount`.
-  - Toolbar controls honor `allowedViewModes`, `saveViewEnabled`, `columnPickerEnabled`, `toolbarActions`, and multi-option `createActions` ([API.md](../API.md#L185)).
+  - Toolbar controls honor `allowedViewModes`, `saveViewEnabled`, `columnPickerEnabled`, `toolbarActions`, and multi-option `createActions` ([API.md](../API.md#L225)).
 
 ---
 
 ## Signed Action Lifecycle (`/_react/viewport`) & Saved Preferences
 
-When a user sorts, filters, switches view modes, edits inline, triggers bulk actions, or exports data, the React client posts `{ stateToken, action, state, payload }` to `/_react/viewport` ([ReactGatewayRouter.php](../src/Http/ReactGatewayRouter.php#L232-L390)):
+When a user sorts, filters, switches view modes, edits inline, triggers bulk actions, or exports data, the React client posts `{ stateToken, action, state, payload }` to `/_react/viewport` ([ReactGatewayRouter.php](../src/Http/ReactGatewayRouter.php#L253-L410)):
 
-1. **Authentication & Method Checks:** Rejects unauthenticated guests (`403`). If `$action` is in [`ReactGatewayRouter::MUTATING_VIEWPORT_ACTIONS`](../src/Http/ReactGatewayRouter.php#L44-L65), enforces `POST` (`405`), rejects `$config->demo === true` (`403`), and validates ProcessWire's `$session->CSRF` token (`419`).
+1. **Authentication & Method Checks:** Rejects unauthenticated guests (`403`). If `$action` is in [`ReactGatewayRouter::MUTATING_VIEWPORT_ACTIONS`](../src/Http/ReactGatewayRouter.php#L45-L65), enforces `POST` (`405`), rejects `$config->demo === true` (`403`), and validates ProcessWire's `$session->CSRF` token (`419`).
 2. **Signed `stateToken` Verification:** `verifyViewportState()` decodes the HMAC-SHA256 envelope bound to the current `$user->id` (`typ = 'viewport'`), instantiates the target viewport class (`MarkupReactTable`, `MarkupReactCards`, etc.), refills allowed client state keys (`searchQuery`, `filterValues`, `sortField`, `sortDirection`, `page`, `limit`, `selectedIds`, `hiddenColumns`, `activeView`, `viewMode`, `quickEditRecordId`, plus any active pluggable mode keys declared via `modeMutableStateKeys()`), and dispatches `executeAction($action, $actionPayload)`.
-3. **CSV Formula Neutralization:** Exports sanitize cells via [`MarkupReactViewport::sanitizeCsvCell()`](../src/Viewport/MarkupReactViewport.php#L2976) to neutralize spreadsheet formula injection triggers.
+3. **CSV Formula Neutralization:** Exports sanitize cells via [`MarkupReactViewport::sanitizeCsvCell()`](../src/Viewport/MarkupReactViewport.php#L3257) to neutralize spreadsheet formula injection triggers.
 4. **Per-User Preference Persistence (`ReactViewPreferenceStore`):** Column visibility, active view mode, page size, sort state, and user-saved filter presets are cached in session (`ReactViewPrefs`) and persisted to `$user->meta('react_view_prefs_*')` whenever `config->demo` is false ([ReactViewPreferenceStore.php](../src/Viewport/ReactViewPreferenceStore.php#L17-L84)).
 
 ---
@@ -109,4 +109,4 @@ When a user sorts, filters, switches view modes, edits inline, triggers bulk act
 
 - Previous: [03 — Inputfields, Forms & Rich Text (`InputfieldTiptap`)](./03-inputfields-forms-and-tiptap.md)
 - Next: [05 — Frontend Runtime, Typed SDK, i18n & Security](./05-frontend-runtime-sdk-and-security.md)
-- Signatures: [API Reference §9](../API.md#L183-L189)
+- Signatures: [API Reference §9](../API.md#L223-L230)

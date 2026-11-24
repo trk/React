@@ -189,7 +189,7 @@ echo React::instance($this)->icons()->renderSvg('sparkles', [
 
 ## Configuration
 
-Configure site-wide defaults under **Modules > Configure > React** ([`React::getModuleConfigInputfields()`](./React.module.php#L2067-L2191)):
+Configure site-wide defaults under **Modules > Configure > React** ([`React::getModuleConfigInputfields()`](./React.module.php#L2414-L2538)):
 
 | Setting | Type | Default | Description |
 |---|---|---|---|
@@ -210,7 +210,7 @@ Configure site-wide defaults under **Modules > Configure > React** ([`React::get
 
 ## Hooks & Extension Seams
 
-All discovery hooks execute lazily on first registry access (`React::deferModuleRegistration`, `deferShellLayoutRegistration`, `deferCommandSearchRegistration`, `deferProviderRegistration`, `deferRelationRegistration`, `deferMediaHostRegistration` in [`React.module.php`](./React.module.php#L579,L984,L1166,L1224,L1479,L1576)):
+All discovery hooks execute lazily on first registry access (`React::deferModuleRegistration`, `deferShellLayoutRegistration`, `deferCommandSearchRegistration`, `deferProviderRegistration`, `deferRelationRegistration`, `deferMediaHostRegistration` in [`React.module.php`](./React.module.php#L1194,L1493,L1551,L1812,L1909,L735)):
 
 - **Hookable `React` Methods:** `___initWorkspaceRegistry()`, `___registerWorkspaces()`, `___getWorkspaceDefinitions()`, `___initWidgetRegistry()`, `___registerWidgets()`, `___getWidgetDefinitions()`, `___registerShellLayouts()`, `___registerCommandSearch()`, `___initProviderRegistry()`, `___registerProviders()`, `___initRelationRegistry()`, `___registerRelationResources()`, `___registerMediaHosts()`, `___translations()`.
 - **Editorial Mini-Block Hook:** `InputfieldTiptap::registerMiniBlocks` for adding custom flat `[data-tiptap-block]` types rendered via `./site/templates/tiptap/{name}.php`.
@@ -221,7 +221,7 @@ All discovery hooks execute lazily on first registry access (`React::deferModule
 
 ## Internal Endpoints & Multi-Language Packs
 
-`React` registers eight URL hooks ([`React.module.php`](./React.module.php#L351-L358)) and delivers native ProcessWire `LanguageTranslator` catalogs via locale-scoped Inertia `OnceProp` keys (`languages/{en,tr,de,fr,es,ru}.csv`):
+`React` registers eight URL hooks ([`React.module.php`](./React.module.php#L371-L378)) and delivers native ProcessWire `LanguageTranslator` catalogs via locale-scoped Inertia `OnceProp` keys (`languages/{en,tr,de,fr,es,ru}.csv`):
 
 | Endpoint | Purpose |
 |---|---|
