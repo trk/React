@@ -59,13 +59,17 @@ $resolvedSidebarCollapsed = isset($sidebarCollapsed)
 	? (bool) $sidebarCollapsed
 	: ($reactInst instanceof React ? $reactInst->resolveSidebarCollapsed($this->wire()->user) : false);
 $sidebarCollapsedAttr = $resolvedSidebarCollapsed ? 'true' : 'false';
+$rawShellMode = is_array($pageObject['props'] ?? null) && is_array($pageObject['props']['workspace'] ?? null)
+	? strtolower(trim((string) ($pageObject['props']['workspace']['shellMode'] ?? 'workspace')))
+	: 'workspace';
+$resolvedShellMode = $rawShellMode === 'admin' ? 'admin' : 'workspace';
 $uikitFontDir = rtrim((string) $this->wire()->config->paths->modules, '/') . '/AdminTheme/AdminThemeUikit/themes/default/fonts';
 $uikitFontUrlBase = is_dir($uikitFontDir)
 	? rtrim((string) $this->wire()->config->urls->modules, '/') . '/AdminTheme/AdminThemeUikit/themes/default/fonts'
 	: '';
 ?>
 <!DOCTYPE html>
-<html lang="<?= $safeLocale ?>" class="<?= $sanitizer->entities($htmlThemeClass) ?>" data-theme-mode="<?= $sanitizer->entities($resolvedThemeMode) ?>" data-rw-shell-mode="workspace" data-rw-shell-layout="<?= $sanitizer->entities($resolvedShellLayout) ?>" data-rw-sidebar-collapsed="<?= $sidebarCollapsedAttr ?>" data-rw-admin-root="<?= $sanitizer->entities($adminRootAttr) ?>" data-rw-launcher-path="<?= $sanitizer->entities($launcherPathAttr) ?>">
+<html lang="<?= $safeLocale ?>" class="<?= $sanitizer->entities($htmlThemeClass) ?>" data-theme-mode="<?= $sanitizer->entities($resolvedThemeMode) ?>" data-rw-shell-mode="<?= $sanitizer->entities($resolvedShellMode) ?>" data-rw-shell-layout="<?= $sanitizer->entities($resolvedShellLayout) ?>" data-rw-sidebar-collapsed="<?= $sidebarCollapsedAttr ?>" data-rw-admin-root="<?= $sanitizer->entities($adminRootAttr) ?>" data-rw-launcher-path="<?= $sanitizer->entities($launcherPathAttr) ?>">
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />

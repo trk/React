@@ -502,6 +502,28 @@ class React extends WireData implements Module, ConfigurableModule
 	}
 
 	/**
+	 * Determine whether parsed URL parts reference the current ProcessWire host (or a relative URL).
+	 *
+	 * @param array{scheme?: string, host?: string, port?: int, user?: string, pass?: string, path?: string, query?: string, fragment?: string} $parts
+	 */
+	private function isLocalUrlHost(array $parts, Config $config): bool
+	{
+		if (!isset($parts['host']) || $parts['host'] === '') {
+			return true;
+		}
+
+		$currentHost = strtolower((string) ($config->httpHost ?: ''));
+		if ($currentHost === '') {
+			return true;
+		}
+
+		$host = strtolower((string) $parts['host']);
+		$targetHost = $host . (isset($parts['port']) ? ':' . (int) $parts['port'] : '');
+
+		return $targetHost === $currentHost || $host === $currentHost;
+	}
+
+	/**
 	 * Append `ws=1` to a local ProcessWire admin module URL when appropriate.
 	 */
 	public function withWorkspaceQuery(string $url): string
@@ -521,12 +543,8 @@ class React extends WireData implements Module, ConfigurableModule
 			return $url;
 		}
 
-		if (isset($parts['host']) && $parts['host'] !== '') {
-			$currentHost = strtolower((string) ($config->httpHost ?: ''));
-			$targetHost = strtolower((string) $parts['host']) . (isset($parts['port']) ? ':' . (int) $parts['port'] : '');
-			if ($currentHost !== '' && $targetHost !== $currentHost && strtolower((string) $parts['host']) !== $currentHost) {
-				return $url;
-			}
+		if (!$this->isLocalUrlHost($parts, $config)) {
+			return $url;
 		}
 
 		$queryStr = (string) ($parts['query'] ?? '');
@@ -559,13 +577,68 @@ class React extends WireData implements Module, ConfigurableModule
 			}
 		}
 
+		$hashPos = strpos($trimmed, '#');
 		$fragment = isset($parts['fragment']) && $parts['fragment'] !== '' ? '#' . $parts['fragment'] : '';
-		$withoutFragment = isset($parts['fragment'])
-			? substr($trimmed, 0, (int) strpos($trimmed, '#'))
-			: $trimmed;
+		$withoutFragment = $hashPos !== false ? substr($trimmed, 0, $hashPos) : $trimmed;
 		$separator = str_contains($withoutFragment, '?') ? '&' : '?';
 
 		return $withoutFragment . $separator . 'ws=1' . $fragment;
+	}
+
+	/**
+	 * Strip the `ws` workspace-mode query parameter from a local ProcessWire admin module URL
+	 * while preserving all other query parameters and fragments.
+	 */
+	public function withoutWorkspaceQuery(string $url): string
+	{
+		$trimmed = trim($url);
+		if (
+			$trimmed === ''
+			|| str_starts_with($trimmed, '#')
+			|| preg_match('/^(?:javascript|mailto|tel|data|blob):/i', $trimmed) === 1
+		) {
+			return $url;
+		}
+
+		$config = $this->wire()->config;
+		$parts = parse_url($trimmed);
+		if (!is_array($parts)) {
+			return $url;
+		}
+
+		if (!$this->isLocalUrlHost($parts, $config)) {
+			return $url;
+		}
+
+		$queryStr = (string) ($parts['query'] ?? '');
+		if ($queryStr === '') {
+			return $url;
+		}
+
+		parse_str($queryStr, $queryParams);
+		if (!array_key_exists('ws', $queryParams)) {
+			return $url;
+		}
+
+		$path = (string) ($parts['path'] ?? '');
+		$adminUrl = rtrim((string) ($config->urls->admin ?: '/processwire/'), '/') . '/';
+		$normalizedPath = $path !== '' ? rtrim($path, '/') . '/' : '';
+		if ($normalizedPath !== '' && !str_starts_with($normalizedPath, $adminUrl)) {
+			return $url;
+		}
+
+		unset($queryParams['ws']);
+
+		$hashPos = strpos($trimmed, '#');
+		$withoutFragment = $hashPos !== false ? substr($trimmed, 0, $hashPos) : $trimmed;
+		$qPos = strpos($withoutFragment, '?');
+		$baseBeforeQuery = $qPos !== false ? substr($withoutFragment, 0, $qPos) : $withoutFragment;
+		$fragment = isset($parts['fragment']) && $parts['fragment'] !== '' ? '#' . $parts['fragment'] : '';
+		$querySuffix = $queryParams !== []
+			? '?' . http_build_query($queryParams, '', '&', PHP_QUERY_RFC3986)
+			: '';
+
+		return $baseBeforeQuery . $querySuffix . $fragment;
 	}
 
 	/**
@@ -2110,6 +2183,13 @@ class React extends WireData implements Module, ConfigurableModule
 
 		$rootUrl = rtrim((string) ($config->urls->root ?: '/'), '/');
 		$userProfile = $this->resolveUserAccountProfile($user, $adminUrl, $rootUrl);
+		$resolvedActiveWorkspace = null;
+		if ($activeWorkspace instanceof WorkspaceDefinition) {
+			$resolvedActiveUrl = $hubActive
+				? $this->workspaces()->resolveUrl($activeWorkspace)
+				: ($activeWorkspace->url !== '' ? $this->withoutWorkspaceQuery($activeWorkspace->url) : null);
+			$resolvedActiveWorkspace = $activeWorkspace->toArray($resolvedActiveUrl);
+		}
 
 		return [
 			'appName' => (string) ($config->httpHost ?: 'ProcessWire'),
@@ -2146,7 +2226,7 @@ class React extends WireData implements Module, ConfigurableModule
 				'logoutUrl' => $userProfile['logoutUrl'],
 				'isSuperuser' => (bool) $user->isSuperuser(),
 			],
-			'activeWorkspace' => $activeWorkspace?->toArray(),
+			'activeWorkspace' => $resolvedActiveWorkspace,
 			'workspaces' => $accessible,
 			'preferences' => $preferences,
 		];

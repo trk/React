@@ -266,7 +266,7 @@ final class WorkspaceRegistry extends Wire
 		}
 
 		if ($def->url !== '') {
-			return $def->url;
+			return \ProcessWire\React::instance($this)->withoutWorkspaceQuery($def->url);
 		}
 
 		if (isset($this->resolvedUrlCache[$def->id])) {
