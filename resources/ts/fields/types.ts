@@ -576,8 +576,24 @@ export interface RelationResourceDescriptor {
 	supportsQuickCreate: boolean;
 }
 
+export interface SchemaDangerZoneConfig {
+	title: string;
+	description?: string;
+	buttonLabel?: string;
+	dialogTitle?: string;
+	dialogDescription?: string;
+	acknowledgeLabel?: string;
+	confirmLabel?: string;
+	confirmInputName: string;
+	confirmInputValue?: string;
+	blocked?: boolean;
+	blockedMessage?: string;
+	referenceCountField?: string;
+	referenceWarningTemplate?: string;
+}
+
 export interface SchemaFieldDefinition {
-	kind?: 'control' | 'section' | 'tabs' | 'island' | 'markup';
+	kind?: 'control' | 'section' | 'tabs' | 'island' | 'markup' | 'danger_zone';
 	id?: string;
 	name: string;
 	type?: string;
@@ -599,6 +615,14 @@ export interface SchemaFieldDefinition {
 	collapsed?: boolean;
 	hideWrap?: boolean;
 	noWrap?: boolean;
+	collapsible?: boolean;
+	asyncUrl?: string;
+	asyncMode?: 'expand' | 'mount';
+	hideWhenEmpty?: boolean;
+	badge?: string;
+	surface?: 'card' | 'plain';
+	appendHtml?: string;
+	dangerZone?: SchemaDangerZoneConfig;
 	placeholder?: string;
 	value?: unknown;
 	values?: string[];
@@ -825,6 +849,7 @@ export interface SchemaTabPaneDefinition {
 	hideIf?: string;
 	conditions?: SchemaFieldConditions;
 	confirmDelete?: boolean;
+	systemTab?: boolean;
 	fields: SchemaFieldDefinition[];
 }
 
@@ -860,6 +885,7 @@ export interface SchemaFormPayload {
 	hiddenInputs?: Array<{ id?: string; name: string; value: string }>;
 	tabs?: SchemaTabPaneDefinition[];
 	fields?: SchemaFieldDefinition[];
+	belowTabsFields?: SchemaFieldDefinition[];
 	submits?: SchemaSubmitDefinition[];
 	defaultValues?: Record<string, unknown>;
 	values?: Record<string, unknown>;

@@ -10,6 +10,10 @@ import {
 	DropdownMenu,
 	EmptyState,
 	isViewportCellObject,
+	isVisualOnlyColumn,
+	normalizeViewportThumb,
+	RecordLeadingVisual,
+	resolvePrimaryColumnKey,
 	resolveRecordVisuals,
 	SortableHandle,
 	SortableStatusRegion,
@@ -77,8 +81,13 @@ export const DataCardsCanvas: React.FC<ViewportCanvasProps> = ({
 		);
 	}
 
-	const [primaryColKey, primaryColDef] = colEntries[0] || ['title', { label: 'Title' }];
-	const secondaryCols = colEntries.slice(1);
+	const primaryColKey = resolvePrimaryColumnKey(cols);
+	const primaryColDef = cols[primaryColKey] || { label: 'Title' };
+	const secondaryCols = colEntries.filter(
+		([k, d]) => k !== primaryColKey && !isVisualOnlyColumn(k, d)
+	);
+	const imageColEntry = colEntries.find(([, d]) => d.type === 'image' || d.type === 'media');
+	const iconColEntry = colEntries.find(([, d]) => d.type === 'icon');
 
 	return (
 		<>
@@ -99,12 +108,45 @@ export const DataCardsCanvas: React.FC<ViewportCanvasProps> = ({
 					);
 					const rowLabel = String(record.title || record.label || record.name || recordId);
 					const cardVisuals = resolveRecordVisuals(record);
-					const videoThumb = cardVisuals.thumb?.aspect === 'video' ? cardVisuals.thumb : null;
 					const cardEditHref = typeof record._editUrl === 'string' ? sanitizeHref(record._editUrl) : '';
 					const recordCells =
 						record._cells && typeof record._cells === 'object'
 							? (record._cells as Record<string, unknown>)
 							: null;
+
+					const imageColKey = imageColEntry?.[0];
+					const imageColShape = imageColEntry?.[1]?.shape;
+					const imageColCell =
+						imageColKey && recordCells && isViewportCellObject(recordCells[imageColKey])
+							? recordCells[imageColKey]
+							: imageColKey && isViewportCellObject(record[imageColKey])
+								? record[imageColKey]
+								: null;
+					const colThumb = imageColKey
+						? normalizeViewportThumb(imageColCell?.thumb ?? record[imageColKey], rowLabel)
+						: null;
+					const cardThumb = cardVisuals.thumb ?? colThumb;
+					const videoThumb =
+						cardThumb && (cardThumb.aspect === 'video' || imageColShape === 'video')
+							? cardThumb
+							: null;
+					const inlineThumb = videoThumb ? null : cardThumb;
+
+					const iconColKey = iconColEntry?.[0];
+					const iconColCell =
+						iconColKey && recordCells && isViewportCellObject(recordCells[iconColKey])
+							? recordCells[iconColKey]
+							: iconColKey && isViewportCellObject(record[iconColKey])
+								? record[iconColKey]
+								: null;
+					const colIconRaw = iconColKey ? iconColCell?.icon ?? record[iconColKey] : undefined;
+					const colIcon =
+						colIconRaw !== undefined && colIconRaw !== null && colIconRaw !== ''
+							? (colIconRaw as string | Record<string, unknown>)
+							: undefined;
+					const cardIcon = cardVisuals.icon ?? colIcon;
+					const showCardIconSlot = Boolean(cardIcon && !inlineThumb);
+
 					const primaryCellObj =
 						recordCells && isViewportCellObject(recordCells[primaryColKey])
 							? recordCells[primaryColKey]
@@ -146,12 +188,16 @@ export const DataCardsCanvas: React.FC<ViewportCanvasProps> = ({
 										href={cardEditHref}
 										tabIndex={-1}
 										aria-hidden="true"
+										data-rw-card-media="banner"
 										className="relative block aspect-[16/9] w-full overflow-hidden border-b border-border/60 bg-muted/40"
 									>
 										{videoBannerImg}
 									</ViewportLink>
 								) : (
-									<div className="relative aspect-[16/9] w-full overflow-hidden border-b border-border/60 bg-muted/40">
+									<div
+										data-rw-card-media="banner"
+										className="relative aspect-[16/9] w-full overflow-hidden border-b border-border/60 bg-muted/40"
+									>
 										{videoBannerImg}
 									</div>
 								)
@@ -165,7 +211,7 @@ export const DataCardsCanvas: React.FC<ViewportCanvasProps> = ({
 								>
 									<div
 										className={cn(
-											'flex min-w-0 flex-1 gap-2',
+											'flex min-w-0 flex-1 gap-2.5',
 											hasCardHeaderSubtitle ? 'items-start' : 'items-center'
 										)}
 									>
@@ -187,10 +233,29 @@ export const DataCardsCanvas: React.FC<ViewportCanvasProps> = ({
 												aria-label={`Select ${rowLabel}`}
 											/>
 										)}
+										{inlineThumb ? (
+											<div
+												data-rw-card-media="thumb"
+												className={cn('shrink-0', hasCardHeaderSubtitle && 'mt-0.5')}
+											>
+												<RecordLeadingVisual
+													thumb={inlineThumb}
+													shape={imageColShape}
+													size="md"
+												/>
+											</div>
+										) : showCardIconSlot ? (
+											<div
+												data-rw-card-icon=""
+												className={cn('shrink-0', hasCardHeaderSubtitle && 'mt-0.5')}
+											>
+												<RecordLeadingVisual icon={cardIcon} size="md" />
+											</div>
+										) : null}
 										<CardTitle className="min-w-0 flex-1 text-sm font-semibold leading-5">
 											{renderCellValue(record, primaryColKey, primaryColDef, {
 												isPrimaryColumn: true,
-												suppressRecordVisuals: Boolean(videoThumb),
+												suppressRecordVisuals: true,
 											})}
 										</CardTitle>
 									</div>

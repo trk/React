@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { fetchGatewayJson } from '../../hooks';
 import { t } from '../../lib/i18n';
-import { cn, DynamicIcon } from '../../lib/utils';
-import { Badge, Card, CardContent, ResponsiveTabBar, type ResponsiveTabItem } from '../../ui';
+import { cn, DynamicIcon, sanitizeSameOriginUrl } from '../../lib/utils';
+import { Alert, Badge, Button, Card, CardContent, ConfirmDialog, ResponsiveTabBar, type ResponsiveTabItem } from '../../ui';
 import {
 	countNestedErrors,
 	resolveFieldState,
@@ -279,19 +280,152 @@ export function applyMarkupCopyFeedback(
 	timersMap.set(copyTrigger, resetTimer);
 }
 
-export function SchemaMarkupNode({ field, errorMessage }: { field: SchemaFieldDefinition; errorMessage?: string }) {
+interface AsyncMarkupPayload {
+	ok?: boolean;
+	html?: string;
+	empty?: boolean;
+	count?: number;
+	badge?: string;
+	error?: string;
+}
+
+export function SchemaMarkupNode({
+	field,
+	errorMessage,
+	onAsyncLoaded,
+}: {
+	field: SchemaFieldDefinition;
+	errorMessage?: string;
+	onAsyncLoaded?: (fieldName: string, meta: { count?: number; empty: boolean }) => void;
+}) {
 	const htmlRef = useRef<HTMLDivElement | null>(null);
 	const copyTimersRef = useRef<Map<HTMLElement, ReturnType<typeof setTimeout>>>(new Map());
 	const announceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const abortRef = useRef<AbortController | null>(null);
+	const loadedOnceRef = useRef(false);
+	const onAsyncLoadedRef = useRef(onAsyncLoaded);
+	onAsyncLoadedRef.current = onAsyncLoaded;
+
 	const [copyAnnouncement, setCopyAnnouncement] = useState('');
 	const resolvedError = errorMessage || field.error || '';
+	const isCollapsible = Boolean(field.collapsible || field.collapsed);
+	const [collapsed, setCollapsed] = useState<boolean>(() => Boolean(field.collapsed));
+	const safeAsyncUrl = useMemo(() => (field.asyncUrl ? sanitizeSameOriginUrl(field.asyncUrl) : ''), [field.asyncUrl]);
+	const asyncMode = field.asyncMode === 'mount' ? 'mount' : 'expand';
+	const bodyId = useId().replace(/:/g, '');
+
+	const [asyncState, setAsyncState] = useState<{
+		status: 'idle' | 'loading' | 'loaded' | 'error';
+		html: string;
+		badge?: string;
+		empty?: boolean;
+		errorMsg?: string;
+	}>(() => ({
+		status: safeAsyncUrl ? 'idle' : 'loaded',
+		html: field.html || '',
+		badge: field.badge,
+	}));
+
+	const resetKey = `${field.name}\u0000${safeAsyncUrl}\u0000${field.html || ''}\u0000${field.appendHtml || ''}`;
+	const prevResetKeyRef = useRef(resetKey);
+	useEffect(() => {
+		if (prevResetKeyRef.current === resetKey) {
+			return;
+		}
+		prevResetKeyRef.current = resetKey;
+		abortRef.current?.abort();
+		loadedOnceRef.current = false;
+		setAsyncState({
+			status: safeAsyncUrl ? 'idle' : 'loaded',
+			html: field.html || '',
+			badge: field.badge,
+		});
+	}, [resetKey, safeAsyncUrl, field.html, field.badge]);
+
+	const loadAsync = useCallback(() => {
+		if (!safeAsyncUrl || typeof window === 'undefined') {
+			return;
+		}
+		abortRef.current?.abort();
+		const controller = new AbortController();
+		abortRef.current = controller;
+		setAsyncState((prev) => ({ ...prev, status: 'loading', errorMsg: undefined }));
+
+		void fetchGatewayJson<AsyncMarkupPayload>(safeAsyncUrl, {
+			method: 'GET',
+			signal: controller.signal,
+		})
+			.then((res) => {
+				if (controller.signal.aborted) {
+					return;
+				}
+				if (!res.ok) {
+					throw new Error(res.error || t('common.error', 'Error'));
+				}
+				const data = res.data;
+				const htmlStr = typeof data?.html === 'string' ? data.html : '';
+				const countVal = typeof data?.count === 'number' ? data.count : undefined;
+				const isEmpty =
+					Boolean(data?.empty) || (htmlStr.trim() === '' && !(field.appendHtml || '').trim());
+				const badgeStr =
+					typeof data?.badge === 'string' && data.badge !== ''
+						? data.badge
+						: countVal !== undefined && countVal > 0
+							? String(countVal)
+							: field.badge;
+
+				loadedOnceRef.current = true;
+				setAsyncState({
+					status: 'loaded',
+					html: htmlStr,
+					badge: badgeStr,
+					empty: isEmpty,
+				});
+				if (field.name) {
+					onAsyncLoadedRef.current?.(field.name, { count: countVal, empty: isEmpty });
+				}
+			})
+			.catch((err: unknown) => {
+				if (controller.signal.aborted) {
+					return;
+				}
+				const msg = err instanceof Error && err.message ? err.message : t('common.error', 'Error');
+				setAsyncState((prev) => ({
+					...prev,
+					status: 'error',
+					errorMsg: msg,
+				}));
+			});
+	}, [safeAsyncUrl, field.appendHtml, field.badge, field.name]);
 
 	useEffect(() => {
+		if (!safeAsyncUrl || loadedOnceRef.current || asyncState.status !== 'idle') {
+			return;
+		}
+		if (asyncMode === 'mount' || !collapsed) {
+			loadAsync();
+		}
+	}, [safeAsyncUrl, asyncMode, collapsed, asyncState.status, loadAsync]);
+
+	useEffect(() => {
+		return () => {
+			abortRef.current?.abort();
+		};
+	}, []);
+
+	const baseHtml = safeAsyncUrl ? asyncState.html : (field.html || '');
+	const combinedHtml = [baseHtml, field.appendHtml || ''].filter((part) => part.trim() !== '').join('');
+	const isExpandedContentVisible = !isCollapsible || !collapsed;
+
+	useEffect(() => {
+		if (!isExpandedContentVisible) {
+			return;
+		}
 		const el = htmlRef.current;
 		if (el && typeof window !== 'undefined') {
 			window.ReactWorkspaceRuntime?.mountIslands(el);
 		}
-	}, [field.html]);
+	}, [combinedHtml, isExpandedContentVisible]);
 
 	useEffect(() => {
 		const timers = copyTimersRef.current;
@@ -328,6 +462,123 @@ export function SchemaMarkupNode({ field, errorMessage }: { field: SchemaFieldDe
 		});
 	}, []);
 
+	if (field.hideWhenEmpty) {
+		if (safeAsyncUrl) {
+			if (asyncState.status === 'idle' || asyncState.status === 'loading') {
+				return null;
+			}
+			if (asyncState.status === 'loaded' && (asyncState.empty || combinedHtml.trim() === '')) {
+				return null;
+			}
+		} else if (combinedHtml.trim() === '') {
+			return null;
+		}
+	}
+
+	const resolvedBadge = asyncState.badge ?? field.badge;
+	const renderAsyncOrStaticBody = () => {
+		if (safeAsyncUrl && asyncState.status === 'loading') {
+			return (
+				<div className="flex items-center gap-2 py-2 text-xs text-muted-foreground" role="status">
+					<DynamicIcon name="loader-2" className="size-3.5 animate-spin shrink-0" aria-hidden="true" />
+					<span>{t('common.loading', 'Loading...')}</span>
+				</div>
+			);
+		}
+		if (safeAsyncUrl && asyncState.status === 'error') {
+			return (
+				<div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+					<span>{asyncState.errorMsg || t('common.error', 'Error')}</span>
+					<Button type="button" variant="outline" size="xs" onClick={loadAsync}>
+						{t('common.retry', 'Retry')}
+					</Button>
+				</div>
+			);
+		}
+
+		return (
+			<div
+				ref={htmlRef}
+				className="text-xs text-foreground"
+				onClick={handleMarkupClick}
+				dangerouslySetInnerHTML={{ __html: combinedHtml }}
+			/>
+		);
+	};
+
+	if (field.surface === 'plain') {
+		return (
+			<div
+				className={cn(
+					'space-y-2.5 border-t border-border/75 pt-3',
+					resolvedError && 'border-destructive/40'
+				)}
+				data-field-name={field.name}
+				data-rw-markup-surface="plain"
+				data-field-error={resolvedError ? '1' : undefined}
+			>
+				{!field.noWrap && field.label ? (
+					isCollapsible ? (
+						<button
+							type="button"
+							aria-expanded={!collapsed}
+							aria-controls={`rw-markup-body-${bodyId}`}
+							data-rw-markup-toggle={field.name}
+							onClick={() => setCollapsed((prev) => !prev)}
+							className="flex w-full items-center justify-between gap-2 rounded-sm py-0.5 text-left text-xs font-semibold tracking-tight text-foreground transition-colors hover:text-primary-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
+						>
+							<span className="flex min-w-0 items-center gap-1.5">
+								{field.icon ? (
+									<DynamicIcon name={field.icon} className="size-3.5 text-muted-foreground shrink-0" aria-hidden="true" />
+								) : null}
+								<span className="truncate">{field.label}</span>
+								{resolvedBadge ? (
+									<Badge variant="muted" className="text-[11px] font-medium tabular-nums">
+										{resolvedBadge}
+									</Badge>
+								) : null}
+							</span>
+							<DynamicIcon
+								name={collapsed ? 'chevron-down' : 'chevron-up'}
+								className="size-4 text-muted-foreground shrink-0"
+								aria-hidden="true"
+							/>
+						</button>
+					) : (
+						<div
+							data-rw-field-slot="label"
+							className="flex items-center gap-1.5 py-0.5 text-xs font-semibold tracking-tight text-foreground"
+						>
+							{field.icon ? (
+								<DynamicIcon name={field.icon} className="size-3.5 text-muted-foreground shrink-0" aria-hidden="true" />
+							) : null}
+							<span>{field.label}</span>
+							{resolvedBadge ? (
+								<Badge variant="muted" className="text-[11px] font-medium tabular-nums">
+									{resolvedBadge}
+								</Badge>
+							) : null}
+						</div>
+					)
+				) : null}
+				{isExpandedContentVisible ? (
+					<div id={`rw-markup-body-${bodyId}`} className="space-y-2">
+						{field.description ? (
+							<p data-rw-field-slot="description" className="text-xs text-muted-foreground leading-relaxed">
+								{field.description}
+							</p>
+						) : null}
+						{renderAsyncOrStaticBody()}
+					</div>
+				) : null}
+				<span role="status" aria-live="polite" className="sr-only">
+					{copyAnnouncement}
+				</span>
+				<SchemaFieldFooter notes={field.notes} error={resolvedError} />
+			</div>
+		);
+	}
+
 	return (
 		<div
 			className={cn(
@@ -338,16 +589,121 @@ export function SchemaMarkupNode({ field, errorMessage }: { field: SchemaFieldDe
 			data-field-error={resolvedError ? '1' : undefined}
 		>
 			{!field.noWrap ? <SchemaFieldHeader field={field} className="border-b border-border pb-2" /> : null}
-			<div
-				ref={htmlRef}
-				className="text-xs text-foreground"
-				onClick={handleMarkupClick}
-				dangerouslySetInnerHTML={{ __html: field.html || '' }}
-			/>
+			{renderAsyncOrStaticBody()}
 			<span role="status" aria-live="polite" className="sr-only">
 				{copyAnnouncement}
 			</span>
 			<SchemaFieldFooter notes={field.notes} error={resolvedError} />
+		</div>
+	);
+}
+
+export function SchemaDangerZoneNode({
+	field,
+	referencedCount,
+}: {
+	field: SchemaFieldDefinition;
+	referencedCount?: number;
+}) {
+	const dz = field.dangerZone;
+	const [open, setOpen] = useState(false);
+	const hiddenSubmitRef = useRef<HTMLButtonElement | null>(null);
+
+	const handleConfirm = useCallback(() => {
+		if (!dz) {
+			return;
+		}
+		const btn = hiddenSubmitRef.current;
+		const formEl = btn?.form;
+		setOpen(false);
+		if (formEl && btn && typeof formEl.requestSubmit === 'function') {
+			formEl.requestSubmit(btn);
+			return;
+		}
+		if (formEl) {
+			const hidden = document.createElement('input');
+			hidden.type = 'hidden';
+			hidden.name = dz.confirmInputName;
+			hidden.value = dz.confirmInputValue || '1';
+			formEl.appendChild(hidden);
+			formEl.submit();
+		}
+	}, [dz]);
+
+	if (!dz) {
+		return null;
+	}
+
+	const refWarning =
+		typeof referencedCount === 'number' && referencedCount > 0 && dz.referenceWarningTemplate
+			? dz.referenceWarningTemplate.replace('{count}', String(referencedCount))
+			: '';
+
+	return (
+		<div
+			className="mt-2 rounded-lg border border-destructive/30 bg-destructive/4 px-4 py-3.5"
+			data-field-name={field.name}
+			data-rw-danger-zone="1"
+		>
+			<div className="flex flex-wrap items-center justify-between gap-3">
+				<div className="flex min-w-0 flex-1 items-start gap-2.5">
+					<DynamicIcon
+						name={field.icon || 'alert-triangle'}
+						className="mt-0.5 size-4 shrink-0 text-destructive"
+						aria-hidden="true"
+					/>
+					<div className="min-w-0 space-y-0.5">
+						<div className="text-xs font-semibold text-foreground">{dz.title || field.label}</div>
+						{(dz.blocked && dz.blockedMessage) || dz.description ? (
+							<p
+								className={cn(
+									'text-xs leading-relaxed',
+									dz.blocked ? 'font-medium text-destructive' : 'text-muted-foreground'
+								)}
+							>
+								{dz.blocked && dz.blockedMessage ? dz.blockedMessage : dz.description}
+							</p>
+						) : null}
+					</div>
+				</div>
+				<Button
+					type="button"
+					variant="danger"
+					size="sm"
+					icon="trash"
+					disabled={Boolean(dz.blocked)}
+					data-rw-danger-delete="1"
+					onClick={() => setOpen(true)}
+				>
+					{dz.buttonLabel || t('common.delete', 'Delete')}
+				</Button>
+			</div>
+
+			<button
+				ref={hiddenSubmitRef}
+				type="submit"
+				name={dz.confirmInputName}
+				value={dz.confirmInputValue || '1'}
+				formNoValidate
+				tabIndex={-1}
+				aria-hidden="true"
+				className="sr-only"
+			/>
+
+			<ConfirmDialog
+				open={open}
+				onOpenChange={setOpen}
+				variant="danger"
+				icon="alert-triangle"
+				title={dz.dialogTitle || dz.title || field.label || t('common.confirm', 'Confirm')}
+				description={dz.dialogDescription || dz.description || ''}
+				acknowledgeLabel={dz.acknowledgeLabel}
+				confirmLabel={dz.confirmLabel || t('common.delete', 'Delete')}
+				requireAcknowledge={true}
+				onConfirm={handleConfirm}
+			>
+				{refWarning ? <Alert variant="warning">{refWarning}</Alert> : null}
+			</ConfirmDialog>
 		</div>
 	);
 }

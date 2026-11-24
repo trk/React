@@ -8,6 +8,7 @@ import {
 	buildViewportActionItems,
 	Button,
 	ConfirmDialog,
+	resolvePrimaryColumnKey,
 	StatCard,
 } from '../ui';
 import type {
@@ -292,19 +293,25 @@ export const DataViewport: React.FC<ViewportState | Record<string, unknown>> = (
 				: state.columns || {},
 		[state.displayColumns, state.columns]
 	);
+	const primaryColKey = React.useMemo(
+		() => resolvePrimaryColumnKey(visibleColsForVisuals),
+		[visibleColsForVisuals]
+	);
 	const hasDedicatedIconColumn = React.useMemo(
 		() =>
 			Object.entries(visibleColsForVisuals).some(
-				([k, d], i) => i > 0 && (k === 'icon' || d.type === 'icon')
+				([k, d]) => k !== primaryColKey && (k === 'icon' || d.type === 'icon')
 			),
-		[visibleColsForVisuals]
+		[visibleColsForVisuals, primaryColKey]
 	);
 	const hasDedicatedThumbColumn = React.useMemo(
 		() =>
 			Object.entries(visibleColsForVisuals).some(
-				([k, d], i) => i > 0 && (k === 'thumb' || k === 'image' || d.type === 'media' || d.type === 'image')
+				([k, d]) =>
+					k !== primaryColKey &&
+					(k === 'thumb' || k === 'image' || d.type === 'media' || d.type === 'image')
 			),
-		[visibleColsForVisuals]
+		[visibleColsForVisuals, primaryColKey]
 	);
 
 	const renderCellValue = useCallback(

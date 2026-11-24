@@ -2,11 +2,14 @@ import type React from 'react';
 
 export interface ViewportColumn {
 	label: string;
+	primary?: boolean;
 	sortable?: boolean;
 	align?: 'left' | 'center' | 'right';
 	valign?: 'top' | 'middle' | 'bottom';
 	width?: string;
 	type?: string;
+	showLabel?: boolean;
+	shape?: 'rounded' | 'circle' | 'video';
 	editable?: boolean;
 	mono?: boolean;
 	tabular?: boolean;

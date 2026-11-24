@@ -5,6 +5,8 @@ import {
 	buildViewportActionItems,
 	DropdownMenu,
 	EmptyState,
+	isVisualOnlyColumn,
+	resolvePrimaryColumnKey,
 	SortableHandle,
 	SortableStatusRegion,
 	useSortableList,
@@ -78,6 +80,7 @@ export const DataTableCanvas: React.FC<ViewportCanvasProps> = ({
 	const tableRowValign = state.rowValign || 'middle';
 	const auxValignClass = tableRowValign === 'top' ? 'align-top pt-2.5' : 'align-middle';
 	const auxDataValign = tableRowValign === 'top' ? 'top' : 'middle';
+	const primaryColKey = resolvePrimaryColumnKey(cols);
 	const regionLabel = (state.title || state.componentId || 'Table').trim();
 
 	return (
@@ -117,6 +120,13 @@ export const DataTableCanvas: React.FC<ViewportCanvasProps> = ({
 						)}
 						{colEntries.map(([colKey, colDef]) => {
 							const isSorted = state.sortField === colKey;
+							const isCompactVisual = isVisualOnlyColumn(colKey, colDef) && !colDef.showLabel;
+							const defaultVisualWidthClass =
+								!colDef.width && isCompactVisual
+									? colDef.type === 'icon'
+										? 'w-13'
+										: 'w-15'
+									: undefined;
 							const alignClass =
 								colDef.align === 'right'
 									? 'text-right'
@@ -137,7 +147,9 @@ export const DataTableCanvas: React.FC<ViewportCanvasProps> = ({
 									}
 									style={colDef.width ? { width: colDef.width } : undefined}
 									className={cn(
-										'px-3.5 py-2 align-middle font-semibold whitespace-nowrap select-none',
+										isCompactVisual ? 'px-2.5' : 'px-3.5',
+										'py-2 align-middle font-semibold whitespace-nowrap select-none',
+										defaultVisualWidthClass,
 										alignClass
 									)}
 								>
@@ -150,7 +162,9 @@ export const DataTableCanvas: React.FC<ViewportCanvasProps> = ({
 												colDef.align === 'right' && 'ml-auto'
 											)}
 										>
-											<span>{colDef.label}</span>
+											<span className={colDef.label ? undefined : 'sr-only'}>
+												{colDef.label || colKey}
+											</span>
 											<DynamicIcon
 												name={
 													isSorted
@@ -164,7 +178,9 @@ export const DataTableCanvas: React.FC<ViewportCanvasProps> = ({
 											/>
 										</button>
 									) : (
-										<span>{colDef.label}</span>
+										<span className={colDef.label ? undefined : 'sr-only'}>
+											{colDef.label || colKey}
+										</span>
 									)}
 								</th>
 							);
@@ -222,7 +238,9 @@ export const DataTableCanvas: React.FC<ViewportCanvasProps> = ({
 										/>
 									</td>
 								)}
-								{colEntries.map(([colKey, colDef], colIdx) => {
+								{colEntries.map(([colKey, colDef]) => {
+									const isPrimaryCol = colKey === primaryColKey;
+									const isCompactVisual = isVisualOnlyColumn(colKey, colDef) && !colDef.showLabel;
 									const alignClass =
 										colDef.align === 'right'
 											? 'text-right'
@@ -237,7 +255,7 @@ export const DataTableCanvas: React.FC<ViewportCanvasProps> = ({
 												? 'align-bottom'
 												: 'align-middle';
 									const cellNode = renderCellValue(record, colKey, colDef, {
-										isPrimaryColumn: colIdx === 0,
+										isPrimaryColumn: isPrimaryCol,
 									});
 
 									return (
@@ -245,12 +263,12 @@ export const DataTableCanvas: React.FC<ViewportCanvasProps> = ({
 											key={colKey}
 											data-valign={effectiveValign}
 											style={
-												colIdx === 0 && recordDepth > 0
+												isPrimaryCol && recordDepth > 0
 													? { paddingLeft: `${0.875 + recordDepth * 1.25}rem` }
 													: undefined
 											}
 											className={cn(
-												'px-3.5',
+												isCompactVisual ? 'px-2.5' : 'px-3.5',
 												state.dense ? 'py-1.5' : 'py-2.5',
 												alignClass,
 												valignClass

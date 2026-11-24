@@ -135,6 +135,8 @@ class FormSchemaSerializer extends Wire
 		$tabs = [];
 		/** @var list<array<string, mixed>> $fields */
 		$fields = [];
+		/** @var list<array<string, mixed>> $belowTabsFields */
+		$belowTabsFields = [];
 		/** @var list<array<string, mixed>> $submits */
 		$submits = [];
 
@@ -189,6 +191,7 @@ class FormSchemaSerializer extends Wire
 					?? ''
 				));
 				$tabCollapsed = $this->isCollapsed($child);
+				$isSystemTab = (bool) $child->get('systemTab') || $this->findDataAttribute($child->getAttributes(), 'rw-system-tab') === '1';
 
 				$hasHoistableGroup = false;
 				foreach ($child->children() as $subChild) {
@@ -245,7 +248,11 @@ class FormSchemaSerializer extends Wire
 							$hasFileField,
 						);
 						if ($serializedSub !== null) {
-							$looseFields[] = $serializedSub;
+							if ((bool) $subChild->get('_rwBelowTabs')) {
+								$belowTabsFields[] = $serializedSub;
+							} else {
+								$looseFields[] = $serializedSub;
+							}
 						}
 					}
 
@@ -274,6 +281,7 @@ class FormSchemaSerializer extends Wire
 							'notes' => (string) ($child->notes ?? ''),
 							'collapsed' => $tabCollapsed,
 							'confirmDelete' => $confirmDelete,
+							'systemTab' => $isSystemTab,
 							'showIf' => $tabConditions['show'],
 							'hideIf' => $tabConditions['hide'],
 							'conditions' => $tabConditions,
@@ -294,6 +302,7 @@ class FormSchemaSerializer extends Wire
 					$values,
 					$errors,
 					$hasFileField,
+					$belowTabsFields,
 				);
 
 				$tabs[] = [
@@ -305,6 +314,7 @@ class FormSchemaSerializer extends Wire
 					'notes' => (string) ($child->notes ?? ''),
 					'collapsed' => $tabCollapsed,
 					'confirmDelete' => $confirmDelete,
+					'systemTab' => $isSystemTab,
 					'showIf' => $tabConditions['show'],
 					'hideIf' => $tabConditions['hide'],
 					'conditions' => $tabConditions,
@@ -321,7 +331,11 @@ class FormSchemaSerializer extends Wire
 				$hasFileField,
 			);
 			if ($serialized !== null) {
-				$fields[] = $serialized;
+				if ((bool) $child->get('_rwBelowTabs')) {
+					$belowTabsFields[] = $serialized;
+				} else {
+					$fields[] = $serialized;
+				}
 			}
 		}
 
@@ -374,6 +388,7 @@ class FormSchemaSerializer extends Wire
 			'hiddenInputs' => $hiddenInputs,
 			'tabs' => $tabs,
 			'fields' => $fields,
+			'belowTabsFields' => $belowTabsFields,
 			'submits' => $submits,
 			'defaultValues' => $values,
 			'values' => $values,
@@ -1143,6 +1158,7 @@ class FormSchemaSerializer extends Wire
 	 * @param list<array{id?: string, name: string, value: string}> $hiddenInputs
 	 * @param array<string, mixed> $values
 	 * @param array<string, string> $errors
+	 * @param list<array<string, mixed>>|null $belowTabsFields
 	 * @return list<array<string, mixed>>
 	 */
 	private function serializeChildren(
@@ -1151,6 +1167,7 @@ class FormSchemaSerializer extends Wire
 		array &$values,
 		array &$errors,
 		bool &$hasFileField,
+		?array &$belowTabsFields = null,
 	): array {
 		$items = [];
 		foreach ($wrapper->children() as $child) {
@@ -1177,7 +1194,11 @@ class FormSchemaSerializer extends Wire
 				$hasFileField,
 			);
 			if ($serialized !== null) {
-				$items[] = $serialized;
+				if ($belowTabsFields !== null && (bool) $child->get('_rwBelowTabs')) {
+					$belowTabsFields[] = $serialized;
+				} else {
+					$items[] = $serialized;
+				}
 			}
 		}
 
@@ -1238,14 +1259,7 @@ class FormSchemaSerializer extends Wire
 		}
 
 		if ($inputfield instanceof InputfieldMarkup && $inputfield->children()->count() === 0) {
-			$html = $inputfield->render();
-			$this->extractHiddenInputsFromHtml($html, $hiddenInputs, $values);
-
-			return array_merge($this->extractCommonFieldMeta($inputfield, $errors), [
-				'kind' => 'markup',
-				'isFile' => false,
-				'html' => $html,
-			]);
+			return $this->serializeMarkupField($inputfield, $hiddenInputs, $values, $errors);
 		}
 
 		if ($inputfield instanceof InputfieldWrapper) {
@@ -1490,14 +1504,7 @@ class FormSchemaSerializer extends Wire
 		$shortClass = $this->shortClassName($inputfield);
 
 		if ($inputfield instanceof InputfieldMarkup) {
-			$html = $inputfield->render();
-			$this->extractHiddenInputsFromHtml($html, $hiddenInputs, $values);
-
-			return array_merge($this->extractCommonFieldMeta($inputfield, $errors), [
-				'kind' => 'markup',
-				'isFile' => false,
-				'html' => $html,
-			]);
+			return $this->serializeMarkupField($inputfield, $hiddenInputs, $values, $errors);
 		}
 
 		if ($inputfield instanceof InputfieldFile || $shortClass === 'InputfieldFile' || $shortClass === 'InputfieldImage') {
@@ -3196,6 +3203,89 @@ class FormSchemaSerializer extends Wire
 		}
 
 		return $result;
+	}
+
+	/**
+	 * Serialize an `InputfieldMarkup` node (static HTML, collapsible/async section, or `danger_zone`).
+	 *
+	 * @param list<array{id?: string, name: string, value: string}> $hiddenInputs
+	 * @param array<string, mixed> $values
+	 * @param array<string, string> $errors
+	 * @return array<string, mixed>
+	 */
+	private function serializeMarkupField(
+		InputfieldMarkup $inputfield,
+		array &$hiddenInputs,
+		array &$values,
+		array $errors,
+	): array {
+		$common = $this->extractCommonFieldMeta($inputfield, $errors);
+		$rawDangerZone = $inputfield->get('rwDangerZone');
+		if (is_array($rawDangerZone) && $rawDangerZone !== []) {
+			$dangerZone = [
+				'title' => (string) ($rawDangerZone['title'] ?? ''),
+				'confirmInputName' => (string) ($rawDangerZone['confirmInputName'] ?? '_delete_confirm'),
+			];
+			foreach ([
+				'description',
+				'buttonLabel',
+				'dialogTitle',
+				'dialogDescription',
+				'acknowledgeLabel',
+				'confirmLabel',
+				'confirmInputValue',
+				'blockedMessage',
+				'referenceCountField',
+				'referenceWarningTemplate',
+			] as $strKey) {
+				if (isset($rawDangerZone[$strKey]) && is_string($rawDangerZone[$strKey]) && $rawDangerZone[$strKey] !== '') {
+					$dangerZone[$strKey] = $rawDangerZone[$strKey];
+				}
+			}
+			if (array_key_exists('blocked', $rawDangerZone)) {
+				$dangerZone['blocked'] = (bool) $rawDangerZone['blocked'];
+			}
+
+			return array_merge($common, [
+				'kind' => 'danger_zone',
+				'dangerZone' => $dangerZone,
+			]);
+		}
+
+		$html = $inputfield->render();
+		$this->extractHiddenInputsFromHtml($html, $hiddenInputs, $values);
+
+		$payload = array_merge($common, [
+			'kind' => 'markup',
+			'isFile' => false,
+			'html' => $html,
+		]);
+
+		if ((bool) $inputfield->get('rwCollapsible') || !empty($common['collapsed'])) {
+			$payload['collapsible'] = true;
+		}
+		$asyncUrl = trim((string) $inputfield->get('rwAsyncUrl'));
+		if ($asyncUrl !== '') {
+			$payload['asyncUrl'] = $asyncUrl;
+			$rawAsyncMode = strtolower(trim((string) $inputfield->get('rwAsyncMode')));
+			$payload['asyncMode'] = $rawAsyncMode === 'mount' ? 'mount' : 'expand';
+		}
+		if ((bool) $inputfield->get('rwHideWhenEmpty')) {
+			$payload['hideWhenEmpty'] = true;
+		}
+		$badge = trim((string) $inputfield->get('rwBadge'));
+		if ($badge !== '') {
+			$payload['badge'] = $badge;
+		}
+		if (strtolower(trim((string) $inputfield->get('rwSurface'))) === 'plain') {
+			$payload['surface'] = 'plain';
+		}
+		$appendHtml = (string) $inputfield->get('rwAppendHtml');
+		if ($appendHtml !== '') {
+			$payload['appendHtml'] = $appendHtml;
+		}
+
+		return $payload;
 	}
 
 	/**

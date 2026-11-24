@@ -200,7 +200,13 @@ export function renderViewportCellValue({
 	}
 
 	if (colType === 'icon') {
-		const iconPayload = cellObj?.icon ?? (rawVal !== null && rawVal !== '' ? rawVal : undefined);
+		const iconPayload =
+			cellObj?.icon ??
+			(rawVal !== null && rawVal !== undefined && rawVal !== ''
+				? rawVal
+				: colKey === 'icon'
+					? record._icon
+					: undefined);
 		if (iconPayload === undefined || iconPayload === '') {
 			return <span className="text-muted-foreground">—</span>;
 		}
@@ -210,11 +216,20 @@ export function renderViewportCellValue({
 				? rawVal.trim()
 				: isIconValueObj
 					? String((rawVal as Record<string, unknown>).name || '')
-					: '');
+					: typeof iconPayload === 'object' && iconPayload !== null
+						? String((iconPayload as Record<string, unknown>).name || '')
+						: '');
 		return (
-			<span className={cn('inline-flex min-w-0 items-center gap-2', justifyCls)}>
-				<RecordLeadingVisual icon={iconPayload as string | Record<string, unknown>} size="sm" />
-				{iconLabel ? (
+			<span
+				data-rw-cell-icon=""
+				title={iconLabel || undefined}
+				className={cn('inline-flex min-w-0 items-center gap-2', justifyCls)}
+			>
+				<RecordLeadingVisual
+					icon={iconPayload as string | Record<string, unknown>}
+					size={dense ? 'sm' : 'md'}
+				/>
+				{colDef.showLabel && iconLabel ? (
 					<span className={cn('truncate', (cellObj?.mono ?? colDef.mono) && 'font-mono text-xs')}>
 						{iconLabel}
 					</span>
@@ -224,17 +239,31 @@ export function renderViewportCellValue({
 	}
 
 	if (colType === 'media' || colType === 'image') {
+		const rawMediaSource =
+			cellObj?.thumb ??
+			(rawVal !== null && rawVal !== undefined && rawVal !== ''
+				? rawVal
+				: colKey === 'thumb' || colKey === 'image'
+					? record._thumb
+					: undefined);
 		const mediaThumb = normalizeViewportThumb(
-			cellObj?.thumb ?? rawVal,
+			rawMediaSource,
 			String(record.title || record.name || colDef.label)
 		);
 		if (!mediaThumb) {
 			return <span className="text-muted-foreground">—</span>;
 		}
 		return (
-			<span className={cn('inline-flex min-w-0 items-center gap-2', justifyCls)}>
-				<RecordLeadingVisual thumb={mediaThumb} size={dense ? 'sm' : 'md'} />
-				{cellObj?.label ? <span className="truncate text-xs">{cellObj.label}</span> : null}
+			<span
+				data-rw-cell-image=""
+				className={cn('inline-flex min-w-0 items-center gap-2', justifyCls)}
+			>
+				<RecordLeadingVisual
+					thumb={mediaThumb}
+					shape={colDef.shape}
+					size={dense ? 'sm' : 'md'}
+				/>
+				{colDef.showLabel && cellObj?.label ? <span className="truncate text-xs">{cellObj.label}</span> : null}
 			</span>
 		);
 	}
@@ -267,13 +296,12 @@ export function renderViewportCellValue({
 								? JSON.stringify(rawVal)
 								: String(rawVal);
 
-	const recVisuals =
-		isPrimaryCol && !options?.suppressRecordVisuals
-			? resolveRecordVisuals(record, {
-					hasDedicatedIconColumn,
-					hasDedicatedThumbColumn,
-				})
-			: null;
+	const recVisuals = isPrimaryCol
+		? resolveRecordVisuals(record, {
+				hasDedicatedIconColumn: Boolean(options?.suppressRecordVisuals) || hasDedicatedIconColumn,
+				hasDedicatedThumbColumn: Boolean(options?.suppressRecordVisuals) || hasDedicatedThumbColumn,
+			})
+		: null;
 
 	const thumb =
 		normalizeViewportThumb(cellObj?.thumb, displayStr) ?? (recVisuals ? recVisuals.thumb : null);

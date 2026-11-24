@@ -547,7 +547,7 @@ function optimizeReactWorkspaceDepsPlugin(
 					'  Stepper, Timeline,',
 					'  StatCard, CliBox, CodePreview, EmptyState, ConfirmDialog,',
 					'  buildViewportActionItems,',
-					'  BadgeGroup, CopyValueButton, RecordLeadingVisual, useRwDarkTheme, applyTextTruncate, isFramedIconPayload, isViewportCellObject, normalizeViewportBadges, normalizeViewportThumb, resolveRecordVisuals,',
+					'  BadgeGroup, CopyValueButton, RecordLeadingVisual, useRwDarkTheme, applyTextTruncate, isFramedIconPayload, isVisualOnlyColumn, resolvePrimaryColumnKey, hasCustomIconColor, isViewportCellObject, normalizeViewportBadges, normalizeViewportThumb, resolveRecordVisuals,',
 					'  PortalRoot, getPortalContainer, PORTAL_ROOT_ID,',
 					'  SortableHandle, SortableStatusRegion, useSortableList, moveArrayItem, projectTreeReorder,',
 					'  ColumnSpanSlider, clampColSpan, colSpanToPercent, percentToColSpan, formatColSpanHint,',

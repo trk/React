@@ -255,6 +255,7 @@ export function prefetchSchemaControls(schema: SchemaFormPayload): void {
 
 	const rootRec = schema as unknown as Record<string, unknown>;
 	visitFieldList(schema.fields);
+	visitFieldList(schema.belowTabsFields);
 	visitFieldList(schema.tabs);
 	visitFieldList(rootRec.steps);
 

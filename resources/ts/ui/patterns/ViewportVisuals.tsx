@@ -249,6 +249,49 @@ export function applyTextTruncate(
 	return { display: value, truncated: false, cssTruncate: false };
 }
 
+export function isVisualOnlyColumn(_colKey: string, colDef?: { type?: string }): boolean {
+	const colType = colDef?.type ? String(colDef.type).trim().toLowerCase() : '';
+	return colType === 'icon' || colType === 'image' || colType === 'media';
+}
+
+export function resolvePrimaryColumnKey(
+	cols: Record<string, { primary?: boolean; type?: string }>
+): string {
+	const entries = Object.entries(cols);
+	if (entries.length === 0) {
+		return 'title';
+	}
+	const explicit = entries.find(([, def]) => Boolean(def?.primary));
+	if (explicit) {
+		return explicit[0];
+	}
+	const firstDataCol = entries.find(([key, def]) => !isVisualOnlyColumn(key, def));
+	return firstDataCol ? firstDataCol[0] : (entries[0]?.[0] ?? 'title');
+}
+
+export function hasCustomIconColor(raw: unknown): boolean {
+	if (!raw) {
+		return false;
+	}
+	let candidate = raw;
+	if (typeof candidate === 'string') {
+		const trimmed = candidate.trim();
+		if (!trimmed.startsWith('{') || trimmed.length > 4096) {
+			return false;
+		}
+		try {
+			candidate = JSON.parse(trimmed);
+		} catch {
+			return false;
+		}
+	}
+	if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
+		return false;
+	}
+	const rawColor = (candidate as Record<string, unknown>).color;
+	return typeof rawColor === 'string' && rawColor.trim() !== '';
+}
+
 export interface ResolvedRecordVisuals {
 	icon?: string | Record<string, unknown>;
 	thumb: ViewportThumbSpec | null;
@@ -265,20 +308,18 @@ export function resolveRecordVisuals(
 	}
 ): ResolvedRecordVisuals {
 	const fallbackLabel = String(record.title ?? record.label ?? record.name ?? record.id ?? '');
-	const rawThumb =
-		record._thumb !== undefined
+	const rawThumb = options?.hasDedicatedThumbColumn
+		? undefined
+		: record._thumb !== undefined
 			? record._thumb
-			: !options?.hasDedicatedThumbColumn
-				? record.thumb
-				: undefined;
+			: record.thumb;
 	const thumb = normalizeViewportThumb(rawThumb, fallbackLabel);
 
-	const rawIconCandidate =
-		record._icon !== undefined
+	const rawIconCandidate = options?.hasDedicatedIconColumn
+		? undefined
+		: record._icon !== undefined
 			? record._icon
-			: !options?.hasDedicatedIconColumn
-				? record.icon
-				: undefined;
+			: record.icon;
 	let icon: string | Record<string, unknown> | undefined;
 	if (typeof rawIconCandidate === 'string' && rawIconCandidate.trim() !== '') {
 		icon = rawIconCandidate.trim();
@@ -311,7 +352,8 @@ export interface RecordLeadingVisualProps {
 	thumb?: ViewportThumbSpec | null;
 	icon?: string | Record<string, unknown>;
 	multiline?: boolean;
-	size?: 'xs' | 'sm' | 'md';
+	size?: '2xs' | 'xs' | 'sm' | 'md';
+	shape?: 'rounded' | 'circle' | 'video';
 	className?: string;
 }
 
@@ -320,28 +362,62 @@ export function RecordLeadingVisual({
 	icon,
 	multiline = false,
 	size = 'md',
+	shape,
 	className,
 }: RecordLeadingVisualProps): React.ReactElement | null {
 	const isDark = useRwDarkTheme();
 
 	if (thumb && thumb.src) {
-		const isVideo = thumb.aspect === 'video';
+		const isVideo = thumb.aspect === 'video' || shape === 'video';
 		const sizeCls = isVideo
-			? size === 'xs'
-				? 'h-[18px] w-8'
-				: size === 'sm'
-					? 'h-[22px] w-10'
-					: 'h-7 w-12'
-			: size === 'xs'
-				? 'size-6'
-				: size === 'sm'
-					? 'size-8'
-					: 'size-9';
-		const imgW = isVideo ? (size === 'xs' ? 32 : size === 'sm' ? 40 : 48) : size === 'xs' ? 24 : size === 'sm' ? 32 : 36;
-		const imgH = isVideo ? (size === 'xs' ? 18 : size === 'sm' ? 22 : 28) : size === 'xs' ? 24 : size === 'sm' ? 32 : 36;
+			? size === '2xs'
+				? 'h-3.5 w-6'
+				: size === 'xs'
+					? 'h-[18px] w-8'
+					: size === 'sm'
+						? 'h-[22px] w-10'
+						: 'h-7 w-12'
+			: size === '2xs'
+				? 'size-4'
+				: size === 'xs'
+					? 'size-6'
+					: size === 'sm'
+						? 'size-8'
+						: 'size-9';
+		const imgW = isVideo
+			? size === '2xs'
+				? 24
+				: size === 'xs'
+					? 32
+					: size === 'sm'
+						? 40
+						: 48
+			: size === '2xs'
+				? 16
+				: size === 'xs'
+					? 24
+					: size === 'sm'
+						? 32
+						: 36;
+		const imgH = isVideo
+			? size === '2xs'
+				? 14
+				: size === 'xs'
+					? 18
+					: size === 'sm'
+						? 22
+						: 28
+			: size === '2xs'
+				? 16
+				: size === 'xs'
+					? 24
+					: size === 'sm'
+						? 32
+						: 36;
+		const radiusCls = !isVideo && shape === 'circle' ? 'rounded-full' : 'rounded-md';
 		const activeSrc = isDark && thumb.darkSrc ? thumb.darkSrc : thumb.src;
 		return (
-			<span className={cn('relative inline-flex shrink-0', className)}>
+			<span data-rw-visual-thumb="" className={cn('relative inline-flex shrink-0', className)}>
 				<img
 					src={activeSrc}
 					alt={thumb.alt}
@@ -349,7 +425,7 @@ export function RecordLeadingVisual({
 					height={imgH}
 					loading="lazy"
 					data-rw-preview-scheme={isDark ? 'dark' : 'light'}
-					className={cn(sizeCls, 'rounded-md border border-border/70 bg-muted object-cover')}
+					className={cn(sizeCls, radiusCls, 'border border-border/70 bg-muted object-cover')}
 				/>
 				{thumb.count > 1 ? (
 					<span className="absolute -right-1.5 -top-1.5 inline-flex min-w-4 items-center justify-center rounded-full border border-card bg-secondary px-1 text-[10px] font-semibold leading-4 text-secondary-foreground tabular-nums">
@@ -362,16 +438,30 @@ export function RecordLeadingVisual({
 
 	if (icon !== undefined && icon !== '') {
 		const framed = isFramedIconPayload(icon);
-		const iconSizeCls = !framed
-			? size === 'xs'
-				? 'size-3.5 text-muted-foreground'
-				: 'size-4 text-muted-foreground'
-			: undefined;
+		const customColor = hasCustomIconColor(icon);
+		const clampedSize = framed
+			? size === '2xs'
+				? 10
+				: size === 'xs'
+					? 12
+					: size === 'sm'
+						? 14
+						: 16
+			: size === '2xs'
+				? 12
+				: size === 'xs'
+					? 14
+					: size === 'sm'
+						? 16
+						: 18;
+		const iconColorCls = !framed && !customColor ? 'text-muted-foreground' : undefined;
 		return (
 			<DynamicIcon
 				value={icon}
 				name={typeof icon === 'string' ? icon : undefined}
-				className={cn('shrink-0', iconSizeCls, multiline && !framed && 'mt-0.5', className)}
+				size={clampedSize}
+				data-rw-visual-icon=""
+				className={cn('shrink-0', iconColorCls, multiline && !framed && 'mt-0.5', className)}
 			/>
 		);
 	}

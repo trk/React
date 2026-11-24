@@ -1606,6 +1606,17 @@ export function validateSchemaTree(
 		return fStep === stepFilter;
 	});
 	validateFieldNodesRecursive(rootFields, values, errors, failedTabIds, scopePrefix, undefined, rootSkipRequired);
+	if (stepFilter === undefined && Array.isArray(schema.belowTabsFields) && schema.belowTabsFields.length > 0) {
+		validateFieldNodesRecursive(
+			schema.belowTabsFields,
+			values,
+			errors,
+			failedTabIds,
+			scopePrefix,
+			undefined,
+			rootSkipRequired
+		);
+	}
 
 	// 3. Validate registered nested fragments (e.g. embedded schemas)
 	if (options?.registeredFragments && stepFilter === undefined) {

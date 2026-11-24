@@ -17,6 +17,7 @@ use Totoglu\React\Contract\ReactRecordActionsProvider;
 use Totoglu\React\Contract\ReactReorderProvider;
 use Totoglu\React\Contract\ReactSummaryProvider;
 use Totoglu\React\Contract\ReactViewsProvider;
+use Totoglu\React\Data\ReactColumn;
 use Totoglu\React\Data\ReactPageResult;
 use Totoglu\React\Data\ReactRecord;
 use Totoglu\React\Inertia\InteractWithReactTranslations;
@@ -73,6 +74,18 @@ abstract class MarkupReactViewport extends MarkupInertia
 	 * @var array<string, array<string, mixed>>
 	 */
 	public array $columns = [];
+
+	/**
+	 * Columns with an explicit `sortable` setting supplied on viewport config.
+	 *
+	 * @var array<string, bool>
+	 */
+	protected array $explicitSortableCols = [];
+
+	/**
+	 * Whether the latest `loadFromProvider()` call completed through `$provider->query()`.
+	 */
+	protected bool $providerHydrated = false;
 
 	/**
 	 * Inline-editable field schema definitions (`['status' => ['type' => 'select', 'label' => 'Status', 'options' => [...]]]`).
@@ -795,6 +808,7 @@ abstract class MarkupReactViewport extends MarkupInertia
 		$this->title = '';
 		$this->items = [];
 		$this->columns = [];
+		$this->explicitSortableCols = [];
 		$this->inlineEditableFields = [];
 		$this->records = [];
 		$this->reactRecords = [];
@@ -859,6 +873,7 @@ abstract class MarkupReactViewport extends MarkupInertia
 		$this->downloadContent = '';
 		$this->downloadMime = '';
 		$this->dataProvider = null;
+		$this->providerHydrated = false;
 		$this->inertiaProps = [];
 
 		return $this;
@@ -882,6 +897,19 @@ abstract class MarkupReactViewport extends MarkupInertia
 			}
 			if ($key === 'columns' && is_array($value)) {
 				$this->columns = $this->normalizeColumnsMap($value);
+				$this->explicitSortableCols = [];
+				foreach ($value as $rawK => $rawV) {
+					if ($rawV instanceof ReactColumn) {
+						$this->explicitSortableCols[$rawV->key()] = true;
+					} elseif (is_string($rawK) && is_array($rawV) && array_key_exists('sortable', $rawV)) {
+						$this->explicitSortableCols[trim($rawK)] = true;
+					} elseif (is_int($rawK) && is_array($rawV) && array_key_exists('sortable', $rawV)) {
+						$ck = trim((string) ($rawV['key'] ?? $rawV['name'] ?? ''));
+						if ($ck !== '') {
+							$this->explicitSortableCols[$ck] = true;
+						}
+					}
+				}
 				$this->providerOptions['columns'] = $value;
 				continue;
 			}
@@ -1018,6 +1046,7 @@ abstract class MarkupReactViewport extends MarkupInertia
 			|| $props !== []
 			|| ($this->records === [] && $this->columns === [])
 			|| ($this->provider !== '' && ($this->dataProvider === null || $this->dataProvider->id() !== $this->provider))
+			|| (($this->provider !== '' || $this->dataProvider !== null || $this->items !== []) && !$this->providerHydrated)
 		) {
 			$this->configure($provider, $props);
 		}
@@ -1062,6 +1091,7 @@ abstract class MarkupReactViewport extends MarkupInertia
 				$this->dataProvider = null;
 				$this->columns = [];
 				$this->records = [];
+				$this->providerHydrated = false;
 			} else {
 				if ($this->providerOptions !== [] && method_exists($this->dataProvider, 'applyOptions')) {
 					$this->dataProvider->applyOptions($this->providerOptions);
@@ -1099,6 +1129,7 @@ abstract class MarkupReactViewport extends MarkupInertia
 	 */
 	public function loadFromProvider(): void
 	{
+		$this->providerHydrated = false;
 		$this->applyViewPreferences();
 
 		$provider = $this->resolveDataProvider();
@@ -1109,6 +1140,20 @@ abstract class MarkupReactViewport extends MarkupInertia
 			return;
 		}
 
+		$wasColumnsEmpty = $this->columns === [];
+		try {
+			$this->hydrateFromProvider($provider);
+			$this->providerHydrated = true;
+		} catch (\Throwable $e) {
+			if ($wasColumnsEmpty) {
+				$this->columns = [];
+			}
+			throw $e;
+		}
+	}
+
+	private function hydrateFromProvider(ReactDataProviderInterface $provider): void
+	{
 		if ($this->title === '') {
 			$this->title = $provider->title();
 		}
@@ -1118,15 +1163,26 @@ abstract class MarkupReactViewport extends MarkupInertia
 			$this->quickEditEnabled = false;
 		}
 
-		// Hydrate columns from provider (`availableColumns` + `columns` + `sortableColumns` + `inlineEditableFields` + optional `columnSchemas`)
-		$providerCols = $provider instanceof ReactFieldSchemaProvider
+		// Hydrate columns from provider in declared visible order first (`columns()`), then remaining `availableColumns()`
+		$availableCols = $provider instanceof ReactFieldSchemaProvider
 			? $provider->availableColumns()
 			: $provider->columns();
+		$visibleCols = $provider->columns();
+		$providerCols = [];
+		foreach ($visibleCols as $vKey => $vLabel) {
+			$providerCols[(string) $vKey] = $vLabel;
+		}
+		foreach ($availableCols as $aKey => $aLabel) {
+			$strAKey = (string) $aKey;
+			if (!array_key_exists($strAKey, $providerCols)) {
+				$providerCols[$strAKey] = $aLabel;
+			}
+		}
 		/** @var array<string, array<string, mixed>> $providerColSchemas */
 		$providerColSchemas = method_exists($provider, 'columnSchemas')
 			? (array) $provider->columnSchemas()
 			: [];
-		$defaultVisibleCols = array_keys($provider->columns());
+		$defaultVisibleCols = array_keys($visibleCols);
 		$sortableCols = $provider->sortableColumns();
 		$editableFields = $provider instanceof ReactFieldSchemaProvider ? $provider->inlineEditableFields() : [];
 		$this->inlineEditableFields = array_replace($editableFields, $this->inlineEditableFields);
@@ -1139,14 +1195,14 @@ abstract class MarkupReactViewport extends MarkupInertia
 				$schemaMeta = is_array($providerColSchemas[$strKey] ?? null) ? $providerColSchemas[$strKey] : [];
 				$inlineMeta = is_array($colLabel) ? $colLabel : [];
 				$mergedMeta = array_replace($schemaMeta, $inlineMeta);
+				$colType = (string) ($editDef['type'] ?? $mergedMeta['type'] ?? 'text');
+				$defaultSortable = !ReactColumn::isVisualType($colType) && in_array($strKey, $sortableCols, true);
 				$normalized[$strKey] = array_replace($mergedMeta, [
 					'label' => is_array($colLabel) ? (string) ($colLabel['label'] ?? $strKey) : (string) $colLabel,
 					'sortable' => isset($mergedMeta['sortable'])
 						? (bool) $mergedMeta['sortable']
-						: in_array($strKey, $sortableCols, true),
-					'type' => is_array($editDef)
-						? (string) ($editDef['type'] ?? $mergedMeta['type'] ?? 'text')
-						: (string) ($mergedMeta['type'] ?? 'text'),
+						: $defaultSortable,
+					'type' => $colType,
 					'editable' => !$this->locked && is_array($editDef),
 					'options' => is_array($editDef) && is_array($editDef['options'] ?? null)
 						? $editDef['options']
@@ -1161,7 +1217,14 @@ abstract class MarkupReactViewport extends MarkupInertia
 			foreach ($this->columns as $colKey => $colDef) {
 				$schemaMeta = is_array($providerColSchemas[$colKey] ?? null) ? $providerColSchemas[$colKey] : [];
 				if ($schemaMeta !== []) {
-					$this->columns[$colKey] = array_replace($schemaMeta, $colDef);
+					$mergedCol = array_replace($schemaMeta, $colDef);
+					if (
+						!($this->explicitSortableCols[(string) $colKey] ?? false)
+						&& array_key_exists('sortable', $schemaMeta)
+					) {
+						$mergedCol['sortable'] = (bool) $schemaMeta['sortable'];
+					}
+					$this->columns[$colKey] = $mergedCol;
 					$colDef = $this->columns[$colKey];
 				}
 				$editDef = $this->inlineEditableFields[$colKey] ?? null;
@@ -1629,27 +1692,7 @@ abstract class MarkupReactViewport extends MarkupInertia
 	 */
 	protected function normalizeColumnsMap(array $rawColumns): array
 	{
-		$normalized = [];
-		foreach ($rawColumns as $k => $v) {
-			if (is_int($k) && is_string($v)) {
-				$normalized[$v] = [
-					'label' => ucfirst(str_replace('_', ' ', $v)),
-					'sortable' => true,
-				];
-			} elseif (is_string($k) && is_string($v)) {
-				$normalized[$k] = [
-					'label' => $v,
-					'sortable' => true,
-				];
-			} elseif (is_string($k) && is_array($v)) {
-				$normalized[$k] = array_replace([
-					'label' => (string) ($v['label'] ?? ucfirst(str_replace('_', ' ', $k))),
-					'sortable' => (bool) ($v['sortable'] ?? true),
-				], $v);
-			}
-		}
-
-		return $normalized;
+		return ReactColumn::normalizeMap($rawColumns);
 	}
 
 	/**
@@ -2413,7 +2456,7 @@ abstract class MarkupReactViewport extends MarkupInertia
 	 */
 	public function inertiaWithData(): array
 	{
-		if ($this->records === [] && $this->columns === [] && ($this->provider !== '' || $this->dataProvider !== null || $this->items !== [])) {
+		if ((!$this->providerHydrated || ($this->records === [] && $this->columns === [])) && ($this->provider !== '' || $this->dataProvider !== null || $this->items !== [])) {
 			$this->loadFromProvider();
 		}
 

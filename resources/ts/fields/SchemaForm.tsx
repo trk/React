@@ -34,6 +34,7 @@ import {
 } from './schema/SchemaFormContext';
 import {
 	resolveTabPaneSlot,
+	SchemaDangerZoneNode,
 	SchemaIslandNode,
 	SchemaMarkupNode,
 	SchemaSectionNode,
@@ -69,6 +70,7 @@ export const SchemaForm: React.FC<SchemaFormProps> = (props) => {
 		topTabs,
 		visibleTopTabs,
 		rootFields,
+		belowTabsFields,
 		fieldsByName,
 		submits,
 		activeTopTabId,
@@ -91,6 +93,20 @@ export const SchemaForm: React.FC<SchemaFormProps> = (props) => {
 		resolveFieldAdornment,
 		hasConfirmedDelete,
 	} = useSchemaFormController(props);
+
+	const [asyncPanelCounts, setAsyncPanelCounts] = React.useState<Record<string, number>>({});
+	const handleAsyncMarkupLoaded = React.useCallback(
+		(fieldName: string, meta: { count?: number; empty: boolean }) => {
+			if (!fieldName || typeof meta.count !== 'number') {
+				return;
+			}
+			const nextCount = meta.count;
+			setAsyncPanelCounts((prev) =>
+				prev[fieldName] === nextCount ? prev : { ...prev, [fieldName]: nextCount }
+			);
+		},
+		[]
+	);
 
 	const renderFieldNode = (field: SchemaFieldDefinition, idx: number): React.ReactNode => {
 		const fieldState = resolveFieldState(field, conditionValues, scopePrefix);
@@ -156,10 +172,24 @@ export const SchemaForm: React.FC<SchemaFormProps> = (props) => {
 			);
 		}
 
-		if (field.kind === 'markup') {
+		if (field.kind === 'danger_zone' && field.dangerZone) {
+			const refField = field.dangerZone.referenceCountField;
+			const referencedCount = refField ? asyncPanelCounts[refField] : undefined;
 			return (
 				<div key={key} className={spanClass}>
-					<SchemaMarkupNode field={field} errorMessage={field.name ? errors[field.name] : undefined} />
+					<SchemaDangerZoneNode field={field} referencedCount={referencedCount} />
+				</div>
+			);
+		}
+
+		if (field.kind === 'markup') {
+			return (
+				<div key={key} className={cn(spanClass, field.hideWhenEmpty && 'empty:hidden')}>
+					<SchemaMarkupNode
+						field={field}
+						errorMessage={field.name ? errors[field.name] : undefined}
+						onAsyncLoaded={handleAsyncMarkupLoaded}
+					/>
 				</div>
 			);
 		}
@@ -515,6 +545,8 @@ export const SchemaForm: React.FC<SchemaFormProps> = (props) => {
 	);
 
 	const hasPortaledHeadButtons = Boolean(headButtonsTarget && submits.some((s) => s.header));
+	const activeTopTab = topTabs.find((tab) => tab.id === activeTopTabId);
+	const isSystemTabActive = Boolean(activeTopTab?.systemTab);
 
 	const bodyContent = (
 		<>
@@ -541,6 +573,21 @@ export const SchemaForm: React.FC<SchemaFormProps> = (props) => {
 			))}
 
 			{fieldsAndTabsContent}
+
+			{belowTabsFields.length > 0 ? (
+				<div
+					data-rw-below-tabs=""
+					className={cn('@container/rw-form min-w-0', isSystemTabActive && 'hidden')}
+				>
+					{useCardSurface ? (
+						<Card data-rw-form-footer-card="" className="p-5 space-y-5">
+							{renderFieldsGrid(belowTabsFields)}
+						</Card>
+					) : (
+						renderFieldsGrid(belowTabsFields)
+					)}
+				</div>
+			) : null}
 
 			{!schema.isFragment &&
 			!(props.hideFooterWhenPortaled && hasPortaledHeadButtons) &&
@@ -628,6 +675,14 @@ export const SchemaForm: React.FC<SchemaFormProps> = (props) => {
 								);
 								if (firstTabWithErrors) {
 									setActiveTopTabId(firstTabWithErrors.id);
+								} else if (
+									activeTab?.systemTab &&
+									countNestedErrors(belowTabsFields, check.errors) > 0
+								) {
+									const firstContentTab = visibleTopTabs.find((tab) => !tab.systemTab);
+									if (firstContentTab) {
+										setActiveTopTabId(firstContentTab.id);
+									}
 								}
 							}
 						}

@@ -518,7 +518,7 @@ export function DynamicIcon({
 	);
 
 	if (resolvedBg) {
-		const pad = Math.max(4, Math.round((typeof resolvedSize === 'number' ? resolvedSize : 20) * 0.35));
+		const pad = Math.max(3, Math.min(10, Math.round((typeof resolvedSize === 'number' ? resolvedSize : 20) * 0.3)));
 		return (
 			<span
 				className="rw-icon-badge inline-flex items-center justify-center shrink-0"

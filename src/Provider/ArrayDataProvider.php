@@ -15,6 +15,7 @@ use Totoglu\React\Contract\ReactRecordActionsProvider;
 use Totoglu\React\Contract\ReactReorderProvider;
 use Totoglu\React\Contract\ReactSummaryProvider;
 use Totoglu\React\Contract\ReactViewsProvider;
+use Totoglu\React\Data\ReactColumn;
 use Totoglu\React\Data\ReactPageResult;
 use Totoglu\React\Data\ReactRecord;
 use Totoglu\React\Viewport\MarkupReactViewport;
@@ -197,37 +198,17 @@ final class ArrayDataProvider extends Wire implements
 			$this->title = (string) $options['title'];
 		}
 		if (is_array($options['columns'] ?? null) && $options['columns'] !== []) {
-			$normalizedCols = [];
-			$schemas = [];
-			foreach ($options['columns'] as $k => $v) {
-				if (is_int($k)) {
-					$colKey = is_array($v) ? (string) ($v['key'] ?? '') : (string) $v;
-					if ($colKey !== '') {
-						$label = is_array($v)
-							? (string) ($v['label'] ?? ucfirst(str_replace('_', ' ', $colKey)))
-							: ucfirst(str_replace('_', ' ', $colKey));
-						$normalizedCols[$colKey] = $label;
-						if (is_array($v)) {
-							$schemas[$colKey] = array_replace($v, ['label' => $label]);
-						}
-					}
-				} else {
-					$colKey = (string) $k;
-					$label = is_array($v)
-						? (string) ($v['label'] ?? ucfirst(str_replace('_', ' ', $colKey)))
-						: (string) $v;
-					$normalizedCols[$colKey] = $label;
-					if (is_array($v)) {
-						$schemas[$colKey] = array_replace($v, ['label' => $label]);
-					}
-				}
-			}
-			$this->columns = $normalizedCols;
-			if ($schemas !== []) {
-				$this->columnSchemas = array_replace($this->columnSchemas, $schemas);
+			$split = ReactColumn::splitColumnsAndSchemas($options['columns']);
+			$this->columns = $split['columns'];
+			if ($split['schemas'] !== []) {
+				$this->columnSchemas = array_replace($this->columnSchemas, $split['schemas']);
 			}
 			if (!array_key_exists('sortableColumns', $options)) {
-				$this->sortableColumns = array_keys($this->columns);
+				$this->sortableColumns = array_values(array_filter(
+					array_keys($this->columns),
+					fn(string $colKey): bool => !ReactColumn::isVisualType((string) ($this->columnSchemas[$colKey]['type'] ?? ''))
+						&& ($this->columnSchemas[$colKey]['sortable'] ?? true) !== false
+				));
 			}
 		}
 		if (is_array($options['columnSchemas'] ?? null)) {

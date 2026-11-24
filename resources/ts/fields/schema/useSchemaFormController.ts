@@ -65,6 +65,7 @@ export function useSchemaFormController(props: SchemaFormProps) {
 			hiddenInputs: props.hiddenInputs ?? [],
 			tabs: props.tabs ?? [],
 			fields: normalizedFields,
+			belowTabsFields: props.belowTabsFields ?? [],
 			submits: props.submits ?? [],
 			values: props.values ?? {},
 			errors: props.errors ?? {},
@@ -261,6 +262,7 @@ export function useSchemaFormController(props: SchemaFormProps) {
 		[topTabs, conditionValues, errors, scopePrefix, props.tabSlots]
 	);
 	const rootFields = useMemo(() => schema.fields || [], [schema.fields]);
+	const belowTabsFields = useMemo(() => schema.belowTabsFields || [], [schema.belowTabsFields]);
 	const fieldsByName = useMemo<ReadonlyMap<string, SchemaFieldDefinition>>(() => {
 		const map = new Map<string, SchemaFieldDefinition>();
 		if (parentCtx?.fieldsByName) {
@@ -269,11 +271,12 @@ export function useSchemaFormController(props: SchemaFormProps) {
 			}
 		}
 		collectFieldsIntoMap(rootFields, map);
+		collectFieldsIntoMap(belowTabsFields, map);
 		for (const tab of topTabs) {
 			collectFieldsIntoMap(tab.fields, map);
 		}
 		return map;
-	}, [parentCtx?.fieldsByName, rootFields, topTabs]);
+	}, [parentCtx?.fieldsByName, rootFields, belowTabsFields, topTabs]);
 	const submits = useMemo(() => schema.submits || [], [schema.submits]);
 
 	const topTabStorageKey = useMemo(() => {
@@ -986,6 +989,7 @@ export function useSchemaFormController(props: SchemaFormProps) {
 			}
 		};
 		collect(Array.isArray(schema.fields) ? schema.fields : undefined);
+		collect(Array.isArray(schema.belowTabsFields) ? schema.belowTabsFields : undefined);
 		if (Array.isArray(schema.tabs)) {
 			for (const tab of schema.tabs) {
 				if (tab.confirmDelete && Array.isArray(tab.fields)) {
@@ -999,7 +1003,7 @@ export function useSchemaFormController(props: SchemaFormProps) {
 			}
 		}
 		return Array.from(names);
-	}, [schema.fields, schema.tabs]);
+	}, [schema.fields, schema.belowTabsFields, schema.tabs]);
 
 	const hasConfirmedDelete = confirmDeleteFieldNames.some((name) => {
 		const val = values[name];
@@ -1017,6 +1021,7 @@ export function useSchemaFormController(props: SchemaFormProps) {
 		topTabs,
 		visibleTopTabs,
 		rootFields,
+		belowTabsFields,
 		fieldsByName,
 		submits,
 		activeTopTabId,

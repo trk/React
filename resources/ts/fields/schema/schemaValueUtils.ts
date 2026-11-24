@@ -137,6 +137,7 @@ export function extractSchemaInitialValues(
 		}
 	}
 	extractFieldsInitialValues(schema.fields || [], seeded);
+	extractFieldsInitialValues(schema.belowTabsFields || [], seeded);
 	for (const tab of schema.tabs || []) {
 		extractFieldsInitialValues(tab.fields || [], seeded);
 	}
