@@ -121,7 +121,7 @@ class InputfieldReactLink extends InputfieldReact
 	{
 		return [
 			'title' => __('React Link & Media Target', __FILE__),
-			'version' => 30,
+			'version' => 31,
 			'summary' => __('All-in-one link and media selector supporting Pages, Entries, URLs, Phone numbers, Email addresses, and uploaded files, images, or videos.', __FILE__),
 			'author' => 'Iskender TOTOGLU @trk @ukyo',
 			'icon' => 'link',

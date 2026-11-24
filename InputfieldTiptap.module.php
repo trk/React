@@ -145,7 +145,7 @@ class InputfieldTiptap extends InputfieldTextarea implements ConfigurableModule,
 	{
 		return [
 			'title' => __('Tiptap', __FILE__),
-			'version' => 30,
+			'version' => 31,
 			'summary' => __('Rich text editor with customizable toolbars, content blocks, HTML cleanup, and multi-language support.', __FILE__),
 			'author' => 'Iskender TOTOGLU @trk @ukyo',
 			'icon' => 'align-left',
