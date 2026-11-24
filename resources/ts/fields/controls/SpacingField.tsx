@@ -328,7 +328,7 @@ export function SpacingField(props: ReactInputfieldProps): React.ReactElement {
 					{unitOptions.length > 1 && !props.readOnly ? (
 						<Select
 							data-rw-spacing-unit=""
-							aria-label={t('unitNumber.unit', 'Unit')}
+							aria-label={t('number.unit', 'Unit')}
 							disabled={props.disabled}
 							value={spacing.unit}
 							onChange={(e) => commit({ ...spacing, unit: e.target.value })}

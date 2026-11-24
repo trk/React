@@ -580,6 +580,7 @@ More,Mehr,,site/modules/React/src/I18n/TranslationCatalogService.php,d3da97e2d9a
 "No results found.","Keine Ergebnisse gefunden.",,site/modules/React/src/I18n/TranslationCatalogService.php,3f24537d9d26ddf4fd334a881e46a0ec
 Notifications,Benachrichtigungen,,site/modules/React/src/I18n/TranslationCatalogService.php,a274f4d4670213a9045ce258c6c56b80
 Back,Zurück,,site/modules/React/src/I18n/TranslationCatalogService.php,0557fa923dcee4d0f86b1409f5c2167f
+Change,Ändern,,site/modules/React/src/I18n/TranslationCatalogService.php,f4ec5f57bd4d31b803312d873be40da9
 Unavailable,"Nicht verfügbar",,site/modules/React/src/I18n/TranslationCatalogService.php,453e6aa38d87b28ccae545967c53004f
 Workspace,Arbeitsbereich,,site/modules/React/src/I18n/TranslationCatalogService.php,03a21915504df93cf5dba0636080f62e
 Workspaces,Arbeitsbereiche,,site/modules/React/src/I18n/TranslationCatalogService.php,d5e92609cf510f5f97ac326e907a0540
@@ -787,6 +788,65 @@ Generate,Erzeugen,,site/modules/React/src/I18n/TranslationCatalogService.php,32b
 "Country calling code",Ländervorwahl,,site/modules/React/src/I18n/TranslationCatalogService.php,d8db845c5fb99938a3adedb7366fd7cd
 "Phone number",Telefonnummer,,site/modules/React/src/I18n/TranslationCatalogService.php,1f8261d17452a959e013666c5df45e07
 "{count} more tabs","{count} weitere Tabs",,site/modules/React/src/I18n/TranslationCatalogService.php,cf39675243a9d8f9a614e0bcff118bc7
+Language,Sprache,,site/modules/React/src/I18n/TranslationCatalogService.php,4994a8ffeba4ac3140beb89e8d41f174
+"Hex / CSS color","Hex- / CSS-Farbe",,site/modules/React/src/I18n/TranslationCatalogService.php,b5a5c7380cdca373e0b8995bd52b455c
+Inherit,Erben,,site/modules/React/src/I18n/TranslationCatalogService.php,c49484faf79e2388b580e49444d6ac11
+Opacity,Deckkraft,,site/modules/React/src/I18n/TranslationCatalogService.php,bad6a5dd8c28e6b14f8e986615e3dc98
+"Open color picker","Farbwähler öffnen",,site/modules/React/src/I18n/TranslationCatalogService.php,c9408c35350d786d25c1d8ff960a9747
+"Color swatches",Farbfelder,,site/modules/React/src/I18n/TranslationCatalogService.php,c0fa3292db28914ada880ede0d16ed67
+"Pick color","Farbe wählen",,site/modules/React/src/I18n/TranslationCatalogService.php,2d1aef70c7f6b0b10e75774c303d8caa
+"Search and add option...","Option suchen und hinzufügen...",,site/modules/React/src/I18n/TranslationCatalogService.php,f50e4ed199376387932d62905307be74
+"All options selected","Alle Optionen ausgewählt",,site/modules/React/src/I18n/TranslationCatalogService.php,4dda4044f4033e6b096e6740f2d7bd66
+Bold,Fett,,site/modules/React/src/I18n/TranslationCatalogService.php,114c3050111d8b8ddd830b99ccebd246
+chars,Zeichen,,site/modules/React/src/I18n/TranslationCatalogService.php,b69d9bc635ccd79ad2c64bc862abe3b4
+Code,Code,,site/modules/React/src/I18n/TranslationCatalogService.php,ca0dbad92a874b2f69b549293387925e
+"Nothing to preview yet.","Noch keine Vorschau verfügbar.",,site/modules/React/src/I18n/TranslationCatalogService.php,390c9c05a0616274f5393552af89e4ca
+Heading,Überschrift,,site/modules/React/src/I18n/TranslationCatalogService.php,0101316665d4f82adaa26d86fbbb2d6e
+Italic,Kursiv,,site/modules/React/src/I18n/TranslationCatalogService.php,1d874710ccdcd46b95397049d2e7500c
+Link,Link,,site/modules/React/src/I18n/TranslationCatalogService.php,97e7c9a7d06eac006a28bf05467fcc8b
+List,Liste,,site/modules/React/src/I18n/TranslationCatalogService.php,4ee29ca12c7d126654bd0e5275de6135
+"Write Markdown...","Markdown schreiben...",,site/modules/React/src/I18n/TranslationCatalogService.php,74e46f4c9308c361dd7d746e574abe84
+Preview,Vorschau,,site/modules/React/src/I18n/TranslationCatalogService.php,31fde7b05ac8952dacf4af8a704074ec
+Quote,Zitat,,site/modules/React/src/I18n/TranslationCatalogService.php,c48e929b2b1eabba2ba036884433345e
+Split,Geteilt,,site/modules/React/src/I18n/TranslationCatalogService.php,8a9e64d86ed12ad40de129bc7f4683b2
+"Markdown mode",Markdown-Modus,,site/modules/React/src/I18n/TranslationCatalogService.php,d606631fdb693450b0a41b5d10c96987
+words,Wörter,,site/modules/React/src/I18n/TranslationCatalogService.php,89759e1284e2479b991d2669de104942
+Write,Schreiben,,site/modules/React/src/I18n/TranslationCatalogService.php,1129c0e4d43f2d121652a7302712cff6
+"Decrease value","Wert verringern",,site/modules/React/src/I18n/TranslationCatalogService.php,1e92caff77f3873aeb668c8d23882ac3
+"Increase value","Wert erhöhen",,site/modules/React/src/I18n/TranslationCatalogService.php,beb2a5287c88ea29389f02bb177ebf96
+Unit,Einheit,,site/modules/React/src/I18n/TranslationCatalogService.php,19c562a36aeb455d09534f93b4f5236f
+"Character {position} of {total}","Zeichen {position} von {total}",,site/modules/React/src/I18n/TranslationCatalogService.php,b1ff9da4d460efbca5288faba439c7c8
+"Verification code",Bestätigungscode,,site/modules/React/src/I18n/TranslationCatalogService.php,943769b205da24c9b0fe9808370b97b1
+"Confirm Password","Passwort bestätigen",,site/modules/React/src/I18n/TranslationCatalogService.php,887f7db126221fe60d18c895d41dc8f6
+"Re-enter password","Passwort erneut eingeben",,site/modules/React/src/I18n/TranslationCatalogService.php,3dc4f4e67ea1865935d47aafc14c98dc
+"Generate password","Passwort generieren",,site/modules/React/src/I18n/TranslationCatalogService.php,2871afea416378d2772937c4d67d6c2c
+"Hide password","Passwort verbergen",,site/modules/React/src/I18n/TranslationCatalogService.php,3f5b7abc4738f2132264c2510f9dc39f
+"Lowercase letter (a-z)","Kleinbuchstabe (a-z)",,site/modules/React/src/I18n/TranslationCatalogService.php,c29b1a14e65012a19174596325feeb74
+"Passwords match.","Passwörter stimmen überein.",,site/modules/React/src/I18n/TranslationCatalogService.php,05cdce51aa1479b86b94d7cb0d718f50
+"At least {min} characters","Mindestens {min} Zeichen",,site/modules/React/src/I18n/TranslationCatalogService.php,2322d53a30486d3d96e09bff42f3029b
+"Passwords do not match.","Passwörter stimmen nicht überein.",,site/modules/React/src/I18n/TranslationCatalogService.php,01b0a98f830ff7741deeac3f4b6aac62
+"Number (0-9)","Ziffer (0-9)",,site/modules/React/src/I18n/TranslationCatalogService.php,688739407b00fe373a1cd372ee440f76
+"Reveal password","Passwort anzeigen",,site/modules/React/src/I18n/TranslationCatalogService.php,7673b8bc1ab400f11b394cdb5ee90e57
+Strength,Stärke,,site/modules/React/src/I18n/TranslationCatalogService.php,5a455a612047a34ede7a6c564fa67c0a
+"Symbol (!@#$…)","Sonderzeichen (!@#$…)",,site/modules/React/src/I18n/TranslationCatalogService.php,c5c7ed79b29a186c33d15a33e0e68ef7
+"Uppercase letter (A-Z)","Großbuchstabe (A-Z)",,site/modules/React/src/I18n/TranslationCatalogService.php,21f76eb8c91fc543171de4e1a122781d
+"Maximum {label}","Maximum {label}",,site/modules/React/src/I18n/TranslationCatalogService.php,0a6d4871e406214d8b251423a30e9550
+"Minimum {label}","Minimum {label}",,site/modules/React/src/I18n/TranslationCatalogService.php,daf901075ce0c4581e136be2c72e5a02
+Range,Bereich,,site/modules/React/src/I18n/TranslationCatalogService.php,87ba2ecc8b6915e8bd6f5089918229fd
+Options,Optionen,,site/modules/React/src/I18n/TranslationCatalogService.php,dae8ace18bdcbcc6ae5aece263e14fe8
+Bottom,Unten,,site/modules/React/src/I18n/TranslationCatalogService.php,2ad9d63b69c4a10a5cc9cad923133bc4
+Left,Links,,site/modules/React/src/I18n/TranslationCatalogService.php,945d5e233cf7d6240f6b783b36a374ff
+Linked,Verknüpft,,site/modules/React/src/I18n/TranslationCatalogService.php,bec6fc2cd3711e7e2290d1653216add6
+"Link all sides","Alle Seiten verknüpfen",,site/modules/React/src/I18n/TranslationCatalogService.php,5e24fe230d523e4f12372e47401d58ac
+Right,Rechts,,site/modules/React/src/I18n/TranslationCatalogService.php,92b09c7c48c520c3c55e497875da437c
+Top,Oben,,site/modules/React/src/I18n/TranslationCatalogService.php,a4ffdcf0dc1f31b9acaf295d75b51d00
+Individual,Einzeln,,site/modules/React/src/I18n/TranslationCatalogService.php,2dd4472245a696bc0b4b944db2a8b519
+"Unlink all sides","Verknüpfung aller Seiten aufheben",,site/modules/React/src/I18n/TranslationCatalogService.php,7473bcc7c0e7ef7d81a1eb9f71330e81
+"Type tag and press Enter...","Tag eingeben und Enter drücken...",,site/modules/React/src/I18n/TranslationCatalogService.php,b8522e764c0f0351d3603951a8f7c077
+"Maximum items reached","Maximale Anzahl erreicht",,site/modules/React/src/I18n/TranslationCatalogService.php,bf5fee250cc2f07ac217f32337a76a6d
+"Remove {tag}","{tag} entfernen",,site/modules/React/src/I18n/TranslationCatalogService.php,dc68cd81ab19510ba9ff4520501d60e4
+"Select tag...","Tag wählen...",,site/modules/React/src/I18n/TranslationCatalogService.php,8aa321f577b2e8600fe524c92415db88
+"Suggested tags","Vorgeschlagene Tags",,site/modules/React/src/I18n/TranslationCatalogService.php,02bdc086e3ca9bc63dbc2e91f1e7f18a
 Key,Schlüssel,,site/modules/React/src/I18n/TranslationCatalogService.php,897356954c2cd3d41b221e3f24f99bba
 Value,Wert,,site/modules/React/src/I18n/TranslationCatalogService.php,689202409e48743b914713f96d93947c
 "Add Row","Zeile hinzufügen",,site/modules/React/src/I18n/TranslationCatalogService.php,03e0c5bbd5488f1e5ec282529dac9635
@@ -868,7 +928,6 @@ Description,Beschreibung,,site/modules/React/src/I18n/TranslationCatalogService.
 "Single tab","Einzelner Tab",,site/modules/React/src/I18n/TranslationCatalogService.php,c52ea324b7f45ea118dea2e1ebf9abff
 Tags,Tags,,site/modules/React/src/I18n/TranslationCatalogService.php,189f63f277cd73395561651753563065
 "Type a tag and press Enter...","Tag eingeben und Enter drücken...",,site/modules/React/src/I18n/TranslationCatalogService.php,d41b1f563e8bc4e2a60951e438a5687d
-"Suggested tags","Vorgeschlagene Tags",,site/modules/React/src/I18n/TranslationCatalogService.php,02bdc086e3ca9bc63dbc2e91f1e7f18a
 "Select a tag below...","Unten ein Tag auswählen...",,site/modules/React/src/I18n/TranslationCatalogService.php,3ad8313ea124bec9192af51722379a25
 "Inspector sections",Inspektorbereiche,,site/modules/React/src/I18n/TranslationCatalogService.php,962d0f3184a7b6b18cb84f4e0dc2060c
 "Select crop area","Zuschneidebereich auswählen",,site/modules/React/src/I18n/TranslationCatalogService.php,152004221c80f3b7576dbf4f5c476f3b
@@ -985,6 +1044,16 @@ icons,Symbole,,site/modules/React/src/I18n/TranslationCatalogService.php,bd21190
 "Select date","Datum auswählen",,site/modules/React/src/I18n/TranslationCatalogService.php,75319e99a808565ccc78353d84131846
 "Select date range","Datumsbereich auswählen",,site/modules/React/src/I18n/TranslationCatalogService.php,b4a18b61095db7e554460f542e2d3239
 "Clear date range","Datumsbereich leeren",,site/modules/React/src/I18n/TranslationCatalogService.php,2fb455b1a3ba4c2e0d79b32670c5c04b
+"Select time","Uhrzeit wählen",,site/modules/React/src/I18n/TranslationCatalogService.php,f6f711f64ca980462b4d0baf18a74464
+"Clear time","Uhrzeit löschen",,site/modules/React/src/I18n/TranslationCatalogService.php,e2008def3d86e907bb91bdddcf66d4fe
+"Select date & time","Datum & Uhrzeit wählen",,site/modules/React/src/I18n/TranslationCatalogService.php,c3207b40e6677f879c88bcb9b6068b83
+"Clear date & time","Datum & Uhrzeit löschen",,site/modules/React/src/I18n/TranslationCatalogService.php,f7c8ea725979aac8895ab93d16017bb5
+"Pick start and end date","Start- und Enddatum wählen",,site/modules/React/src/I18n/TranslationCatalogService.php,f11ed975547c8661e033b0b9d6f14e82
+"{count} days","{count} Tage",,site/modules/React/src/I18n/TranslationCatalogService.php,e95149fdcf04766422eed97a88467852
+Hr,Std,,site/modules/React/src/I18n/TranslationCatalogService.php,08ee99e4c183670239a50ae73fcd39d6
+Min,Min,,site/modules/React/src/I18n/TranslationCatalogService.php,78d811e98514cd165dda532286610fd2
+Sec,Sek,,site/modules/React/src/I18n/TranslationCatalogService.php,2d5cc554c126edb041901fa7d79b558b
+AM/PM,AM/PM,,site/modules/React/src/I18n/TranslationCatalogService.php,194a919001a5a2044b9f3716bb21591b
 "Picked up {label}","{label} aufgenommen",,site/modules/React/src/I18n/TranslationCatalogService.php,ce93e3720beea6b49d923d43987919b0
 "Drag cancelled","Ziehen abgebrochen",,site/modules/React/src/I18n/TranslationCatalogService.php,66b83d3db0619bb076ecae33fdd109dd
 "Moved {label} to position {position} of {total}","{label} an Position {position} von {total} verschoben",,site/modules/React/src/I18n/TranslationCatalogService.php,ae569efa68481552cbe5e33923d19c9c
@@ -1034,12 +1103,10 @@ Operator,Operator,,site/modules/React/src/I18n/TranslationCatalogService.php,e1b
 "No value needed","Kein Wert nötig",,site/modules/React/src/I18n/TranslationCatalogService.php,db3197abe63b3e17f0c959bc4e622054
 "{field} minimum","{field} Minimum",,site/modules/React/src/I18n/TranslationCatalogService.php,0ddd23a3003dbd021c73bf78917c5791
 "{field} maximum","{field} Maximum",,site/modules/React/src/I18n/TranslationCatalogService.php,dd179343cc2bc7129ebab0f0d063eb7c
-Min,Min,,site/modules/React/src/I18n/TranslationCatalogService.php,78d811e98514cd165dda532286610fd2
 Max,Max,,site/modules/React/src/I18n/TranslationCatalogService.php,6a061313d22e51e0f25b7cd4dc065233
 "Remove {label}","{label} entfernen",,site/modules/React/src/I18n/TranslationCatalogService.php,a328d916e4fcd38c68922611b2d95af3
 "{field} add value","{field} Wert hinzufügen",,site/modules/React/src/I18n/TranslationCatalogService.php,61e6f24361afa791dbe6f0e89b440b25
 "Select value to add...","Wert zum Hinzufügen auswählen...",,site/modules/React/src/I18n/TranslationCatalogService.php,1ee7fa58e7b01690ce01e2b320af5ca8
-"All options selected","Alle Optionen ausgewählt",,site/modules/React/src/I18n/TranslationCatalogService.php,4dda4044f4033e6b096e6740f2d7bd66
 "{field} comma-separated values","{field} kommagetrennte Werte",,site/modules/React/src/I18n/TranslationCatalogService.php,792babde8060bc28d4d4f85782e03b08
 "val1, val2, ...","Wert1, Wert2, ...",,site/modules/React/src/I18n/TranslationCatalogService.php,90f11ca8e24f741e1b0dce81956e6746
 "{field} boolean value","{field} boolescher Wert",,site/modules/React/src/I18n/TranslationCatalogService.php,04e439522c76423388991b3e02e060b2
@@ -1269,6 +1336,7 @@ User,Benutzer,,site/modules/React/src/Relation/Resource/UserResourceAdapter.php,
 "No editable image field is available on this page.","Auf dieser Seite ist kein bearbeitbares Bildfeld verfügbar.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,791377fb2873431f4d1dc66ed403fd08
 "No image file was received.","Es wurde keine Bilddatei empfangen.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,395d0eedbef7b95fa77bbc02930168bd
 "No valid image file was received.","Es wurde keine gültige Bilddatei empfangen.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,14f8277e1a08ec9a65c9074d51277a4a
+"No compatible raster image extensions are enabled on this field.","Für dieses Feld sind keine kompatiblen Rasterbild-Erweiterungen aktiviert.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,a841a4f0e697dff4c38d7bc040407ade
 "Target field does not hold an image collection.","Das Zielfeld enthält keine Bildsammlung.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,f5356f992b38eb5fd4d55abf3873484f
 "The image field on this page has reached its maximum file limit.","Das Bildfeld auf dieser Seite hat das maximale Dateilimit erreicht.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,922ef24ed4c87b3d935fef3ddaf84c01
 "Image upload failed validation.","Die Validierung des Bild-Uploads ist fehlgeschlagen.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,be84925b5a7fb8858728f885395b1faf
