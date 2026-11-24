@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Totoglu\React\Workspace;
 
+use PDO;
 use ProcessWire\Page;
+use ProcessWire\Template;
 use ProcessWire\User;
 use ProcessWire\Wire;
 use Totoglu\React\Security\AccessGuard;
@@ -21,6 +23,11 @@ final class WorkspaceRegistry extends Wire
 
 	/** @var array<string, string> */
 	private array $resolvedUrlCache = [];
+
+	/** @var array<int, string> */
+	private array $processUrlByModuleId = [];
+
+	private bool $processUrlsPreloaded = false;
 
 	/**
 	 * Register or update a workspace definition in the registry.
@@ -39,6 +46,9 @@ final class WorkspaceRegistry extends Wire
 
 		$this->definitions[$def->id] = $def;
 		unset($this->resolvedUrlCache[$def->id]);
+		if ($def->process !== '') {
+			$this->processUrlsPreloaded = false;
+		}
 
 		return $this;
 	}
@@ -277,10 +287,8 @@ final class WorkspaceRegistry extends Wire
 		$url = '';
 
 		if ($def->process !== '') {
-			$page = $this->findProcessAdminPage($def->process);
-			if ($page instanceof Page && (int) $page->id > 0) {
-				$url = (string) $page->url;
-			} else {
+			$url = $this->resolveProcessUrlByName($def->process);
+			if ($url === '') {
 				$url = $this->resolveFallbackProcessUrl($def->process, $adminRoot);
 			}
 		}
@@ -300,24 +308,146 @@ final class WorkspaceRegistry extends Wire
 	public function launcherUrl(): string
 	{
 		$adminRoot = rtrim((string) ($this->wire()->config->urls->admin ?: '/processwire/'), '/') . '/';
-		$page = $this->findProcessAdminPage('ProcessReactWorkspace');
-		if ($page instanceof Page && (int) $page->id > 0) {
-			return (string) $page->url;
+		$url = $this->resolveProcessUrlByName('ProcessReactWorkspace');
+		if ($url !== '') {
+			return $url;
 		}
 
 		return $adminRoot . 'workspace/';
 	}
 
 	/**
-	 * Locate the installed ProcessWire admin `Page` assigned to `$processName`.
+	 * Resolve the admin page URL for `$processName`, batch-preloading all registered process pages
+	 * in one SQL query + one `Pages::getById()` call to prevent N+1 lookups across workspaces.
 	 */
-	private function findProcessAdminPage(string $processName): ?Page
+	private function resolveProcessUrlByName(string $processName): string
 	{
 		$modules = $this->wire()->modules;
-		$pages = $this->wire()->pages;
 
 		try {
 			$moduleId = (int) $modules->getModuleID($processName);
+		} catch (\Throwable) {
+			return '';
+		}
+		if ($moduleId <= 0) {
+			return '';
+		}
+
+		$this->preloadProcessAdminUrls();
+		if (isset($this->processUrlByModuleId[$moduleId])) {
+			return $this->processUrlByModuleId[$moduleId];
+		}
+
+		$page = $this->findProcessAdminPage($moduleId);
+		if ($page instanceof Page && (int) $page->id > 0) {
+			$url = (string) $page->url;
+			$this->processUrlByModuleId[$moduleId] = $url;
+
+			return $url;
+		}
+
+		return '';
+	}
+
+	/**
+	 * Batch-load all registered workspace admin page URLs in a single indexed SQL lookup + `Pages::getById()`.
+	 */
+	private function preloadProcessAdminUrls(): void
+	{
+		if ($this->processUrlsPreloaded) {
+			return;
+		}
+		$this->processUrlsPreloaded = true;
+
+		$modules = $this->wire()->modules;
+		$processNames = ['ProcessReactWorkspace' => true];
+		foreach ($this->definitions as $def) {
+			if ($def->process !== '') {
+				$processNames[$def->process] = true;
+			}
+		}
+
+		$moduleIds = [];
+		foreach (array_keys($processNames) as $procName) {
+			try {
+				$modId = (int) $modules->getModuleID($procName);
+			} catch (\Throwable) {
+				$modId = 0;
+			}
+			if ($modId > 0 && !isset($this->processUrlByModuleId[$modId])) {
+				$moduleIds[] = $modId;
+			}
+		}
+		$moduleIds = array_values(array_unique($moduleIds));
+		if ($moduleIds === []) {
+			return;
+		}
+
+		$adminTemplate = $this->wire()->templates->get('admin');
+		if (!$adminTemplate instanceof Template || (int) $adminTemplate->id <= 0) {
+			return;
+		}
+
+		try {
+			$database = $this->wire()->database;
+			$placeholders = implode(', ', array_fill(0, count($moduleIds), '?'));
+			$stmt = $database->prepare(
+				'SELECT fp.data AS module_id, p.id AS page_id'
+				. ' FROM field_process fp'
+				. ' INNER JOIN pages p ON p.id = fp.pages_id'
+				. ' WHERE p.templates_id = ? AND fp.data IN (' . $placeholders . ')'
+				. ' ORDER BY p.id ASC'
+			);
+			$stmt->bindValue(1, (int) $adminTemplate->id, PDO::PARAM_INT);
+			foreach ($moduleIds as $idx => $modId) {
+				$stmt->bindValue($idx + 2, $modId, PDO::PARAM_INT);
+			}
+			$database->execute($stmt);
+
+			/** @var array<int, int> $pageIdByModuleId */
+			$pageIdByModuleId = [];
+			while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+				if (!is_array($row)) {
+					continue;
+				}
+				$mId = (int) ($row['module_id'] ?? 0);
+				$pId = (int) ($row['page_id'] ?? 0);
+				if ($mId > 0 && $pId > 0 && !isset($pageIdByModuleId[$mId])) {
+					$pageIdByModuleId[$mId] = $pId;
+				}
+			}
+
+			if ($pageIdByModuleId === []) {
+				return;
+			}
+
+			$loadedPages = $this->wire()->pages->getById(array_values(array_unique($pageIdByModuleId)), $adminTemplate);
+			/** @var array<int, string> $urlByPageId */
+			$urlByPageId = [];
+			foreach ($loadedPages as $adminPage) {
+				if ($adminPage instanceof Page && (int) $adminPage->id > 0) {
+					$urlByPageId[(int) $adminPage->id] = (string) $adminPage->url;
+				}
+			}
+
+			foreach ($pageIdByModuleId as $mId => $pId) {
+				if (isset($urlByPageId[$pId])) {
+					$this->processUrlByModuleId[$mId] = $urlByPageId[$pId];
+				}
+			}
+		} catch (\Throwable) {
+			// Fall back lazily to per-page lookup when schema tables are unavailable
+		}
+	}
+
+	/**
+	 * Locate the installed ProcessWire admin `Page` assigned to `$moduleId`.
+	 */
+	private function findProcessAdminPage(int $moduleId): ?Page
+	{
+		$pages = $this->wire()->pages;
+
+		try {
 			if ($moduleId <= 0) {
 				return null;
 			}

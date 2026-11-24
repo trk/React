@@ -188,8 +188,8 @@ class InputfieldReactIcon extends InputfieldReact
 	public static function resolveValue(mixed $value): ReactIconValue
 	{
 		$resolved = IconManager::resolveValueObject($value);
-		$w = wire();
-		if ($w !== null) {
+		$w = ProcessWire::getCurrentInstance();
+		if ($w instanceof ProcessWire) {
 			$w->wire($resolved);
 		}
 

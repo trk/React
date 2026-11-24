@@ -408,10 +408,9 @@ final class EditPresenceStore extends Wire
 
 			if ($state['sessions'] === [] && $state['lastSaved'] === null) {
 				ftruncate($fp, 0);
-				@flock($fp, LOCK_UN);
-				fclose($fp);
-				$fp = null;
-				@unlink($path);
+				rewind($fp);
+				fwrite($fp, '{}');
+				fflush($fp);
 
 				return $this->emptySnapshot($cleanKey, $now, $ttlSeconds);
 			}

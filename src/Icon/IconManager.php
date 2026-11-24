@@ -1381,7 +1381,7 @@ class IconManager extends Wire
 
 		if ($fields !== null && $pages !== null && $fields->get('page_icon') instanceof Field) {
 			try {
-				$adminPages = $pages->find("template=admin, page_icon!='', include=unpublished, check_access=0");
+				$adminPages = $pages->find("template=admin, page_icon!='', include=unpublished, check_access=0, sort=id, limit=500");
 				foreach ($adminPages as $adminPage) {
 					if (!$adminPage instanceof Page) {
 						continue;

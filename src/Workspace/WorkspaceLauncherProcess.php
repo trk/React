@@ -223,7 +223,6 @@ abstract class WorkspaceLauncherProcess extends ProcessReact implements Module
 
 	public function ___uninstall(): void
 	{
-		$this->react()->workspacePreferences()->purgeAll();
 		parent::___uninstall();
 	}
 }

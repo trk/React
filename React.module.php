@@ -2028,8 +2028,10 @@ class React extends WireData implements Module, ConfigurableModule
 		$w->session->removeFor('ReactViewPrefs', true);
 		$db = $w->database;
 		try {
-			$stmt = $db->prepare('DELETE FROM `pages_meta` WHERE `name` LIKE :prefix');
-			$stmt->bindValue(':prefix', 'react_view_prefs_%');
+			$table = $db->escapeTable('pages_meta');
+			$col = $db->escapeCol('name');
+			$stmt = $db->prepare("DELETE FROM {$table} WHERE {$col} LIKE :prefix ESCAPE '!'");
+			$stmt->bindValue(':prefix', 'react!_view!_prefs!_%');
 			$stmt->execute();
 		} catch (\Throwable $e) {
 			$w->log->error('React uninstall cleanup error: ' . $e->getMessage());

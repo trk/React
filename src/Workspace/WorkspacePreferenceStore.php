@@ -107,28 +107,23 @@ final class WorkspacePreferenceStore extends Wire
 			return $defaults;
 		}
 
-		$raw = @file_get_contents($path);
-		if (!is_string($raw) || trim($raw) === '') {
+		$fp = @fopen($path, 'rb');
+		if ($fp === false) {
 			return $defaults;
 		}
 
-		$decoded = json_decode($raw, true, 16);
-		if (!is_array($decoded)) {
-			return $defaults;
-		}
+		try {
+			if (!@flock($fp, LOCK_SH)) {
+				return $defaults;
+			}
+			rewind($fp);
+			$raw = stream_get_contents($fp);
 
-		return [
-			'userId' => $userId,
-			'favorites' => $this->normalizeIdList($decoded['favorites'] ?? []),
-			'widgetOrder' => $this->normalizeIdList($decoded['widgetOrder'] ?? []),
-			'hiddenWidgets' => $this->normalizeIdList($decoded['hiddenWidgets'] ?? []),
-			'widgetSizes' => $this->normalizeSizeMap($decoded['widgetSizes'] ?? []),
-			'themeMode' => $this->normalizeThemeModeValue($decoded['themeMode'] ?? ''),
-			'themePreset' => $this->normalizeThemePresetValue($decoded['themePreset'] ?? ''),
-			'shellLayout' => $this->normalizeShellLayoutValue($decoded['shellLayout'] ?? ''),
-			'sidebarCollapsed' => $this->normalizeSidebarCollapsedValue($decoded['sidebarCollapsed'] ?? false),
-			'updatedAt' => is_string($decoded['updatedAt'] ?? null) ? $decoded['updatedAt'] : '',
-		];
+			return $this->decodePreferences($userId, is_string($raw) ? $raw : '');
+		} finally {
+			@flock($fp, LOCK_UN);
+			fclose($fp);
+		}
 	}
 
 	/**
@@ -156,8 +151,6 @@ final class WorkspacePreferenceStore extends Wire
 	 */
 	public function reconcile(array $accessibleWorkspaces, ?array $accessibleWidgets = null, ?User $user = null): array
 	{
-		$prefs = $this->load($user);
-
 		$validWorkspaceIds = [];
 		foreach ($accessibleWorkspaces as $key => $ws) {
 			$id = is_array($ws) && isset($ws['id']) ? strtolower(trim((string) $ws['id'])) : strtolower(trim((string) $key));
@@ -166,26 +159,74 @@ final class WorkspacePreferenceStore extends Wire
 			}
 		}
 
+		$validWidgetIds = [];
+		if ($accessibleWidgets !== null) {
+			foreach ($accessibleWidgets as $key => $widget) {
+				$id = is_array($widget) && isset($widget['id']) ? strtolower(trim((string) $widget['id'])) : strtolower(trim((string) $key));
+				if ($id !== '') {
+					$validWidgetIds[$id] = true;
+				}
+			}
+		}
+
+		$prefs = $this->mutate(
+			$user,
+			static function (array $current) use ($validWorkspaceIds, $validWidgetIds, $accessibleWidgets): ?array {
+				$favorites = array_values(array_filter(
+					$current['favorites'],
+					static fn(string $id): bool => isset($validWorkspaceIds[$id])
+				));
+
+				if ($accessibleWidgets === null) {
+					if (count($favorites) === count($current['favorites'])) {
+						return null;
+					}
+
+					return array_merge($current, ['favorites' => $favorites]);
+				}
+
+				$widgetOrder = array_values(array_filter(
+					$current['widgetOrder'],
+					static fn(string $id): bool => isset($validWidgetIds[$id])
+				));
+
+				$hiddenWidgets = array_values(array_filter(
+					$current['hiddenWidgets'],
+					static fn(string $id): bool => isset($validWidgetIds[$id])
+				));
+
+				$widgetSizes = [];
+				foreach ($current['widgetSizes'] as $wId => $size) {
+					if (isset($validWidgetIds[$wId])) {
+						$widgetSizes[$wId] = $size;
+					}
+				}
+
+				$wasPruned = count($favorites) !== count($current['favorites'])
+					|| count($widgetOrder) !== count($current['widgetOrder'])
+					|| count($hiddenWidgets) !== count($current['hiddenWidgets'])
+					|| count($widgetSizes) !== count($current['widgetSizes']);
+
+				if (!$wasPruned) {
+					return null;
+				}
+
+				return array_merge($current, [
+					'favorites' => $favorites,
+					'widgetOrder' => $widgetOrder,
+					'hiddenWidgets' => $hiddenWidgets,
+					'widgetSizes' => $widgetSizes,
+				]);
+			},
+			true,
+		);
+
 		$favorites = array_values(array_filter(
 			$prefs['favorites'],
 			static fn(string $id): bool => isset($validWorkspaceIds[$id])
 		));
 
 		if ($accessibleWidgets === null) {
-			$wasPruned = count($favorites) !== count($prefs['favorites']);
-			if ($wasPruned && $prefs['userId'] > 0 && is_file($this->filePath($user))) {
-				$this->write($prefs['userId'], [
-					'favorites' => $favorites,
-					'widgetOrder' => $prefs['widgetOrder'],
-					'hiddenWidgets' => $prefs['hiddenWidgets'],
-					'widgetSizes' => $prefs['widgetSizes'],
-					'themeMode' => $prefs['themeMode'],
-					'themePreset' => $prefs['themePreset'],
-					'shellLayout' => $prefs['shellLayout'],
-					'sidebarCollapsed' => $prefs['sidebarCollapsed'],
-				]);
-			}
-
 			return [
 				'userId' => $prefs['userId'],
 				'favorites' => $favorites,
@@ -200,48 +241,19 @@ final class WorkspacePreferenceStore extends Wire
 			];
 		}
 
-		$validWidgetIds = [];
-		foreach ($accessibleWidgets as $key => $widget) {
-			$id = is_array($widget) && isset($widget['id']) ? strtolower(trim((string) $widget['id'])) : strtolower(trim((string) $key));
-			if ($id !== '') {
-				$validWidgetIds[$id] = true;
-			}
-		}
-
 		$widgetOrder = array_values(array_filter(
 			$prefs['widgetOrder'],
 			static fn(string $id): bool => isset($validWidgetIds[$id])
 		));
-
 		$hiddenWidgets = array_values(array_filter(
 			$prefs['hiddenWidgets'],
 			static fn(string $id): bool => isset($validWidgetIds[$id])
 		));
-
 		$widgetSizes = [];
 		foreach ($prefs['widgetSizes'] as $wId => $size) {
 			if (isset($validWidgetIds[$wId])) {
 				$widgetSizes[$wId] = $size;
 			}
-		}
-
-		// Persist cleaned preferences if stale IDs from uninstalled modules were pruned
-		$wasPruned = count($favorites) !== count($prefs['favorites'])
-			|| count($widgetOrder) !== count($prefs['widgetOrder'])
-			|| count($hiddenWidgets) !== count($prefs['hiddenWidgets'])
-			|| count($widgetSizes) !== count($prefs['widgetSizes']);
-
-		if ($wasPruned && $prefs['userId'] > 0 && is_file($this->filePath($user))) {
-			$this->write($prefs['userId'], [
-				'favorites' => $favorites,
-				'widgetOrder' => $widgetOrder,
-				'hiddenWidgets' => $hiddenWidgets,
-				'widgetSizes' => $widgetSizes,
-				'themeMode' => $prefs['themeMode'],
-				'themePreset' => $prefs['themePreset'],
-				'shellLayout' => $prefs['shellLayout'],
-				'sidebarCollapsed' => $prefs['sidebarCollapsed'],
-			]);
 		}
 
 		// Append any newly installed/accessible widgets that aren't in the user's explicit order yet
@@ -274,19 +286,20 @@ final class WorkspacePreferenceStore extends Wire
 	public function toggleFavorite(string $workspaceId, ?User $user = null): array
 	{
 		$cleanId = $this->sanitizeId($workspaceId);
-		$prefs = $this->load($user);
-		if ($cleanId === '' || $prefs['userId'] <= 0) {
-			return $prefs;
+		if ($cleanId === '') {
+			return $this->load($user);
 		}
 
-		$favorites = $prefs['favorites'];
-		if (in_array($cleanId, $favorites, true)) {
-			$favorites = array_values(array_filter($favorites, static fn(string $id): bool => $id !== $cleanId));
-		} else {
-			$favorites[] = $cleanId;
-		}
+		return $this->mutate($user, static function (array $prefs) use ($cleanId): array {
+			$favorites = $prefs['favorites'];
+			if (in_array($cleanId, $favorites, true)) {
+				$favorites = array_values(array_filter($favorites, static fn(string $id): bool => $id !== $cleanId));
+			} else {
+				$favorites[] = $cleanId;
+			}
 
-		return $this->write($prefs['userId'], array_merge($prefs, ['favorites' => $favorites]));
+			return array_merge($prefs, ['favorites' => $favorites]);
+		});
 	}
 
 	/**
@@ -297,22 +310,23 @@ final class WorkspacePreferenceStore extends Wire
 	public function toggleWidgetVisibility(string $widgetId, ?bool $visible = null, ?User $user = null): array
 	{
 		$cleanId = $this->sanitizeId($widgetId);
-		$prefs = $this->load($user);
-		if ($cleanId === '' || $prefs['userId'] <= 0) {
-			return $prefs;
+		if ($cleanId === '') {
+			return $this->load($user);
 		}
 
-		$hidden = $prefs['hiddenWidgets'];
-		$isCurrentlyHidden = in_array($cleanId, $hidden, true);
-		$shouldHide = $visible !== null ? !$visible : !$isCurrentlyHidden;
+		return $this->mutate($user, static function (array $prefs) use ($cleanId, $visible): array {
+			$hidden = $prefs['hiddenWidgets'];
+			$isCurrentlyHidden = in_array($cleanId, $hidden, true);
+			$shouldHide = $visible !== null ? !$visible : !$isCurrentlyHidden;
 
-		if ($shouldHide && !$isCurrentlyHidden) {
-			$hidden[] = $cleanId;
-		} elseif (!$shouldHide && $isCurrentlyHidden) {
-			$hidden = array_values(array_filter($hidden, static fn(string $id): bool => $id !== $cleanId));
-		}
+			if ($shouldHide && !$isCurrentlyHidden) {
+				$hidden[] = $cleanId;
+			} elseif (!$shouldHide && $isCurrentlyHidden) {
+				$hidden = array_values(array_filter($hidden, static fn(string $id): bool => $id !== $cleanId));
+			}
 
-		return $this->write($prefs['userId'], array_merge($prefs, ['hiddenWidgets' => $hidden]));
+			return array_merge($prefs, ['hiddenWidgets' => $hidden]);
+		});
 	}
 
 	/**
@@ -323,13 +337,10 @@ final class WorkspacePreferenceStore extends Wire
 	 */
 	public function reorderWidgets(array $widgetOrder, ?User $user = null): array
 	{
-		$prefs = $this->load($user);
-		if ($prefs['userId'] <= 0) {
-			return $prefs;
-		}
+		$normalizedOrder = $this->normalizeIdList($widgetOrder);
 
-		return $this->write($prefs['userId'], array_merge($prefs, [
-			'widgetOrder' => $this->normalizeIdList($widgetOrder),
+		return $this->mutate($user, static fn(array $prefs): array => array_merge($prefs, [
+			'widgetOrder' => $normalizedOrder,
 		]));
 	}
 
@@ -342,15 +353,16 @@ final class WorkspacePreferenceStore extends Wire
 	{
 		$cleanId = $this->sanitizeId($widgetId);
 		$normSize = $this->normalizeWidgetSizeValue((string) $size);
-		$prefs = $this->load($user);
-		if ($cleanId === '' || $prefs['userId'] <= 0 || $normSize === null) {
-			return $prefs;
+		if ($cleanId === '' || $normSize === null) {
+			return $this->load($user);
 		}
 
-		$sizes = $prefs['widgetSizes'];
-		$sizes[$cleanId] = $normSize;
+		return $this->mutate($user, static function (array $prefs) use ($cleanId, $normSize): array {
+			$sizes = $prefs['widgetSizes'];
+			$sizes[$cleanId] = $normSize;
 
-		return $this->write($prefs['userId'], array_merge($prefs, ['widgetSizes' => $sizes]));
+			return array_merge($prefs, ['widgetSizes' => $sizes]);
+		});
 	}
 
 	/**
@@ -360,13 +372,10 @@ final class WorkspacePreferenceStore extends Wire
 	 */
 	public function setThemeMode(string $mode, ?User $user = null): array
 	{
-		$prefs = $this->load($user);
-		if ($prefs['userId'] <= 0) {
-			return $prefs;
-		}
+		$normalizedMode = $this->normalizeThemeModeValue($mode);
 
-		return $this->write($prefs['userId'], array_merge($prefs, [
-			'themeMode' => $this->normalizeThemeModeValue($mode),
+		return $this->mutate($user, static fn(array $prefs): array => array_merge($prefs, [
+			'themeMode' => $normalizedMode,
 		]));
 	}
 
@@ -377,13 +386,10 @@ final class WorkspacePreferenceStore extends Wire
 	 */
 	public function setThemePreset(string $preset, ?User $user = null): array
 	{
-		$prefs = $this->load($user);
-		if ($prefs['userId'] <= 0) {
-			return $prefs;
-		}
+		$normalizedPreset = $this->normalizeThemePresetValue($preset);
 
-		return $this->write($prefs['userId'], array_merge($prefs, [
-			'themePreset' => $this->normalizeThemePresetValue($preset),
+		return $this->mutate($user, static fn(array $prefs): array => array_merge($prefs, [
+			'themePreset' => $normalizedPreset,
 		]));
 	}
 
@@ -394,13 +400,10 @@ final class WorkspacePreferenceStore extends Wire
 	 */
 	public function setShellLayout(string $layout, ?User $user = null): array
 	{
-		$prefs = $this->load($user);
-		if ($prefs['userId'] <= 0) {
-			return $prefs;
-		}
+		$normalizedLayout = $this->normalizeShellLayoutValue($layout);
 
-		return $this->write($prefs['userId'], array_merge($prefs, [
-			'shellLayout' => $this->normalizeShellLayoutValue($layout),
+		return $this->mutate($user, static fn(array $prefs): array => array_merge($prefs, [
+			'shellLayout' => $normalizedLayout,
 		]));
 	}
 
@@ -411,12 +414,7 @@ final class WorkspacePreferenceStore extends Wire
 	 */
 	public function setSidebarCollapsed(bool $collapsed, ?User $user = null): array
 	{
-		$prefs = $this->load($user);
-		if ($prefs['userId'] <= 0) {
-			return $prefs;
-		}
-
-		return $this->write($prefs['userId'], array_merge($prefs, [
+		return $this->mutate($user, static fn(array $prefs): array => array_merge($prefs, [
 			'sidebarCollapsed' => $collapsed,
 		]));
 	}
@@ -429,37 +427,34 @@ final class WorkspacePreferenceStore extends Wire
 	 */
 	public function savePreferences(array $updates, ?User $user = null): array
 	{
-		$prefs = $this->load($user);
-		if ($prefs['userId'] <= 0) {
+		return $this->mutate($user, function (array $prefs) use ($updates): array {
+			if (array_key_exists('favorites', $updates)) {
+				$prefs['favorites'] = $this->normalizeIdList($updates['favorites']);
+			}
+			if (array_key_exists('widgetOrder', $updates)) {
+				$prefs['widgetOrder'] = $this->normalizeIdList($updates['widgetOrder']);
+			}
+			if (array_key_exists('hiddenWidgets', $updates)) {
+				$prefs['hiddenWidgets'] = $this->normalizeIdList($updates['hiddenWidgets']);
+			}
+			if (array_key_exists('widgetSizes', $updates)) {
+				$prefs['widgetSizes'] = $this->normalizeSizeMap($updates['widgetSizes']);
+			}
+			if (array_key_exists('themeMode', $updates)) {
+				$prefs['themeMode'] = $this->normalizeThemeModeValue($updates['themeMode']);
+			}
+			if (array_key_exists('themePreset', $updates)) {
+				$prefs['themePreset'] = $this->normalizeThemePresetValue($updates['themePreset']);
+			}
+			if (array_key_exists('shellLayout', $updates)) {
+				$prefs['shellLayout'] = $this->normalizeShellLayoutValue($updates['shellLayout']);
+			}
+			if (array_key_exists('sidebarCollapsed', $updates)) {
+				$prefs['sidebarCollapsed'] = $this->normalizeSidebarCollapsedValue($updates['sidebarCollapsed']);
+			}
+
 			return $prefs;
-		}
-
-		if (array_key_exists('favorites', $updates)) {
-			$prefs['favorites'] = $this->normalizeIdList($updates['favorites']);
-		}
-		if (array_key_exists('widgetOrder', $updates)) {
-			$prefs['widgetOrder'] = $this->normalizeIdList($updates['widgetOrder']);
-		}
-		if (array_key_exists('hiddenWidgets', $updates)) {
-			$prefs['hiddenWidgets'] = $this->normalizeIdList($updates['hiddenWidgets']);
-		}
-		if (array_key_exists('widgetSizes', $updates)) {
-			$prefs['widgetSizes'] = $this->normalizeSizeMap($updates['widgetSizes']);
-		}
-		if (array_key_exists('themeMode', $updates)) {
-			$prefs['themeMode'] = $this->normalizeThemeModeValue($updates['themeMode']);
-		}
-		if (array_key_exists('themePreset', $updates)) {
-			$prefs['themePreset'] = $this->normalizeThemePresetValue($updates['themePreset']);
-		}
-		if (array_key_exists('shellLayout', $updates)) {
-			$prefs['shellLayout'] = $this->normalizeShellLayoutValue($updates['shellLayout']);
-		}
-		if (array_key_exists('sidebarCollapsed', $updates)) {
-			$prefs['sidebarCollapsed'] = $this->normalizeSidebarCollapsedValue($updates['sidebarCollapsed']);
-		}
-
-		return $this->write($prefs['userId'], $prefs);
+		});
 	}
 
 	public const PRESET_SCHEMA = 'processwire.react-workspace.layout.v1';
@@ -596,6 +591,125 @@ final class WorkspacePreferenceStore extends Wire
 	}
 
 	/**
+	 * Perform an atomic `flock(LOCK_EX)` read-modify-write cycle on `{user-id}.json`.
+	 *
+	 * @param callable(array{
+	 *     userId: int,
+	 *     favorites: list<string>,
+	 *     widgetOrder: list<string>,
+	 *     hiddenWidgets: list<string>,
+	 *     widgetSizes: array<string, string>,
+	 *     themeMode: string,
+	 *     themePreset: string,
+	 *     shellLayout: string,
+	 *     sidebarCollapsed: bool,
+	 *     updatedAt: string
+	 * }): ?array<string, mixed> $mutator
+	 * @return array{
+	 *     userId: int,
+	 *     favorites: list<string>,
+	 *     widgetOrder: list<string>,
+	 *     hiddenWidgets: list<string>,
+	 *     widgetSizes: array<string, string>,
+	 *     themeMode: string,
+	 *     themePreset: string,
+	 *     shellLayout: string,
+	 *     sidebarCollapsed: bool,
+	 *     updatedAt: string
+	 * }
+	 */
+	private function mutate(?User $user, callable $mutator, bool $requireExistingFile = false): array
+	{
+		$userId = $this->resolveUserId($user);
+		$defaults = array_merge(self::DEFAULT_PREFERENCES, [
+			'userId' => $userId,
+		]);
+		if ($userId <= 0) {
+			return $defaults;
+		}
+
+		$dir = $this->directoryPath();
+		$dirTrimmed = rtrim($dir, '/\\');
+		if (is_link($dirTrimmed)) {
+			return $defaults;
+		}
+		if (!$requireExistingFile && !is_dir($dir)) {
+			$this->wire()->files->mkdir($dir, true);
+		}
+
+		$path = $dir . $userId . '.json';
+		if (is_link($path)) {
+			return $defaults;
+		}
+		if ($requireExistingFile && !is_file($path)) {
+			return $defaults;
+		}
+
+		$fp = @fopen($path, 'c+');
+		if ($fp === false) {
+			return $this->load($user);
+		}
+
+		try {
+			if (!@flock($fp, LOCK_EX)) {
+				return $this->load($user);
+			}
+
+			rewind($fp);
+			$raw = stream_get_contents($fp);
+			$current = $this->decodePreferences($userId, is_string($raw) ? $raw : '');
+			$next = $mutator($current);
+			if ($next === null) {
+				return $current;
+			}
+
+			$payload = $this->normalizePayload($userId, $next, true);
+			$encoded = (string) json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+			ftruncate($fp, 0);
+			rewind($fp);
+			fwrite($fp, $encoded);
+			fflush($fp);
+			@chmod($path, 0600);
+
+			return $payload;
+		} finally {
+			@flock($fp, LOCK_UN);
+			fclose($fp);
+		}
+	}
+
+	/**
+	 * @return array{
+	 *     userId: int,
+	 *     favorites: list<string>,
+	 *     widgetOrder: list<string>,
+	 *     hiddenWidgets: list<string>,
+	 *     widgetSizes: array<string, string>,
+	 *     themeMode: string,
+	 *     themePreset: string,
+	 *     shellLayout: string,
+	 *     sidebarCollapsed: bool,
+	 *     updatedAt: string
+	 * }
+	 */
+	private function decodePreferences(int $userId, string $raw): array
+	{
+		$defaults = array_merge(self::DEFAULT_PREFERENCES, [
+			'userId' => $userId,
+		]);
+		if (trim($raw) === '') {
+			return $defaults;
+		}
+
+		$decoded = json_decode($raw, true, 16);
+		if (!is_array($decoded)) {
+			return $defaults;
+		}
+
+		return $this->normalizePayload($userId, $decoded, false);
+	}
+
+	/**
 	 * @param array<string, mixed> $data
 	 * @return array{
 	 *     userId: int,
@@ -610,9 +724,9 @@ final class WorkspacePreferenceStore extends Wire
 	 *     updatedAt: string
 	 * }
 	 */
-	private function write(int $userId, array $data): array
+	private function normalizePayload(int $userId, array $data, bool $touchUpdatedAt): array
 	{
-		$payload = [
+		return [
 			'userId' => $userId,
 			'favorites' => $this->normalizeIdList($data['favorites'] ?? []),
 			'widgetOrder' => $this->normalizeIdList($data['widgetOrder'] ?? []),
@@ -622,22 +736,8 @@ final class WorkspacePreferenceStore extends Wire
 			'themePreset' => $this->normalizeThemePresetValue($data['themePreset'] ?? ''),
 			'shellLayout' => $this->normalizeShellLayoutValue($data['shellLayout'] ?? ''),
 			'sidebarCollapsed' => $this->normalizeSidebarCollapsedValue($data['sidebarCollapsed'] ?? false),
-			'updatedAt' => gmdate('c'),
+			'updatedAt' => $touchUpdatedAt ? gmdate('c') : (is_string($data['updatedAt'] ?? null) ? $data['updatedAt'] : ''),
 		];
-
-		$dir = $this->directoryPath();
-		if (!is_dir($dir)) {
-			$this->wire()->files->mkdir($dir, true);
-		}
-
-		$path = $dir . $userId . '.json';
-		if (is_link($path) || is_link(rtrim($dir, '/\\'))) {
-			return $payload;
-		}
-		$encoded = (string) json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-		@file_put_contents($path, $encoded, LOCK_EX);
-
-		return $payload;
 	}
 
 	private function resolveUserId(?User $user = null): int

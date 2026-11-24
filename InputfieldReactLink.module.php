@@ -915,11 +915,11 @@ class InputfieldReactLink extends InputfieldReact
 		$profiles = $field instanceof Field
 			? self::resolveFieldMediaProfiles($field)
 			: self::normalizeMediaProfiles([], [$type]);
+		$wireContext = $ownerPage?->wire() ?? $field?->wire() ?? ProcessWire::getCurrentInstance();
 
 		if ($type === 'page') {
-			if ($norm['pageId'] > 0) {
-				$wireInstance = $ownerPage?->wire() ?? $field?->wire() ?? wire();
-				$targetPage = $wireInstance->pages->get($norm['pageId']);
+			if ($norm['pageId'] > 0 && $wireContext instanceof ProcessWire) {
+				$targetPage = $wireContext->pages->get($norm['pageId']);
 				if (
 					$targetPage instanceof Page
 					&& !$targetPage instanceof NullPage
@@ -944,9 +944,8 @@ class InputfieldReactLink extends InputfieldReact
 				}
 			}
 		} elseif ($type === 'entry') {
-			if ($norm['entryId'] !== '') {
-				$wireInstance = $ownerPage?->wire() ?? $field?->wire() ?? wire();
-				$entries = $wireInstance->get('entries');
+			if ($norm['entryId'] !== '' && $wireContext instanceof ProcessWire) {
+				$entries = $wireContext->wire('entries');
 				if (is_object($entries) && method_exists($entries, 'links')) {
 					$linksService = $entries->links();
 					if (is_object($linksService) && method_exists($linksService, 'resolve')) {
@@ -1017,8 +1016,7 @@ class InputfieldReactLink extends InputfieldReact
 				$href = str_starts_with($cleanUrl, '#')
 					? $cleanUrl
 					: self::appendQueryAndAnchor($cleanUrl, $norm['query'], $norm['anchor']);
-				$wireInstance = $ownerPage?->wire() ?? $field?->wire() ?? wire();
-				$httpHost = (string) $wireInstance->config->httpHost;
+				$httpHost = $wireContext instanceof ProcessWire ? (string) $wireContext->config->httpHost : '';
 				if (preg_match('#^https?://#i', $href) === 1) {
 					$parsedHost = strtolower((string) parse_url($href, PHP_URL_HOST));
 					$cleanHost = strtolower((string) preg_replace('/:\d+$/', '', trim($httpHost)));
@@ -1046,10 +1044,9 @@ class InputfieldReactLink extends InputfieldReact
 			}
 		}
 
-		$wireContext = $ownerPage?->wire() ?? $field?->wire() ?? wire();
 		$effectiveLanguage = $language instanceof Language
 			? $language
-			: ($wireContext->user->language instanceof Language ? $wireContext->user->language : null);
+			: ($wireContext instanceof ProcessWire && $wireContext->user->language instanceof Language ? $wireContext->user->language : null);
 		$resolvedCustomLabel = self::resolveLocalizedText((string) $norm['label'], $norm['labels'] ?? [], $effectiveLanguage);
 		$resolvedAriaLabel = self::resolveLocalizedText((string) $norm['ariaLabel'], $norm['ariaLabels'] ?? [], $effectiveLanguage);
 

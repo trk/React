@@ -710,6 +710,11 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 							</>
 						)}
 					</span>
+					<DynamicIcon
+						name={isOpen ? 'chevron-up' : 'chevron-down'}
+						className="pointer-events-none size-4 shrink-0 text-muted-foreground"
+						aria-hidden="true"
+					/>
 				</button>
 
 				<div className="flex shrink-0 items-center gap-0.5 pl-1">
@@ -758,25 +763,6 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 							<DynamicIcon name="x" className="size-3.5" />
 						</button>
 					) : null}
-
-					<span
-						aria-hidden="true"
-						onClick={() => {
-							if (!isDisabled) {
-								setActiveTab('icons');
-								setIsOpen((prev) => !prev);
-							}
-						}}
-						className={cn(
-							'inline-flex size-6 items-center justify-center text-muted-foreground',
-							!isDisabled && 'cursor-pointer',
-						)}
-					>
-						<DynamicIcon
-							name={isOpen ? 'chevron-up' : 'chevron-down'}
-							className="size-4 text-muted-foreground"
-						/>
-					</span>
 				</div>
 			</div>
 
