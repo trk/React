@@ -1918,3 +1918,268 @@ test('MediaGateway::executeTransform masks raw exceptions when debug=false and U
 		}
 	}
 });
+
+test('PagesDataProvider enforces field-level useRoles view RBAC and handles statusFilter published without leaking drafts', function (): void {
+	$pw = wire();
+	$modules = $pw->modules;
+	$fields = $pw->fields;
+	$fieldgroups = $pw->fieldgroups;
+	$templates = $pw->templates;
+	$pages = $pw->pages;
+	$users = $pw->users;
+	$roles = $pw->roles;
+
+	$suffix = substr(bin2hex(random_bytes(4)), 0, 8);
+	$publicFieldName = 'rw_rbac_pub_' . $suffix;
+	$secretFieldName = 'rw_rbac_sec_' . $suffix;
+	$iconFieldName = 'rw_rbac_ico_' . $suffix;
+	$thumbFieldName = 'rw_rbac_img_' . $suffix;
+	$tplName = 'rw_rbac_tpl_' . $suffix;
+	$roleName = 'rw_rbac_role_' . $suffix;
+	$userName = 'rw_rbac_user_' . $suffix;
+	$tmpDir = sys_get_temp_dir() . '/rw_pdp_rbac_' . $suffix;
+	if (!is_dir($tmpDir)) {
+		mkdir($tmpDir, 0775, true);
+	}
+
+	$publicField = null;
+	$secretField = null;
+	$iconField = null;
+	$thumbField = null;
+	$fg = null;
+	$tpl = null;
+	$editorRole = null;
+	$editorUser = null;
+	$createdPages = [];
+	$prevUser = $users->getCurrentUser();
+	$superId = (int) ($pw->config->superUserPageID ?: 41);
+	$superUser = $users->get($superId);
+
+	try {
+		$editorRole = $roles->add($roleName);
+		$pageEditPerm = $pw->permissions->get('page-edit');
+		if ($pageEditPerm && $pageEditPerm->id) {
+			$editorRole->addPermission($pageEditPerm);
+		}
+		$roles->save($editorRole);
+
+		$guestRole = $roles->get('guest');
+		$publicField = new Field();
+		$publicField->type = $modules->get('FieldtypeText');
+		$publicField->name = $publicFieldName;
+		$publicField->label = 'Public Summary';
+		$fields->save($publicField);
+
+		$secretField = new Field();
+		$secretField->type = $modules->get('FieldtypeText');
+		$secretField->name = $secretFieldName;
+		$secretField->label = 'Confidential Salary';
+		$secretField->useRoles = 1;
+		$secretField->viewRoles = [$superId];
+		$secretField->editRoles = [$superId];
+		$fields->save($secretField);
+
+		$iconField = new Field();
+		$iconField->type = $modules->get('FieldtypeText');
+		$iconField->name = $iconFieldName;
+		$iconField->label = 'Restricted Icon';
+		$iconField->useRoles = 1;
+		$iconField->viewRoles = [$superId];
+		$iconField->editRoles = [$superId];
+		$fields->save($iconField);
+
+		$thumbField = new Field();
+		$thumbField->type = $modules->get('FieldtypeImage');
+		$thumbField->name = $thumbFieldName;
+		$thumbField->label = 'Restricted Photo';
+		$thumbField->maxFiles = 1;
+		$thumbField->useRoles = 1;
+		$thumbField->viewRoles = [$superId];
+		$thumbField->editRoles = [$superId];
+		$fields->save($thumbField);
+
+		$fg = new Fieldgroup();
+		$fg->name = $tplName;
+		$fg->add($fields->get('title'));
+		$fg->add($publicField);
+		$fg->add($secretField);
+		$fg->add($iconField);
+		$fg->add($thumbField);
+		$fieldgroups->save($fg);
+
+		$tpl = new Template();
+		$tpl->name = $tplName;
+		$tpl->fieldgroup = $fg;
+		$tpl->useRoles = 1;
+		$viewRoles = [$editorRole];
+		if ($guestRole && $guestRole->id) {
+			$viewRoles[] = $guestRole;
+		}
+		$tpl->setRoles($viewRoles, 'view');
+		$tpl->setRoles([$editorRole], 'edit');
+		$templates->save($tpl);
+
+		$editorUser = $users->add($userName);
+		$editorUser->addRole('guest');
+		$editorUser->addRole($editorRole);
+		$users->save($editorUser);
+
+		$pngPath = $tmpDir . '/secret.png';
+		$gd = imagecreatetruecolor(16, 16);
+		$fill = imagecolorallocate($gd, 40, 140, 200);
+		imagefilledrectangle($gd, 0, 0, 16, 16, $fill);
+		imagepng($gd, $pngPath);
+
+		$makePage = static function (string $name, string $title, int $status) use (
+			$pages,
+			$tpl,
+			$publicFieldName,
+			$secretFieldName,
+			$iconFieldName,
+			$thumbFieldName,
+			$pngPath
+		): Page {
+			$p = new Page();
+			$p->template = $tpl;
+			$p->parent = $pages->get(1);
+			$p->name = $name;
+			$p->title = $title;
+			$p->status = $status;
+			$p->set($publicFieldName, 'Public Note');
+			$p->set($secretFieldName, 'TOP-SECRET-VALUE');
+			$p->set($iconFieldName, 'shield-lock');
+			$pages->save($p);
+			$p->of(false);
+			$p->getUnformatted($thumbFieldName)->add($pngPath);
+			$p->save($thumbFieldName);
+			return $p;
+		};
+
+		$publishedPage = $makePage("rbac-pub-{$suffix}", 'Published Item', Page::statusOn);
+		$draftPage = $makePage("rbac-draft-{$suffix}", 'Draft Item', Page::statusUnpublished);
+		$hiddenPage = $makePage("rbac-hidden-{$suffix}", 'Hidden Item', Page::statusHidden);
+		$trashedPage = $makePage("rbac-trash-{$suffix}", 'Trashed Item', Page::statusOn);
+		$pages->trash($trashedPage);
+		$createdPages = [$publishedPage, $draftPage, $hiddenPage, $trashedPage];
+
+		$providerOptions = [
+			'columns' => [
+				'title' => ['label' => 'Title'],
+				$publicFieldName => ['label' => 'Public'],
+				$secretFieldName => ['label' => 'Secret'],
+			],
+			'subtitleField' => $secretFieldName,
+			'iconField' => $iconFieldName,
+			'thumbField' => $thumbFieldName,
+		];
+		$provider = new PagesDataProvider("template={$tplName}", $providerOptions);
+		wire($provider);
+
+		// 1. Non-superuser editor cannot read restricted field columns/meta or use restricted field as filter oracle
+		$users->setCurrentUser($editorUser);
+		$editorPublishedRes = $provider->query([
+			'statusFilter' => 'published',
+			'limit' => 20,
+		]);
+		expect($editorPublishedRes->total)->toBe(1)
+			->and($editorPublishedRes->items)->toHaveCount(1);
+		$editorRow = $editorPublishedRes->items[0];
+		expect((int) $editorRow->id)->toBe((int) $publishedPage->id)
+			->and($editorRow->title)->toBe('Published Item')
+			->and($editorRow->values[$publicFieldName])->toBe('Public Note')
+			->and($editorRow->values[$secretFieldName])->toBe('')
+			->and($editorRow->formatted)->not->toHaveKey($secretFieldName)
+			->and($editorRow->subtitle)->toBe('')
+			->and($editorRow->icon)->toBe('')
+			->and($editorRow->thumb)->toBeNull()
+			->and($editorRow->thumbHtml)->toBe('');
+
+		// Filtering by restricted field fails closed (oracle blocked)
+		$oracleSelector = $provider->buildSelectorString([
+			'fieldFilters' => [$secretFieldName => 'NON-EXISTENT-VALUE'],
+		]);
+		expect($oracleSelector)->not->toContain($secretFieldName . '=');
+		$oracleProbe = $provider->query([
+			'fieldFilters' => [$secretFieldName => 'NON-EXISTENT-VALUE'],
+			'limit' => 20,
+		]);
+		$noFilterBaseline = $provider->query(['limit' => 20]);
+		expect($oracleProbe->total)->toBe($noFilterBaseline->total)
+			->and($oracleProbe->total)->toBeGreaterThan(0);
+
+		// 2. Superuser can filter statusFilter='published' cleanly (no drafts/hidden/trash leaked) and sees restricted fields
+		if ($superUser instanceof User && $superUser->id > 0) {
+			$users->setCurrentUser($superUser);
+		}
+		$superPublishedRes = $provider->query([
+			'statusFilter' => 'published',
+			'limit' => 20,
+		]);
+		expect($superPublishedRes->total)->toBe(1)
+			->and($superPublishedRes->items)->toHaveCount(1);
+		$superRow = $superPublishedRes->items[0];
+		expect((int) $superRow->id)->toBe((int) $publishedPage->id)
+			->and($superRow->values[$secretFieldName])->toBe('TOP-SECRET-VALUE')
+			->and($superRow->subtitle)->toBe('TOP-SECRET-VALUE')
+			->and($superRow->icon['name'] ?? null)->toBe('shield-lock')
+			->and((string) ($superRow->thumb['src'] ?? ''))->toContain('secret.');
+	} finally {
+		if ($prevUser instanceof User && $prevUser->id > 0) {
+			$users->setCurrentUser($prevUser);
+		}
+		foreach ($createdPages as $cp) {
+			if ($cp instanceof Page && $cp->id > 0) {
+				try {
+					$pages->delete($cp, true);
+				} catch (\Throwable) {
+				}
+			}
+		}
+		$classesDir = rtrim((string) wire('config')->paths->classes, '/') . '/';
+		if ($tpl instanceof Template && $tpl->id > 0) {
+			$pascal = str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', (string) $tpl->name)));
+			try {
+				$templates->delete($tpl);
+			} catch (\Throwable) {
+			}
+			$classFile = $classesDir . $pascal . 'Page.php';
+			if (is_file($classFile)) {
+				unlink($classFile);
+			}
+		}
+		if ($fg instanceof Fieldgroup && $fg->id > 0) {
+			try {
+				$fieldgroups->delete($fg);
+			} catch (\Throwable) {
+			}
+		}
+		foreach ([$thumbField, $iconField, $secretField, $publicField] as $f) {
+			if ($f instanceof Field && $f->id > 0) {
+				try {
+					$fields->delete($f);
+				} catch (\Throwable) {
+				}
+			}
+		}
+		if ($editorUser instanceof User && $editorUser->id > 0) {
+			try {
+				$users->delete($editorUser);
+			} catch (\Throwable) {
+			}
+		}
+		if ($editorRole instanceof Role && $editorRole->id > 0) {
+			try {
+				$roles->delete($editorRole);
+			} catch (\Throwable) {
+			}
+		}
+		if (is_dir($tmpDir)) {
+			foreach (glob($tmpDir . '/*') ?: [] as $f) {
+				if (is_file($f)) {
+					unlink($f);
+				}
+			}
+			rmdir($tmpDir);
+		}
+	}
+});

@@ -1537,3 +1537,61 @@ test('FieldIntegrationHooks::unregister() and React::forgetDeferredRegistrations
 		->and(count($isolatedReact->getHooks('registerWidgets')))->toBe($wdBefore);
 });
 
+test('WorkspacePreferenceStore flock mutation preserves keys, EditPresenceStore preserves file inode on leave(), and WorkspaceLauncherProcess::___uninstall() preserves standalone React preferences', function (): void {
+	/** @var React $react */
+	$react = wire('react');
+	$user = wire('user');
+	$prefStore = $react->workspacePreferences();
+	$presenceStore = new \Totoglu\React\Workspace\EditPresenceStore();
+	wire($presenceStore);
+
+	$suffix = substr(bin2hex(random_bytes(4)), 0, 8);
+	$resourceKey = 'presence-lock-inode-' . $suffix;
+
+	try {
+		// 1. Sequential/interleaved locked mutations preserve unrelated preference keys
+		$prefStore->reset($user);
+		$prefStore->setThemeMode('dark', $user);
+		$prefStore->setThemePreset('ocean', $user);
+		$prefStore->setShellLayout('sidebar', $user);
+		$prefStore->setSidebarCollapsed(true, $user);
+		$prefStore->toggleFavorite('orders-ws', $user);
+
+		$loaded = $prefStore->load($user);
+		expect($loaded['themeMode'])->toBe('dark')
+			->and($loaded['themePreset'])->toBe('ocean')
+			->and($loaded['shellLayout'])->toBe('sidebar')
+			->and($loaded['sidebarCollapsed'])->toBeTrue()
+			->and($loaded['favorites'])->toBe(['orders-ws']);
+
+		// 2. EditPresenceStore::leave() truncates to '{}' in place under LOCK_EX without unlinking inode
+		$presenceStore->heartbeat($resourceKey, $user, 'tab-inode');
+		$lockPath = $presenceStore->filePath($resourceKey);
+		expect(is_file($lockPath))->toBeTrue();
+		clearstatcache(true, $lockPath);
+		$inodeBeforeLeave = fileinode($lockPath);
+
+		$presenceStore->leave($resourceKey, $user, 'tab-inode');
+		clearstatcache(true, $lockPath);
+		expect(is_file($lockPath))->toBeTrue()
+			->and(fileinode($lockPath))->toBe($inodeBeforeLeave)
+			->and(trim((string) file_get_contents($lockPath)))->toBe('{}');
+
+		// 3. WorkspaceLauncherProcess::___uninstall() leaves standalone React preference files intact
+		$launcher = new RwLauncherFixture();
+		wire($launcher);
+		$launcher->___uninstall();
+
+		$afterUninstall = $prefStore->load($user);
+		expect($afterUninstall['themeMode'])->toBe('dark')
+			->and($afterUninstall['themePreset'])->toBe('ocean')
+			->and($afterUninstall['favorites'])->toBe(['orders-ws']);
+	} finally {
+		$prefStore->reset($user);
+		$lockPath = $presenceStore->filePath($resourceKey);
+		if (is_file($lockPath)) {
+			unlink($lockPath);
+		}
+	}
+});
+

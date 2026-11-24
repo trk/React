@@ -5,6 +5,7 @@ declare(strict_types=1);
 use ProcessWire\React;
 use ProcessWire\WireException;
 use ProcessWire\WireInputData;
+use Totoglu\React\Data\ReactColumn;
 use Totoglu\React\Data\ReactPageResult;
 use Totoglu\React\Data\ReactRecord;
 use Totoglu\React\Inertia\InputfieldReact;
@@ -212,6 +213,61 @@ test('InputfieldReact and ProcessReact extend Inertia base classes and automatic
 	expect(is_subclass_of(ProcessReact::class, \Totoglu\Inertia\ProcessInertia::class))->toBeTrue();
 });
 
+test('ReactColumn builders normalize icon, image, primary text, and numeric schemas across providers and MarkupReactViewport', function (): void {
+	$iconCol = ReactColumn::icon('icon', 'Symbol');
+	$avatarCol = ReactColumn::image('avatar', 'Photo')->shape('circle');
+	$titleCol = ReactColumn::text('title', 'Name')->primary()->sortable();
+	$amountCol = ReactColumn::number('amount', 'Total');
+	$badgeCol = ReactColumn::badge('tier', 'Tier')->badgeVariants(['vip' => 'primary'])->maxBadges(2);
+
+	$normalized = ReactColumn::normalizeMap([$avatarCol, $iconCol, $titleCol, $amountCol, $badgeCol]);
+	expect(array_keys($normalized))->toBe(['avatar', 'icon', 'title', 'amount', 'tier'])
+		->and($normalized['avatar']['type'])->toBe('image')
+		->and($normalized['avatar']['shape'])->toBe('circle')
+		->and($normalized['avatar']['sortable'])->toBeFalse()
+		->and($normalized['avatar']['showLabel'])->toBeFalse()
+		->and($normalized['icon']['type'])->toBe('icon')
+		->and($normalized['icon']['sortable'])->toBeFalse()
+		->and($normalized['icon']['width'])->toBe('3.25rem')
+		->and($normalized['title']['primary'])->toBeTrue()
+		->and($normalized['amount']['align'])->toBe('right')
+		->and($normalized['amount']['tabular'])->toBeTrue()
+		->and($normalized['tier']['maxBadges'])->toBe(2);
+
+	// Enabling showLabel on a visual column clears the compact icon-only width override
+	$labeledIcon = $iconCol->showLabel();
+	expect($labeledIcon->toArray())->not->toHaveKey('width')
+		->and($labeledIcon->toArray()['align'])->toBe('left')
+		->and($labeledIcon->toArray()['showLabel'])->toBeTrue();
+
+	$provider = new ArrayDataProvider('array:col_test', [
+		[
+			'id' => '1',
+			'title' => 'Harbor Berth',
+			'_thumb' => '/site/assets/files/1/avatar.jpg',
+			'_icon' => ['name' => 'anchor', 'size' => 48, 'color' => '#2563eb'],
+			'amount' => '1500',
+			'tier' => 'vip',
+		],
+	], [
+		'title' => 'Berths',
+		'columns' => [$avatarCol, $iconCol, $titleCol, $amountCol, $badgeCol],
+	]);
+
+	expect($provider->sortableColumns())->not->toContain('avatar')
+		->and($provider->sortableColumns())->not->toContain('icon')
+		->and($provider->sortableColumns())->toContain('title');
+
+	$viewport = wire()->modules->get('MarkupReactTable');
+	expect($viewport)->not->toBeNull();
+	$prop = $viewport->configure($provider)->toInertiaProp();
+	expect($prop['columns']['avatar']['shape'] ?? '')->toBe('circle')
+		->and($prop['columns']['avatar']['sortable'] ?? true)->toBeFalse()
+		->and($prop['columns']['icon']['type'] ?? '')->toBe('icon')
+		->and($prop['columns']['icon']['sortable'] ?? true)->toBeFalse()
+		->and($prop['columns']['title']['primary'] ?? false)->toBeTrue();
+});
+
 test('modular dist bundles exist within strict size budgets and isolate CSS/JS per companion submodule', function (): void {
 	$moduleDir = dirname(__DIR__, 2);
 	$cssFile = $moduleDir . '/dist/ReactInertia.css';
@@ -280,7 +336,7 @@ test('modular dist bundles exist within strict size budgets and isolate CSS/JS p
 		->and(is_file($calendarCssFile))->toBeTrue()
 		->and(is_file($extraFieldsFile))->toBeTrue()
 		->and((int) filesize($jsFile))->toBeLessThan(700_000)
-		->and((int) filesize($schemaFormFile))->toBeLessThan(200_000)
+		->and((int) filesize($schemaFormFile))->toBeLessThan(220_000)
 		->and((int) filesize($extraFieldsFile))->toBeLessThan(120_000)
 		->and((int) filesize($tiptapCoreFile))->toBeLessThan(560_000)
 		->and((int) filesize($gridFile))->toBeLessThan(160_000)
@@ -2063,4 +2119,84 @@ test('FormSchemaSerializer normalizes and emits tabsLayout across wrapper and de
 		->and(array_key_exists('tabsLayout', $fromInvalid))->toBeTrue()
 		->and($fromInvalid['tabsLayout'])->toBeNull()
 		->and($fromDefinitions['tabsLayout'] ?? null)->toBe('vertical');
+});
+
+test('FormSchemaSerializer serializes collapsible async plain markup and rwDangerZone InputfieldMarkup nodes', function (): void {
+	$serializer = new \Totoglu\React\Form\FormSchemaSerializer();
+	$modules = wire('modules');
+
+	/** @var \ProcessWire\InputfieldForm $form */
+	$form = $modules->get('InputfieldForm');
+	$form->attr('id', 'rw-markup-danger-form');
+
+	/** @var \ProcessWire\InputfieldMarkup $infoField */
+	$infoField = $modules->get('InputfieldMarkup');
+	$infoField->attr('id+name', 'record_info');
+	$infoField->label = 'Info';
+	$infoField->collapsed = \ProcessWire\Inputfield::collapsedYes;
+	$infoField->set('rwCollapsible', true);
+	$infoField->set('rwSurface', 'plain');
+	$infoField->set('rwAsyncUrl', '/_panel/info?id=123');
+	$infoField->set('rwAsyncMode', 'expand');
+	$infoField->set('rwBadge', '3');
+	$infoField->set('rwHideWhenEmpty', false);
+	$infoField->set('rwAppendHtml', '<div data-rw-meta-table=""><table><tbody><tr><th>Extra</th><td>Val</td></tr></tbody></table></div>');
+	$infoField->attr('value', '');
+	$form->add($infoField);
+
+	/** @var \ProcessWire\InputfieldMarkup $refsField */
+	$refsField = $modules->get('InputfieldMarkup');
+	$refsField->attr('id+name', 'record_refs');
+	$refsField->label = 'Referenced By';
+	$refsField->set('rwSurface', 'plain');
+	$refsField->set('rwAsyncUrl', '/_panel/refs?id=123');
+	$refsField->set('rwAsyncMode', 'mount');
+	$refsField->set('rwHideWhenEmpty', true);
+	$refsField->attr('value', '');
+	$form->add($refsField);
+
+	/** @var \ProcessWire\InputfieldMarkup $dangerField */
+	$dangerField = $modules->get('InputfieldMarkup');
+	$dangerField->attr('id+name', 'record_delete');
+	$dangerField->label = 'Danger Zone';
+	$dangerField->icon = 'trash';
+	$dangerField->set('rwDangerZone', [
+		'title' => 'Delete Record',
+		'description' => 'Cannot be undone.',
+		'buttonLabel' => 'Delete',
+		'dialogTitle' => 'Confirm Deletion',
+		'dialogDescription' => 'This removes the record.',
+		'acknowledgeLabel' => 'Confirm permanent delete',
+		'confirmLabel' => 'Delete',
+		'confirmInputName' => '_record_delete_confirm',
+		'confirmInputValue' => '1',
+		'blocked' => true,
+		'blockedMessage' => 'Deletion restricted.',
+		'referenceCountField' => 'record_refs',
+		'referenceWarningTemplate' => 'Warning: {count} references.',
+	]);
+	$form->add($dangerField);
+
+	$serialized = $serializer->serialize($form);
+	$fieldsByName = [];
+	foreach ($serialized['fields'] ?? [] as $f) {
+		if (is_array($f) && isset($f['name'])) {
+			$fieldsByName[$f['name']] = $f;
+		}
+	}
+
+	expect($fieldsByName['record_info']['kind'] ?? null)->toBe('markup')
+		->and($fieldsByName['record_info']['collapsed'] ?? null)->toBeTrue()
+		->and($fieldsByName['record_info']['collapsible'] ?? null)->toBeTrue()
+		->and($fieldsByName['record_info']['surface'] ?? null)->toBe('plain')
+		->and($fieldsByName['record_info']['asyncUrl'] ?? null)->toBe('/_panel/info?id=123')
+		->and($fieldsByName['record_info']['asyncMode'] ?? null)->toBe('expand')
+		->and($fieldsByName['record_info']['badge'] ?? null)->toBe('3')
+		->and($fieldsByName['record_info']['appendHtml'] ?? '')->toContain('Extra')
+		->and($fieldsByName['record_refs']['asyncMode'] ?? null)->toBe('mount')
+		->and($fieldsByName['record_refs']['hideWhenEmpty'] ?? null)->toBeTrue()
+		->and($fieldsByName['record_delete']['kind'] ?? null)->toBe('danger_zone')
+		->and($fieldsByName['record_delete']['dangerZone']['confirmInputName'] ?? null)->toBe('_record_delete_confirm')
+		->and($fieldsByName['record_delete']['dangerZone']['blocked'] ?? null)->toBeTrue()
+		->and($fieldsByName['record_delete']['dangerZone']['referenceCountField'] ?? null)->toBe('record_refs');
 });

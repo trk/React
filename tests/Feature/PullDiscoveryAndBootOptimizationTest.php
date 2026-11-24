@@ -22,6 +22,7 @@ use Totoglu\React\Provider\ProviderRegistry;
 use Totoglu\React\Relation\Resource\AbstractRelationResource;
 use Totoglu\React\Relation\RelationResourceRegistry;
 use Totoglu\React\Workspace\CommandSearchRegistry;
+use Totoglu\React\Workspace\WorkspaceRegistry;
 use function ProcessWire\bootReactForTesting;
 use function ProcessWire\wire;
 
@@ -588,4 +589,58 @@ PHP);
 		expect((string) $warning)->not->toContain('requires a non-autoload module')
 			->and((string) $warning)->not->toContain('requires a conditionally autoloaded module');
 	}
+});
+
+test('WorkspaceRegistry::accessible batch-preloads Process admin page URLs without N+1 queries', function (): void {
+	$pw = wire();
+	bootReactForTesting();
+	$su = $pw->users->find('roles=superuser, include=all, limit=1')->first();
+	expect($su)->toBeInstanceOf(User::class);
+
+	$registry = new WorkspaceRegistry();
+	$pw->wire($registry);
+
+	$processes = ['ProcessContacts', 'ProcessEntries', 'ProcessPages', 'ProcessModule', 'ProcessUsers'];
+	foreach ($processes as $idx => $procName) {
+		$registry->register([
+			'id' => 'ws-' . $idx,
+			'title' => 'Workspace ' . $idx,
+			'process' => $procName,
+			'accessCallback' => static fn(): bool => true,
+		]);
+	}
+
+	$db = $pw->database;
+	$prevDebug = $pw->config->debug;
+	$pw->config->debug = true;
+	$db->setDebugMode(true);
+	$q0 = count($db->queryLog());
+
+	try {
+		$resolved = $registry->accessible($su, '', false);
+		$launcher = $registry->launcherUrl();
+	} finally {
+		$queries = array_slice($db->queryLog(), $q0);
+		$pw->config->debug = $prevDebug;
+	}
+
+	expect($resolved)->toHaveCount(count($processes))
+		->and($launcher)->toBeString()->not->toBe('');
+
+	foreach ($processes as $idx => $procName) {
+		$modId = (int) $pw->modules->getModuleID($procName);
+		$expectedPage = $modId > 0 ? $pw->pages->get("template=admin, process={$modId}, include=all") : null;
+		$expectedUrl = ($expectedPage instanceof Page && $expectedPage->id > 0)
+			? (string) $expectedPage->url
+			: '';
+		if ($expectedUrl !== '') {
+			expect($resolved['ws-' . $idx]['url'] ?? '')->toBe($expectedUrl);
+		}
+	}
+
+	$processLookupQueries = array_filter(
+		$queries,
+		static fn(mixed $q): bool => str_contains((string) $q, 'field_process')
+	);
+	expect(count($processLookupQueries))->toBeLessThanOrEqual(1);
 });

@@ -495,3 +495,45 @@ test('anonymous ProcessReact and MarkupReactViewport subclasses sanitize transla
 		'panel.title' => 'Anonymous Panel',
 	]);
 });
+
+test('every dotted t() key referenced in TypeScript sources exists in the PHP translation catalog', function (): void {
+	/** @var React $workspace */
+	$workspace = wire('react');
+	/** @var InputfieldTiptap $tiptap */
+	$tiptap = wire('modules')->get('InputfieldTiptap');
+
+	$catalog = array_merge(
+		$workspace->resolveModuleTranslations($workspace),
+		$workspace->resolveModuleTranslations($tiptap),
+	);
+
+	$tsRoot = dirname(__DIR__, 2) . '/resources/ts';
+	$iterator = new RecursiveIteratorIterator(
+		new RecursiveDirectoryIterator($tsRoot, FilesystemIterator::SKIP_DOTS),
+	);
+
+	$missing = [];
+	$scannedFiles = 0;
+	/** @var SplFileInfo $fileInfo */
+	foreach ($iterator as $fileInfo) {
+		if (!$fileInfo->isFile()) {
+			continue;
+		}
+		$ext = strtolower($fileInfo->getExtension());
+		if ($ext !== 'ts' && $ext !== 'tsx') {
+			continue;
+		}
+		$scannedFiles++;
+		$source = (string) file_get_contents($fileInfo->getPathname());
+		if (preg_match_all('/(?<![a-zA-Z0-9_.])t\(\s*[\'"]([a-zA-Z0-9_]+\.[a-zA-Z0-9_.]+)[\'"]/', $source, $matches) > 0) {
+			foreach ($matches[1] as $key) {
+				if (!array_key_exists($key, $catalog)) {
+					$missing[] = str_replace($tsRoot . '/', '', $fileInfo->getPathname()) . ': ' . $key;
+				}
+			}
+		}
+	}
+
+	expect($scannedFiles)->toBeGreaterThan(50)
+		->and($missing)->toBe([]);
+});

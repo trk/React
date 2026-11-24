@@ -723,3 +723,60 @@ test('MiniBlockHtmlSanitizer rejects malformed data-prop-* attribute names and s
 		->not->toContain('data-tiptap-extra')
 		->toContain('<aside data-tiptap-block="callout" data-variant="info"><p>Safe copy</p></aside>');
 });
+
+test('MiniBlockHtmlSanitizer and cleanHtmlValue preserve dollar backreferences and backslashes inside mini-blocks', function (): void {
+	$defs = [
+		'callout' => [
+			'name' => 'callout',
+			'label' => 'Callout',
+		],
+		'details' => [
+			'name' => 'details',
+			'label' => 'Details',
+		],
+		'pricing_badge' => [
+			'name' => 'pricing_badge',
+			'label' => 'Pricing Badge',
+			'tag' => 'div',
+			'editableBody' => false,
+			'fields' => [
+				[
+					'name' => 'price',
+					'attr' => 'data-prop-price',
+					'type' => 'text',
+				],
+			],
+		],
+	];
+
+	$calloutHtml = '<aside data-tiptap-block="callout" data-variant="info"><p>Price is $100, discount $0, fee $25.50, ref ${1}, group \1, path C:\Users\1</p></aside>';
+	$detailsHtml = '<details data-tiptap-block="details"><summary>FAQ $0</summary><p>Backup token $99 and C:\Temp\2</p></details>';
+	$customHtml = '<div data-tiptap-block="pricing_badge" data-prop-price="$100 / ${1} / C:\Users\1"></div>';
+
+	$extracted = \Totoglu\React\Tiptap\MiniBlockHtmlSanitizer::extractAndSanitize(
+		$calloutHtml . $detailsHtml . $customHtml,
+		$defs,
+		static fn(string $fragment): string => $fragment,
+	);
+	$restored = \Totoglu\React\Tiptap\MiniBlockHtmlSanitizer::restorePlaceholders(
+		$extracted['html'],
+		$extracted['replacements'],
+	);
+
+	expect($restored)
+		->toContain('Price is $100, discount $0, fee $25.50, ref ${1}, group \1, path C:\Users\1')
+		->toContain('FAQ $0')
+		->toContain('Backup token $99 and C:\Temp\2')
+		->toContain('data-prop-price="$100 / ${1} / C:\Users\1"');
+
+	/** @var \ProcessWire\InputfieldTiptap $tiptap */
+	$tiptap = wire('modules')->get('InputfieldTiptap');
+	$cleaned = $tiptap->cleanHtmlValue($calloutHtml . $detailsHtml);
+	expect($cleaned)
+		->toContain('$100')
+		->toContain('$0')
+		->toContain('$25.50')
+		->toContain('${1}')
+		->toContain('\1')
+		->toContain('C:\Users\1');
+});

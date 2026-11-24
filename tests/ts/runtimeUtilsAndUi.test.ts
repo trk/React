@@ -1107,4 +1107,91 @@ describe('Runtime Utilities, Formula Engine, i18n, Sortable Tree & Media Helpers
 		const clearedTr = setLocalizedLinkText(trStep.value, trStep.map, trLang, '', true);
 		expect(clearedTr).toEqual({ value: 'Explore ', map: undefined });
 	});
+
+	it('separates icon and image visuals from title across Table and Cards while clamping icon size and preserving color', async () => {
+		const { DataViewport, registerViewport } = await import('../../resources/ts/viewports/DataViewport');
+		const { DataTableCanvas } = await import('../../resources/ts/viewports/DataTableCanvas');
+		const { DataCardsCanvas } = await import('../../resources/ts/viewports/DataCardsCanvas');
+		registerViewport('table', DataTableCanvas);
+		registerViewport('cards', DataCardsCanvas);
+
+		const visualProps = {
+			componentId: 'contacts_vp',
+			title: 'Directory',
+			viewMode: 'table',
+			columns: {
+				avatar: { label: 'Avatar', type: 'image', shape: 'circle' as const, width: '3.75rem', align: 'center' as const, sortable: false },
+				icon: { label: 'Icon', type: 'icon', width: '3.25rem', align: 'center' as const, sortable: false },
+				title: { label: 'Name', primary: true, sortable: true },
+				role: { label: 'Role' },
+			},
+			records: [
+				{
+					id: 'c_1',
+					title: 'Ada Lovelace',
+					avatar: '/site/assets/files/1/ada.jpg',
+					_thumb: '/site/assets/files/1/ada.jpg',
+					icon: {
+						name: 'star',
+						variant: 'filled',
+						size: 64,
+						color: '#e11d48',
+						background: '#fff1f2',
+						radius: 'full',
+					},
+					_icon: {
+						name: 'star',
+						variant: 'filled',
+						size: 64,
+						color: '#e11d48',
+						background: '#fff1f2',
+						radius: 'full',
+					},
+					_editUrl: '/admin/contacts/edit/c_1',
+					role: 'Architect',
+					status: 'Published',
+				},
+				{
+					id: 'v_2',
+					title: 'Mediterranean Yacht',
+					avatar: { src: '/site/assets/files/2/yacht.jpg', alt: 'Yacht Cover', count: 1, aspect: 'video' },
+					_thumb: { src: '/site/assets/files/2/yacht.jpg', alt: 'Yacht Cover', count: 1, aspect: 'video' },
+					icon: { name: 'anchor', color: '#0284c7', size: 48 },
+					_icon: { name: 'anchor', color: '#0284c7', size: 48 },
+					_editUrl: '/admin/yachts/edit/v_2',
+					role: 'Flagship',
+					status: 'Published',
+				},
+			],
+		};
+
+		const tableHtml = renderToStaticMarkup(React.createElement(DataViewport, visualProps));
+
+		// Dedicated icon & image columns render in their own cells with clamped sizes & preserved colors, and primary link stays on Title without duplicating leading visuals
+		expect(tableHtml).toContain('data-rw-cell-image=""');
+		expect(tableHtml).toContain('rounded-full');
+		expect(tableHtml).toContain('data-rw-cell-icon=""');
+		expect(tableHtml).toContain('title="star"');
+		expect(tableHtml).toContain('width="16"');
+		expect(tableHtml).toContain('width="18"');
+		expect(tableHtml).not.toContain('width="64"');
+		expect(tableHtml).not.toContain('width="48" height="48"');
+		expect(tableHtml).toContain('color:#e11d48');
+		expect(tableHtml).toContain('background-color:#fff1f2');
+		expect(tableHtml).toContain('border-radius:9999px');
+		expect(tableHtml).toContain('href="/admin/contacts/edit/c_1"');
+		expect(tableHtml).not.toContain('data-rw-cell-media=""');
+
+		// Cards renders separate [data-rw-card-media="thumb|banner"] and [data-rw-card-icon] slots and omits visual-only cols from <dl>
+		const cardsHtml = renderToStaticMarkup(
+			React.createElement(DataViewport, { ...visualProps, viewMode: 'cards' })
+		);
+		expect(cardsHtml).toContain('data-rw-card-media="thumb"');
+		expect(cardsHtml).toContain('data-rw-card-media="banner"');
+		expect(cardsHtml).toContain('data-rw-card-icon=""');
+		expect(cardsHtml).toContain('href="/admin/contacts/edit/c_1"');
+		expect(cardsHtml).toContain('href="/admin/yachts/edit/v_2"');
+		expect(cardsHtml).not.toContain('<dt class="truncate text-[11px] text-muted-foreground">Avatar</dt>');
+		expect(cardsHtml).not.toContain('<dt class="truncate text-[11px] text-muted-foreground">Icon</dt>');
+	});
 });

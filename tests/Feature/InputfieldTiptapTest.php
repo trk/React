@@ -1392,3 +1392,303 @@ test('TiptapContentPolicy enforces strict attribute allowlist + iterative CSS sa
 		}
 	}
 });
+
+test('TiptapMediaLinkGateway fails closed on disjoint image extension allowlists and enforces Repeater field-level view RBAC', function (): void {
+	$pw = wire();
+	$modules = $pw->modules;
+	$fields = $pw->fields;
+	$fieldgroups = $pw->fieldgroups;
+	$templates = $pw->templates;
+	$pages = $pw->pages;
+	$users = $pw->users;
+	$roles = $pw->roles;
+	/** @var React $workspace */
+	$workspace = wire('react');
+
+	$suffix = substr(bin2hex(random_bytes(4)), 0, 8);
+	$svgOnlyFieldName = 'rw_tt_svg_only_' . $suffix;
+	$repImgFieldName = 'rw_tt_rep_img_' . $suffix;
+	$repFileFieldName = 'rw_tt_rep_file_' . $suffix;
+	$repFieldName = 'rw_tt_rep_' . $suffix;
+	$tplName = 'rw_tt_rep_tpl_' . $suffix;
+	$roleName = 'rw_tt_rep_role_' . $suffix;
+	$userName = 'rw_tt_rep_user_' . $suffix;
+
+	$tmpDir = sys_get_temp_dir() . '/rw_tt_rep_rbac_' . $suffix;
+	if (!is_dir($tmpDir)) {
+		mkdir($tmpDir, 0775, true);
+	}
+
+	$svgOnlyField = null;
+	$repImgField = null;
+	$repFileField = null;
+	$repField = null;
+	$fg = null;
+	$tpl = null;
+	$hostPage = null;
+	$editorRole = null;
+	$editorUser = null;
+	$prevUser = $users->getCurrentUser();
+	$superId = (int) ($pw->config->superUserPageID ?: 41);
+	$wasRepeaterInstalled = $modules->isInstalled('FieldtypeRepeater');
+
+	try {
+		if (!$wasRepeaterInstalled) {
+			$modules->getInstall('FieldtypeRepeater');
+		}
+
+		$editorRole = $roles->add($roleName);
+		$pageEditPerm = $pw->permissions->get('page-edit');
+		if ($pageEditPerm && $pageEditPerm->id) {
+			$editorRole->addPermission($pageEditPerm);
+		}
+		$roles->save($editorRole);
+
+		$svgOnlyField = new Field();
+		$svgOnlyField->type = $modules->get('FieldtypeImage');
+		$svgOnlyField->name = $svgOnlyFieldName;
+		$svgOnlyField->label = 'SVG Only Field';
+		$svgOnlyField->extensions = 'svg';
+		$fields->save($svgOnlyField);
+
+		$repImgField = new Field();
+		$repImgField->type = $modules->get('FieldtypeImage');
+		$repImgField->name = $repImgFieldName;
+		$repImgField->label = 'Repeater Secret Image';
+		$fields->save($repImgField);
+
+		$repFileField = new Field();
+		$repFileField->type = $modules->get('FieldtypeFile');
+		$repFileField->name = $repFileFieldName;
+		$repFileField->label = 'Repeater Secret File';
+		$repFileField->extensions = 'txt pdf';
+		$fields->save($repFileField);
+
+		$repField = new Field();
+		$repField->type = $modules->get('FieldtypeRepeater');
+		$repField->name = $repFieldName;
+		$repField->label = 'Confidential Repeater';
+		$repField->useRoles = 1;
+		$repField->viewRoles = [$superId];
+		$repField->editRoles = [$superId];
+		$fields->save($repField);
+
+		/** @var \ProcessWire\FieldtypeRepeater $repType */
+		$repType = $repField->type;
+		$repTemplate = $repType->getRepeaterTemplate($repField);
+		$repFieldgroup = $repTemplate->fieldgroup;
+		$repFieldgroup->add($repImgField);
+		$repFieldgroup->add($repFileField);
+		$fieldgroups->save($repFieldgroup);
+		$repField->set('repeaterFields', [(int) $repImgField->id, (int) $repFileField->id]);
+		$fields->save($repField);
+
+		$fg = new Fieldgroup();
+		$fg->name = $tplName;
+		$fg->add($fields->get('title'));
+		$fg->add($svgOnlyField);
+		$fg->add($repField);
+		$fieldgroups->save($fg);
+
+		$tpl = new Template();
+		$tpl->name = $tplName;
+		$tpl->fieldgroup = $fg;
+		$tpl->useRoles = 1;
+		$guestRole = $roles->get('guest');
+		$viewRoles = [$editorRole];
+		if ($guestRole && $guestRole->id) {
+			$viewRoles[] = $guestRole;
+		}
+		$tpl->setRoles($viewRoles, 'view');
+		$tpl->setRoles([$editorRole], 'edit');
+		$templates->save($tpl);
+
+		$editorUser = $users->add($userName);
+		$editorUser->addRole('guest');
+		$editorUser->addRole($editorRole);
+		$users->save($editorUser);
+
+		$hostPage = new \ProcessWire\Page();
+		$hostPage->template = $tpl;
+		$hostPage->parent = $pages->get(1);
+		$hostPage->name = 'tt-rep-host-' . $suffix;
+		$hostPage->title = 'Repeater RBAC Host';
+		$pages->save($hostPage);
+
+		$pngPath = $tmpDir . '/secret-rep.png';
+		$gd = imagecreatetruecolor(24, 24);
+		$fill = imagecolorallocate($gd, 60, 110, 190);
+		imagefilledrectangle($gd, 0, 0, 24, 24, $fill);
+		imagepng($gd, $pngPath);
+
+		$txtPath = $tmpDir . '/secret-rep.txt';
+		file_put_contents($txtPath, 'Confidential repeater attachment');
+
+		$repItem = $hostPage->getUnformatted($repFieldName)->getNew();
+		$repItem->status = \ProcessWire\Page::statusOn;
+		$repItem->save();
+		$repItem->of(false);
+		$repItem->getUnformatted($repImgFieldName)->add($pngPath);
+		$repItem->getUnformatted($repFileFieldName)->add($txtPath);
+		$repItem->save();
+		$hostPage->save($repFieldName);
+
+		$csrfName = (string) $pw->session->CSRF->getTokenName();
+		$csrfVal = (string) $pw->session->CSRF->getTokenValue();
+
+		// 1. Disjoint extension allowlist (FieldtypeImage restricted to svg only) must fail closed with 422 on PNG upload
+		$superToken = $workspace->tiptap()->sign([
+			'pageId' => (int) $hostPage->id,
+			'imgUpload' => true,
+			'imgResize' => true,
+		], $superId);
+		$disjointUpload = $workspace->handleTiptapAction(
+			[
+				'action' => 'upload',
+				'tiptapToken' => $superToken,
+				'pageId' => (int) $hostPage->id,
+				'fieldName' => $svgOnlyFieldName,
+				'_requestMethod' => 'POST',
+				$csrfName => $csrfVal,
+			],
+			true,
+			null,
+			[
+				'files' => [
+					'name' => ['secret-rep.png'],
+					'type' => ['image/png'],
+					'tmp_name' => [$pngPath],
+					'error' => [UPLOAD_ERR_OK],
+					'size' => [filesize($pngPath)],
+				],
+			],
+		);
+		expect($disjointUpload['ok'])->toBeFalse()
+			->and($disjointUpload['status'])->toBe(422)
+			->and((string) $disjointUpload['error'])->toContain('No compatible raster image extensions are enabled on this field.');
+
+		// 2. Superuser sees Repeater files and images normally
+		$superImages = $workspace->handleTiptapAction([
+			'action' => 'images',
+			'tiptapToken' => $superToken,
+			'pageId' => (int) $hostPage->id,
+		], true);
+		$superFiles = $workspace->handleTiptapAction([
+			'action' => 'files',
+			'tiptapToken' => $superToken,
+			'pageId' => (int) $hostPage->id,
+		], true);
+		expect($superImages['ok'])->toBeTrue()
+			->and(array_column($superImages['images'] ?? [], 'basename'))->toContain('secret-rep.png')
+			->and($superFiles['ok'])->toBeTrue()
+			->and(array_column($superFiles['files'] ?? [], 'basename'))->toContain('secret-rep.txt');
+
+		$secretImgUrl = '';
+		foreach (($superImages['images'] ?? []) as $imgEntry) {
+			if (($imgEntry['basename'] ?? '') === 'secret-rep.png') {
+				$secretImgUrl = (string) ($imgEntry['url'] ?? '');
+				break;
+			}
+		}
+		expect($secretImgUrl)->not->toBe('');
+
+		// 3. Non-superuser without view permission on FieldtypeRepeater cannot enumerate or inspect its media
+		$users->setCurrentUser($editorUser);
+		$editorToken = $workspace->tiptap()->sign([
+			'pageId' => (int) $hostPage->id,
+			'imgUpload' => true,
+			'imgResize' => true,
+		], (int) $editorUser->id);
+		$editorImages = $workspace->handleTiptapAction([
+			'action' => 'images',
+			'tiptapToken' => $editorToken,
+			'pageId' => (int) $hostPage->id,
+		], true);
+		$editorFiles = $workspace->handleTiptapAction([
+			'action' => 'files',
+			'tiptapToken' => $editorToken,
+			'pageId' => (int) $hostPage->id,
+		], true);
+		$editorInspect = $workspace->handleTiptapAction([
+			'action' => 'inspectImage',
+			'tiptapToken' => $editorToken,
+			'pageId' => (int) $hostPage->id,
+			'src' => $secretImgUrl,
+			'file' => 'secret-rep.png',
+		], true);
+		expect($editorImages['ok'])->toBeTrue()
+			->and(array_column($editorImages['images'] ?? [], 'basename'))->not->toContain('secret-rep.png')
+			->and($editorFiles['ok'])->toBeTrue()
+			->and(array_column($editorFiles['files'] ?? [], 'basename'))->not->toContain('secret-rep.txt')
+			->and($editorInspect['ok'])->toBeTrue()
+			->and($editorInspect['found'] ?? null)->toBeFalse();
+	} finally {
+		if ($prevUser instanceof User && $prevUser->id > 0) {
+			$users->setCurrentUser($prevUser);
+		}
+		if ($hostPage !== null && $hostPage->id > 0) {
+			try {
+				$pages->delete($hostPage, true);
+			} catch (\Throwable) {
+			}
+		}
+		if ($repField !== null && $repField->id > 0) {
+			try {
+				$fields->delete($repField);
+			} catch (\Throwable) {
+			}
+		}
+		$classesDir = rtrim((string) wire('config')->paths->classes, '/') . '/';
+		if ($tpl !== null && $tpl->id > 0) {
+			$pascal = str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', (string) $tpl->name)));
+			try {
+				$templates->delete($tpl);
+			} catch (\Throwable) {
+			}
+			$classFile = $classesDir . $pascal . 'Page.php';
+			if (is_file($classFile)) {
+				unlink($classFile);
+			}
+		}
+		if ($fg !== null && $fg->id > 0) {
+			try {
+				$fieldgroups->delete($fg);
+			} catch (\Throwable) {
+			}
+		}
+		foreach ([$svgOnlyField, $repImgField, $repFileField] as $f) {
+			if ($f !== null && $f->id > 0) {
+				try {
+					$fields->delete($f);
+				} catch (\Throwable) {
+				}
+			}
+		}
+		if ($editorUser instanceof User && $editorUser->id > 0) {
+			try {
+				$users->delete($editorUser);
+			} catch (\Throwable) {
+			}
+		}
+		if ($editorRole instanceof \ProcessWire\Role && $editorRole->id > 0) {
+			try {
+				$roles->delete($editorRole);
+			} catch (\Throwable) {
+			}
+		}
+		if (!$wasRepeaterInstalled && $modules->isInstalled('FieldtypeRepeater')) {
+			try {
+				$modules->uninstall('FieldtypeRepeater');
+			} catch (\Throwable) {
+			}
+		}
+		if (is_dir($tmpDir)) {
+			foreach (glob($tmpDir . '/*') ?: [] as $tmpFile) {
+				if (is_file($tmpFile)) {
+					unlink($tmpFile);
+				}
+			}
+			rmdir($tmpDir);
+		}
+	}
+});

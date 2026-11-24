@@ -7,6 +7,7 @@ import { ResponsiveTabBar } from '../../resources/ts/ui';
 import { SchemaForm } from '../../resources/ts/fields/SchemaForm';
 import { scrollTabIntoView } from '../../resources/ts/fields/schemaRuntimeHelpers';
 import {
+	SchemaDangerZoneNode,
 	SchemaMarkupNode,
 	applyMarkupCopyFeedback,
 	copyMarkupText,
@@ -235,6 +236,9 @@ describe('SchemaForm Card Tabs-Over-Card & SchemaMarkupNode Copy Feedback', () =
 		expect(css).toContain('[data-rw-ref-list]');
 		expect(css).toContain('[data-rw-ref-item]');
 		expect(css).toContain('[data-rw-rev-table]');
+		expect(css).toContain('[data-rw-rev-table][data-variant="plain"]');
+		expect(css).toContain('[data-rw-meta-grid] [data-rw-meta-item]');
+		expect(css).toContain('[data-rw-ref-table]');
 		expect(css).toContain('[data-rw-diff-pill]');
 		expect(css).toContain('minmax(min(100%, 14rem), 1fr)');
 		expect(css).toContain(
@@ -476,5 +480,67 @@ describe('SchemaForm Card Tabs-Over-Card & SchemaMarkupNode Copy Feedback', () =
 		const singleHtml = renderToStaticMarkup(React.createElement(SchemaForm, { schema: buildSchema('card', true) }));
 		expect(singleHtml).not.toContain('role="tablist"');
 		expect(singleHtml).not.toContain('aria-orientation="vertical"');
+	});
+
+	it('renders plain collapsible SchemaMarkupNode, hides empty hideWhenEmpty nodes, and renders SchemaDangerZoneNode', () => {
+		const collapsedHtml = renderToStaticMarkup(
+			React.createElement(SchemaMarkupNode, {
+				field: {
+					kind: 'markup',
+					name: 'panel_info',
+					label: 'Info',
+					icon: 'info-circle',
+					surface: 'plain',
+					collapsible: true,
+					collapsed: true,
+					badge: '4',
+					html: '<div data-rw-meta-table=""><table><tbody><tr><th>ID</th><td>abc</td></tr></tbody></table></div>',
+				},
+			})
+		);
+
+		expect(collapsedHtml).toContain('data-rw-markup-surface="plain"');
+		expect(collapsedHtml).toContain('data-rw-markup-toggle="panel_info"');
+		expect(collapsedHtml).toContain('aria-expanded="false"');
+		expect(collapsedHtml).not.toContain('data-rw-meta-table');
+
+		const emptyHiddenHtml = renderToStaticMarkup(
+			React.createElement(SchemaMarkupNode, {
+				field: {
+					kind: 'markup',
+					name: 'panel_refs',
+					label: 'Referenced By',
+					surface: 'plain',
+					hideWhenEmpty: true,
+					asyncUrl: '/_panel/references',
+					asyncMode: 'mount',
+					html: '',
+				},
+			})
+		);
+		expect(emptyHiddenHtml).toBe('');
+
+		const dangerHtml = renderToStaticMarkup(
+			React.createElement(SchemaDangerZoneNode, {
+				field: {
+					kind: 'danger_zone',
+					name: 'panel_delete',
+					label: 'Danger Zone',
+					icon: 'trash',
+					dangerZone: {
+						title: 'Delete Record',
+						description: 'Permanent deletion.',
+						buttonLabel: 'Delete',
+						confirmInputName: '_record_delete_confirm',
+						confirmInputValue: '1',
+					},
+				},
+			})
+		);
+
+		expect(dangerHtml).toContain('data-rw-danger-zone="1"');
+		expect(dangerHtml).toContain('data-rw-danger-delete="1"');
+		expect(dangerHtml).toContain('name="_record_delete_confirm"');
+		expect(dangerHtml).toContain('formNoValidate');
 	});
 });
