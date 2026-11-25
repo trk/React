@@ -1183,7 +1183,7 @@ it('implements ReactReorderProvider on PagesDataProvider and exposes shared drag
 	$tabMod = wire()->modules->get('MarkupReactTab');
 	$dummyField = new \ProcessWire\Field();
 	wire($dummyField);
-	$tabVersion = \ProcessWire\MarkupReactTab::getModuleInfo()['version'] ?? null;
+	$tabVersion = wire()->modules->getModuleInfoVerbose('MarkupReactTab', ['noCache' => true])['version'] ?? null;
 	$reactVersion = \ProcessWire\React::getModuleInfo()['version'] ?? null;
 	expect($tabVersion)->toBeInt()->toBeGreaterThan(0)
 		->and($reactVersion)->toBeInt()->toBeGreaterThanOrEqual($tabVersion)

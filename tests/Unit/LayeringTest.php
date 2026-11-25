@@ -289,7 +289,7 @@ final class LayeringScanner
 
 		$violations = [];
 		foreach ($files as $path => $contents) {
-			if (!str_ends_with($path, '.module.php') || str_contains($path, '/')) {
+			if ((!str_ends_with($path, '.module.php') && !str_ends_with($path, '.info.php')) || str_contains($path, '/')) {
 				continue;
 			}
 			$requires = self::parseRequires($contents);

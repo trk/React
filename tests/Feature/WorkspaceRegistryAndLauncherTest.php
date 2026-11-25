@@ -221,7 +221,7 @@ test('React is a pure service module without an admin page while WorkspaceLaunch
 		->and($reactInfo)->not->toHaveKey('page')
 		->and($reactInfo['installs'])->not->toContain('ProcessReactWorkspace');
 
-	$info = ProcessReactWorkspace::getModuleInfo();
+	$info = wire('modules')->getModuleInfoVerbose('ProcessReactWorkspace', ['noCache' => true]);
 	expect($info['title'])->toBe('Workspace')
 		->and($info['autoload'])->toBeFalse()
 		->and($info['requires'])->toContain('React')
@@ -383,8 +383,7 @@ test('ProcessReactWorkspace composer.json and uninstall lifecycle clean up sessi
 		->and($composer['require']['trk/processwire-inertia'] ?? null)->toBe('^1.0');
 
 	foreach (React::getModuleInfo()['installs'] ?? [] as $companionModule) {
-		$companionClass = '\\ProcessWire\\' . $companionModule;
-		$subVersion = $companionClass::getModuleInfo()['version'] ?? null;
+		$subVersion = wire('modules')->getModuleInfoVerbose($companionModule, ['noCache' => true])['version'] ?? null;
 		expect($subVersion)->toBeInt()
 			->toBeGreaterThan(0)
 			->toBeLessThanOrEqual($mainVersion);

@@ -644,3 +644,79 @@ test('WorkspaceRegistry::accessible batch-preloads Process admin page URLs witho
 	);
 	expect(count($processLookupQueries))->toBeLessThanOrEqual(1);
 });
+
+test('all 14 React companion .info.php files resolve via getModuleInfoExternal() and load without classloaders', function (): void {
+	$pw = wire();
+	$modules = $pw->modules;
+	$moduleDir = dirname(__DIR__, 2);
+
+	$companions = [
+		'ProcessReactWorkspace',
+		'MarkupReactTable',
+		'MarkupReactCards',
+		'MarkupReactTab',
+		'InputfieldReactFile',
+		'InputfieldReactImage',
+		'InputfieldReactIcon',
+		'InputfieldReactKeyValue',
+		'InputfieldReactLink',
+		'InputfieldReactM2O',
+		'InputfieldReactM2M',
+		'InputfieldReactO2M',
+		'InputfieldReactM2A',
+		'InputfieldTiptap',
+	];
+
+	$infoPaths = [];
+	foreach ($companions as $modName) {
+		$infoFile = $moduleDir . '/' . $modName . '.info.php';
+		expect(is_file($infoFile))->toBeTrue("Missing {$modName}.info.php");
+
+		$external = $modules->info->getModuleInfoExternal($modName);
+		$verbose = $modules->getModuleInfoVerbose($modName, ['noCache' => true]);
+		$fqcn = 'ProcessWire\\' . $modName;
+		$declaringClass = method_exists($fqcn, 'getModuleInfo')
+			? (new \ReflectionMethod($fqcn, 'getModuleInfo'))->getDeclaringClass()->getName()
+			: null;
+
+		expect($declaringClass)->not->toBe($fqcn)
+			->and($external['title'] ?? null)->toBe($verbose['title'] ?? null)
+			->and($external['version'] ?? null)->toBe($verbose['version'] ?? null)
+			->and($verbose['requires'] ?? [])->toContain('React')
+			->and($external['requires'] ?? [])->toContain('React');
+
+		$infoPaths[] = $infoFile;
+	}
+
+	// Verify every .info.php file evaluates cleanly in a cold PHP process with zero classloaders
+	$script = <<<'PHP'
+namespace ProcessWire;
+function __(string $text, string $textdomain = ''): string { return $text; }
+$files = json_decode($argv[1], true, 16, JSON_THROW_ON_ERROR);
+foreach ($files as $file) {
+	$info = require $file;
+	if (!is_array($info) || empty($info['title']) || !isset($info['version'])) {
+		fwrite(STDERR, "Invalid info array in $file\n");
+		exit(1);
+	}
+}
+echo json_encode(['count' => count($files)], JSON_THROW_ON_ERROR);
+PHP;
+
+	$proc = proc_open(
+		[PHP_BINARY, '-r', $script, json_encode($infoPaths, JSON_THROW_ON_ERROR)],
+		[0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+		$pipes
+	);
+	expect(is_resource($proc))->toBeTrue();
+	fclose($pipes[0]);
+	$stdout = (string) stream_get_contents($pipes[1]);
+	$stderr = (string) stream_get_contents($pipes[2]);
+	fclose($pipes[1]);
+	fclose($pipes[2]);
+	$exit = proc_close($proc);
+
+	expect($exit)->toBe(0, $stderr)
+		->and($stderr)->toBe('')
+		->and(json_decode($stdout, true, 16, JSON_THROW_ON_ERROR))->toBe(['count' => 14]);
+});

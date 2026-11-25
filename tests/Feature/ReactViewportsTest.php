@@ -1303,8 +1303,8 @@ test('PagesDataProvider::resolveQuickEditForm serializes native Inputfields, sav
 test('MarkupReactTable and MarkupReactCards are non-singular and isolate state across direct $modules->get() calls', function (): void {
 	$modules = wire()->modules;
 
-	$tableInfo = MarkupReactTable::getModuleInfo();
-	$cardsInfo = MarkupReactCards::getModuleInfo();
+	$tableInfo = $modules->getModuleInfoVerbose('MarkupReactTable', ['noCache' => true]);
+	$cardsInfo = $modules->getModuleInfoVerbose('MarkupReactCards', ['noCache' => true]);
 	expect($tableInfo['singular'] ?? null)->toBeFalse()
 		->and($tableInfo['autoload'] ?? null)->toBeFalse()
 		->and($cardsInfo['singular'] ?? null)->toBeFalse()
