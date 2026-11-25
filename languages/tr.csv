@@ -1,6 +1,8 @@
 en,tr,description,file,hash
-"React File","React Dosya",,site/modules/React/InputfieldReactFile.module.php,085179f140b05e6c2841ca9a716edb68
-"File upload and management field supporting drag-and-drop, reordering, file replacement, multi-language descriptions, tags, and custom details.","Sürükle-bırak, yeniden sıralama, dosya değiştirme, çok dilli açıklamalar, etiketler ve özel detayları destekleyen dosya yükleme ve yönetim alanı.",,site/modules/React/InputfieldReactFile.module.php,f4cffb0f2915b3b587cd339737749d03
+"React File","React Dosya",,site/modules/React/InputfieldReactFile.info.php,085179f140b05e6c2841ca9a716edb68
+"File upload and management field supporting drag-and-drop, reordering, file replacement, multi-language descriptions, tags, and custom details.","Sürükle-bırak, yeniden sıralama, dosya değiştirme, çok dilli açıklamalar, etiketler ve özel detayları destekleyen dosya yükleme ve yönetim alanı.",,site/modules/React/InputfieldReactFile.info.php,f4cffb0f2915b3b587cd339737749d03
+"React Icon","React Simge",,site/modules/React/InputfieldReactIcon.info.php,899981acab5ed4d477d9f2fd44b4cbdf
+"Searchable vector icon picker with optional style, size, color, stroke width, and badge customization.","İsteğe bağlı stil, boyut, renk, çizgi kalınlığı ve rozet özelleştirmeli aranabilir vektör simge seçici.",,site/modules/React/InputfieldReactIcon.info.php,794a827fc41f230dc533bca17292905a
 "Selected icon is not valid.","Seçilen simge geçerli değil.",,site/modules/React/InputfieldReactIcon.module.php,670047db1d9f9450924af74c1f7ac5c9
 "Please select an icon.","Lütfen bir simge seçin.",,site/modules/React/InputfieldReactIcon.module.php,bf78192e5e2b20363eabc80358bfb39b
 "Trigger Preview Size (px)","Önizleme Boyutu (px)",,site/modules/React/InputfieldReactIcon.module.php,d4663b0b339085f3a02c1ab399a0b01e
@@ -16,10 +18,10 @@ en,tr,description,file,hash
 "Allow Stroke Width Customization","Çizgi Kalınlığı Özelleştirmesine İzin Ver",,site/modules/React/InputfieldReactIcon.module.php,970fcc9102483e11ca8b964af4fe4d62
 "Allow Icon Color Customization","Simge Rengi Özelleştirmesine İzin Ver",,site/modules/React/InputfieldReactIcon.module.php,5ad9c3a723324cebfb3817d3819c2ad6
 "Allow Badge Background & Radius Customization","Rozet Arka Planı ve Köşe Özelleştirmesine İzin Ver",,site/modules/React/InputfieldReactIcon.module.php,831164c2307ed50c18fe01bdb33c5494
-"React Icon","React Simge",,site/modules/React/InputfieldReactIcon.module.php,899981acab5ed4d477d9f2fd44b4cbdf
-"Searchable vector icon picker with optional style, size, color, stroke width, and badge customization.","İsteğe bağlı stil, boyut, renk, çizgi kalınlığı ve rozet özelleştirmeli aranabilir vektör simge seçici.",,site/modules/React/InputfieldReactIcon.module.php,794a827fc41f230dc533bca17292905a
-"React Image","React Görsel",,site/modules/React/InputfieldReactImage.module.php,74aa81a1e31ec0a49648bb7cda282a95
-"Image studio field with instant upload, focal point, zoom, crop/rotate/flip, color palette extraction, multi-language alt text, tags, and custom details.","Anında yükleme, odak noktası, yakınlaştırma, kırpma/döndürme/çevirme, renk paleti çıkarma, çok dilli alt metin, etiketler ve özel detaylar içeren görsel stüdyo alanı.",,site/modules/React/InputfieldReactImage.module.php,86c6b14fdcd62228fd750e0aa98bc5f9
+"React Image","React Görsel",,site/modules/React/InputfieldReactImage.info.php,74aa81a1e31ec0a49648bb7cda282a95
+"Image studio field with instant upload, focal point, zoom, crop/rotate/flip, color palette extraction, multi-language alt text, tags, and custom details.","Anında yükleme, odak noktası, yakınlaştırma, kırpma/döndürme/çevirme, renk paleti çıkarma, çok dilli alt metin, etiketler ve özel detaylar içeren görsel stüdyo alanı.",,site/modules/React/InputfieldReactImage.info.php,86c6b14fdcd62228fd750e0aa98bc5f9
+"React Key-Value Pairs","React Anahtar-Değer Çiftleri",,site/modules/React/InputfieldReactKeyValue.info.php,601bb995149262338f67f8a2054be229
+"Manage ordered key-value pairs for custom attributes, metadata, or specifications.","Özel nitelikler, meta veriler veya teknik özellikler için sıralı anahtar-değer çiftlerini yönetin.",,site/modules/React/InputfieldReactKeyValue.info.php,f6d409b7fa3f4590ba31540530b34f5a
 Key,Anahtar,,site/modules/React/InputfieldReactKeyValue.module.php,897356954c2cd3d41b221e3f24f99bba
 Value,Değer,,site/modules/React/InputfieldReactKeyValue.module.php,689202409e48743b914713f96d93947c
 "Add Row","Satır Ekle",,site/modules/React/InputfieldReactKeyValue.module.php,03e0c5bbd5488f1e5ec282529dac9635
@@ -43,8 +45,8 @@ Value,Değer,,site/modules/React/InputfieldReactKeyValue.module.php,689202409e48
 "Key Pattern Error Message","Anahtar Deseni Hata Mesajı",,site/modules/React/InputfieldReactKeyValue.module.php,e9dec702a6e7cebd3e0e027d8efabd4d
 "Allow Empty Values","Boş Değerlere İzin Ver",,site/modules/React/InputfieldReactKeyValue.module.php,80da426d1e5f441eec08caa2fd2fdd7f
 "Keep keys whose value is left blank instead of omitting them.","Değeri boş bırakılan anahtarları yoksaymak yerine koru.",,site/modules/React/InputfieldReactKeyValue.module.php,8f25b7ba51ae24620d095512bb3aaa1a
-"React Key-Value Pairs","React Anahtar-Değer Çiftleri",,site/modules/React/InputfieldReactKeyValue.module.php,601bb995149262338f67f8a2054be229
-"Manage ordered key-value pairs for custom attributes, metadata, or specifications.","Özel nitelikler, meta veriler veya teknik özellikler için sıralı anahtar-değer çiftlerini yönetin.",,site/modules/React/InputfieldReactKeyValue.module.php,f6d409b7fa3f4590ba31540530b34f5a
+"React Link & Media Target","React Bağlantı ve Medya Hedefi",,site/modules/React/InputfieldReactLink.info.php,a531caf428140f5a29cf7d19fb3d2940
+"All-in-one link and media selector supporting Pages, Entries, URLs, Phone numbers, Email addresses, and uploaded files, images, or videos.","Sayfalar, Kayıtlar, URL'ler, Telefon numaraları, E-posta adresleri ile yüklenen dosya, görsel veya videoları destekleyen hepsi bir arada bağlantı ve medya seçici.",,site/modules/React/InputfieldReactLink.info.php,d1afaf6496b96ae57383b29fc69224ab
 "Phone number may only contain digits and a leading + sign.","Telefon numarası yalnızca rakamlar ve başta + işareti içerebilir.",,site/modules/React/InputfieldReactLink.module.php,0598e3665cdb9f3216db26f52e57ba93
 "Link type ""%s"" is not permitted on this field.","Bu alanda ""%s"" bağlantı türüne izin verilmiyor.",,site/modules/React/InputfieldReactLink.module.php,a6075e4e6bdbc370d673e7d67e48c5fa
 "Please enter a valid email address.","Lütfen geçerli bir e-posta adresi girin.",,site/modules/React/InputfieldReactLink.module.php,b5bccda6d3a04e1d8f79846355290435
@@ -69,8 +71,8 @@ Email,E-posta,,site/modules/React/InputfieldReactLink.module.php,ce8ae9da5b7cd6c
 "Enable Query (?)","Sorgu Parametrelerini (?) Etkinleştir",,site/modules/React/InputfieldReactLink.module.php,865d39779b680a728606720516de9506
 "Page Target Selector","Sayfa Hedef Seçicisi",,site/modules/React/InputfieldReactLink.module.php,bf0d0be8666b215319901f7a2a15cbed
 "Entry Target Blueprint","Kayıt Hedef Şablonu (Blueprint)",,site/modules/React/InputfieldReactLink.module.php,2772d73ea6021f1395c49f5055fde9de
-"React Link & Media Target","React Bağlantı ve Medya Hedefi",,site/modules/React/InputfieldReactLink.module.php,a531caf428140f5a29cf7d19fb3d2940
-"All-in-one link and media selector supporting Pages, Entries, URLs, Phone numbers, Email addresses, and uploaded files, images, or videos.","Sayfalar, Kayıtlar, URL'ler, Telefon numaraları, E-posta adresleri ile yüklenen dosya, görsel veya videoları destekleyen hepsi bir arada bağlantı ve medya seçici.",,site/modules/React/InputfieldReactLink.module.php,d1afaf6496b96ae57383b29fc69224ab
+"React Relation (M2A — Multi-Type)","React İlişki (M2A — Çoklu Tür)",,site/modules/React/InputfieldReactM2A.info.php,74ba65ee99beb54138156e3fd92da346
+"Select and organize related items across multiple resource types (such as pages, entries, or users) in one field.","Birden fazla kaynak türünden (sayfalar, kayıtlar veya kullanıcılar gibi) ilgili öğeleri tek bir alanda seçin ve düzenleyin.",,site/modules/React/InputfieldReactM2A.info.php,1375baeb80961f47b64e72039f749c5d
 "Please select at least %d item(s).","Lütfen en az %d öğe seçin.",,site/modules/React/InputfieldReactM2A.module.php,cfecdec3aa548f6f05dd7fb4aac1f0fa
 "Allowed Target Resources","İzin Verilen Hedef Kaynaklar",,site/modules/React/InputfieldReactM2A.module.php,001d06cf09a1564ff15ee7ffe5ccf813
 "Selection Interface","Seçim Arayüzü",,site/modules/React/InputfieldReactM2A.module.php,020bfcf134f4c815fba95e73e6ded8a7
@@ -79,8 +81,8 @@ Email,E-posta,,site/modules/React/InputfieldReactLink.module.php,ce8ae9da5b7cd6c
 "Allow Multiple References","Çoklu Referansa İzin Ver",,site/modules/React/InputfieldReactM2A.module.php,0a6640d5916ffcbad62feb3bd98f2fad
 "Allow Reordering","Yeniden Sıralamaya İzin Ver",,site/modules/React/InputfieldReactM2A.module.php,0edc99a2ccd112d337826f182b77809b
 "Maximum Items (0 = Unlimited)","Maksimum Öğe Sayısı (0 = Sınırsız)",,site/modules/React/InputfieldReactM2A.module.php,dbe45001d5ec597e5e90987a4d6593b9
-"React Relation (M2A — Multi-Type)","React İlişki (M2A — Çoklu Tür)",,site/modules/React/InputfieldReactM2A.module.php,74ba65ee99beb54138156e3fd92da346
-"Select and organize related items across multiple resource types (such as pages, entries, or users) in one field.","Birden fazla kaynak türünden (sayfalar, kayıtlar veya kullanıcılar gibi) ilgili öğeleri tek bir alanda seçin ve düzenleyin.",,site/modules/React/InputfieldReactM2A.module.php,1375baeb80961f47b64e72039f749c5d
+"React Relation (M2M — Multiple)","React İlişkisi (M2M — Çoklu)",,site/modules/React/InputfieldReactM2M.info.php,bcd820f447a98c0be36489778c7e10a2
+"Select and reorder multiple related records using multi-select, checkboxes, autocomplete, tree picker, dual-list transfer, or a slide-out browser.","Çoklu seçim, onay kutuları, otomatik tamamlama, ağaç seçici, çift liste aktarımı veya açılır tarayıcı ile birden fazla ilgili kaydı seçin ve sıralayın.",,site/modules/React/InputfieldReactM2M.info.php,224a11d4e3e3c751a8237ba27ecd82d6
 "Please select at least %d item(s).","Lütfen en az %d öğe seçin.",,site/modules/React/InputfieldReactM2M.module.php,cfecdec3aa548f6f05dd7fb4aac1f0fa
 "UI Selection Widget","Arayüz Seçim Bileşeni",,site/modules/React/InputfieldReactM2M.module.php,e67a2d84a635294e2bee0d8da73f95ca
 "Auto (MultiSelect <= 30 items, else MultiAutocomplete)","Otomatik (<= 30 öğe için Çoklu Seçim, aksi halde Çoklu Otomatik Tamamlama)",,site/modules/React/InputfieldReactM2M.module.php,04169997901ccb34b0caca10512a37f6
@@ -94,8 +96,8 @@ Email,E-posta,,site/modules/React/InputfieldReactLink.module.php,ce8ae9da5b7cd6c
 "Minimum Items","Minimum Öğe Sayısı",,site/modules/React/InputfieldReactM2M.module.php,c6abb84d6ccac3f0781bc60459a95cdc
 "Maximum Items (0 = Unlimited)","Maksimum Öğe Sayısı (0 = Sınırsız)",,site/modules/React/InputfieldReactM2M.module.php,dbe45001d5ec597e5e90987a4d6593b9
 "Checkbox Columns (0 = Auto)","Onay Kutusu Sütunları (0 = Otomatik)",,site/modules/React/InputfieldReactM2M.module.php,f49bfbc9c748a826166bfcfd3299fdaf
-"React Relation (M2M — Multiple)","React İlişkisi (M2M — Çoklu)",,site/modules/React/InputfieldReactM2M.module.php,bcd820f447a98c0be36489778c7e10a2
-"Select and reorder multiple related records using multi-select, checkboxes, autocomplete, tree picker, dual-list transfer, or a slide-out browser.","Çoklu seçim, onay kutuları, otomatik tamamlama, ağaç seçici, çift liste aktarımı veya açılır tarayıcı ile birden fazla ilgili kaydı seçin ve sıralayın.",,site/modules/React/InputfieldReactM2M.module.php,224a11d4e3e3c751a8237ba27ecd82d6
+"React Relation (M2O — Single)","React İlişkisi (M2O — Tekli)",,site/modules/React/InputfieldReactM2O.info.php,a7c97f1534a1c9f2d060f1ed098196fe
+"Select a single related record using a dropdown, radio cards, searchable autocomplete, tree picker, or slide-out browser.","Açılır liste, radyo kartları, aranabilir otomatik tamamlama, ağaç seçici veya açılır tarayıcı kullanarak tek bir ilgili kayıt seçin.",,site/modules/React/InputfieldReactM2O.info.php,2f68403e5a36617dac6113bc06a25f8c
 "UI Selection Widget","Arayüz Seçim Bileşeni",,site/modules/React/InputfieldReactM2O.module.php,e67a2d84a635294e2bee0d8da73f95ca
 "Auto (Smart adaptation by item count & hierarchy)","Otomatik (Öğe sayısı ve hiyerarşiye göre akıllı uyum)",,site/modules/React/InputfieldReactM2O.module.php,80d09e8dcff820b32c7af12448566c54
 "Select Dropdown","Açılır Seçim Listesi",,site/modules/React/InputfieldReactM2O.module.php,151a7605042028324ed8b36e5d84c3d5
@@ -104,8 +106,8 @@ Email,E-posta,,site/modules/React/InputfieldReactLink.module.php,ce8ae9da5b7cd6c
 "Autocomplete Search Combobox","Otomatik Tamamlamalı Arama Kutusu",,site/modules/React/InputfieldReactM2O.module.php,a297e193dbaaab48abb17d5cf4f1b2a7
 "Hierarchical TreeSelect (Pages)","Hiyerarşik Ağaç Seçimi (Sayfalar)",,site/modules/React/InputfieldReactM2O.module.php,0ca1260d3adc425c7ee301c8b78ce528
 "Drawer Table/Card Picker","Çekmece Tablo/Kart Seçici",,site/modules/React/InputfieldReactM2O.module.php,ea49654e31b0b28c0e1c65fbf9fdef9c
-"React Relation (M2O — Single)","React İlişkisi (M2O — Tekli)",,site/modules/React/InputfieldReactM2O.module.php,a7c97f1534a1c9f2d060f1ed098196fe
-"Select a single related record using a dropdown, radio cards, searchable autocomplete, tree picker, or slide-out browser.","Açılır liste, radyo kartları, aranabilir otomatik tamamlama, ağaç seçici veya açılır tarayıcı kullanarak tek bir ilgili kayıt seçin.",,site/modules/React/InputfieldReactM2O.module.php,2f68403e5a36617dac6113bc06a25f8c
+"React Relation (O2M — Reverse / Incoming)","React İlişkisi (O2M — Ters / Gelen)",,site/modules/React/InputfieldReactO2M.info.php,48c2e707478c4a052eddedc363704bbb
+"Display and manage records linking back to this item (as a table, cards, or list), with quick create, link, and unlink actions.","Bu öğeye geri bağlanan kayıtları hızlı oluşturma, bağlama ve bağlantıyı kaldırma işlemleriyle tablo, kart veya liste olarak görüntüleyin ve yönetin.",,site/modules/React/InputfieldReactO2M.info.php,741b6dda89e34b4401545fe42aece8a2
 "Related Resource","İlgili Kaynak",,site/modules/React/InputfieldReactO2M.module.php,6a52a7bcef9b3f185510143f04fa7ebb
 "Link Field on Related Resource","İlgili Kaynaktaki Bağlantı Alanı",,site/modules/React/InputfieldReactO2M.module.php,ddbfc5931a656aef058f6e617d404be0
 "Field on the related resource that points back to this record.","İlgili kaynakta bu kayda geri işaret eden alan.",,site/modules/React/InputfieldReactO2M.module.php,03073aae55a9a9ce315538727affe530
@@ -115,8 +117,8 @@ Email,E-posta,,site/modules/React/InputfieldReactLink.module.php,ce8ae9da5b7cd6c
 "Compact List","Kompakt Liste",,site/modules/React/InputfieldReactO2M.module.php,8839d2fcfd24b0dcb6a74536636e3ab0
 "Allow Linking Existing Records","Mevcut Kayıtları Bağlamaya İzin Ver",,site/modules/React/InputfieldReactO2M.module.php,63d22198a1ab86f194cee030b70ac9ad
 "Allow Unlinking Records","Kayıt Bağlantısını Kaldırmaya İzin Ver",,site/modules/React/InputfieldReactO2M.module.php,ffd50702ff27be73948379831b786a69
-"React Relation (O2M — Reverse / Incoming)","React İlişkisi (O2M — Ters / Gelen)",,site/modules/React/InputfieldReactO2M.module.php,48c2e707478c4a052eddedc363704bbb
-"Display and manage records linking back to this item (as a table, cards, or list), with quick create, link, and unlink actions.","Bu öğeye geri bağlanan kayıtları hızlı oluşturma, bağlama ve bağlantıyı kaldırma işlemleriyle tablo, kart veya liste olarak görüntüleyin ve yönetin.",,site/modules/React/InputfieldReactO2M.module.php,741b6dda89e34b4401545fe42aece8a2
+Tiptap,Tiptap,,site/modules/React/InputfieldTiptap.info.php,da560e1075ec0ffe2da39361aafad4c5
+"Rich text editor with customizable toolbars, content blocks, HTML cleanup, and multi-language support.","Özelleştirilebilir araç çubukları, içerik blokları, HTML temizleme ve çok dilli destek sunan zengin metin düzenleyici.",,site/modules/React/InputfieldTiptap.info.php,5fad4bbc356d9e98c87459e275779f84
 "Write something...","Bir şeyler yazın...",,site/modules/React/InputfieldTiptap.module.php,f581ea795bc53e0fc0864ede394dbfe4
 "Write something, or type '/' for blocks...","Bir şeyler yazın veya bloklar için '/' yazın...",,site/modules/React/InputfieldTiptap.module.php,53a08b0bb6b64cee10af9526436f9139
 "Rich text formatting","Zengin metin biçimlendirme",,site/modules/React/InputfieldTiptap.module.php,b0d15f8c70d4d261d16cf42d89bf24fa
@@ -351,10 +353,10 @@ Duplicate,Çoğalt,,site/modules/React/InputfieldTiptap.module.php,ed75712b0eb19
 "Block reorder cancelled","Blok yeniden sıralama iptal edildi",,site/modules/React/InputfieldTiptap.module.php,dceeb603259c6b0c25aa70c69e98790e
 "Loading dialog...","İletişim kutusu yükleniyor...",,site/modules/React/InputfieldTiptap.module.php,1a89f3af761388df23eb23f1c1a4458e
 "Value exceeds maximum recommended length of %1$d characters (length=%2$d).","Değer önerilen maksimum %1$d karakter uzunluğunu aşıyor (uzunluk=%2$d).",,site/modules/React/InputfieldTiptap.module.php,8fe5e05f660fa7d2db7f9bd444d77358
-Tiptap,Tiptap,,site/modules/React/InputfieldTiptap.module.php,da560e1075ec0ffe2da39361aafad4c5
-"Rich text editor with customizable toolbars, content blocks, HTML cleanup, and multi-language support.","Özelleştirilebilir araç çubukları, içerik blokları, HTML temizleme ve çok dilli destek sunan zengin metin düzenleyici.",,site/modules/React/InputfieldTiptap.module.php,5fad4bbc356d9e98c87459e275779f84
-"React Cards Viewport","React Kart Görünümü",,site/modules/React/MarkupReactCards.module.php,8492cf2ce465c3229a396650598d237c
-"Interactive responsive card grid with search, filters, bulk actions, and pagination.","Arama, filtreler, toplu işlemler ve sayfalama özellikli etkileşimli duyarlı kart ızgarası.",,site/modules/React/MarkupReactCards.module.php,5978e6de4cd6f6cf8294fbeeb7f0729b
+"React Cards Viewport","React Kart Görünümü",,site/modules/React/MarkupReactCards.info.php,8492cf2ce465c3229a396650598d237c
+"Interactive responsive card grid with search, filters, bulk actions, and pagination.","Arama, filtreler, toplu işlemler ve sayfalama özellikli etkileşimli duyarlı kart ızgarası.",,site/modules/React/MarkupReactCards.info.php,5978e6de4cd6f6cf8294fbeeb7f0729b
+"React Tab Viewport & Container","React Sekme Görünümü ve Kapsayıcısı",,site/modules/React/MarkupReactTab.info.php,977257fd63d7f2029f28f0649ded249b
+"Organize fields and panels into accessible tabs (line, segmented, or vertical layout).","Alanları ve panelleri erişilebilir sekmeler halinde düzenleyin (çizgili, parçalı veya dikey düzen).",,site/modules/React/MarkupReactTab.info.php,4781564a5e10bb746bd7589e2773cb1b
 General,Genel,,site/modules/React/MarkupReactTab.module.php,0db377921f4ce762c62526131097968f
 Sections,Bölümler,,site/modules/React/MarkupReactTab.module.php,855c3eca6c7aaef477b4f03e4699944d
 "Tab Bar Style Variant","Sekme Çubuğu Stil Varyantı",,site/modules/React/MarkupReactTab.module.php,ba01477907bfa826253790e6c5605d16
@@ -364,12 +366,10 @@ Sections,Bölümler,,site/modules/React/MarkupReactTab.module.php,855c3eca6c7aae
 "Tab Badge Text","Sekme Rozeti Metni",,site/modules/React/MarkupReactTab.module.php,95fc76ff043e1a56678c85c23deb4924
 "Load Inactive Tabs on Demand","Etkin Olmayan Sekmeleri Açıldığında Yükle",,site/modules/React/MarkupReactTab.module.php,887d711a56356f28de1f0f52bedda828
 "Wait to render hidden tab contents until the editor opens that tab.","Düzenleyici ilgili sekmeyi açana kadar gizli sekme içeriklerinin oluşturulmasını bekletir.",,site/modules/React/MarkupReactTab.module.php,6e8058acfcea2ad40dde4e2b57778c73
-"React Tab Viewport & Container","React Sekme Görünümü ve Kapsayıcısı",,site/modules/React/MarkupReactTab.module.php,977257fd63d7f2029f28f0649ded249b
-"Organize fields and panels into accessible tabs (line, segmented, or vertical layout).","Alanları ve panelleri erişilebilir sekmeler halinde düzenleyin (çizgili, parçalı veya dikey düzen).",,site/modules/React/MarkupReactTab.module.php,4781564a5e10bb746bd7589e2773cb1b
 "%d validation error","%d doğrulama hatası","Singular Version",site/modules/React/MarkupReactTab.module.php,fb73c11c1e48504bae175fc13f45129c
 "%d validation errors","%d doğrulama hatası","Plural Version",site/modules/React/MarkupReactTab.module.php,ec828fd611b57248325002f413e64b32
-"React Table Viewport","React Tablo Görünümü",,site/modules/React/MarkupReactTable.module.php,0d06a2a4eb05a7e835a3e9a4572fe325
-"Interactive data table with search, filters, inline editing, bulk actions, and pagination.","Arama, filtreler, satır içi düzenleme, toplu işlemler ve sayfalama özellikli etkileşimli veri tablosu.",,site/modules/React/MarkupReactTable.module.php,81fbcc4d713141339befa98baa9a66f0
+"React Table Viewport","React Tablo Görünümü",,site/modules/React/MarkupReactTable.info.php,0d06a2a4eb05a7e835a3e9a4572fe325
+"Interactive data table with search, filters, inline editing, bulk actions, and pagination.","Arama, filtreler, satır içi düzenleme, toplu işlemler ve sayfalama özellikli etkileşimli veri tablosu.",,site/modules/React/MarkupReactTable.info.php,81fbcc4d713141339befa98baa9a66f0
 Panel,Panel,,site/modules/React/React.module.php,b8da6df14bf06283cbf588df6998722e
 "Default Theme Mode","Varsayılan Tema Modu",,site/modules/React/React.module.php,74435ddc2833dc22de4b519833b95a8d
 "Select the default color theme for React admin pages and data views.","React yönetim sayfaları ve veri görünümleri için varsayılan renk temasını seçin.",,site/modules/React/React.module.php,dd43061a8373ea4ab8e131b563764c0c
