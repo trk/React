@@ -29,26 +29,6 @@ class InputfieldReactM2M extends AbstractInputfieldReactRelation implements
 	private const int MAX_JSON_DEPTH = 16;
 	private const int HARD_MAX_ITEMS = 2000;
 
-	/**
-	 * @return array<string, mixed>
-	 */
-	public static function getModuleInfo(): array
-	{
-		return [
-			'title' => __('React Relation (M2M — Multiple)', __FILE__),
-			'version' => 30,
-			'summary' => __('Select and reorder multiple related records using multi-select, checkboxes, autocomplete, tree picker, dual-list transfer, or a slide-out browser.', __FILE__),
-			'author' => 'Iskender TOTOGLU @trk @ukyo',
-			'icon' => 'sitemap',
-			'requires' => [
-				'PHP>=8.4',
-				'ProcessWire>=3.0.271',
-				'Inertia',
-				'React',
-			],
-		];
-	}
-
 	public function __construct()
 	{
 		parent::__construct();

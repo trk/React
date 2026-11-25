@@ -162,31 +162,30 @@ final class WorkspaceRegistry extends Wire
 			$targetClass = class_exists($fqcn, false)
 				? $fqcn
 				: (class_exists($def->process, false) ? $def->process : '');
-			if ($targetClass !== '') {
-				if (method_exists($targetClass, 'checkAccess')) {
-					try {
-						return (bool) $targetClass::checkAccess(['user' => $resolvedUser]);
-					} catch (\Throwable) {
-						return false;
-					}
+			if ($targetClass !== '' && method_exists($targetClass, 'checkAccess')) {
+				try {
+					return (bool) $targetClass::checkAccess(['user' => $resolvedUser]);
+				} catch (\Throwable) {
+					return false;
 				}
-				if (method_exists($targetClass, 'getModuleInfo')) {
-					try {
-						/** @var array<string, mixed> $info */
-						$info = $targetClass::getModuleInfo();
-						$perm = isset($info['permission']) ? trim((string) $info['permission']) : '';
-						if ($perm !== '') {
-							return (bool) $resolvedUser->hasPermission($perm);
-						}
-					} catch (\Throwable) {
-						return false;
-					}
-				}
-			} elseif ($modules->isInstalled($def->process)) {
+			}
+			if ($modules->isInstalled($def->process)) {
 				$info = $modules->getModuleInfo($def->process);
 				$perm = is_array($info) && isset($info['permission']) ? trim((string) $info['permission']) : '';
 				if ($perm !== '') {
 					return (bool) $resolvedUser->hasPermission($perm);
+				}
+			}
+			if ($targetClass !== '' && method_exists($targetClass, 'getModuleInfo')) {
+				try {
+					/** @var array<string, mixed> $info */
+					$info = $targetClass::getModuleInfo();
+					$perm = isset($info['permission']) ? trim((string) $info['permission']) : '';
+					if ($perm !== '') {
+						return (bool) $resolvedUser->hasPermission($perm);
+					}
+				} catch (\Throwable) {
+					return false;
 				}
 			}
 		}
@@ -483,21 +482,22 @@ final class WorkspaceRegistry extends Wire
 			? $fqcn
 			: (class_exists($processName, false) ? $processName : '');
 
-		if ($targetClass !== '' && method_exists($targetClass, 'getModuleInfo')) {
+		$info = $modules->isInstalled($processName) ? $modules->getModuleInfoVerbose($processName) : [];
+		if ((!is_array($info) || empty($info['page'])) && $targetClass !== '' && method_exists($targetClass, 'getModuleInfo')) {
 			try {
 				/** @var array<string, mixed> $info */
 				$info = $targetClass::getModuleInfo();
-				if (isset($info['page']) && is_array($info['page'])) {
-					$pageName = trim((string) ($info['page']['name'] ?? ''));
-					$parent = trim((string) ($info['page']['parent'] ?? ''), '/');
-					if ($pageName !== '') {
-						return $parent !== ''
-							? $adminRoot . $parent . '/' . $pageName . '/'
-							: $adminRoot . $pageName . '/';
-					}
-				}
 			} catch (\Throwable) {
-				// Ignore and use default
+				$info = [];
+			}
+		}
+		if (is_array($info) && isset($info['page']) && is_array($info['page'])) {
+			$pageName = trim((string) ($info['page']['name'] ?? ''));
+			$parent = trim((string) ($info['page']['parent'] ?? ''), '/');
+			if ($pageName !== '') {
+				return $parent !== ''
+					? $adminRoot . $parent . '/' . $pageName . '/'
+					: $adminRoot . $pageName . '/';
 			}
 		}
 

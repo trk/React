@@ -20,26 +20,6 @@ class InputfieldReactFile extends InputfieldFile implements InertiaSerializable
 {
 	use InteractWithReactMediaInputfield;
 
-	/**
-	 * @return array<string, mixed>
-	 */
-	public static function getModuleInfo(): array
-	{
-		return [
-			'title' => __('React File', __FILE__),
-			'version' => 30,
-			'summary' => __('File upload and management field supporting drag-and-drop, reordering, file replacement, multi-language descriptions, tags, and custom details.', __FILE__),
-			'author' => 'Iskender TOTOGLU @trk @ukyo',
-			'icon' => 'file-text-o',
-			'requires' => [
-				'PHP>=8.4',
-				'ProcessWire>=3.0.271',
-				'Inertia',
-				'React',
-			],
-		];
-	}
-
 	public function init(): void
 	{
 		parent::init();

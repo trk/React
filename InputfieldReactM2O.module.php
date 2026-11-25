@@ -22,26 +22,6 @@ class InputfieldReactM2O extends AbstractInputfieldReactRelation implements Inpu
 {
 	private const int MAX_VALUE_LENGTH = 4096;
 
-	/**
-	 * @return array<string, mixed>
-	 */
-	public static function getModuleInfo(): array
-	{
-		return [
-			'title' => __('React Relation (M2O — Single)', __FILE__),
-			'version' => 30,
-			'summary' => __('Select a single related record using a dropdown, radio cards, searchable autocomplete, tree picker, or slide-out browser.', __FILE__),
-			'author' => 'Iskender TOTOGLU @trk @ukyo',
-			'icon' => 'link',
-			'requires' => [
-				'PHP>=8.4',
-				'ProcessWire>=3.0.271',
-				'Inertia',
-				'React',
-			],
-		];
-	}
-
 	public function __construct()
 	{
 		parent::__construct();

@@ -273,7 +273,7 @@ final class FieldIntegrationHooks extends Wire
 
 		$modules = $this->wire()->modules;
 		if ($modules->isInstalled('InputfieldReactKeyValue')) {
-			$info = InputfieldReactKeyValue::getModuleInfo();
+			$info = $modules->getModuleInfoVerbose('InputfieldReactKeyValue');
 			$title = (string) ($info['title'] ?? 'React Key-Value Pairs');
 			$summary = (string) ($info['summary'] ?? '');
 			if ($fieldtype->className() === 'FieldtypeText') {
@@ -289,7 +289,7 @@ final class FieldIntegrationHooks extends Wire
 		}
 
 		if ($modules->isInstalled('InputfieldReactLink')) {
-			$linkInfo = InputfieldReactLink::getModuleInfo();
+			$linkInfo = $modules->getModuleInfoVerbose('InputfieldReactLink');
 			$linkTitle = (string) ($linkInfo['title'] ?? 'React Link & Media Target');
 			$linkSummary = (string) ($linkInfo['summary'] ?? '');
 			if ($fieldtype->className() === 'FieldtypeText') {
@@ -305,7 +305,7 @@ final class FieldIntegrationHooks extends Wire
 		}
 
 		if ($modules->isInstalled('InputfieldReactIcon')) {
-			$iconInfo = InputfieldReactIcon::getModuleInfo();
+			$iconInfo = $modules->getModuleInfoVerbose('InputfieldReactIcon');
 			$iconTitle = (string) ($iconInfo['title'] ?? 'React Icon');
 			$iconSummary = (string) ($iconInfo['summary'] ?? '');
 			if ($fieldtype->className() === 'FieldtypeText') {
