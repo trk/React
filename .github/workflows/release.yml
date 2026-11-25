@@ -5,6 +5,8 @@ on:
     branches:
       - main
     paths:
+      - "React.info.php"
+      - "React.info.json"
       - "React.module.php"
   workflow_dispatch:
 
@@ -16,7 +18,7 @@ jobs:
   tag_and_release:
     runs-on: ubuntu-latest
     env:
-      VERSION_FILE: "React.module.php"
+      MODULE_NAME: "React"
     permissions:
       contents: write
       packages: write
@@ -43,20 +45,37 @@ jobs:
         id: get_version
         run: |
           VERSION=$(php -r '
-            $c = file_get_contents(getenv("VERSION_FILE"));
-            if (!is_string($c) || !preg_match("/[\x27\"].*?version.*?[\x27\"]\s*=>\s*[\x27\"]?([0-9\.]+)[\x27\"]?/", $c, $m)) {
+            $module = (string) getenv("MODULE_NAME");
+            $v = null;
+            if (is_file($module . ".info.php")) {
+              $c = file_get_contents($module . ".info.php");
+              if (is_string($c) && preg_match("/[\x27\"]version[\x27\"]\s*=>\s*[\x27\"]?([0-9\.]+)[\x27\"]?/", $c, $m)) {
+                $v = $m[1];
+              }
+            } elseif (is_file($module . ".info.json")) {
+              $data = json_decode((string) file_get_contents($module . ".info.json"), true);
+              if (is_array($data) && isset($data["version"])) {
+                $v = (string) $data["version"];
+              }
+            }
+            if ($v === null && is_file($module . ".module.php")) {
+              $c = file_get_contents($module . ".module.php");
+              if (is_string($c) && preg_match("/[\x27\"]version[\x27\"]\s*=>\s*[\x27\"]?([0-9\.]+)[\x27\"]?/", $c, $m)) {
+                $v = $m[1];
+              }
+            }
+            if ($v === null || $v === "") {
               exit(1);
             }
-            $v = $m[1];
-            if (is_numeric($v) && !str_contains((string) $v, ".")) {
-              $v = (int) $v;
-              $v = intdiv($v, 100) . "." . (intdiv($v, 10) % 10) . "." . ($v % 10);
+            if (is_numeric($v) && !str_contains($v, ".")) {
+              $n = (int) $v;
+              $v = intdiv($n, 100) . "." . (intdiv($n, 10) % 10) . "." . ($n % 10);
             }
             echo $v;
           ')
 
           if [ -z "$VERSION" ]; then
-            echo "::error::Could not find the version number in ${{ env.VERSION_FILE }}"
+            echo "::error::Could not find the version number in ${{ env.MODULE_NAME }}.info.php, ${{ env.MODULE_NAME }}.info.json, or ${{ env.MODULE_NAME }}.module.php"
             exit 1
           fi
 
