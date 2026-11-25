@@ -137,7 +137,7 @@ class React extends WireData implements Module, ConfigurableModule
 	{
 		return [
 			'title' => 'React',
-			'version' => 32,
+			'version' => 33,
 			'summary' => 'Shared React 19 + Inertia v3 + Tailwind CSS v4 runtime, admin shell, form controls, rich text editor, vector icons, and interactive data viewports for ProcessWire.',
 			'href' => 'https://github.com/trk/React',
 			'author' => 'Iskender TOTOGLU @trk @ukyo',
