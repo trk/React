@@ -6,7 +6,7 @@ namespace ProcessWire;
 
 return [
 	'title' => __('React Cards Viewport', __FILE__),
-	'version' => 31,
+	'version' => 32,
 	'summary' => __('Interactive responsive card grid with search, filters, bulk actions, and pagination.', __FILE__),
 	'author' => 'Iskender TOTOGLU @trk @ukyo',
 	'icon' => 'th-large',
