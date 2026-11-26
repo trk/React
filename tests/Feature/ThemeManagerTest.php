@@ -265,10 +265,22 @@ test('set_theme_preset persists per-user overrides without overwriting site defa
 	], false, $superuser);
 	expect($customWithoutTokens['ok'])->toBeFalse()->and($customWithoutTokens['status'])->toBe(422);
 
+	$editorRole = null;
+	foreach (wire('roles') as $candidateRole) {
+		if ($candidateRole->name !== 'guest' && $candidateRole->hasPermission('page-edit')) {
+			$editorRole = $candidateRole;
+			break;
+		}
+	}
 	$editor = new User();
 	wire($editor);
 	$editor->id = 987654;
 	$editor->name = 'rw-theme-editor';
+	if ($editorRole && $editorRole->id) {
+		$editor->addRole($editorRole);
+	} else {
+		$editor->addRole('superuser');
+	}
 
 	$peer = new User();
 	wire($peer);

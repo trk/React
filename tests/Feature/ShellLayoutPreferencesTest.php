@@ -276,10 +276,22 @@ test('ReactGatewayRouter set_shell_layout and set_sidebar_collapsed validate inp
 	$react = React::instance();
 	$react->set('defaultShellLayout', 'topbar');
 
+	$editorRole = null;
+	foreach (wire('roles') as $candidateRole) {
+		if ($candidateRole->name !== 'guest' && $candidateRole->hasPermission('page-edit')) {
+			$editorRole = $candidateRole;
+			break;
+		}
+	}
 	$editor = new User();
 	wire($editor);
 	$editor->id = 987701;
 	$editor->name = 'rw-gateway-editor';
+	if ($editorRole && $editorRole->id) {
+		$editor->addRole($editorRole);
+	} else {
+		$editor->addRole('superuser');
+	}
 
 	$peer = new User();
 	wire($peer);

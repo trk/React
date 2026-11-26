@@ -1102,6 +1102,9 @@ export function InputfieldTiptap(rawProps: InputfieldTiptapComponentProps): Reac
 	isSourceModeRef.current = isSourceMode;
 	const slashActiveRef = useRef(slashState.active);
 	slashActiveRef.current = slashState.active;
+	const anyDialogOpen = linkDialogState.open || imageDialogState.open || anchorDialogState.open;
+	const anyDialogOpenRef = useRef(anyDialogOpen);
+	anyDialogOpenRef.current = anyDialogOpen;
 
 	const bubbleShouldShow = useCallback(
 		({
@@ -1119,7 +1122,7 @@ export function InputfieldTiptap(rawProps: InputfieldTiptapComponentProps): Reac
 			from: number;
 			to: number;
 		}): boolean => {
-			if (!ed.isEditable || isSourceModeRef.current || slashActiveRef.current) {
+			if (!ed.isEditable || isSourceModeRef.current || slashActiveRef.current || anyDialogOpenRef.current) {
 				return false;
 			}
 			const activeEl = typeof document !== 'undefined' ? document.activeElement : null;
@@ -1320,6 +1323,12 @@ export function InputfieldTiptap(rawProps: InputfieldTiptapComponentProps): Reac
 			editor.view.dispatch(editor.state.tr.setMeta(bubblePluginKey, 'hide'));
 		}
 	}, [editor, bubblePluginKey]);
+
+	useEffect(() => {
+		if (anyDialogOpen) {
+			hideBubbleMenu();
+		}
+	}, [anyDialogOpen, hideBubbleMenu]);
 
 	const openLinkPanel = (source: ToolbarSource = 'top') => {
 		if (!editor || !isCurrentLangEditable) {

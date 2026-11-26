@@ -12,6 +12,7 @@
 /.phpunit.cache export-ignore
 /.phpunit.result.cache export-ignore
 /tsconfig.json export-ignore
+/tsconfig.consumer.json export-ignore
 /vite.config.ts export-ignore
 /vitest.config.ts export-ignore
 /preview.jpg export-ignore

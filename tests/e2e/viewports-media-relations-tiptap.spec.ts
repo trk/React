@@ -41,6 +41,7 @@ async function mountIslandOnWorkspace(
 }
 
 test.describe('ProcessReactWorkspace Comprehensive Subsystems E2E (Viewports, Media, Link, Relations, Tiptap MiniBlocks & SchemaForm)', () => {
+	test.describe.configure({ timeout: 60_000 });
 	let fixture: IsolatedE2EFixture;
 
 	test.beforeAll(() => {

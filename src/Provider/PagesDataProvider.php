@@ -27,6 +27,7 @@ use ProcessWire\Template;
 use ProcessWire\Wire;
 use ProcessWire\WireInputData;
 use Totoglu\React\Contract\ReactDataProviderInterface;
+use Totoglu\React\Contract\ReactExportProvider;
 use Totoglu\React\Contract\ReactQuickEditProvider;
 use Totoglu\React\Contract\ReactRecordActionsProvider;
 use Totoglu\React\Contract\ReactReorderProvider;
@@ -36,6 +37,7 @@ use Totoglu\React\Data\ReactRecord;
 use Totoglu\React\Icon\IconManager;
 use Totoglu\React\Icon\ReactIconValue;
 use Totoglu\React\Security\UrlSanitizer;
+use Totoglu\React\Viewport\MarkupReactViewport;
 
 /**
  * ProcessWire `Pages` / `PageArray` adapter implementing `ReactDataProviderInterface`.
@@ -43,7 +45,7 @@ use Totoglu\React\Security\UrlSanitizer;
  * Allows any ProcessWire selector (`pages:template=basic-page`) or `PageArray` instance to be rendered inside
  * `MarkupReactTable`, `MarkupReactCards`, or custom `MarkupReactViewport` modules.
  */
-final class PagesDataProvider extends Wire implements ReactDataProviderInterface, ReactQuickEditProvider, ReactRecordActionsProvider, ReactReorderProvider
+final class PagesDataProvider extends Wire implements ReactDataProviderInterface, ReactExportProvider, ReactQuickEditProvider, ReactRecordActionsProvider, ReactReorderProvider
 {
 	/**
 	 * Reserved ProcessWire selector directives and sensitive system properties blocked from client `fieldFilters`.
@@ -768,180 +770,7 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 		$records = [];
 
 		foreach ($matchedPages as $p) {
-			$isViewable = $p->viewable();
-			$bitStatus = ReactRecord::STATUS_PUBLISHED;
-			$variant = 'success';
-			$label = $this->_('Published');
-
-			if ($p->isTrash()) {
-				$bitStatus = ReactRecord::STATUS_TRASH;
-				$variant = 'danger';
-				$label = $this->_('Trash');
-			} elseif ($p->isUnpublished()) {
-				$bitStatus = ReactRecord::STATUS_DRAFT;
-				$variant = 'warning';
-				$label = $this->_('Draft');
-			} elseif ($p->isHidden()) {
-				$bitStatus = ReactRecord::STATUS_HIDDEN;
-				$variant = 'warning';
-				$label = $this->_('Hidden');
-			}
-			if ($p->isLocked()) {
-				$bitStatus |= ReactRecord::STATUS_LOCKED;
-			}
-
-			$values = [];
-			$formatted = [];
-			/** @var array<string, array<string, mixed>> $cells */
-			$cells = [];
-			foreach (array_keys($this->columns) as $colKey) {
-				if (!$this->isFieldViewableOnPage($p, (string) $colKey, $isSuperuser)) {
-					$values[$colKey] = '';
-					continue;
-				}
-				$formatter = $this->formatters[$colKey] ?? null;
-				if ($formatter !== null) {
-					$arity = $this->formatterArities[$colKey] ??= (new \ReflectionFunction($formatter))->getNumberOfParameters();
-					if ($arity <= 1) {
-						$formattedOut = $formatter($p);
-						if (is_array($formattedOut)) {
-							$cells[$colKey] = $formattedOut;
-							$formatted[$colKey] = (string) ($formattedOut['label'] ?? $formattedOut['title'] ?? '');
-						} else {
-							$formatted[$colKey] = (string) $formattedOut;
-						}
-						continue;
-					}
-				}
-				if (in_array($colKey, ['id', 'title', 'name', 'status', 'created', 'modified', 'sort'], true)) {
-					if ($formatter !== null) {
-						$rawBuiltin = match ($colKey) {
-							'id' => (int) $p->id,
-							'title' => (string) ($p->title ?: $p->name),
-							'name' => (string) $p->name,
-							'status' => $bitStatus,
-							'created' => (int) $p->created,
-							'modified' => (int) $p->modified,
-							'sort' => (int) $p->sort,
-						};
-						$formattedOut = $formatter($p, $rawBuiltin);
-						if (is_array($formattedOut)) {
-							$cells[$colKey] = $formattedOut;
-							$formatted[$colKey] = (string) ($formattedOut['label'] ?? $formattedOut['title'] ?? '');
-						} else {
-							$formatted[$colKey] = (string) $formattedOut;
-						}
-					}
-					continue;
-				}
-				$val = $p->get($colKey);
-				if ($formatter !== null) {
-					$formattedOut = $formatter($p, $val);
-					if (is_array($formattedOut)) {
-						$cells[$colKey] = $formattedOut;
-						$formatted[$colKey] = (string) ($formattedOut['label'] ?? $formattedOut['title'] ?? '');
-					} else {
-						$formatted[$colKey] = (string) $formattedOut;
-					}
-				} elseif ($val instanceof ReactIconValue) {
-					if (!$val->isEmpty()) {
-						$cells[$colKey] = [
-							'icon' => $val->toArray(),
-							'label' => (string) $val->name,
-						];
-					}
-					$values[$colKey] = (string) $val->raw;
-					continue;
-				} else {
-					$unformattedMedia = $p->getUnformatted($colKey);
-					if ($unformattedMedia instanceof Pageimages || $unformattedMedia instanceof Pageimage) {
-						$thumbMeta = self::extractPageThumb($unformattedMedia, (string) ($p->title ?: $p->name));
-						if ($thumbMeta !== null) {
-							$cells[$colKey] = ['thumb' => $thumbMeta];
-							$values[$colKey] = $thumbMeta['alt'];
-						} else {
-							$values[$colKey] = '';
-						}
-						continue;
-					}
-				}
-				$values[$colKey] = is_scalar($val) ? $val : (string) $val;
-			}
-
-			$recordIcon = '';
-			$iconFieldOpt = trim((string) ($this->options['iconField'] ?? ''));
-			if ($iconFieldOpt !== '' && $this->isFieldViewableOnPage($p, $iconFieldOpt, $isSuperuser)) {
-				$rawIconField = $p->get($iconFieldOpt);
-				if ($rawIconField instanceof ReactIconValue) {
-					if (!$rawIconField->isEmpty()) {
-						$recordIcon = $rawIconField->toArray();
-					}
-				} elseif (is_scalar($rawIconField) && trim((string) $rawIconField) !== '') {
-					$resolvedIconObj = IconManager::resolveValueObject($rawIconField);
-					$recordIcon = !$resolvedIconObj->isEmpty() ? $resolvedIconObj->toArray() : trim((string) $rawIconField);
-				}
-			} elseif (!empty($this->options['showTemplateIcon'])) {
-				$tplIcon = trim((string) $p->getIcon());
-				if ($tplIcon !== '') {
-					$recordIcon = $tplIcon;
-				}
-			}
-
-			$recordThumb = null;
-			$thumbFieldOpt = trim((string) ($this->options['thumbField'] ?? ''));
-			if ($thumbFieldOpt !== '' && $this->isFieldViewableOnPage($p, $thumbFieldOpt, $isSuperuser)) {
-				$recordThumb = self::extractPageThumb($p->getUnformatted($thumbFieldOpt), (string) ($p->title ?: $p->name));
-			}
-
-			$recordSubtitle = '';
-			$subtitleFieldOpt = trim((string) ($this->options['subtitleField'] ?? ''));
-			if ($subtitleFieldOpt !== '') {
-				if ($subtitleFieldOpt === 'path' || $subtitleFieldOpt === 'url') {
-					$subVal = $p->url;
-				} elseif ($this->isFieldViewableOnPage($p, $subtitleFieldOpt, $isSuperuser)) {
-					$subVal = $p->get($subtitleFieldOpt);
-				} else {
-					$subVal = '';
-				}
-				if (is_scalar($subVal)) {
-					$recordSubtitle = trim((string) $subVal);
-				}
-			}
-
-			$parentId = (int) $p->parent_id;
-			$parentCount = $depthByParentId[$parentId] ??= $p->parents()->count();
-
-			$recordEditUrl = $this->editUrlBuilder instanceof Closure
-				? UrlSanitizer::sanitizeHref((string) ($this->editUrlBuilder)($p), true)
-				: "{$adminUrl}/page/edit/?id={$p->id}";
-
-			$recordTitle = $this->isFieldViewableOnPage($p, 'title', $isSuperuser)
-				? (string) ($p->title ?: $p->name)
-				: (string) $p->name;
-
-			$records[] = new ReactRecord(
-				id: (string) $p->id,
-				title: $recordTitle,
-				name: (string) $p->name,
-				status: $bitStatus,
-				statusVariant: $variant,
-				statusLabel: $label,
-				values: $values,
-				formatted: $formatted,
-				editUrl: $recordEditUrl,
-				viewUrl: $isViewable ? (string) $p->url : '',
-				depth: max(0, $parentCount - 1),
-				sort: (int) $p->sort,
-				created: (int) $p->created,
-				modified: (int) $p->modified,
-				hasDraft: false,
-				raw: $p,
-				subtitle: $recordSubtitle,
-				htmlColumns: $this->htmlColumns,
-				icon: $recordIcon,
-				thumb: $recordThumb,
-				cells: $cells,
-			);
+			$records[] = $this->buildRecordFromPage($p, $adminUrl, $isSuperuser, $depthByParentId);
 		}
 
 		$trashCount = 0;
@@ -1003,6 +832,303 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 			pageNum: $pageNum,
 			limit: $limit,
 			trashCount: $trashCount,
+		);
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function exportFormats(): array
+	{
+		return ['csv', 'json'];
+	}
+
+	/**
+	 * Stream matching ProcessWire pages into CSV or JSON while enforcing per-page and per-field RBAC
+	 * and neutralizing CSV formula cells (CWE-1236).
+	 *
+	 * @inheritDoc
+	 */
+	public function export(string $format, array $criteria = []): array
+	{
+		$fmt = strtolower(trim($format));
+		if ($fmt === '') {
+			$fmt = 'csv';
+		}
+		if ($fmt !== 'csv' && $fmt !== 'json') {
+			throw new \ProcessWire\WireException("Unsupported export format '{$format}'. Expected 'csv' or 'json'.");
+		}
+
+		$pages = $this->wire()->pages;
+		$config = $this->wire()->config;
+		$user = $this->wire()->user;
+		$isSuperuser = (bool) $user->isSuperuser();
+		$adminUrl = rtrim((string) ($config->urls->admin ?: '/processwire'), '/');
+		$baseParts = $this->buildSelectorParts($criteria, false);
+		$maxRows = max(1, (int) ($this->options['maxExportRows'] ?? 5000));
+		$chunkSize = 250;
+		$scanOffset = 0;
+		$exportedCount = 0;
+		/** @var array<int, int> $depthByParentId */
+		$depthByParentId = [0 => 0];
+		$colKeys = array_map('strval', array_keys($this->columns));
+		$slug = preg_replace('/[^a-zA-Z0-9_-]+/', '-', trim($this->title) !== '' ? $this->title : 'pages') ?: 'pages';
+		$slug = strtolower(trim($slug, '-')) ?: 'pages';
+
+		$fh = fopen('php://temp', 'r+');
+		if ($fh === false) {
+			throw new \ProcessWire\WireException('Unable to open temporary stream for export.');
+		}
+
+		if ($fmt === 'csv') {
+			$headers = [MarkupReactViewport::sanitizeCsvCell('id')];
+			foreach ($colKeys as $colKey) {
+				$headers[] = MarkupReactViewport::sanitizeCsvCell($colKey);
+			}
+			fputcsv($fh, $headers, ',', '"', '');
+		} else {
+			fwrite($fh, '[');
+		}
+
+		while ($exportedCount < $maxRows) {
+			$chunkParts = $baseParts;
+			$chunkParts[] = "start={$scanOffset}";
+			$chunkParts[] = "limit={$chunkSize}";
+			$chunk = $pages->find(implode(', ', $chunkParts));
+			$chunkCount = $chunk->count();
+			if ($chunkCount === 0) {
+				break;
+			}
+
+			foreach ($chunk as $p) {
+				if (!$p instanceof Page || !$p->id) {
+					continue;
+				}
+				if (!$isSuperuser && !$p->viewable() && !$p->editable()) {
+					continue;
+				}
+				$record = $this->buildRecordFromPage($p, $adminUrl, $isSuperuser, $depthByParentId);
+				if ($fmt === 'json') {
+					$row = ['id' => $record->id];
+					foreach ($colKeys as $colKey) {
+						$row[$colKey] = $record->getDisplayValue($colKey);
+					}
+					$encoded = (string) json_encode($row, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+					fwrite($fh, ($exportedCount > 0 ? ",\n" : "\n") . $encoded);
+				} else {
+					$line = [MarkupReactViewport::sanitizeCsvCell((string) $record->id)];
+					foreach ($colKeys as $colKey) {
+						$line[] = MarkupReactViewport::sanitizeCsvCell((string) $record->getDisplayValue($colKey));
+					}
+					fputcsv($fh, $line, ',', '"', '');
+				}
+				$exportedCount++;
+				if ($exportedCount >= $maxRows) {
+					break 2;
+				}
+			}
+
+			$scanOffset += $chunkCount;
+			if ($chunkCount < $chunkSize || $scanOffset >= $chunk->getTotal()) {
+				break;
+			}
+		}
+
+		if ($fmt === 'json') {
+			fwrite($fh, $exportedCount > 0 ? "\n]" : ']');
+		}
+
+		rewind($fh);
+		$body = (string) stream_get_contents($fh);
+		fclose($fh);
+
+		return [
+			'filename' => "{$slug}.{$fmt}",
+			'contentType' => $fmt === 'json' ? 'application/json; charset=UTF-8' : 'text/csv; charset=utf-8',
+			'body' => $body,
+		];
+	}
+
+	/**
+	 * Map a single ProcessWire `Page` into a `ReactRecord`, enforcing field-level RBAC and custom formatters.
+	 *
+	 * @param array<int, int> $depthByParentId
+	 */
+	private function buildRecordFromPage(Page $p, string $adminUrl, bool $isSuperuser, array &$depthByParentId): ReactRecord
+	{
+		$isViewable = $p->viewable();
+		$bitStatus = ReactRecord::STATUS_PUBLISHED;
+		$variant = 'success';
+		$label = $this->_('Published');
+
+		if ($p->isTrash()) {
+			$bitStatus = ReactRecord::STATUS_TRASH;
+			$variant = 'danger';
+			$label = $this->_('Trash');
+		} elseif ($p->isUnpublished()) {
+			$bitStatus = ReactRecord::STATUS_DRAFT;
+			$variant = 'warning';
+			$label = $this->_('Draft');
+		} elseif ($p->isHidden()) {
+			$bitStatus = ReactRecord::STATUS_HIDDEN;
+			$variant = 'warning';
+			$label = $this->_('Hidden');
+		}
+		if ($p->isLocked()) {
+			$bitStatus |= ReactRecord::STATUS_LOCKED;
+		}
+
+		$values = [];
+		$formatted = [];
+		/** @var array<string, array<string, mixed>> $cells */
+		$cells = [];
+		foreach (array_keys($this->columns) as $colKey) {
+			if (!$this->isFieldViewableOnPage($p, (string) $colKey, $isSuperuser)) {
+				$values[$colKey] = '';
+				continue;
+			}
+			$formatter = $this->formatters[$colKey] ?? null;
+			if ($formatter !== null) {
+				$arity = $this->formatterArities[$colKey] ??= (new \ReflectionFunction($formatter))->getNumberOfParameters();
+				if ($arity <= 1) {
+					$formattedOut = $formatter($p);
+					if (is_array($formattedOut)) {
+						$cells[$colKey] = $formattedOut;
+						$formatted[$colKey] = (string) ($formattedOut['label'] ?? $formattedOut['title'] ?? '');
+					} else {
+						$formatted[$colKey] = (string) $formattedOut;
+					}
+					continue;
+				}
+			}
+			if (in_array($colKey, ['id', 'title', 'name', 'status', 'created', 'modified', 'sort'], true)) {
+				if ($formatter !== null) {
+					$rawBuiltin = match ($colKey) {
+						'id' => (int) $p->id,
+						'title' => (string) ($p->title ?: $p->name),
+						'name' => (string) $p->name,
+						'status' => $bitStatus,
+						'created' => (int) $p->created,
+						'modified' => (int) $p->modified,
+						'sort' => (int) $p->sort,
+					};
+					$formattedOut = $formatter($p, $rawBuiltin);
+					if (is_array($formattedOut)) {
+						$cells[$colKey] = $formattedOut;
+						$formatted[$colKey] = (string) ($formattedOut['label'] ?? $formattedOut['title'] ?? '');
+					} else {
+						$formatted[$colKey] = (string) $formattedOut;
+					}
+				}
+				continue;
+			}
+			$val = $p->get($colKey);
+			if ($formatter !== null) {
+				$formattedOut = $formatter($p, $val);
+				if (is_array($formattedOut)) {
+					$cells[$colKey] = $formattedOut;
+					$formatted[$colKey] = (string) ($formattedOut['label'] ?? $formattedOut['title'] ?? '');
+				} else {
+					$formatted[$colKey] = (string) $formattedOut;
+				}
+			} elseif ($val instanceof ReactIconValue) {
+				if (!$val->isEmpty()) {
+					$cells[$colKey] = [
+						'icon' => $val->toArray(),
+						'label' => (string) $val->name,
+					];
+				}
+				$values[$colKey] = (string) $val->raw;
+				continue;
+			} else {
+				$unformattedMedia = $p->getUnformatted($colKey);
+				if ($unformattedMedia instanceof Pageimages || $unformattedMedia instanceof Pageimage) {
+					$thumbMeta = self::extractPageThumb($unformattedMedia, (string) ($p->title ?: $p->name));
+					if ($thumbMeta !== null) {
+						$cells[$colKey] = ['thumb' => $thumbMeta];
+						$values[$colKey] = $thumbMeta['alt'];
+					} else {
+						$values[$colKey] = '';
+					}
+					continue;
+				}
+			}
+			$values[$colKey] = is_scalar($val) ? $val : (string) $val;
+		}
+
+		$recordIcon = '';
+		$iconFieldOpt = trim((string) ($this->options['iconField'] ?? ''));
+		if ($iconFieldOpt !== '' && $this->isFieldViewableOnPage($p, $iconFieldOpt, $isSuperuser)) {
+			$rawIconField = $p->get($iconFieldOpt);
+			if ($rawIconField instanceof ReactIconValue) {
+				if (!$rawIconField->isEmpty()) {
+					$recordIcon = $rawIconField->toArray();
+				}
+			} elseif (is_scalar($rawIconField) && trim((string) $rawIconField) !== '') {
+				$resolvedIconObj = IconManager::resolveValueObject($rawIconField);
+				$recordIcon = !$resolvedIconObj->isEmpty() ? $resolvedIconObj->toArray() : trim((string) $rawIconField);
+			}
+		} elseif (!empty($this->options['showTemplateIcon'])) {
+			$tplIcon = trim((string) $p->getIcon());
+			if ($tplIcon !== '') {
+				$recordIcon = $tplIcon;
+			}
+		}
+
+		$recordThumb = null;
+		$thumbFieldOpt = trim((string) ($this->options['thumbField'] ?? ''));
+		if ($thumbFieldOpt !== '' && $this->isFieldViewableOnPage($p, $thumbFieldOpt, $isSuperuser)) {
+			$recordThumb = self::extractPageThumb($p->getUnformatted($thumbFieldOpt), (string) ($p->title ?: $p->name));
+		}
+
+		$recordSubtitle = '';
+		$subtitleFieldOpt = trim((string) ($this->options['subtitleField'] ?? ''));
+		if ($subtitleFieldOpt !== '') {
+			if ($subtitleFieldOpt === 'path' || $subtitleFieldOpt === 'url') {
+				$subVal = $p->url;
+			} elseif ($this->isFieldViewableOnPage($p, $subtitleFieldOpt, $isSuperuser)) {
+				$subVal = $p->get($subtitleFieldOpt);
+			} else {
+				$subVal = '';
+			}
+			if (is_scalar($subVal)) {
+				$recordSubtitle = trim((string) $subVal);
+			}
+		}
+
+		$parentId = (int) $p->parent_id;
+		$parentCount = $depthByParentId[$parentId] ??= $p->parents()->count();
+
+		$recordEditUrl = $this->editUrlBuilder instanceof Closure
+			? UrlSanitizer::sanitizeHref((string) ($this->editUrlBuilder)($p), true)
+			: "{$adminUrl}/page/edit/?id={$p->id}";
+
+		$recordTitle = $this->isFieldViewableOnPage($p, 'title', $isSuperuser)
+			? (string) ($p->title ?: $p->name)
+			: (string) $p->name;
+
+		return new ReactRecord(
+			id: (string) $p->id,
+			title: $recordTitle,
+			name: (string) $p->name,
+			status: $bitStatus,
+			statusVariant: $variant,
+			statusLabel: $label,
+			values: $values,
+			formatted: $formatted,
+			editUrl: $recordEditUrl,
+			viewUrl: $isViewable ? (string) $p->url : '',
+			depth: max(0, $parentCount - 1),
+			sort: (int) $p->sort,
+			created: (int) $p->created,
+			modified: (int) $p->modified,
+			hasDraft: false,
+			raw: $p,
+			subtitle: $recordSubtitle,
+			htmlColumns: $this->htmlColumns,
+			icon: $recordIcon,
+			thumb: $recordThumb,
+			cells: $cells,
 		);
 	}
 

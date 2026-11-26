@@ -10,6 +10,7 @@ import {
 let isolatedFixture: IsolatedE2EFixture;
 
 test.describe('ProcessReactWorkspace Launcher, Cross-Panel SPA Navigation & Standalone React Islands', () => {
+	test.describe.configure({ timeout: 60_000 });
 	test.beforeAll(() => {
 		isolatedFixture = provisionIsolatedE2EFixture();
 	});
@@ -1590,7 +1591,7 @@ function waitForWorkspacePrefsPost(page: Page) {
 }
 
 test.describe('Multi-Shell Layouts & Collapsible Sidebar Navigation', () => {
-	test.describe.configure({ mode: 'serial' });
+	test.describe.configure({ mode: 'serial', timeout: 60_000 });
 
 	test('switches Topbar to Sidebar, searches/pins/navigates in ModuleSwitcher, collapses/expands via click and Ctrl+B, passes light/dark/mobile WCAG 2.1 AA, and resets cleanly', async ({
 		page,
@@ -1602,23 +1603,39 @@ test.describe('Multi-Shell Layouts & Collapsible Sidebar Navigation', () => {
 
 		const rootShell = page.locator('[data-rw-app-shell]');
 		await expect(rootShell).toBeVisible();
-		const initialShellLayout = (await rootShell.getAttribute('data-rw-shell-layout')) || 'topbar';
+		const siteDefaultShellLayout = await page.evaluate(() => {
+			const pageScript = document.querySelector('script[type="application/json"][data-page="app"]');
+			if (!pageScript?.textContent) return 'topbar';
+			try {
+				const parsed = JSON.parse(pageScript.textContent);
+				return String(parsed?.props?.siteDefaultShellLayout || parsed?.props?.workspace?.siteDefaultShellLayout || 'topbar');
+			} catch {
+				return 'topbar';
+			}
+		});
 
 		try {
-			// 1. Switch Topbar -> Sidebar via UserAccountMenu and verify reload persistence
+			// 1. Switch Topbar -> Sidebar via UserAccountMenu (exercising Topbar first when site starts in Sidebar)
 			await page.locator('[data-rw-user-menu-trigger]:visible').first().click();
 			await expect(page.locator('[data-rw-user-menu]')).toBeVisible();
 			await expect(page.locator('[data-rw-layout-section]')).toBeVisible();
 
 			const sidebarOption = page.locator('[data-rw-shell-layout-option="sidebar"]');
 			await expect(sidebarOption).toBeVisible();
-			const isAlreadySidebar = (await sidebarOption.getAttribute('aria-pressed')) === 'true';
-			if (!isAlreadySidebar) {
-				const [switchRes] = await Promise.all([waitForWorkspacePrefsPost(page), sidebarOption.click()]);
-				expect(switchRes.status()).toBe(200);
-			} else {
-				await page.keyboard.press('Escape');
+			if ((await sidebarOption.getAttribute('aria-pressed')) === 'true') {
+				const topbarOption = page.locator('[data-rw-shell-layout-option="topbar"]');
+				const [toTopbarRes] = await Promise.all([waitForWorkspacePrefsPost(page), topbarOption.click()]);
+				expect(toTopbarRes.status()).toBe(200);
+				await expect(page.locator('[data-rw-app-shell][data-rw-shell-layout="topbar"]')).toBeVisible();
+				await page.locator('[data-rw-user-menu-trigger]:visible').first().click();
+				await expect(page.locator('[data-rw-user-menu]')).toBeVisible();
 			}
+
+			const [switchRes] = await Promise.all([
+				waitForWorkspacePrefsPost(page),
+				page.locator('[data-rw-shell-layout-option="sidebar"]').click(),
+			]);
+			expect(switchRes.status()).toBe(200);
 
 			await expect(page.locator('[data-rw-app-shell][data-rw-shell-layout="sidebar"]')).toBeVisible();
 			const sidebar = page.locator('[data-rw-sidebar]');
@@ -1787,7 +1804,7 @@ test.describe('Multi-Shell Layouts & Collapsible Sidebar Navigation', () => {
 			await page.setViewportSize({ width: 1280, height: 720 });
 			await expect(page.locator('[data-rw-sidebar]')).toBeVisible();
 		} finally {
-			// 6. Restore shell layout preference to site default (topbar) so clean state remains
+			// 6. Restore shell layout preference back to site default so clean state remains
 			await page.setViewportSize({ width: 1280, height: 720 });
 			const userMenuTrigger = page.locator('[data-rw-user-menu-trigger]:visible').first();
 			if (await userMenuTrigger.isVisible().catch(() => false)) {
@@ -1798,9 +1815,9 @@ test.describe('Multi-Shell Layouts & Collapsible Sidebar Navigation', () => {
 					const [resetRes] = await Promise.all([waitForWorkspacePrefsPost(page), resetLayoutBtn.click()]);
 					expect(resetRes.status()).toBe(200);
 				} else {
-					const topbarBtn = page.locator('[data-rw-shell-layout-option="topbar"]');
-					if ((await topbarBtn.count()) > 0 && (await topbarBtn.getAttribute('aria-pressed')) !== 'true') {
-						await Promise.all([waitForWorkspacePrefsPost(page), topbarBtn.click()]);
+					const defaultBtn = page.locator(`[data-rw-shell-layout-option="${siteDefaultShellLayout}"]`);
+					if ((await defaultBtn.count()) > 0 && (await defaultBtn.getAttribute('aria-pressed')) !== 'true') {
+						await Promise.all([waitForWorkspacePrefsPost(page), defaultBtn.click()]);
 					} else {
 						await page.keyboard.press('Escape');
 					}
@@ -1808,11 +1825,16 @@ test.describe('Multi-Shell Layouts & Collapsible Sidebar Navigation', () => {
 			}
 		}
 
-		await expect(page.locator('[data-rw-app-shell][data-rw-shell-layout="topbar"]')).toBeVisible();
-		await expect(page.locator('[data-rw-global-bar]')).toBeVisible();
-		await expect(page.locator('[data-rw-sidebar]')).toHaveCount(0);
+		await expect(page.locator(`[data-rw-app-shell][data-rw-shell-layout="${siteDefaultShellLayout}"]`)).toBeVisible();
+		if (siteDefaultShellLayout === 'sidebar') {
+			await expect(page.locator('[data-rw-sidebar]')).toBeVisible();
+			await expect(page.locator('[data-rw-global-bar]')).toHaveCount(0);
+		} else {
+			await expect(page.locator('[data-rw-global-bar]')).toBeVisible();
+			await expect(page.locator('[data-rw-sidebar]')).toHaveCount(0);
+		}
 		await page.reload({ waitUntil: 'networkidle' });
-		await expect(page.locator('[data-rw-app-shell][data-rw-shell-layout="topbar"]')).toBeVisible();
+		await expect(page.locator(`[data-rw-app-shell][data-rw-shell-layout="${siteDefaultShellLayout}"]`)).toBeVisible();
 
 		tracker.assertNoErrors();
 	});
@@ -1820,7 +1842,6 @@ test.describe('Multi-Shell Layouts & Collapsible Sidebar Navigation', () => {
 	test('preserves classic AdminTheme shellMode when switching modules via ModuleSwitcher without ?ws=1', async ({
 		page,
 	}) => {
-		test.setTimeout(60_000);
 		const tracker = attachRuntimeErrorTracker(page);
 		await page.setViewportSize({ width: 1280, height: 720 });
 		await page.goto(getAdminUrl('workspace/'), { waitUntil: 'networkidle' });

@@ -3204,11 +3204,51 @@ abstract class MarkupReactViewport extends MarkupInertia
 		}
 
 		$slug = preg_replace('/[^a-zA-Z0-9_-]/', '-', $this->componentId ?: 'records') ?: 'records';
-		$result = $provider->query(array_replace($criteria, ['pageNum' => 1, 'limit' => 5000]));
+		$maxExportRows = 5000;
+		$chunkLimit = 250;
+		$pageNum = 1;
+		/** @var list<ReactRecord> $allItems */
+		$allItems = [];
+		/** @var array<string, true> $seenIds */
+		$seenIds = [];
+
+		while (count($allItems) < $maxExportRows) {
+			$result = $provider->query(array_replace($criteria, [
+				'pageNum' => $pageNum,
+				'limit' => $chunkLimit,
+			]));
+			if ($result->items === []) {
+				break;
+			}
+			$added = 0;
+			foreach ($result->items as $rec) {
+				$recKey = (string) $rec->id;
+				if ($recKey !== '' && isset($seenIds[$recKey])) {
+					continue;
+				}
+				if ($recKey !== '') {
+					$seenIds[$recKey] = true;
+				}
+				$allItems[] = $rec;
+				$added++;
+				if (count($allItems) >= $maxExportRows) {
+					break 2;
+				}
+			}
+			if (
+				$added === 0
+				|| count($result->items) < $chunkLimit
+				|| ($result->total > 0 && count($allItems) >= $result->total)
+			) {
+				break;
+			}
+			$pageNum++;
+		}
+
 		$cols = $this->resolveDisplayColumns();
 
 		if ($exportFormat === 'json') {
-			$rows = array_map(fn(ReactRecord $r): array => $this->serializeReactRecord($r), $result->items);
+			$rows = array_map(fn(ReactRecord $r): array => $this->serializeReactRecord($r), $allItems);
 
 			return [
 				'filename' => "{$slug}.json",
@@ -3226,14 +3266,14 @@ abstract class MarkupReactViewport extends MarkupInertia
 		foreach (array_keys($cols) as $colKey) {
 			$headers[] = self::sanitizeCsvCell((string) $colKey);
 		}
-		fputcsv($fh, $headers, ',', '"', '\\');
+		fputcsv($fh, $headers, ',', '"', '');
 
-		foreach ($result->items as $rec) {
+		foreach ($allItems as $rec) {
 			$line = [self::sanitizeCsvCell((string) $rec->id)];
 			foreach (array_keys($cols) as $colKey) {
 				$line[] = self::sanitizeCsvCell((string) $rec->getDisplayValue((string) $colKey));
 			}
-			fputcsv($fh, $line, ',', '"', '\\');
+			fputcsv($fh, $line, ',', '"', '');
 		}
 
 		rewind($fh);

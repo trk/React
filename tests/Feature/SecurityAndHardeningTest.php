@@ -1208,6 +1208,29 @@ test('PagesDataProvider protects core system pages from destructive or status-di
 		expect($ws->handleWorkspacePrefsAction(['_requestMethod' => 'GET', 'action' => 'reset'], false, $superUser)['status'])->toBe(405)
 			->and($ws->handlePresenceAction(['_requestMethod' => 'GET', 'resourceKey' => 'page:1'], false, $superUser)['status'])->toBe(405);
 
+		// Verify authenticated frontend-only user (without workspace access or page-edit permission) receives 403 on /_react/workspace-prefs and writes no file
+		$frontendUser = new User();
+		wire($frontendUser);
+		$frontendUser->id = 987991;
+		$frontendUser->name = 'rw-frontend-member';
+		$guestRole = wire('roles')->get('guest');
+		if ($guestRole && $guestRole->id) {
+			$frontendUser->addRole($guestRole);
+		}
+		$frontendPrefPath = $ws->workspacePreferences()->filePath($frontendUser);
+		if ($frontendPrefPath !== '' && is_file($frontendPrefPath)) {
+			@unlink($frontendPrefPath);
+		}
+		foreach (['set_theme_mode' => ['themeMode' => 'dark'], 'set_shell_layout' => ['shellLayout' => 'sidebar'], 'save' => ['favorites' => []]] as $prefAct => $extra) {
+			$deniedPref = $ws->handleWorkspacePrefsAction(
+				array_merge(['_requestMethod' => 'POST', 'action' => $prefAct], $extra),
+				false,
+				$frontendUser
+			);
+			expect($deniedPref['ok'])->toBeFalse()->and($deniedPref['status'])->toBe(403);
+		}
+		expect($frontendPrefPath === '' || !is_file($frontendPrefPath))->toBeTrue();
+
 		$prevDemo = wire('config')->demo;
 		wire('config')->demo = true;
 		try {

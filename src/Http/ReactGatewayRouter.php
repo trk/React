@@ -448,17 +448,23 @@ final class ReactGatewayRouter extends Wire
 		];
 	}
 
+	private function canAccessWorkspacePrefs(User $user): bool
+	{
+		return AccessGuard::isAuthenticatedOrSuperuser($user)
+			&& (React::checkAccess(['user' => $user]) || $user->hasPermission('page-edit'));
+	}
+
 	/**
 	 * Handle JSON workspace preference mutations sent to `/_react/workspace-prefs`.
 	 */
 	public function handleWorkspacePrefsRequest(HookEvent $event): string
 	{
 		$user = $this->wire()->user;
-		if (!AccessGuard::isAuthenticated($user)) {
+		if (!$this->canAccessWorkspacePrefs($user)) {
 			return $this->respondJson([
 				'ok' => false,
 				'status' => 403,
-				'error' => 'Authentication required.',
+				'error' => 'Workspace or page edit access required.',
 			]);
 		}
 
@@ -501,11 +507,11 @@ final class ReactGatewayRouter extends Wire
 	public function handleWorkspacePrefsAction(array $requestPayload, bool $enforceCsrf = false, ?User $user = null): array
 	{
 		$resolvedUser = $user ?? $this->wire()->user;
-		if (!AccessGuard::isAuthenticated($resolvedUser)) {
+		if (!$this->canAccessWorkspacePrefs($resolvedUser)) {
 			return [
 				'ok' => false,
 				'status' => 403,
-				'error' => 'Authentication required.',
+				'error' => 'Workspace or page edit access required.',
 			];
 		}
 
