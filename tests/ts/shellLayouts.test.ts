@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { AppShell } from '../../resources/ts/layout/AppShell';
 import { buildCommandPaletteItems } from '../../resources/ts/layout/CommandPaletteModal';
 import { ModuleSwitcher } from '../../resources/ts/layout/ModuleSwitcher';
@@ -585,5 +585,143 @@ describe('Shell Layout Registry and Multi-Shell SSR', () => {
 		expect(switcherSrc).toContain('{useSpaNavigation && ws.component ? (');
 		expect(switcherSrc).toContain('return useSpaNavigation ? (');
 		expect(sidebarLayoutSrc).toContain("return shellMode === 'workspace' ? (");
+	});
+
+	it('renders ModuleSwitcher with semantic nav/ul/li markup outside role="listbox" for WCAG 4.1.2 compliance', () => {
+		const switcherSrc = readFileSync(
+			resolve(import.meta.dirname, '../../resources/ts/layout/ModuleSwitcher.tsx'),
+			'utf8'
+		);
+
+		expect(switcherSrc).toContain('<nav');
+		expect(switcherSrc).toContain('<ul className="space-y-0.5">');
+		expect(switcherSrc).toContain('<li');
+		expect(switcherSrc).toContain('data-rw-module-switcher-menu=""');
+		expect(switcherSrc).toContain('data-rw-module-switcher-search=""');
+		expect(switcherSrc).toContain('data-rw-module-switcher-item={ws.id}');
+		expect(switcherSrc).toContain("aria-current={isCurrent ? 'page' : undefined}");
+		expect(switcherSrc).not.toContain('role="listbox"');
+		expect(switcherSrc).not.toContain('role="option"');
+		expect(switcherSrc).not.toContain('role="combobox"');
+		expect(switcherSrc).not.toContain('role="presentation"');
+		expect(switcherSrc).not.toContain('aria-activedescendant');
+	});
+
+	it('unifies pw:react-shell-layout-change event, accepts custom layout IDs, syncs localStorage, and reloads Inertia workspace in ReactInertia fallback', async () => {
+		const inertiaSrc = readFileSync(
+			resolve(import.meta.dirname, '../../resources/ts/entries/ReactInertia.tsx'),
+			'utf8'
+		);
+		const hookSrc = readFileSync(
+			resolve(import.meta.dirname, '../../resources/ts/layout/useShellLayout.ts'),
+			'utf8'
+		);
+		expect(inertiaSrc).toContain("'pw:react-shell-layout-change'");
+		expect(hookSrc).toContain("'pw:react-shell-layout-change'");
+		expect(inertiaSrc).not.toContain('rw:shell-layout-changed');
+		expect(hookSrc).not.toContain('rw:shell-layout-changed');
+
+		const originalWindow = globalThis.window;
+		const originalDocument = globalThis.document;
+		const originalCustomEvent = globalThis.CustomEvent;
+		const originalFetch = globalThis.fetch;
+
+		const storage = new Map<string, string>();
+		const dispatchedEvents: Array<{ type: string; detail: unknown }> = [];
+		const dataset: Record<string, string> = { rwShellLayout: 'custom-deck', rwSidebarCollapsed: 'false' };
+
+		try {
+			vi.resetModules();
+			globalThis.CustomEvent = class MockCustomEvent {
+				type: string;
+				detail: unknown;
+				constructor(type: string, init?: { detail?: unknown }) {
+					this.type = type;
+					this.detail = init?.detail;
+				}
+			} as unknown as typeof CustomEvent;
+
+			globalThis.document = {
+				readyState: 'complete',
+				documentElement: {
+					dataset,
+					getAttribute: () => null,
+				},
+				addEventListener: () => {},
+				querySelector: () => null,
+				querySelectorAll: () => [],
+			} as unknown as Document;
+
+			const reloadCalls: unknown[] = [];
+			globalThis.window = {
+				location: { origin: 'https://example.test', href: 'https://example.test/admin/' },
+				localStorage: {
+					getItem: (k: string) => storage.get(k) ?? null,
+					setItem: (k: string, v: string) => storage.set(k, v),
+				},
+				setTimeout: () => 0,
+				addEventListener: () => {},
+				removeEventListener: () => {},
+				dispatchEvent: (ev: { type: string; detail?: unknown }) => {
+					dispatchedEvents.push({ type: ev.type, detail: ev.detail });
+					return true;
+				},
+			} as unknown as Window & typeof globalThis;
+
+			await import('../../resources/ts/entries/ReactInertia');
+			const rt = globalThis.window.ReactWorkspaceRuntime;
+			const { setInertiaAdapter, markInertiaBooted } = await import('../../resources/ts/lib/inertia-bridge');
+
+			let capturedResult: ReturnType<typeof rt.Layout.useShellLayout> | null = null;
+			function Probe() {
+				capturedResult = rt.Layout.useShellLayout({
+					initialLayout: 'Custom-Deck',
+					siteDefaultLayout: 'Compact_Shell',
+					initialUserLayout: 'Custom-Deck',
+					syncToServer: true,
+				});
+				return React.createElement('div', { 'data-layout': capturedResult.shellLayout });
+			}
+
+			const html = renderToStaticMarkup(React.createElement(Probe));
+			expect(html).toContain('data-layout="custom-deck"');
+			expect(capturedResult).not.toBeNull();
+			expect(capturedResult!.siteDefaultShellLayout).toBe('compact_shell');
+			expect(capturedResult!.userShellLayout).toBe('custom-deck');
+
+			// Inject mock Inertia adapter & Layout preference poster to verify updateShell parity
+			markInertiaBooted();
+			setInertiaAdapter({
+				router: {
+					reload: (opts?: unknown) => {
+						reloadCalls.push(opts);
+					},
+				},
+			} as unknown as Parameters<typeof setInertiaAdapter>[0]);
+			rt.Layout.postWorkspacePreferenceAction = async () => ({
+				favorites: [],
+				widgetOrder: [],
+				hiddenWidgets: [],
+				widgetSizes: {},
+				shellLayout: 'zen-rail',
+				sidebarCollapsed: true,
+			});
+
+			const ok = await capturedResult!.setShellLayout('Zen-Rail');
+			expect(ok).toBe(true);
+			expect(dataset.rwShellLayout).toBe('zen-rail');
+			expect(storage.get('react-workspace-shell-layout')).toBe('zen-rail');
+			expect(storage.get('react-workspace-sidebar-collapsed')).toBe('false');
+			expect(dispatchedEvents.some((e) => e.type === 'pw:react-shell-layout-change')).toBe(true);
+			expect(reloadCalls).toEqual([{ only: ['workspace'] }]);
+
+			// Invalid custom layout IDs are rejected cleanly
+			await expect(capturedResult!.setShellLayout('invalid layout!')).resolves.toBe(false);
+		} finally {
+			globalThis.window = originalWindow;
+			globalThis.document = originalDocument;
+			globalThis.CustomEvent = originalCustomEvent;
+			globalThis.fetch = originalFetch;
+		}
 	});
 });

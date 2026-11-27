@@ -383,7 +383,7 @@ test('isBlockedKey, validateRegexPattern ReDoS protection, TSV parsing, config f
 
 	$modules = wire('modules');
 	if (!$modules->isInstalled('FieldtypeRepeater')) {
-		return;
+		$this->markTestSkipped('Requires FieldtypeRepeater.');
 	}
 
 	$fields = wire('fields');

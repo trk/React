@@ -946,12 +946,16 @@ test('Audit hardening: bounded JSON reader, relation hydrate scope confinement, 
 		return $ws;
 	};
 
-	expect($makeBoundedWs('{"action":"save","ok":true}')->readJsonRequestBody(1024, 8))
-		->toBe(['action' => 'save', 'ok' => true])
-		->and($makeBoundedWs(str_repeat(' ', 500) . '{"a":1}')->readJsonRequestBody(128, 8))->toBeNull();
+	try {
+		expect($makeBoundedWs('{"action":"save","ok":true}')->readJsonRequestBody(1024, 8))
+			->toBe(['action' => 'save', 'ok' => true])
+			->and($makeBoundedWs(str_repeat(' ', 500) . '{"a":1}')->readJsonRequestBody(128, 8))->toBeNull();
 
-	$deepJson = str_repeat('[', 70) . '1' . str_repeat(']', 70);
-	expect($makeBoundedWs($deepJson)->readJsonRequestBody(65536, 64))->toBeNull();
+		$deepJson = str_repeat('[', 70) . '1' . str_repeat(']', 70);
+		expect($makeBoundedWs($deepJson)->readJsonRequestBody(65536, 64))->toBeNull();
+	} finally {
+		wire('react', $workspace);
+	}
 
 	// 2. InputfieldReactLink::sanitizeHref & UrlSanitizer reject protocol-relative //, /\, \, and control-char schemes
 	expect(\ProcessWire\InputfieldReactLink::sanitizeHref('//evil.example.com/phish'))->toBe('')
@@ -985,25 +989,58 @@ test('Audit hardening: bounded JSON reader, relation hydrate scope confinement, 
 	expect($userAdapter->hydrate([$superId], ['roles' => ['non_existent_role_xyz']]))->toBe([])
 		->and($userAdapter->hydrate([$superId], ['roles' => ['superuser']]))->toHaveCount(1);
 
-	// 4. PageLinkMediaHostAdapter fails closed when rootPageId does not exist
+	// 4. PageLinkMediaHostAdapter fails closed (404 when unattached, 403 when attached but rootPageId does not exist)
+	$linkSuffix = substr(bin2hex(random_bytes(3)), 0, 6);
 	$linkField = new \ProcessWire\Field();
 	wire($linkField);
 	$linkField->type = wire('modules')->get('FieldtypeText');
-	$linkField->name = 'rw_audit_link_probe';
+	$linkField->name = 'rw_audit_link_probe_' . $linkSuffix;
 	$linkField->set('inputfieldClass', 'InputfieldReactLink');
 	wire('fields')->save($linkField);
+	$linkFg = new \ProcessWire\Fieldgroup();
+	$linkFg->name = 'rw_audit_link_tpl_' . $linkSuffix;
+	$linkFg->add(wire('fields')->get('title'));
+	$linkFg->add($linkField);
+	wire('fieldgroups')->save($linkFg);
+	$linkTpl = new \ProcessWire\Template();
+	$linkTpl->name = 'rw_audit_link_tpl_' . $linkSuffix;
+	$linkTpl->fieldgroup = $linkFg;
+	wire('templates')->save($linkTpl);
+	$linkPage = wire('pages')->new([
+		'template' => $linkTpl,
+		'parent' => wire('pages')->get(1),
+		'title' => 'Audit Link Probe',
+	]);
 	try {
 		$linkAdapter = new \Totoglu\React\Media\PageLinkMediaHostAdapter();
 		wire($linkAdapter);
-		$badRootCtx = $linkAdapter->resolveTargetContext([
+		$unattachedCtx = $linkAdapter->resolveTargetContext([
 			'pageId' => 1,
 			'rootPageId' => 99999999,
-			'fieldName' => 'rw_audit_link_probe',
+			'fieldName' => $linkField->name,
+			'mediaProfile' => 'file',
+		], wire('user'), true);
+		expect($unattachedCtx['ok'])->toBeFalse()
+			->and($unattachedCtx['status'])->toBe(404);
+
+		$badRootCtx = $linkAdapter->resolveTargetContext([
+			'pageId' => (int) $linkPage->id,
+			'rootPageId' => 99999999,
+			'fieldName' => $linkField->name,
 			'mediaProfile' => 'file',
 		], wire('user'), true);
 		expect($badRootCtx['ok'])->toBeFalse()
 			->and($badRootCtx['status'])->toBe(403);
 	} finally {
+		if ($linkPage instanceof \ProcessWire\Page && $linkPage->id > 0) {
+			wire('pages')->delete($linkPage, true);
+		}
+		if ($linkTpl instanceof \ProcessWire\Template && $linkTpl->id > 0) {
+			wire('templates')->delete($linkTpl);
+		}
+		if ($linkFg instanceof \ProcessWire\Fieldgroup && $linkFg->id > 0) {
+			wire('fieldgroups')->delete($linkFg);
+		}
 		wire('fields')->delete($linkField);
 	}
 
@@ -2204,6 +2241,356 @@ test('PagesDataProvider enforces field-level useRoles view RBAC and handles stat
 				}
 			}
 			rmdir($tmpDir);
+		}
+	}
+});
+
+test('Hardening regressions: restorable(), OP_EMPTY_TRASH scope/nested subtree, FieldtypePassword/toggle_field, PageResourceAdapter RBAC/count/sort, template-context useRoles, SVG SMIL & fuel safety', function (): void {
+	/** @var React $react */
+	$react = wire('react');
+	$pages = wire('pages');
+	$fields = wire('fields');
+	$fieldgroups = wire('fieldgroups');
+	$templates = wire('templates');
+	$modules = wire('modules');
+	$users = wire('users');
+	$roles = wire('roles');
+	$superId = (int) (wire('config')->superUserPageID ?: 41);
+	/** @var User $superUser */
+	$superUser = $users->get($superId);
+	$prevUser = wire('user');
+
+	$suffix = bin2hex(random_bytes(4));
+	$tmpDir = sys_get_temp_dir() . '/rw-sec-batch-' . $suffix;
+	mkdir($tmpDir, 0775, true);
+
+	$pwCustomField = null;
+	$textField = null;
+	$boolField = null;
+	$fg = null;
+	$tpl = null;
+	$ctxFg = null;
+	$ctxTpl = null;
+	$createdPages = [];
+	$editorRole = null;
+	$editorUser = null;
+
+	try {
+		// 1. UploadedFileValidator blocks SMIL tags, dangerous attributeName targets, and non-fragment url() in animation values
+		$validator = new \Totoglu\React\Media\UploadedFileValidator();
+		wire($validator);
+		foreach ([
+			'<svg xmlns="http://www.w3.org/2000/svg"><animate attributeName="href" values="javascript:alert(1)"/></svg>',
+			'<svg xmlns="http://www.w3.org/2000/svg"><set attributeName="style" to="background:url(https://evil.test/x)"/></svg>',
+			'<svg xmlns="http://www.w3.org/2000/svg"><animateTransform attributeName="action" from="url(https://evil.test/a)"/></svg>',
+			'<svg xmlns="http://www.w3.org/2000/svg"><animateMotion attributeName="formaction" by="url(https://evil.test/b)"/></svg>',
+		] as $idx => $svgPayload) {
+			$svgFile = $tmpDir . '/smil-' . $idx . '.svg';
+			file_put_contents($svgFile, $svgPayload);
+			expect($validator->validateSvgFile($svgFile, 'smil-' . $idx . '.svg'))->not->toBeNull();
+		}
+
+		// 2. UrlSanitizer::sanitizeImageSrc() rejects <?, <!DOCTYPE, <!ENTITY, data:, and external href/url() inside data:image/svg+xml
+		foreach ([
+			'data:image/svg+xml;utf8,' . rawurlencode('<?xml version="1.0"?><svg></svg>'),
+			'data:image/svg+xml;utf8,' . rawurlencode('<!DOCTYPE svg><svg></svg>'),
+			'data:image/svg+xml;utf8,' . rawurlencode('<!ENTITY xxe "test"><svg></svg>'),
+			'data:image/svg+xml;utf8,' . rawurlencode('<svg><image data:text/html="x"/></svg>'),
+			'data:image/svg+xml;utf8,' . rawurlencode('<svg><a href="https://evil.test"><rect/></a></svg>'),
+			'data:image/svg+xml;utf8,' . rawurlencode('<svg><rect fill="url(https://evil.test/x)"/></svg>'),
+		] as $badSvgSrc) {
+			expect(UrlSanitizer::sanitizeImageSrc($badSvgSrc))->toBe('');
+		}
+		$safeSvgData = 'data:image/svg+xml;utf8,' . rawurlencode('<svg xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g"/></defs><rect fill="url(#g)"/></svg>');
+		expect(UrlSanitizer::sanitizeImageSrc($safeSvgData))->toBe($safeSvgData);
+
+		// 3. ReactIconValue disables fuel lookup and FormSchemaSerializer discards Wire fuel collisions
+		$iconVal = new \Totoglu\React\Icon\ReactIconValue(['name' => 'anchor']);
+		expect($iconVal->get('pages'))->toBeNull()
+			->and(\ProcessWire\InputfieldReactIcon::renderIconMarkup($iconVal, 'pages'))->toBe('');
+
+		$collisionText = $modules->get('InputfieldText');
+		$collisionText->attr('name', 'fuel_collision_probe');
+		$serializer = new FormSchemaSerializer();
+		wire($serializer);
+		$refReadSetting = new \ReflectionMethod(FormSchemaSerializer::class, 'readInputfieldDataSetting');
+		expect($refReadSetting->invoke($serializer, $collisionText, 'pages'))->toBeNull()
+			->and($refReadSetting->invoke($serializer, $collisionText, 'resetValue'))->toBeNull();
+		$collisionText->set('resetValue', 'clean-default');
+		expect($refReadSetting->invoke($serializer, $collisionText, 'resetValue'))->toBe('clean-default');
+
+		// 4. PagesDataProvider: custom FieldtypePassword guard, toggle_field type guard, restorable() guard, OP_EMPTY_TRASH parent-scope + nested subtree
+		$pwCustomField = new Field();
+		$pwCustomField->type = $modules->get('FieldtypePassword');
+		$pwCustomField->name = 'rw_custom_secret_' . $suffix;
+		$fields->save($pwCustomField);
+
+		$textField = new Field();
+		$textField->type = $modules->get('FieldtypeText');
+		$textField->name = 'rw_plain_note_' . $suffix;
+		$fields->save($textField);
+
+		$boolField = new Field();
+		$boolField->type = $modules->get('FieldtypeCheckbox');
+		$boolField->name = 'rw_flag_' . $suffix;
+		$fields->save($boolField);
+
+		$fg = new Fieldgroup();
+		$fg->name = 'rw_sec_prov_' . $suffix;
+		$fg->add($fields->get('title'));
+		$fg->add($pwCustomField);
+		$fg->add($textField);
+		$fg->add($boolField);
+		$fieldgroups->save($fg);
+
+		$tpl = new Template();
+		$tpl->name = 'rw_sec_prov_' . $suffix;
+		$tpl->fieldgroup = $fg;
+		$tpl->altFilename = 'home';
+		$templates->save($tpl);
+
+		$parentContainer = new Page();
+		$parentContainer->template = $tpl;
+		$parentContainer->parent = $pages->get(1);
+		$parentContainer->name = 'rw-sec-parent-' . $suffix;
+		$parentContainer->title = 'Sec Parent';
+		$pages->save($parentContainer);
+		$createdPages[] = $parentContainer;
+
+		$itemPage = new Page();
+		$itemPage->template = $tpl;
+		$itemPage->parent = $parentContainer;
+		$itemPage->name = 'rw-sec-item-' . $suffix;
+		$itemPage->title = 'Sec Item';
+		$pages->save($itemPage);
+		$createdPages[] = $itemPage;
+
+		$users->setCurrentUser($superUser);
+		$prov = new PagesDataProvider('template=' . $tpl->name, []);
+		wire($prov);
+
+		expect($prov->mutate('update_field', [(int) $itemPage->id], ['field' => $pwCustomField->name, 'value' => 'HackedPass!']))->toBe(0)
+			->and($prov->mutate('toggle_field', [(int) $itemPage->id], ['field' => $textField->name]))->toBe(0)
+			->and($prov->mutate('toggle_field', [(int) $itemPage->id], ['field' => $boolField->name]))->toBe(1);
+
+		// Trash parent + child subtree: when original parent is deleted, child becomes non-restorable()
+		$trashedSubParent = new Page();
+		$trashedSubParent->template = $tpl;
+		$trashedSubParent->parent = $parentContainer;
+		$trashedSubParent->name = 'rw-trash-subparent-' . $suffix;
+		$trashedSubParent->title = 'Trash SubParent';
+		$pages->save($trashedSubParent);
+
+		$trashedSubChild = new Page();
+		$trashedSubChild->template = $tpl;
+		$trashedSubChild->parent = $trashedSubParent;
+		$trashedSubChild->name = 'rw-trash-subchild-' . $suffix;
+		$trashedSubChild->title = 'Trash SubChild';
+		$pages->save($trashedSubChild);
+
+		// Move child to trash while subparent exists, then delete subparent so child is non-restorable
+		$nonRestorablePage = new Page();
+		$nonRestorablePage->template = $tpl;
+		$nonRestorablePage->parent = $trashedSubParent;
+		$nonRestorablePage->name = 'rw-non-restorable-' . $suffix;
+		$nonRestorablePage->title = 'Orphaned Trashed';
+		$pages->save($nonRestorablePage);
+		$createdPages[] = $nonRestorablePage;
+		$pages->trash($nonRestorablePage);
+		$pages->delete($trashedSubParent, true);
+
+		$pages->uncacheAll();
+		$reloadedOrphan = $pages->get((int) $nonRestorablePage->id);
+		expect($reloadedOrphan->isTrash())->toBeTrue()
+			->and($reloadedOrphan->restorable())->toBeFalse()
+			->and($prov->mutate(ReactDataProviderInterface::OP_RESTORE, [(int) $reloadedOrphan->id]))->toBe(0);
+
+		$orphanRecord = new \Totoglu\React\Data\ReactRecord(
+			(string) $reloadedOrphan->id,
+			'Orphaned Trashed',
+			status: \Totoglu\React\Data\ReactRecord::STATUS_TRASH,
+			raw: $reloadedOrphan,
+		);
+		$orphanActionKeys = array_column($prov->recordActions($orphanRecord), 'key');
+		expect($orphanActionKeys)->not->toContain(ReactDataProviderInterface::OP_RESTORE)
+			->and($orphanActionKeys)->toContain(ReactDataProviderInterface::OP_DELETE);
+
+		// OP_EMPTY_TRASH refuses unbounded site-wide delete when baseSelector only had parent=/status= clauses
+		$parentScopedProv = new PagesDataProvider('parent=' . (int) $parentContainer->id, []);
+		wire($parentScopedProv);
+		expect($parentScopedProv->mutate(ReactDataProviderInterface::OP_EMPTY_TRASH, []))->toBe(0)
+			->and($pages->count('id=' . (int) $reloadedOrphan->id . ', include=trash'))->toBe(1);
+
+		// Nested trashed parent + child subtree in OP_EMPTY_TRASH deletes cleanly without throwing on already-deleted child
+		$nestedP = new Page();
+		$nestedP->template = $tpl;
+		$nestedP->parent = $parentContainer;
+		$nestedP->name = 'rw-nested-p-' . $suffix;
+		$nestedP->title = 'Nested P';
+		$pages->save($nestedP);
+
+		$nestedC = new Page();
+		$nestedC->template = $tpl;
+		$nestedC->parent = $nestedP;
+		$nestedC->name = 'rw-nested-c-' . $suffix;
+		$nestedC->title = 'Nested C';
+		$pages->save($nestedC);
+
+		$pages->trash($nestedP);
+		$nestedProv = new PagesDataProvider('template=' . $tpl->name, []);
+		wire($nestedProv);
+		$emptied = $nestedProv->mutate(ReactDataProviderInterface::OP_EMPTY_TRASH, []);
+		expect($emptied)->toBeGreaterThanOrEqual(1)
+			->and($pages->count('id=' . (int) $nestedP->id . '|' . (int) $nestedC->id . ', include=all'))->toBe(0);
+
+		// 5. PageResourceAdapter: include=unpublished gated on page-edit, filtered total/hasMore/count(), sort fallback & template-context Field::useRoles
+		$editorRole = $roles->add('rw_sec_edit_' . $suffix);
+		$editorRole->addPermission('page-view');
+		$roles->save($editorRole);
+
+		$editorUser = $users->add('rw_sec_u_' . $suffix);
+		$editorUser->pass = 'RwSec!Pass987654';
+		$editorUser->addRole($editorRole);
+		$users->save($editorUser);
+
+		$pubPage = new Page();
+		$pubPage->template = $tpl;
+		$pubPage->parent = $itemPage;
+		$pubPage->name = 'alpha-pub-' . $suffix;
+		$pubPage->title = 'Alpha Visible';
+		$pages->save($pubPage);
+		$createdPages[] = $pubPage;
+
+		$unpubPage = new Page();
+		$unpubPage->template = $tpl;
+		$unpubPage->parent = $itemPage;
+		$unpubPage->name = 'beta-unpub-' . $suffix;
+		$unpubPage->title = 'Beta Draft';
+		$unpubPage->addStatus(Page::statusUnpublished);
+		$pages->save($unpubPage);
+		$createdPages[] = $unpubPage;
+
+		$pageAdapter = $react->relations()->get('page');
+
+		// Non-page-edit user: allowUnpub does NOT inject include=unpublished; include=all selector counts only readable pages
+		$users->setCurrentUser($editorUser);
+		$noEditRes = $pageAdapter->query(['limit' => 10], [
+			'parentId' => (int) $itemPage->id,
+			'templates' => [$tpl->name],
+			'allowUnpub' => true,
+		]);
+		expect($noEditRes['total'])->toBe(1)
+			->and($noEditRes['items'])->toHaveCount(1);
+
+		$includeCount = $pageAdapter->count([
+			'parentId' => (int) $itemPage->id,
+			'templates' => [$tpl->name],
+			'selector' => 'include=all',
+		]);
+		$includeRes = $pageAdapter->query(['limit' => 1, 'page' => 1], [
+			'parentId' => (int) $itemPage->id,
+			'templates' => [$tpl->name],
+			'selector' => 'include=all',
+		]);
+		expect($includeCount)->toBe(1)
+			->and($includeRes['total'])->toBe(1)
+			->and($includeRes['hasMore'])->toBeFalse();
+
+		// Template-context Field::useRoles override on 'title' (in-memory only on private $fg, zero global DB mutation across parallel workers)
+		$titleField = $fields->get('title');
+		$superRoleId = (int) ($roles->get('superuser')->id ?: 38);
+		$fg->setFieldContextArray((int) $titleField->id, [
+			'useRoles' => 1,
+			'viewRoles' => [$superRoleId],
+		]);
+
+		$refPageSearchable = new \ReflectionMethod(\Totoglu\React\Relation\Resource\PageResourceAdapter::class, 'isFieldSearchableForUser');
+		expect($refPageSearchable->invoke($pageAdapter, 'title', [$tpl->name]))->toBeFalse()
+			->and($refPageSearchable->invoke($pageAdapter, 'title', []))->toBeFalse();
+
+		// PageResourceAdapter falls back from sort=title to sort=name, sort=id and excludes title from search when !$canSearchTitle
+		$zPage = new Page();
+		$zPage->template = $tpl;
+		$zPage->parent = $parentContainer;
+		$zPage->name = '000-first-' . $suffix;
+		$zPage->title = 'Zebra Last';
+		$pages->save($zPage);
+		$createdPages[] = $zPage;
+
+		$pageSearchFallback = $pageAdapter->query(['q' => 'Zebra Last', 'limit' => 10], []);
+		expect($pageSearchFallback['items'])->toBe([]);
+
+		$pageSortFallback = $pageAdapter->query(['limit' => 10], ['parentId' => (int) $parentContainer->id]);
+		$sortedIds = array_map(static fn($it): int => (int) $it->value, $pageSortFallback['items']);
+		expect($sortedIds[0] ?? 0)->toBe((int) $zPage->id);
+
+		// PagesDataProvider skips title in search & sort when context useRoles restricts title
+		$ctxProv = new PagesDataProvider('template=' . $tpl->name, []);
+		wire($ctxProv);
+		$ctxSel = $ctxProv->buildSelectorString(['search' => 'Alpha', 'sortBy' => 'title']);
+		expect($ctxSel)->toContain('name%=Alpha')
+			->and($ctxSel)->not->toContain('title|name%=')
+			->and($ctxSel)->not->toContain('sort=title')
+			->and($ctxSel)->toContain('sort=id');
+
+		// CommandSearchRegistry skips title in search & sort when context useRoles restricts title
+		$editorRole->addPermission('page-edit');
+		$roles->save($editorRole);
+		$users->setCurrentUser($editorUser);
+		$cmdByTitle = $react->handleCommandSearchAction(['q' => 'Alpha Visible'], $editorUser);
+		$cmdIds = array_column($cmdByTitle['items'] ?? [], 'id');
+		expect($cmdIds)->not->toContain('page-' . (int) $pubPage->id);
+	} finally {
+		if ($prevUser instanceof User && $prevUser->id > 0) {
+			$users->setCurrentUser($prevUser);
+		}
+		foreach (array_reverse($createdPages) as $cp) {
+			if ($cp instanceof Page && $cp->id > 0) {
+				try {
+					$pages->delete($cp, true);
+				} catch (\Throwable) {
+				}
+			}
+		}
+		if ($tpl instanceof Template && $tpl->id > 0) {
+			try {
+				$templates->delete($tpl);
+			} catch (\Throwable) {
+			}
+		}
+		if ($fg instanceof Fieldgroup && $fg->id > 0) {
+			try {
+				$fieldgroups->delete($fg);
+			} catch (\Throwable) {
+			}
+		}
+		foreach ([$pwCustomField, $textField, $boolField] as $f) {
+			if ($f instanceof Field && $f->id > 0) {
+				try {
+					$fields->delete($f);
+				} catch (\Throwable) {
+				}
+			}
+		}
+		if ($editorUser instanceof User && $editorUser->id > 0) {
+			try {
+				$users->delete($editorUser);
+			} catch (\Throwable) {
+			}
+		}
+		if ($editorRole instanceof Role && $editorRole->id > 0) {
+			try {
+				$roles->delete($editorRole);
+			} catch (\Throwable) {
+			}
+		}
+		foreach (glob($tmpDir . '/*') ?: [] as $f) {
+			if (is_file($f)) {
+				@unlink($f);
+			}
+		}
+		if (is_dir($tmpDir)) {
+			@rmdir($tmpDir);
 		}
 	}
 });

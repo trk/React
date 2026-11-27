@@ -1692,3 +1692,315 @@ test('TiptapMediaLinkGateway fails closed on disjoint image extension allowlists
 		}
 	}
 });
+
+test('TiptapMediaLinkGateway enforces assembleClientContext RBAC, skipFields, page-edit-images, safe target pages, maxFiles+overwrite, dimension bounds & CSS comment stripping', function (): void {
+	/** @var React $react */
+	$react = wire('react');
+	$modules = wire('modules');
+	$fields = wire('fields');
+	$fieldgroups = wire('fieldgroups');
+	$templates = wire('templates');
+	$pages = wire('pages');
+	$users = wire('users');
+	$roles = wire('roles');
+	$config = wire('config');
+	$superId = (int) ($config->superUserPageID ?: 41);
+	/** @var User $superUser */
+	$superUser = $users->get($superId);
+	$prevUser = wire('user');
+
+	$suffix = bin2hex(random_bytes(4));
+	$tmpDir = sys_get_temp_dir() . '/rw-tiptap-sec-' . $suffix;
+	mkdir($tmpDir, 0775, true);
+
+	$imgField = null;
+	$skipField = null;
+	$fg = null;
+	$tpl = null;
+	$hostPage = null;
+	$noImgRole = null;
+	$noImgUser = null;
+	$origPeisCfg = $modules->getConfig('ProcessPageEditImageSelect');
+
+	$makePng = static function (string $path, int $w, int $h): string {
+		$im = imagecreatetruecolor($w, $h);
+		$bg = imagecolorallocate($im, 30, 120, 210);
+		imagefilledrectangle($im, 0, 0, $w - 1, $h - 1, $bg);
+		imagepng($im, $path);
+		unset($im);
+
+		return $path;
+	};
+
+	try {
+		// 1. TiptapContentPolicy::sanitizeExtraCss() strips CSS comment obfuscation and blocks SVG/XHTML data URLs
+		$obfuscatedCss = "body { width: e/*x*/xpression(alert(1)); background: url(data:image/svg+xml;utf8,<svg/>); } @im/*y*/port 'x'; /* unclosed";
+		$cleanCss = TiptapContentPolicy::sanitizeExtraCss($obfuscatedCss);
+		expect($cleanCss)->not->toContain('expression(')
+			->and($cleanCss)->not->toContain('@import')
+			->and($cleanCss)->not->toContain('data:image/svg+xml')
+			->and(TiptapContentPolicy::sanitizeExtraCss('a { background: url(data:application/xhtml+xml,<x/>); }'))->toContain('url(about:blank#');
+
+		// 2. isSafeUploadTargetPage() rejects 404, users, roles, permissions, and statusSystem while preserving root id=1
+		$gw = $react->tiptap();
+		$refSafeTarget = new \ReflectionMethod(\Totoglu\React\Tiptap\TiptapMediaLinkGateway::class, 'isSafeUploadTargetPage');
+		$home = $pages->get(1);
+		expect($refSafeTarget->invoke($gw, $home))->toBeTrue();
+		foreach ([
+			(int) $config->http404PageID,
+			(int) $config->usersPageID,
+			(int) $config->rolesPageID,
+			(int) $config->permissionsPageID,
+		] as $sysId) {
+			if ($sysId > 0) {
+				$sysPage = $pages->get($sysId);
+				if ($sysPage instanceof \ProcessWire\Page && $sysPage->id > 0) {
+					expect($refSafeTarget->invoke($gw, $sysPage))->toBeFalse();
+				}
+			}
+		}
+
+		// 3. Setup image field with maxFiles=2, overwrite=1, minWidth=80, maxWidth=160, maxReject=1 + skipped field
+		$skipField = new Field();
+		$skipField->type = $modules->get('FieldtypeImage');
+		$skipField->name = 'rw_tp_skip_' . $suffix;
+		$skipField->extensions = 'png jpg';
+		$fields->save($skipField);
+
+		$imgField = new Field();
+		$imgField->type = $modules->get('FieldtypeImage');
+		$imgField->name = 'rw_tp_img_' . $suffix;
+		$imgField->extensions = 'png jpg';
+		$imgField->maxFiles = 2;
+		$imgField->overwrite = 1;
+		$imgField->minWidth = 80;
+		$imgField->minHeight = 40;
+		$imgField->maxWidth = 160;
+		$imgField->maxReject = 1;
+		$fields->save($imgField);
+
+		$fg = new Fieldgroup();
+		$fg->name = 'rw_tp_sec_' . $suffix;
+		$fg->add($fields->get('title'));
+		$fg->add($skipField);
+		$fg->add($imgField);
+		$fieldgroups->save($fg);
+
+		$tpl = new Template();
+		$tpl->name = 'rw_tp_sec_' . $suffix;
+		$tpl->fieldgroup = $fg;
+		$templates->save($tpl);
+
+		$hostPage = new \ProcessWire\Page();
+		$hostPage->template = $tpl;
+		$hostPage->parent = $home;
+		$hostPage->name = 'rw-tp-sec-' . $suffix;
+		$hostPage->title = 'Tiptap Sec Host';
+		$pages->save($hostPage);
+
+		// Role with page-edit ONLY (no page-view, no page-edit-images)
+		$noImgRole = $roles->add('rw_tp_noimg_' . $suffix);
+		$noImgRole->addPermission('page-edit');
+		$roles->save($noImgRole);
+
+		$noImgUser = $users->add('rw_tp_u_' . $suffix);
+		$noImgUser->pass = 'RwTp!Pass987654';
+		$noImgUser->addRole($noImgRole);
+		$users->save($noImgUser);
+
+		// 4. assembleClientContext() gates displayPage for unauthorized guest and resolveUploadImageField() enforces skipFields + page-edit-images
+		$guest = $users->getGuestUser();
+		$users->setCurrentUser($guest);
+		$hostPage->addStatus(\ProcessWire\Page::statusUnpublished);
+		$pages->save($hostPage);
+
+		$refCtx = new \ReflectionMethod(\Totoglu\React\Tiptap\TiptapMediaLinkGateway::class, 'assembleClientContext');
+		$guestCtx = $refCtx->invoke($gw, $hostPage, 'body', [], false);
+		expect($guestCtx['pageId'])->toBe(0)
+			->and($guestCtx['editPageId'])->toBe(0)
+			->and($guestCtx['pageTitle'])->toBe('')
+			->and($guestCtx['pagePath'])->toBe('')
+			->and($guestCtx['canUploadImages'])->toBeFalse();
+
+		$modules->saveConfig('ProcessPageEditImageSelect', array_merge(is_array($origPeisCfg) ? $origPeisCfg : [], [
+			'skipFields' => $skipField->name,
+		]));
+		$users->setCurrentUser($superUser);
+		$refResolveField = new \ReflectionMethod(\Totoglu\React\Tiptap\TiptapMediaLinkGateway::class, 'resolveUploadImageField');
+		expect($refResolveField->invoke($gw, $hostPage, [$skipField->name]))->toBeNull();
+
+		// When page-edit-images permission exists in DB and user lacks it, resolveUploadImageField() denies upload
+		if (wire('permissions')->has('page-edit-images') && !$noImgUser->hasPermission('page-edit-images')) {
+			$users->setCurrentUser($noImgUser);
+			expect($refResolveField->invoke($gw, $hostPage, [$imgField->name]))->toBeNull();
+		}
+
+		// 5. executeUpload() enforces minWidth/maxReject, maxFiles with overwrite=true, and rollback with trackChange
+		$users->setCurrentUser($superUser);
+		$token = $gw->sign([
+			'pageId' => (int) $hostPage->id,
+			'editPageId' => (int) $hostPage->id,
+			'fieldName' => 'body',
+			'uploadFieldName' => $imgField->name,
+			'imageFields' => [$imgField->name],
+			'readOnly' => false,
+		], $superId);
+
+		$imgOne = $makePng($tmpDir . '/one.png', 100, 60);
+		$imgTwo = $makePng($tmpDir . '/two.png', 100, 60);
+		$imgThree = $makePng($tmpDir . '/three.png', 100, 60);
+		$imgTooSmall = $makePng($tmpDir . '/small.png', 20, 20);
+		$imgTooWide = $makePng($tmpDir . '/wide.png', 240, 60);
+
+		// Too small -> 422
+		$smallRes = $react->handleTiptapAction([
+			'_requestMethod' => 'POST',
+			'action' => 'upload',
+			'tiptapToken' => $token,
+			'pageId' => (int) $hostPage->id,
+			'fieldName' => $imgField->name,
+		], false, $superUser, [
+			'files' => ['name' => 'small.png', 'tmp_name' => $imgTooSmall, 'type' => 'image/png', 'error' => 0, 'size' => filesize($imgTooSmall)],
+		]);
+		expect($smallRes['ok'] ?? true)->toBeFalse()
+			->and($smallRes['status'] ?? 0)->toBe(422);
+
+		// Too wide (maxReject=1) -> 422
+		$wideRes = $react->handleTiptapAction([
+			'_requestMethod' => 'POST',
+			'action' => 'upload',
+			'tiptapToken' => $token,
+			'pageId' => (int) $hostPage->id,
+			'fieldName' => $imgField->name,
+		], false, $superUser, [
+			'files' => ['name' => 'wide.png', 'tmp_name' => $imgTooWide, 'type' => 'image/png', 'error' => 0, 'size' => filesize($imgTooWide)],
+		]);
+		expect($wideRes['ok'] ?? true)->toBeFalse()
+			->and($wideRes['status'] ?? 0)->toBe(422);
+
+		// Seed 2 images up to maxFiles=2
+		$okSeed = $react->handleTiptapAction([
+			'_requestMethod' => 'POST',
+			'action' => 'upload',
+			'tiptapToken' => $token,
+			'pageId' => (int) $hostPage->id,
+			'fieldName' => $imgField->name,
+		], false, $superUser, [
+			'files' => [
+				'name' => ['one.png', 'two.png'],
+				'tmp_name' => [$imgOne, $imgTwo],
+				'type' => ['image/png', 'image/png'],
+				'error' => [0, 0],
+				'size' => [filesize($imgOne), filesize($imgTwo)],
+			],
+		]);
+		expect($okSeed['ok'] ?? false)->toBeTrue();
+
+		// Non-colliding 3rd image rejected even though overwrite=1
+		$overMaxRes = $react->handleTiptapAction([
+			'_requestMethod' => 'POST',
+			'action' => 'upload',
+			'tiptapToken' => $token,
+			'pageId' => (int) $hostPage->id,
+			'fieldName' => $imgField->name,
+		], false, $superUser, [
+			'files' => ['name' => 'three.png', 'tmp_name' => $imgThree, 'type' => 'image/png', 'error' => 0, 'size' => filesize($imgThree)],
+		]);
+		expect($overMaxRes['ok'] ?? true)->toBeFalse()
+			->and($overMaxRes['status'] ?? 0)->toBe(422);
+
+		// Colliding overwrite of one.png that fails on save() rolls back and restores one.png intact
+		$pages->uncacheAll();
+		$hostPage = $pages->get((int) $hostPage->id);
+		$hostPage->of(false);
+		$origOneItem = $hostPage->getUnformatted($imgField->name)->get('one.png');
+		expect($origOneItem)->toBeInstanceOf(\ProcessWire\Pageimage::class);
+		$origOneItem->description = 'Keep Existing Tiptap Desc';
+		$pages->save($hostPage);
+
+		$failSaveHook = wire('pages')->addHookBefore('saveField', static function (\ProcessWire\HookEvent $event) use ($hostPage): void {
+			$p = $event->arguments(0);
+			if ($p instanceof \ProcessWire\Page && (int) $p->id === (int) $hostPage->id) {
+				throw new \RuntimeException('Simulated tiptap save error');
+			}
+		});
+		try {
+			$imgOneNew = $makePng($tmpDir . '/one-new.png', 110, 60);
+			$rbRes = $react->handleTiptapAction([
+				'_requestMethod' => 'POST',
+				'action' => 'upload',
+				'tiptapToken' => $token,
+				'pageId' => (int) $hostPage->id,
+				'fieldName' => $imgField->name,
+			], false, $superUser, [
+				'files' => ['name' => 'one.png', 'tmp_name' => $imgOneNew, 'type' => 'image/png', 'error' => 0, 'size' => filesize($imgOneNew)],
+			]);
+			expect($rbRes['ok'] ?? true)->toBeFalse()
+				->and($rbRes['status'] ?? 0)->toBe(422);
+		} finally {
+			wire('pages')->removeHook($failSaveHook);
+		}
+
+		$pages->uncacheAll();
+		$afterRbPage = $pages->get((int) $hostPage->id);
+		$afterRbPage->of(false);
+		$restoredOne = $afterRbPage->getUnformatted($imgField->name)->get('one.png');
+		expect($restoredOne)->toBeInstanceOf(\ProcessWire\Pageimage::class)
+			->and($restoredOne->width())->toBe(100)
+			->and((string) $restoredOne->description)->toBe('Keep Existing Tiptap Desc')
+			->and(is_file((string) $restoredOne->filename()))->toBeTrue();
+	} finally {
+		if (is_array($origPeisCfg)) {
+			$modules->saveConfig('ProcessPageEditImageSelect', $origPeisCfg);
+		}
+		if ($prevUser instanceof User && $prevUser->id > 0) {
+			$users->setCurrentUser($prevUser);
+		}
+		if ($hostPage instanceof \ProcessWire\Page && $hostPage->id > 0) {
+			try {
+				$pages->delete($hostPage, true);
+			} catch (\Throwable) {
+			}
+		}
+		if ($tpl instanceof Template && $tpl->id > 0) {
+			try {
+				$templates->delete($tpl);
+			} catch (\Throwable) {
+			}
+		}
+		if ($fg instanceof Fieldgroup && $fg->id > 0) {
+			try {
+				$fieldgroups->delete($fg);
+			} catch (\Throwable) {
+			}
+		}
+		foreach ([$imgField, $skipField] as $f) {
+			if ($f instanceof Field && $f->id > 0) {
+				try {
+					$fields->delete($f);
+				} catch (\Throwable) {
+				}
+			}
+		}
+		if ($noImgUser instanceof User && $noImgUser->id > 0) {
+			try {
+				$users->delete($noImgUser);
+			} catch (\Throwable) {
+			}
+		}
+		if ($noImgRole instanceof \ProcessWire\Role && $noImgRole->id > 0) {
+			try {
+				$roles->delete($noImgRole);
+			} catch (\Throwable) {
+			}
+		}
+		foreach (glob($tmpDir . '/*') ?: [] as $f) {
+			if (is_file($f)) {
+				@unlink($f);
+			}
+		}
+		if (is_dir($tmpDir)) {
+			@rmdir($tmpDir);
+		}
+	}
+});

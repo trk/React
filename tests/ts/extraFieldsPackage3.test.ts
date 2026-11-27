@@ -247,7 +247,7 @@ const hasLoaderBefore = typeof rt.ensureExtraFieldsLoaded === 'function';
 
 vm.runInThisContext(fs.readFileSync(path.join(distDir, 'ReactExtraFields.js'), 'utf8'), { filename: 'ReactExtraFields.js' });
 
-console.log(JSON.stringify({
+process.stdout.write(JSON.stringify({
 	hasLoaderBefore,
 	spacingReplaced: typeof rt.Fields.SpacingFieldControl === 'function' && rt.Fields.SpacingFieldControl !== lazySpacing,
 	hasOtp: typeof rt.Fields.OtpFieldControl === 'function',

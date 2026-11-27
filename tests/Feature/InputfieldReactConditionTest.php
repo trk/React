@@ -227,3 +227,63 @@ test('InputfieldReactCondition enforces allowNegate and allowFieldComparison fla
 	]);
 	expect((string) $summaryHtml)->toContain('Title');
 });
+
+test('InputfieldReactCondition implements isEmpty(), required validation, and FieldtypeText JSON getAttribute(value)', function (): void {
+	/** @var InputfieldReactCondition $unbound */
+	$unbound = wire('modules')->get('InputfieldReactCondition');
+	$unbound->attr('name', 'cond_empty_probe');
+
+	expect($unbound->isEmpty())->toBeTrue()
+		->and($unbound->getAttribute('value'))->toBe(['match' => 'all', 'groups' => []]);
+
+	$unbound->attr('value', '{"match":"any","groups":[]}');
+	expect($unbound->isEmpty())->toBeTrue();
+
+	$unbound->set('required', true);
+	$unbound->getErrors(true);
+	$emptyPost = ['cond_empty_probe' => ''];
+	$unbound->___processInput(new WireInputData($emptyPost));
+	expect($unbound->getErrors())->not->toBe([])
+		->and($unbound->isEmpty())->toBeTrue();
+
+	$sampleTree = [
+		'match' => 'all',
+		'groups' => [
+			[
+				'id' => 'g1',
+				'match' => 'all',
+				'rules' => [
+					['id' => 'r1', 'field' => 'status', 'operator' => 'eq', 'value' => 'published'],
+				],
+			],
+		],
+	];
+	$unbound->setAttribute('value', $sampleTree);
+	expect($unbound->isEmpty())->toBeFalse()
+		->and($unbound->getAttribute('value'))->toBeArray()
+		->and($unbound->getAttribute('value')['groups'] ?? [])->toHaveCount(1);
+
+	/** @var FieldtypeText $ftText */
+	$ftText = wire('modules')->get('FieldtypeText');
+	$boundField = new Field();
+	wire($boundField);
+	$boundField->type = $ftText;
+	$boundField->name = 'cond_bound_probe';
+	$boundField->set('inputfieldClass', 'InputfieldReactCondition');
+
+	/** @var InputfieldReactCondition $bound */
+	$bound = wire('modules')->get('InputfieldReactCondition');
+	$bound->attr('name', 'cond_bound_probe');
+	$bound->set('hasFieldtype', $ftText);
+	$bound->set('hasField', $boundField);
+
+	expect($bound->isEmpty())->toBeTrue()
+		->and($bound->getAttribute('value'))->toBe('');
+
+	$bound->setAttribute('value', $sampleTree);
+	$encoded = $bound->getAttribute('value');
+	expect($bound->isEmpty())->toBeFalse()
+		->and($encoded)->toBeString()
+		->and($encoded)->toContain('"field":"status"')
+		->and($bound->getNormalizedTree()['groups'] ?? [])->toHaveCount(1);
+});

@@ -72,6 +72,22 @@ describe('Tiptap Content Policy & CSS Sanitizer', () => {
 		expect(multiLayerBreakout.toLowerCase()).not.toContain('<script');
 		expect(multiLayerBreakout.toLowerCase()).not.toContain('</style');
 		expect(multiLayerBreakout).not.toContain('<');
+
+		const commentObfuscated = sanitizeExtraCss(
+			[
+				'/*/* */@im/*x*/port url("https://evil.example/a.css");',
+				'.x { width: expr/*comment*/ession(alert(1)); }',
+				'.y { background: url("data:image/svg+xml;utf8,<svg></svg>"); }',
+				'.z { background: url("data:application/xhtml+xml;base64,abc"); }',
+				'.unclosed { color: red; } /* unclosed comment',
+			].join('\n')
+		);
+		expect(commentObfuscated.toLowerCase()).not.toContain('@import');
+		expect(commentObfuscated.toLowerCase()).not.toContain('expression(');
+		expect(commentObfuscated.toLowerCase()).not.toContain('data:image/svg+xml');
+		expect(commentObfuscated.toLowerCase()).not.toContain('data:application/xhtml');
+		expect(commentObfuscated).not.toContain('/*');
+		expect(commentObfuscated).toContain('.unclosed { color: red; }');
 	});
 
 	it('validates ProcessWire link/image/anchor helpers in CorePwExtensions', async () => {

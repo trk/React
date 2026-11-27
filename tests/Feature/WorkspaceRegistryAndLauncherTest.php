@@ -1564,7 +1564,7 @@ test('WorkspacePreferenceStore flock mutation preserves keys, EditPresenceStore 
 			->and($loaded['sidebarCollapsed'])->toBeTrue()
 			->and($loaded['favorites'])->toBe(['orders-ws']);
 
-		// 2. EditPresenceStore::leave() replaces payload atomically to '{}' while preserving .lock inode
+		// 2. EditPresenceStore::leave() unlinks empty data file while preserving .lock inode
 		$presenceStore->heartbeat($resourceKey, $user, 'tab-inode');
 		$dataPath = $presenceStore->filePath($resourceKey);
 		$lockPath = $dataPath . '.lock';
@@ -1576,10 +1576,9 @@ test('WorkspacePreferenceStore flock mutation preserves keys, EditPresenceStore 
 		$presenceStore->leave($resourceKey, $user, 'tab-inode');
 		clearstatcache(true, $lockPath);
 		clearstatcache(true, $dataPath);
-		expect(is_file($dataPath))->toBeTrue()
+		expect(is_file($dataPath))->toBeFalse()
 			->and(is_file($lockPath))->toBeTrue()
-			->and(fileinode($lockPath))->toBe($inodeBeforeLeave)
-			->and(trim((string) file_get_contents($dataPath)))->toBe('{}');
+			->and(fileinode($lockPath))->toBe($inodeBeforeLeave);
 
 		// 3. WorkspaceLauncherProcess::___uninstall() leaves standalone React preference files intact
 		$launcher = new RwLauncherFixture();
@@ -1592,9 +1591,462 @@ test('WorkspacePreferenceStore flock mutation preserves keys, EditPresenceStore 
 			->and($afterUninstall['favorites'])->toBe(['orders-ws']);
 	} finally {
 		$prefStore->reset($user);
-		$lockPath = $presenceStore->filePath($resourceKey);
-		if (is_file($lockPath)) {
-			unlink($lockPath);
+		$dataCleanup = $presenceStore->filePath($resourceKey);
+		foreach ([$dataCleanup, $dataCleanup . '.lock'] as $p) {
+			if ($p !== '' && is_file($p)) {
+				unlink($p);
+			}
+		}
+	}
+});
+
+test('React lifecycle hardening: WeakMap forgetDeferredRegistrations, deferLinkResolverRegistration, forgetSharedViewportMode, version check, ___upgrade, ___uninstall, stores & prefs validation', function (): void {
+	/** @var React $react */
+	$react = wire('react');
+	$pw = wire();
+	$superId = (int) (wire('config')->superUserPageID ?: 41);
+	/** @var User $superUser */
+	$superUser = wire('users')->get($superId);
+	$prevUser = wire('user');
+
+	// 1. ProcessReactWorkspace version <= React main version
+	$mainInfo = React::getModuleInfo();
+	$wsInfoPath = dirname(__DIR__, 2) . '/ProcessReactWorkspace.info.php';
+	/** @var array<string, mixed> $wsInfo */
+	$wsInfo = require $wsInfoPath;
+	expect((int) ($wsInfo['version'] ?? 999999))->toBeLessThanOrEqual((int) ($mainInfo['version'] ?? 0));
+
+	// 2. forgetDeferredRegistrations() detaches ALL 8 deferred registrars, and deferLinkResolverRegistration() works
+	$probe = new class extends \ProcessWire\Wire {};
+	$pw->wire($probe);
+	$isolatedReact = new React();
+	$pw->wire($isolatedReact);
+
+	$firedCounts = [
+		'ws' => 0,
+		'wd' => 0,
+		'media' => 0,
+		'vp' => 0,
+		'shell' => 0,
+		'cmd' => 0,
+		'prov' => 0,
+		'rel' => 0,
+		'link' => 0,
+	];
+
+	try {
+		React::deferModuleRegistration(
+			$probe,
+			static function () use (&$firedCounts): void {
+				$firedCounts['ws']++;
+			},
+			static function () use (&$firedCounts): void {
+				$firedCounts['wd']++;
+			},
+		);
+		React::deferMediaHostRegistration($probe, static function () use (&$firedCounts): void {
+			$firedCounts['media']++;
+		});
+		React::deferViewportModeRegistration($probe, static function () use (&$firedCounts): void {
+			$firedCounts['vp']++;
+		});
+		React::deferShellLayoutRegistration($probe, static function () use (&$firedCounts): void {
+			$firedCounts['shell']++;
+		});
+		React::deferCommandSearchRegistration($probe, static function () use (&$firedCounts): void {
+			$firedCounts['cmd']++;
+		});
+		React::deferProviderRegistration($probe, static function () use (&$firedCounts): void {
+			$firedCounts['prov']++;
+		});
+		React::deferRelationRegistration($probe, static function () use (&$firedCounts): void {
+			$firedCounts['rel']++;
+		});
+		React::deferLinkResolverRegistration($probe, static function () use (&$firedCounts): void {
+			$firedCounts['link']++;
+		});
+	} finally {
+		React::forgetDeferredRegistrations($probe);
+	}
+
+	$isolatedReact->workspaces();
+	$isolatedReact->widgets();
+	$isolatedReact->media();
+	$isolatedReact->getRegisteredViewportModes();
+	$isolatedReact->shellLayouts();
+	$isolatedReact->commandSearch();
+	$isolatedReact->providers();
+	$isolatedReact->relations();
+	$isolatedReact->linkResolverTypes();
+
+	expect($firedCounts)->toBe([
+		'ws' => 0,
+		'wd' => 0,
+		'media' => 0,
+		'vp' => 0,
+		'shell' => 0,
+		'cmd' => 0,
+		'prov' => 0,
+		'rel' => 0,
+		'link' => 0,
+	]);
+
+	// Verify deferLinkResolverRegistration() fires lazily and immediately once resolved
+	$linkProbe = new class extends \ProcessWire\Wire {};
+	$pw->wire($linkProbe);
+	$linkReact = new React();
+	$pw->wire($linkReact);
+	$suffix = bin2hex(random_bytes(3));
+	$resolverType = 'lazy_link_' . $suffix;
+	try {
+		React::deferLinkResolverRegistration($linkProbe, static function (React $r) use ($resolverType): void {
+			$r->registerLinkResolver($resolverType, static fn(array $val): array => [
+				'href' => '/custom/' . ($val['resourceId'] ?? ''),
+				'label' => 'Lazy Custom',
+			]);
+		});
+		expect($linkReact->isLinkResolversResolved())->toBeFalse()
+			->and($linkReact->linkResolverTypes())->toContain($resolverType)
+			->and($linkReact->resolveCustomLink($resolverType, ['resourceId' => '99'])['href'] ?? null)->toBe('/custom/99');
+	} finally {
+		React::forgetDeferredRegistrations($linkProbe);
+	}
+
+	// 3. forgetSharedViewportMode() clears static shared mode
+	$vpModeKey = 'shared_vp_' . $suffix;
+	$linkReact->registerViewportMode($vpModeKey, 'MarkupReactTable', '', ['label' => 'Shared Probe']);
+	expect($isolatedReact->getRegisteredViewportModes())->toHaveKey($vpModeKey);
+	React::forgetSharedViewportMode($vpModeKey);
+	expect($isolatedReact->getRegisteredViewportModes())->not->toHaveKey($vpModeKey);
+
+	// 4. shellLayouts() does NOT pull 'workspace' capability modules when $hubActive === false
+	$noHubReact = new React();
+	$pw->wire($noHubReact);
+	$noHubReact->setWorkspaceHubEnabled(false);
+	$refPulled = new \ReflectionProperty(React::class, 'pulledCapabilities');
+	$layoutsNoHub = $noHubReact->shellLayouts();
+	expect($layoutsNoHub->has('topbar'))->toBeTrue()
+		->and($refPulled->getValue($noHubReact))->not->toHaveKey('workspace');
+
+	// 5. EditPresenceStore::pruneExpiredFiles() sweeps stale orphaned *.json.lock while preserving fresh ones
+	$presenceStore = $react->presence();
+	$orphanKey = 'orphan-lock-' . $suffix;
+	$orphanJson = $presenceStore->filePath($orphanKey);
+	$orphanLock = $orphanJson . '.lock';
+	$presenceStore->heartbeat($orphanKey, $superUser, 'c-orphan', 60, time() - 5000);
+	@unlink($orphanJson);
+	@touch($orphanLock, time() - 7200);
+	$prunedOrphans = $presenceStore->pruneExpiredFiles(time(), 60);
+	expect($prunedOrphans)->toBeGreaterThanOrEqual(1)
+		->and(is_file($orphanLock))->toBeFalse();
+
+	// 6. WorkspacePreferenceStore::load() caches $defaults on miss
+	$prefStore = $react->workspacePreferences();
+	$prefStore->reset($superUser);
+	$prefStore->load($superUser);
+	$refMemCache = new \ReflectionProperty(WorkspacePreferenceStore::class, 'memoryCache');
+	$memMap = $refMemCache->getValue($prefStore);
+	expect($memMap)->toHaveKey((int) $superUser->id);
+
+	// 7. ReactGatewayRouter::handleWorkspacePrefsAction() enforces noDarkMode, hasValidCustomTokens(), and ShellLayoutRegistry::has() in save & import_layout
+	$users = wire('users');
+	$config = wire('config');
+	$prevUser = wire('user');
+	$origConfigAdminTheme = $config->AdminThemeUikit;
+	$origCustomTokens = $react->get('themeCustomTokens');
+	try {
+		$users->setCurrentUser($superUser);
+		$react->set('themeCustomTokens', '');
+
+		$badCustomSave = $react->handleWorkspacePrefsAction([
+			'_requestMethod' => 'POST',
+			'action' => 'save',
+			'themePreset' => 'custom',
+		], false, $superUser);
+		expect($badCustomSave['ok'] ?? true)->toBeFalse()
+			->and($badCustomSave['status'] ?? 0)->toBe(422);
+
+		$badLayoutSave = $react->handleWorkspacePrefsAction([
+			'_requestMethod' => 'POST',
+			'action' => 'save',
+			'shellLayout' => 'nonexistent_layout_' . $suffix,
+		], false, $superUser);
+		expect($badLayoutSave['ok'] ?? true)->toBeFalse()
+			->and($badLayoutSave['status'] ?? 0)->toBe(422);
+
+		$badLayoutImport = $react->handleWorkspacePrefsAction([
+			'_requestMethod' => 'POST',
+			'action' => 'import_layout',
+			'preset' => [
+				'favorites' => [],
+				'shellLayout' => 'nonexistent_layout_' . $suffix,
+			],
+		], false, $superUser);
+		expect($badLayoutImport['ok'] ?? true)->toBeFalse()
+			->and($badLayoutImport['status'] ?? 0)->toBe(422);
+
+		$config->AdminThemeUikit = array_merge(is_array($origConfigAdminTheme) ? $origConfigAdminTheme : [], ['noDarkMode' => true]);
+		$darkSave = $react->handleWorkspacePrefsAction([
+			'_requestMethod' => 'POST',
+			'action' => 'save',
+			'themeMode' => 'dark',
+		], false, $superUser);
+		expect($darkSave['ok'] ?? false)->toBeTrue()
+			->and($darkSave['themeMode'] ?? null)->toBe('light')
+			->and((int) $superUser->meta('adminDarkMode'))->toBe(0);
+	} finally {
+		$config->AdminThemeUikit = $origConfigAdminTheme;
+		if ($prevUser instanceof User && $prevUser->id > 0) {
+			$users->setCurrentUser($prevUser);
+		}
+		$react->set('themeCustomTokens', $origCustomTokens);
+		$prefStore->reset($superUser);
+		$superUser->meta()->remove('adminDarkMode');
+		if ($prevUser instanceof User && $prevUser->id > 0) {
+			$users->setCurrentUser($prevUser);
+		}
+	}
+
+	// 8. Isolated ___upgrade() missing-companion install and ___uninstall() cleanup (without touching live DB/statics)
+	$refSharedWs = new \ReflectionProperty(React::class, 'sharedWorkspaces');
+	$refSharedWd = new \ReflectionProperty(React::class, 'sharedWidgets');
+	$refSharedVp = new \ReflectionProperty(React::class, 'sharedViewportModes');
+	$refAssetCache = new \ReflectionProperty(React::class, 'moduleAssetUrlCache');
+	$snapSharedWs = $refSharedWs->getValue();
+	$snapSharedWd = $refSharedWd->getValue();
+	$snapSharedVp = $refSharedVp->getValue();
+	$snapAssetCache = $refAssetCache->getValue();
+
+	$tmpSandbox = sys_get_temp_dir() . '/rw-lifecycle-' . $suffix;
+	mkdir($tmpSandbox . '/assets/vector-icons', 0775, true);
+	mkdir($tmpSandbox . '/assets/cache/React/presence', 0775, true);
+	mkdir($tmpSandbox . '/assets/cache/React/workspaces', 0775, true);
+	file_put_contents($tmpSandbox . '/assets/vector-icons/test.css', '/* test */');
+	file_put_contents($tmpSandbox . '/assets/cache/React/presence/p.json', '{}');
+	file_put_contents($tmpSandbox . '/assets/cache/React/workspaces/41.json', '{}');
+
+	$liveSiblingProbe = new class extends \ProcessWire\Wire {};
+	$pw->wire($liveSiblingProbe);
+
+	try {
+		$stubConfig = new \ProcessWire\Config();
+		$stubConfig->paths = new \ProcessWire\Paths($tmpSandbox . '/');
+		$stubConfig->paths->set('assets', $tmpSandbox . '/assets/');
+		$stubConfig->paths->set('cache', $tmpSandbox . '/assets/cache/');
+
+		$stubWire = new class($stubConfig) extends \ProcessWire\ProcessWire {
+			public function __construct(\ProcessWire\Config $cfg)
+			{
+				$this->fuel = new \ProcessWire\Fuel();
+				$this->fuel->set('config', $cfg);
+				$this->fuel->set('hooks', new \ProcessWire\WireHooks($this, $cfg));
+			}
+		};
+		$stubFuel = $stubWire->fuel();
+
+		$stubModules = new class extends \ProcessWire\Modules {
+			/** @var list<string> */
+			public array $installedCalls = [];
+
+			public function __construct() {}
+
+			public function isInstalled($class): bool
+			{
+				return $class !== 'InputfieldReactIcon';
+			}
+
+			public function install($class, $options = []): ?\ProcessWire\Module
+			{
+				$this->installedCalls[] = (string) $class;
+
+				return null;
+			}
+		};
+
+		$stubDb = new class extends \PDO {
+			public function __construct()
+			{
+				parent::__construct('sqlite::memory:');
+				$this->exec('CREATE TABLE pages_meta (source_id INTEGER, name TEXT, data TEXT)');
+				$this->exec("INSERT INTO pages_meta VALUES (1, 'react_view_prefs_41', '{}'), (1, 'other_meta_keep', '1')");
+			}
+
+			public function escapeTable(string $table): string
+			{
+				return $table;
+			}
+
+			public function escapeCol(string $col): string
+			{
+				return $col;
+			}
+		};
+
+		$stubSession = new class extends \ProcessWire\Wire {
+			public bool $removed = false;
+
+			public function removeFor(string|object $ns, mixed $key = ''): void
+			{
+				if ($ns === 'ReactViewPrefs' && $key === true) {
+					$this->removed = true;
+				}
+			}
+		};
+
+		$stubFiles = new \ProcessWire\WireFileTools();
+		$stubFiles->setWire($stubWire);
+		$stubLog = new class extends \ProcessWire\Wire {
+			public function error($text, $flags = 0)
+			{
+				return $this;
+			}
+
+			public function finished(): void {}
+		};
+		$stubLog->setWire($stubWire);
+
+		$stubFuel->set('modules', $stubModules);
+		$stubFuel->set('database', $stubDb);
+		$stubFuel->set('session', $stubSession);
+		$stubFuel->set('files', $stubFiles);
+		$stubFuel->set('log', $stubLog);
+
+		$isolatedLifecycleReact = new React();
+		$isolatedLifecycleReact->setWire($stubWire);
+		$stubFuel->set('react', $isolatedLifecycleReact);
+
+		// ___upgrade() installs missing companion declared in getModuleInfo()['installs']
+		$isolatedLifecycleReact->___upgrade(34, 35);
+		expect($stubModules->installedCalls)->toBe(['InputfieldReactIcon']);
+
+		// ___uninstall() cleans up scoped deferred hooks, pages_meta, presence, preferences, and cache dirs
+		$stubHookProbe = new class extends \ProcessWire\Wire {};
+		$stubHookProbe->setWire($stubWire);
+		React::deferShellLayoutRegistration($stubHookProbe, static function (): void {});
+		React::deferShellLayoutRegistration($liveSiblingProbe, static function (): void {});
+
+		$isolatedLifecycleReact->___uninstall();
+
+		$remainingMeta = $stubDb->query('SELECT name FROM pages_meta')->fetchAll(\PDO::FETCH_COLUMN);
+		expect($remainingMeta)->toBe(['other_meta_keep'])
+			->and($stubSession->removed)->toBeTrue()
+			->and(is_dir($tmpSandbox . '/assets/vector-icons'))->toBeFalse()
+			->and(is_dir($tmpSandbox . '/assets/cache/React'))->toBeFalse()
+			->and($isolatedLifecycleReact->getHooks('registerShellLayouts'))->toBe([])
+			->and($react->getHooks('registerShellLayouts'))->not->toBe([]);
+	} finally {
+		React::forgetDeferredRegistrations($liveSiblingProbe);
+		$refSharedWs->setValue(null, $snapSharedWs);
+		$refSharedWd->setValue(null, $snapSharedWd);
+		$refSharedVp->setValue(null, $snapSharedVp);
+		$refAssetCache->setValue(null, $snapAssetCache);
+		if (is_dir($tmpSandbox)) {
+			(new \ProcessWire\WireFileTools())->rmdir($tmpSandbox, true);
+		}
+	}
+});
+
+test('WorkspacePreferenceStore importPreset/exportPreset persists themeMode/themePreset, IconManager atomic write leaves zero tmp files, and WeakMap isolates multi-instance registries', function (): void {
+	/** @var React $react */
+	$react = wire('react');
+	$pw = wire();
+	$users = $pw->users;
+	$prevUser = $users->getCurrentUser();
+	$superId = (int) ($pw->config->superUserPageID ?: 41);
+	/** @var User $superUser */
+	$superUser = $users->get($superId);
+	$store = $react->workspacePreferences();
+	$prevAdminDarkMeta = $superUser->meta('adminDarkMode');
+
+	try {
+		$users->setCurrentUser($superUser);
+		$store->reset($superUser);
+
+		// 1. import_layout + importPreset/exportPreset persist themeMode & themePreset and sync adminDarkMode
+		$importRes = $react->handleWorkspacePrefsAction([
+			'action' => 'import_layout',
+			'preset' => [
+				'schema' => WorkspacePreferenceStore::PRESET_SCHEMA,
+				'layout' => [
+					'favorites' => [],
+					'widgetOrder' => [],
+					'hiddenWidgets' => [],
+					'widgetSizes' => [],
+					'themeMode' => 'dark',
+					'themePreset' => 'ocean',
+					'shellLayout' => 'sidebar',
+					'sidebarCollapsed' => true,
+				],
+			],
+		], false, $superUser);
+		expect($importRes['ok'] ?? false)->toBeTrue()
+			->and($importRes['preferences']['themeMode'] ?? null)->toBe('dark')
+			->and($importRes['preferences']['themePreset'] ?? null)->toBe('ocean')
+			->and((int) $superUser->meta('adminDarkMode'))->toBe(1);
+
+		$loaded = $store->load($superUser);
+		expect($loaded['themeMode'])->toBe('dark')
+			->and($loaded['themePreset'])->toBe('ocean');
+
+		$exported = $store->exportPreset([], [], $superUser);
+		expect($exported['layout']['themeMode'] ?? null)->toBe('dark')
+			->and($exported['layout']['themePreset'] ?? null)->toBe('ocean');
+
+		// 2. IconManager::generateAdminCss() writes atomically without leaving .tmp files
+		$iconMgr = $react->icons();
+		$cssPath = $iconMgr->generateAdminCss();
+		expect(is_file($cssPath))->toBeTrue();
+		$tmpLeftovers = glob(dirname($cssPath) . '/.VectorIcons.*.tmp') ?: [];
+		expect($tmpLeftovers)->toBe([]);
+
+		// 3. WeakMap isolation between live ProcessWire instance and isolated ProcessWire instance
+		$stubConfig = new \ProcessWire\Config();
+		$stubWire = new class($stubConfig) extends \ProcessWire\ProcessWire {
+			public function __construct(\ProcessWire\Config $cfg)
+			{
+				$this->fuel = new \ProcessWire\Fuel();
+				$this->fuel->set('config', $cfg);
+				$this->fuel->set('hooks', new \ProcessWire\WireHooks($this, $cfg));
+			}
+		};
+		$stubReact = new React();
+		$stubReact->setWire($stubWire);
+		$stubWire->fuel()->set('react', $stubReact);
+
+		IconManager::registerAdminIcons(['compass'], $pw);
+		IconManager::registerAdminIcons(['flame'], $stubWire);
+		expect(IconManager::isAdminIconRegistered('compass', $pw))->toBeTrue()
+			->and(IconManager::isAdminIconRegistered('flame', $pw))->toBeFalse()
+			->and(IconManager::isAdminIconRegistered('flame', $stubWire))->toBeTrue()
+			->and(IconManager::isAdminIconRegistered('compass', $stubWire))->toBeFalse();
+
+		$stubReact->registerWorkspace([
+			'id' => 'isolated-ws',
+			'title' => 'Isolated WS',
+		]);
+		$stubReact->registerWidget([
+			'id' => 'isolated-wd',
+			'title' => 'Isolated Widget',
+		]);
+		$stubReact->registerViewportMode('isolated_mode', 'StubMod');
+
+		expect($react->workspaces()->has('isolated-ws'))->toBeFalse()
+			->and($react->widgets()->has('isolated-wd'))->toBeFalse()
+			->and($react->getRegisteredViewportModes())->not->toHaveKey('isolated_mode')
+			->and($stubReact->getRegisteredViewportModes())->toHaveKey('isolated_mode');
+
+		IconManager::resetCache($stubWire);
+		expect(IconManager::isAdminIconRegistered('flame', $stubWire))->toBeFalse()
+			->and(IconManager::isAdminIconRegistered('compass', $pw))->toBeTrue();
+	} finally {
+		$store->reset($superUser);
+		if ($prevAdminDarkMeta === null) {
+			$superUser->meta()->remove('adminDarkMode');
+		} else {
+			$superUser->meta('adminDarkMode', $prevAdminDarkMeta);
+		}
+		if ($prevUser instanceof User && $prevUser->id > 0) {
+			$users->setCurrentUser($prevUser);
 		}
 	}
 });

@@ -193,7 +193,7 @@ test('LanguageSupport multi-language Inputfields render cleanly without duplicat
 	$modules = wire('modules');
 	$languages = wire('languages');
 	if (!$modules->isInstalled('LanguageSupport') || !$languages || $languages->count() < 2) {
-		return;
+		$this->markTestSkipped('Requires LanguageSupport with at least 2 languages.');
 	}
 
 	/** @var InputfieldTextarea $mdInput */

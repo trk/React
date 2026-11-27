@@ -33,7 +33,8 @@ function bootReactForTesting(): React
 	}
 
 	$react = wire('react');
-	if (!$react instanceof React) {
+	if (!$react instanceof React || $react::class !== React::class) {
+		$react = null;
 		if ($modules->isInstalled('React')) {
 			/** @var React|null $installedReact */
 			$installedReact = $modules->getModule('React', ['noPermissionCheck' => true]);

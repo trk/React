@@ -121,7 +121,7 @@ const [tooltip, dialog, tabs, popover, dndCore, virtual, dayPicker] = await Prom
 	import(req.resolve('react-day-picker', { paths: [process.cwd()] })),
 ]);
 
-console.log(JSON.stringify({
+process.stdout.write(JSON.stringify({
 	evalBlocked,
 	formatted,
 	rowCount,
@@ -278,7 +278,7 @@ const hasNavigateTablist = typeof rt.Fields?.navigateTablistByKey === 'function'
 vm.runInThisContext(fs.readFileSync(path.join(distDir, 'ReactLayout.js'), 'utf8'), { filename: 'ReactLayout.js' });
 const concreteRecordHeader = rt.Layout.RecordHeader;
 
-console.log(JSON.stringify({
+process.stdout.write(JSON.stringify({
 	hasSanitizeImageSrc,
 	sanitizedOk,
 	hasSubmitNativeFormPost,

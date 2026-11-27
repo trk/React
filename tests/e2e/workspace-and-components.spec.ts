@@ -50,12 +50,9 @@ test.describe('ProcessReactWorkspace Launcher, Cross-Panel SPA Navigation & Stan
 			// Automated WCAG 2.1 AA accessibility scan scoped to ProcessReactWorkspace (#app), including full color-contrast verification
 			const axeResults = await new AxeBuilder({ page })
 				.include('#app')
-				.withTags(['wcag2a', 'wcag2aa'])
+				.withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
 				.analyze();
-			const criticalOrSerious = axeResults.violations.filter(
-				(v) => v.impact === 'critical' || v.impact === 'serious'
-			);
-			expect(criticalOrSerious).toEqual([]);
+			expect(axeResults.violations).toEqual([]);
 
 			// Verify unified Account Menu dropdown: Theme (Light/Dark/System + Color Schemes), links, and per-user persistence
 			const userMenuTrigger = page.locator('[data-rw-user-menu-trigger]');
@@ -118,7 +115,7 @@ test.describe('ProcessReactWorkspace Launcher, Cross-Panel SPA Navigation & Stan
 			await page.keyboard.press('Escape');
 			await expect(page.locator('[data-rw-shortcuts-dialog]')).toHaveCount(0);
 
-			// Verify responsive Mobile Drawer opens and closes at mobile viewport width, while topbar admin return stays hidden (< lg)
+			// Verify responsive Mobile Drawer opens and closes at mobile viewport width, and auto-closes on desktop resize
 			await page.setViewportSize({ width: 390, height: 844 });
 			await expect(page.locator('[data-rw-admin-return]')).toBeHidden();
 			const mobileTrigger = page.locator('[data-rw-mobile-menu-trigger]');
@@ -127,6 +124,11 @@ test.describe('ProcessReactWorkspace Launcher, Cross-Panel SPA Navigation & Stan
 				await expect(page.locator('[data-rw-mobile-drawer]')).toBeVisible();
 				await expect(page.locator('[data-rw-mobile-drawer] a[href]').first()).toBeVisible();
 				await page.keyboard.press('Escape');
+				await expect(page.locator('[data-rw-mobile-drawer]')).toHaveCount(0);
+
+				await mobileTrigger.click();
+				await expect(page.locator('[data-rw-mobile-drawer]')).toBeVisible();
+				await page.setViewportSize({ width: 1280, height: 720 });
 				await expect(page.locator('[data-rw-mobile-drawer]')).toHaveCount(0);
 			}
 			await page.setViewportSize({ width: 1280, height: 720 });
@@ -442,6 +444,12 @@ test.describe('ProcessReactWorkspace Launcher, Cross-Panel SPA Navigation & Stan
 		const kvReadonly = page.locator('#e2e-kv-readonly-island [data-kv-readonly="e2e_specs_ro"]');
 		await expect(kvReadonly).toContainText('LOA:');
 		await expect(kvReadonly).toContainText('45m');
+
+		const axeKeyValue = await new AxeBuilder({ page })
+			.include('#e2e-kv-wrap')
+			.withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+			.analyze();
+		expect(axeKeyValue.violations).toEqual([]);
 
 		// Verify MarkupReactTab rendered both tabs and switches content on click
 		const tabContainer = page.locator('#e2e-tab-island');
@@ -1521,9 +1529,9 @@ test.describe('ProcessReactWorkspace Launcher, Cross-Panel SPA Navigation & Stan
 			await expect(palette).toBeVisible();
 			const lightAxe = await new AxeBuilder({ page })
 				.include('[data-rw-command-palette]')
-				.withTags(['wcag2a', 'wcag2aa'])
+				.withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
 				.analyze();
-			expect(lightAxe.violations.filter((v) => v.impact === 'critical' || v.impact === 'serious')).toEqual([]);
+			expect(lightAxe.violations).toEqual([]);
 
 			// Switch to Dark theme via Command Palette and audit WCAG 2.1 AA with palette open
 			await combobox.fill('Theme: Dark');
@@ -1537,9 +1545,9 @@ test.describe('ProcessReactWorkspace Launcher, Cross-Panel SPA Navigation & Stan
 			await expect(palette).toBeVisible();
 			const darkAxe = await new AxeBuilder({ page })
 				.include('[data-rw-command-palette]')
-				.withTags(['wcag2a', 'wcag2aa'])
+				.withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
 				.analyze();
-			expect(darkAxe.violations.filter((v) => v.impact === 'critical' || v.impact === 'serious')).toEqual([]);
+			expect(darkAxe.violations).toEqual([]);
 
 			await page.keyboard.press('Escape');
 			await expect(palette).toHaveCount(0);
@@ -1577,12 +1585,9 @@ test.describe('ProcessReactWorkspace Launcher, Cross-Panel SPA Navigation & Stan
 async function assertWcag21AaClean(page: Page, _contextLabel: string): Promise<void> {
 	const axeResults = await new AxeBuilder({ page })
 		.include('#app')
-		.withTags(['wcag2a', 'wcag2aa'])
+		.withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
 		.analyze();
-	const criticalOrSerious = axeResults.violations.filter(
-		(v) => v.impact === 'critical' || v.impact === 'serious'
-	);
-	expect(criticalOrSerious).toEqual([]);
+	expect(axeResults.violations).toEqual([]);
 }
 
 function waitForWorkspacePrefsPost(page: Page) {

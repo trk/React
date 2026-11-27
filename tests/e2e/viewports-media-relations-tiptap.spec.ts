@@ -92,6 +92,12 @@ test.describe('ProcessReactWorkspace Comprehensive Subsystems E2E (Viewports, Me
 		await expect(vp).toHaveAttribute('data-viewport-mode', 'cards');
 		await expect(vp).toContainText('Alpha Flagship');
 
+		const axeCards = await new AxeBuilder({ page })
+			.include('#e2e-vp-host')
+			.withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+			.analyze();
+		expect(axeCards.violations).toEqual([]);
+
 		await vp.getByRole('button', { name: 'Table', exact: true }).click();
 		await expect(vp).toHaveAttribute('data-viewport-mode', 'table');
 
@@ -156,6 +162,18 @@ test.describe('ProcessReactWorkspace Comprehensive Subsystems E2E (Viewports, Me
 		expect(mediaRes.status()).toBe(200);
 		await expect(imageControl.locator('[data-rw-media-card], [data-rw-media-row]').first()).toBeVisible();
 		await expect(imageControl).toContainText('deck-plan');
+
+		// Open Media Studio inspector dialog and run full WCAG 2.1 AA Axe audit
+		await imageControl.locator('[data-rw-media-card] button, [data-rw-media-row] button').first().click();
+		const mediaStudioDialog = page.locator('dialog[data-rw-inspector-sheet][open]');
+		await expect(mediaStudioDialog).toBeVisible();
+		const axeMediaStudio = await new AxeBuilder({ page })
+			.include('dialog[data-rw-inspector-sheet]')
+			.withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+			.analyze();
+		expect(axeMediaStudio.violations).toEqual([]);
+		await page.keyboard.press('Escape');
+		await expect(mediaStudioDialog).toHaveCount(0);
 
 		// 3. Upload valid TXT specification document in InputfieldReactFile via live /_react/media
 		const docFileInput = fileControl.locator('input[type="file"]').first();
@@ -266,6 +284,12 @@ test.describe('ProcessReactWorkspace Comprehensive Subsystems E2E (Viewports, Me
 		expect(linkUploadRes.status()).toBe(200);
 		await expect(hiddenJsonInput).toHaveValue(/brochure-cover\.png/);
 
+		const axeLink = await new AxeBuilder({ page })
+			.include('#e2e-link-host')
+			.withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+			.analyze();
+		expect(axeLink.violations).toEqual([]);
+
 		tracker.assertNoErrors();
 	});
 
@@ -313,6 +337,12 @@ test.describe('ProcessReactWorkspace Comprehensive Subsystems E2E (Viewports, Me
 		// 4. M2A polymorphic relation control renders resource switcher (`page` / `template`)
 		const m2aField = host.locator('[data-field-name="rel_m2a_refs"]');
 		await expect(m2aField).toBeVisible();
+
+		const axeRelations = await new AxeBuilder({ page })
+			.include('#e2e-rel-host')
+			.withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+			.analyze();
+		expect(axeRelations.violations).toEqual([]);
 
 		tracker.assertNoErrors();
 	});
@@ -423,7 +453,7 @@ test.describe('ProcessReactWorkspace Comprehensive Subsystems E2E (Viewports, Me
 
 		const axeLinkDialog = await new AxeBuilder({ page })
 			.include('dialog[data-rw-tiptap-dialog="link"]')
-			.withTags(['wcag2a', 'wcag2aa'])
+			.withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
 			.analyze();
 		expect(axeLinkDialog.violations).toEqual([]);
 
@@ -453,7 +483,7 @@ test.describe('ProcessReactWorkspace Comprehensive Subsystems E2E (Viewports, Me
 		await linkDialog.locator('[data-rw-pw-link-pane="attributes"]').click();
 		const axeAttributesPane = await new AxeBuilder({ page })
 			.include('dialog[data-rw-tiptap-dialog="link"]')
-			.withTags(['wcag2a', 'wcag2aa'])
+			.withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
 			.analyze();
 		expect(axeAttributesPane.violations).toEqual([]);
 		await linkDialog.locator('[data-rw-pw-link-target]').selectOption('_blank');
@@ -473,7 +503,7 @@ test.describe('ProcessReactWorkspace Comprehensive Subsystems E2E (Viewports, Me
 
 		const axeImageLibrary = await new AxeBuilder({ page })
 			.include('dialog[data-rw-tiptap-dialog="image"]')
-			.withTags(['wcag2a', 'wcag2aa'])
+			.withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
 			.analyze();
 		expect(axeImageLibrary.violations).toEqual([]);
 
@@ -493,7 +523,7 @@ test.describe('ProcessReactWorkspace Comprehensive Subsystems E2E (Viewports, Me
 		await expect(imageDialog.locator('[data-rw-pw-image-width]')).toBeVisible();
 		const axeImageStudio = await new AxeBuilder({ page })
 			.include('dialog[data-rw-tiptap-dialog="image"]')
-			.withTags(['wcag2a', 'wcag2aa'])
+			.withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
 			.analyze();
 		expect(axeImageStudio.violations).toEqual([]);
 
@@ -1001,7 +1031,7 @@ test.describe('ProcessReactWorkspace Comprehensive Subsystems E2E (Viewports, Me
 		// Audit WCAG 2.1 AA while popover is open on the Icons tab
 		const axeIconsTab = await new AxeBuilder({ page })
 			.include('[data-rw-icon-popover="true"]')
-			.withTags(['wcag2a', 'wcag2aa'])
+			.withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
 			.analyze();
 		expect(axeIconsTab.violations).toEqual([]);
 
@@ -1025,7 +1055,7 @@ test.describe('ProcessReactWorkspace Comprehensive Subsystems E2E (Viewports, Me
 		// Audit WCAG 2.1 AA on the Appearance tab as well
 		const axeAppearanceTab = await new AxeBuilder({ page })
 			.include('[data-rw-icon-popover="true"]')
-			.withTags(['wcag2a', 'wcag2aa'])
+			.withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
 			.analyze();
 		expect(axeAppearanceTab.violations).toEqual([]);
 
@@ -1047,7 +1077,7 @@ test.describe('ProcessReactWorkspace Comprehensive Subsystems E2E (Viewports, Me
 
 		const axeTrigger = await new AxeBuilder({ page })
 			.include('#e2e-icon-host')
-			.withTags(['wcag2a', 'wcag2aa'])
+			.withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
 			.analyze();
 		expect(axeTrigger.violations).toEqual([]);
 
@@ -1749,7 +1779,7 @@ test.describe('ProcessReactWorkspace Comprehensive Subsystems E2E (Viewports, Me
 
 		const axePicker = await new AxeBuilder({ page })
 			.include('[role="dialog"][data-rw-portal-overlay]')
-			.withTags(['wcag2a', 'wcag2aa'])
+			.withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
 			.analyze();
 		expect(axePicker.violations).toEqual([]);
 
@@ -1769,7 +1799,7 @@ test.describe('ProcessReactWorkspace Comprehensive Subsystems E2E (Viewports, Me
 		// 5. Run WCAG 2.1 AA Axe audit on rendered ConditionBuilder host
 		const axe = await new AxeBuilder({ page })
 			.include('#e2e-cond-presence-host')
-			.withTags(['wcag2a', 'wcag2aa'])
+			.withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
 			.analyze();
 		expect(axe.violations).toEqual([]);
 

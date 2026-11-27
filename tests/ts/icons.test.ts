@@ -17,7 +17,8 @@ import {
 	serializeIconValueForInput,
 } from '../../resources/ts/icons/iconTypes';
 import { DynamicIcon, normalizeIconName, resolveCanonicalIconName } from '../../resources/ts/lib/utils';
-import { renderSvgString } from '../../resources/ts/entries/ReactIcons';
+import { queryIcons, renderSvgString, requestHydration } from '../../resources/ts/entries/ReactIcons';
+import { IconFieldControl, renderTupleNodes } from '../../resources/ts/fields/controls/IconField';
 
 describe('Centralized Vector Icon Utilities & Customization Model', () => {
 	it('cleans icon class prefixes and formats human-friendly labels without raw slugs', () => {
@@ -148,5 +149,128 @@ describe('Centralized Vector Icon Utilities & Customization Model', () => {
 		const clientSvg = renderSvgString('sparkles', { className: 'extra-cls' });
 		expect(clientSvg).toContain('class="rw-icon rw-icon-sparkles extra-cls"');
 		expect(clientSvg).not.toContain('ti ti-');
+	});
+
+	it('schedules subsequent microtask batches when hydrating more than 80 distinct icons', async () => {
+		const originalFetch = globalThis.fetch;
+		const requestedUrls: string[] = [];
+		try {
+			globalThis.fetch = (async (input: RequestInfo | URL) => {
+				requestedUrls.push(String(input));
+				return {
+					ok: true,
+					json: async () => ({ icons: {} }),
+				} as Response;
+			}) as typeof fetch;
+
+			for (let i = 0; i < 120; i += 1) {
+				requestHydration(`batch-test-icon-${i}`);
+			}
+
+			await new Promise((resolve) => setTimeout(resolve, 20));
+			expect(requestedUrls.length).toBe(2);
+			const firstNames = new URLSearchParams(requestedUrls[0].split('?')[1] ?? '').get('names')?.split(',') ?? [];
+			const secondNames = new URLSearchParams(requestedUrls[1].split('?')[1] ?? '').get('names')?.split(',') ?? [];
+			expect(firstNames).toHaveLength(80);
+			expect(secondNames).toHaveLength(40);
+		} finally {
+			globalThis.fetch = originalFetch;
+		}
+	});
+
+	it('strips unsafe SVG tags, on* handlers, dangerouslySetInnerHTML, href/xlink:href, and unsafe style URIs in ReactIcons and IconField', async () => {
+		const originalFetch = globalThis.fetch;
+		try {
+			globalThis.fetch = (async () =>
+				new Response(
+					JSON.stringify({
+						ok: true,
+						total: 1,
+						offset: 0,
+						limit: 96,
+						hasMore: false,
+						items: [
+							{
+								name: 'xss-probe',
+								label: 'XSS Probe',
+								category: 'general',
+								hasFilled: false,
+								outline: [
+									[
+										'path',
+										{
+											d: 'M4 4h16v16H4z',
+											onclick: 'alert(1)',
+											OnLoad: 'alert(2)',
+											dangerouslySetInnerHTML: 'bad',
+											href: 'javascript:alert(3)',
+											'xlink:href': 'data:text/html,<script>',
+											style: 'background:url(javascript:alert(4))',
+											'123bad': 'nope',
+										},
+									],
+									['script', { src: 'evil.js' }],
+									['foreignObject', { width: '10' }],
+								],
+							},
+						],
+					}),
+					{ status: 200, headers: { 'Content-Type': 'application/json' } }
+				)) as typeof fetch;
+
+			await queryIcons({ q: 'xss-probe' });
+			const svg = renderSvgString('xss-probe');
+			expect(svg).toContain('<path d="M4 4h16v16H4z"/>');
+			expect(svg).not.toContain('onclick');
+			expect(svg).not.toContain('OnLoad');
+			expect(svg).not.toContain('dangerouslySetInnerHTML');
+			expect(svg).not.toContain('href=');
+			expect(svg).not.toContain('xlink:href');
+			expect(svg).not.toContain('javascript:');
+			expect(svg).not.toContain('<script');
+			expect(svg).not.toContain('<foreignObject');
+		} finally {
+			globalThis.fetch = originalFetch;
+		}
+
+		const renderedNodesHtml = renderToStaticMarkup(
+			React.createElement(
+				'svg',
+				null,
+				renderTupleNodes([
+					[
+						'path',
+						{
+							d: 'M2 2h20',
+							onmouseover: 'alert(1)',
+							dangerouslySetInnerHTML: 'nope',
+							href: 'javascript:alert(1)',
+							'xlink:href': '#evil',
+							style: 'fill:url(data:image/svg+xml;base64,PHN2Zz4=)',
+						},
+					],
+					['script', { type: 'text/javascript' }],
+				])
+			)
+		);
+		expect(renderedNodesHtml).toContain('<path d="M2 2h20"></path>');
+		expect(renderedNodesHtml).not.toContain('onmouseover');
+		expect(renderedNodesHtml).not.toContain('href');
+		expect(renderedNodesHtml).not.toContain('style');
+		expect(renderedNodesHtml).not.toContain('<script');
+	});
+
+	it('renders IconFieldControl empty trigger with custom placeholder matching accessible name (WCAG 2.5.3)', () => {
+		const html = renderToStaticMarkup(
+			React.createElement(IconFieldControl, {
+				controlType: 'icon',
+				id: 'f_icon',
+				name: 'icon',
+				value: '',
+				placeholder: 'Choose badge icon',
+			})
+		);
+		expect(html).toContain('Choose badge icon');
+		expect(html).not.toContain('aria-label="Select an icon..."');
 	});
 });

@@ -182,4 +182,91 @@ describe('tailwind-layers PostCSS cascade partitioning', () => {
 			})
 		).toBe('axis');
 	});
+
+	it('routes named @container queries and 2xs/4xl container breakpoints into ordered sub-layers', () => {
+		const input = [
+			'@layer utilities{',
+			'@container rw-form (width>=18rem){.\\@2xs\\/rw-form\\:block{display:block}}',
+			'@container rw-form (width>=20rem){.\\@xs\\/rw-form\\:flex{display:flex}}',
+			'@container rw-link (min-width: 24rem){.\\@sm\\/rw-link\\:flex-row{flex-direction:row}}',
+			'@container rw-shell (width>=56rem){.\\@4xl\\/rw-shell\\:grid{display:grid}}',
+			'}',
+		].join('');
+
+		const out = partitionTailwindUtilitiesCss(input);
+		expect(extractSublayer(out, 'container-2xs')).toContain('@container rw-form (width>=18rem)');
+		expect(extractSublayer(out, 'container-xs')).toContain('@container rw-form (width>=20rem)');
+		expect(extractSublayer(out, 'container-sm')).toContain('@container rw-link (min-width: 24rem)');
+		expect(extractSublayer(out, 'container-4xl')).toContain('@container rw-shell (width>=56rem)');
+
+		const idx2xs = out.indexOf('utilities.container-2xs{');
+		const idxXs = out.indexOf('utilities.container-xs{');
+		const idxSm = out.indexOf('utilities.container-sm{');
+		const idx4xl = out.indexOf('utilities.container-4xl{');
+		expect(idx2xs).toBeGreaterThan(-1);
+		expect(idx2xs).toBeLessThan(idxXs);
+		expect(idxXs).toBeLessThan(idxSm);
+		expect(idxSm).toBeLessThan(idx4xl);
+	});
+
+	it('includes 3xs/3xl/5xl/6xl/7xl container layers, sorts arbitrary @container widths, and splits nested base vs state rules cleanly', () => {
+		expect(TAILWIND_UTILITY_SUBLAYERS).toHaveLength(39);
+		const orderedContainerLayers = [
+			'container-3xs',
+			'container-2xs',
+			'container-xs',
+			'container-sm',
+			'container-md',
+			'container-lg',
+			'container-xl',
+			'container-2xl',
+			'container-3xl',
+			'container-4xl',
+			'container-5xl',
+			'container-6xl',
+			'container-7xl',
+			'container',
+			'media',
+		];
+		for (let i = 1; i < orderedContainerLayers.length; i += 1) {
+			expect(TAILWIND_UTILITY_SUBLAYERS.indexOf(orderedContainerLayers[i - 1])).toBeLessThan(
+				TAILWIND_UTILITY_SUBLAYERS.indexOf(orderedContainerLayers[i])
+			);
+		}
+
+		const input = [
+			'@layer utilities{',
+			'@container (width>=80rem){.\\@7xl\\:block{display:block}}',
+			'@container (width>=16rem){.\\@3xs\\:flex{display:flex}}',
+			'@container (width>=48rem){.\\@3xl\\:grid{display:grid}}',
+			'@container (width>=64rem){.\\@5xl\\:inline{display:inline}}',
+			'@container (width>=72rem){.\\@6xl\\:hidden{display:none}}',
+			'@container (width>=24rem){@media (hover:hover){.\\@sm\\:hover\\:bg-muted:hover{background-color:var(--muted)}}.\\@sm\\:pt-0{padding-top:0px}.\\@sm\\:p-4{padding:1rem}}',
+			'@container (width>=560px){.\\@\\[560px\\]\\:flex{display:flex}}',
+			'@container (width>=25rem){.\\@\\[25rem\\]\\:grid{display:grid}}',
+			'@container (width>=260px){.\\@\\[260px\\]\\:inline{display:inline}}',
+			'}',
+		].join('');
+
+		const out = partitionTailwindUtilitiesCss(input);
+		expect(extractSublayer(out, 'container-3xs')).toContain('@container (width>=16rem)');
+		expect(extractSublayer(out, 'container-3xl')).toContain('@container (width>=48rem)');
+		expect(extractSublayer(out, 'container-5xl')).toContain('@container (width>=64rem)');
+		expect(extractSublayer(out, 'container-6xl')).toContain('@container (width>=72rem)');
+		expect(extractSublayer(out, 'container-7xl')).toContain('@container (width>=80rem)');
+
+		// Keep utilities.container-sm exact occurrence count = 2 (declaration + single sub-layer block)
+		expect(out.match(/utilities\.container-sm\b/g)).toHaveLength(2);
+		const smBlock = extractSublayer(out, 'container-sm');
+		expect(smBlock.indexOf('.\\@sm\\:p-4')).toBeLessThan(smBlock.indexOf('.\\@sm\\:pt-0'));
+		expect(smBlock.indexOf('.\\@sm\\:pt-0')).toBeLessThan(smBlock.indexOf('.\\@sm\\:hover\\:bg-muted:hover'));
+
+		const arbBlock = extractSublayer(out, 'container');
+		const pos260 = arbBlock.indexOf('260px');
+		const pos25rem = arbBlock.indexOf('25rem');
+		const pos560 = arbBlock.indexOf('560px');
+		expect(pos260).toBeGreaterThan(-1);
+		expect(pos260).toBeLessThan(pos25rem);
+		expect(pos25rem).toBeLessThan(pos560);
+	});
 });

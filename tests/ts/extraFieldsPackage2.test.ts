@@ -295,7 +295,7 @@ const hasLoaderBefore = typeof rt.ensureExtraFieldsLoaded === 'function';
 
 vm.runInThisContext(fs.readFileSync(path.join(distDir, 'ReactExtraFields.js'), 'utf8'), { filename: 'ReactExtraFields.js' });
 
-console.log(JSON.stringify({
+process.stdout.write(JSON.stringify({
 	hasLoaderBefore,
 	colorReplaced: typeof rt.Fields.ColorFieldControl === 'function' && rt.Fields.ColorFieldControl !== lazyColor,
 	hasTags: typeof rt.Fields.TagsFieldControl === 'function',

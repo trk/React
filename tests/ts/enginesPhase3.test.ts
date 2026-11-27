@@ -194,7 +194,7 @@ const calendarLinks = appendedHeadTags.filter(
 	(el) => el.tagName === 'LINK' && el.rel === 'stylesheet' && String(el.href).includes('ReactCalendar.css'),
 );
 
-console.log(JSON.stringify({
+process.stdout.write(JSON.stringify({
 	initial: {
 		hasUnstableBatchedUpdates: initial.hasUnstableBatchedUpdates,
 		gridLoadedBefore: initial.gridLoadedBefore,

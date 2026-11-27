@@ -839,3 +839,51 @@ test('o2m_list, UserResourceAdapter, PageResourceAdapter, hydrate limits, and JS
 		}
 	}
 });
+
+test('FieldResourceAdapter confines pinned template against dependsValue override and fails closed on unresolved templateScope', function (): void {
+	$workspace = React::instance();
+	/** @var \Totoglu\React\Relation\Resource\FieldResourceAdapter $fieldAdapter */
+	$fieldAdapter = $workspace->relations()->get('field');
+
+	// 1. Pinned config['template'] overrides client dependsValue
+	$pinnedRes = $fieldAdapter->query(
+		['dependsValue' => 'admin'],
+		['template' => 'home', 'valueField' => 'name'],
+	);
+	$pinnedNames = array_map(static fn(RelationItem $i): string => (string) $i->value, $pinnedRes['items']);
+	$homeTemplate = wire('templates')->get('home');
+	$homeFieldNames = [];
+	if ($homeTemplate instanceof \ProcessWire\Template && $homeTemplate->fieldgroup !== null) {
+		foreach ($homeTemplate->fieldgroup as $hf) {
+			if ($hf instanceof Field) {
+				$homeFieldNames[] = (string) $hf->name;
+			}
+		}
+	}
+	expect($pinnedNames)->not->toBe([])
+		->and(array_diff($pinnedNames, $homeFieldNames))->toBe([]);
+
+	// 2. Unresolved templateScope in query() fails closed to [] instead of falling back to global $fields
+	$unknownQuery = $fieldAdapter->query(
+		['dependsValue' => 'nonexistent_template_scope_xyz'],
+		['valueField' => 'name'],
+	);
+	expect($unknownQuery['items'])->toBe([])
+		->and($unknownQuery['total'])->toBe(0);
+
+	// 3. Unresolved templateScope in hydrate() skips global $fields->get() and fails closed
+	// (Test both non-blueprint system field 'roles' on shared adapter and isolated FieldResourceAdapter with zero external blueprint resolvers)
+	$unknownRoleHydrate = $fieldAdapter->hydrate(
+		['roles'],
+		['template' => 'nonexistent_template_scope_xyz', 'valueField' => 'name', 'includeSystem' => true],
+	);
+	expect($unknownRoleHydrate)->toBe([]);
+
+	$isolatedFieldAdapter = new \Totoglu\React\Relation\Resource\FieldResourceAdapter();
+	wire()->wire($isolatedFieldAdapter);
+	$unknownIsolatedHydrate = $isolatedFieldAdapter->hydrate(
+		['title'],
+		['template' => 'nonexistent_template_scope_xyz', 'valueField' => 'name'],
+	);
+	expect($unknownIsolatedHydrate)->toBe([]);
+});

@@ -1,6 +1,8 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
 	Accordion,
 	AccordionContent,
@@ -458,5 +460,191 @@ describe('Phase 2A Modular Primitives, PortalRoot & Shared Hooks', () => {
 		} finally {
 			globalThis.document = originalDocument;
 		}
+	});
+
+	it('respects WCAG 2.5.3 on DropdownMenu triggerLabel, propagates TabsList variant & custom TabsTrigger id, and preserves CommandInput handleKeyDown', async () => {
+		const {
+			CommandDialog,
+			CommandInput,
+			CommandList,
+			CommandItem,
+			DropdownMenu,
+			Tabs,
+			TabsList,
+			TabsTrigger,
+			TabsContent,
+		} = await import('../../resources/ts/ui');
+
+		const iconOnlyMenuHtml = renderToStaticMarkup(
+			React.createElement(DropdownMenu, {
+				items: [{ key: 'edit', label: 'Edit' }],
+			})
+		);
+		expect(iconOnlyMenuHtml).toContain('aria-label="Actions"');
+
+		const labeledMenuHtml = renderToStaticMarkup(
+			React.createElement(DropdownMenu, {
+				items: [{ key: 'edit', label: 'Edit' }],
+				triggerLabel: 'More options',
+			})
+		);
+		expect(labeledMenuHtml).toContain('More options');
+		expect(labeledMenuHtml).not.toContain('aria-label="Actions"');
+
+		const customTriggerMenuHtml = renderToStaticMarkup(
+			React.createElement(DropdownMenu, {
+				items: [{ key: 'edit', label: 'Edit' }],
+				trigger: React.createElement('span', null, 'Row menu'),
+			})
+		);
+		expect(customTriggerMenuHtml).toContain('Row menu');
+		expect(customTriggerMenuHtml).not.toContain('aria-label="Actions"');
+
+		const customTabsHtml = renderToStaticMarkup(
+			React.createElement(
+				Tabs,
+				{ defaultValue: 'alpha' },
+				React.createElement(
+					TabsList,
+					{ variant: 'line' },
+					React.createElement(TabsTrigger, { id: 'custom-alpha-tab', value: 'alpha' }, 'Alpha'),
+					React.createElement(TabsTrigger, { value: 'beta' }, 'Beta')
+				),
+				React.createElement(TabsContent, { value: 'alpha' }, 'Alpha panel'),
+				React.createElement(TabsContent, { value: 'beta' }, 'Beta panel')
+			)
+		);
+		expect(customTabsHtml).toContain('data-variant="line"');
+		expect(customTabsHtml).toContain('id="custom-alpha-tab"');
+		expect(customTabsHtml).toContain('aria-labelledby="custom-alpha-tab"');
+		expect(customTabsHtml).toContain('px-1 pb-2 pt-1');
+
+		// CommandInput invokes custom onKeyDown while keeping internal navigation when not defaultPrevented
+		const cmdSrc = readFileSync(
+			resolve(import.meta.dirname, '../../resources/ts/ui/primitives/Command.tsx'),
+			'utf8'
+		);
+		expect(cmdSrc).toContain('onKeyDown?.(e);');
+		expect(cmdSrc).toContain('if (e.defaultPrevented || !ctx?.listRef.current)');
+		const customOnKeyDown = vi.fn();
+		const cmdInputHtml = renderToStaticMarkup(
+			React.createElement(
+				CommandDialog,
+				{ open: true, onOpenChange: () => {} },
+				React.createElement(CommandInput, { onKeyDown: customOnKeyDown }),
+				React.createElement(
+					CommandList,
+					null,
+					React.createElement(CommandItem, null, 'Item A')
+				)
+			)
+		);
+		expect(cmdInputHtml).toContain('role="combobox"');
+		expect(cmdInputHtml).toContain('role="listbox"');
+		expect(customOnKeyDown).not.toHaveBeenCalled();
+
+		// SelectAndMultiRelationWidget keeps single active combobox and AutocompleteAndMorphWidget exposes aria-pressed/aria-hidden
+		const { SelectAndMultiRelationWidget } = await import(
+			'../../resources/ts/fields/controls/relation/SelectAndMultiRelationWidget'
+		);
+		const { AutocompleteAndMorphWidget } = await import(
+			'../../resources/ts/fields/controls/relation/AutocompleteAndMorphWidget'
+		);
+		const selectClosedHtml = renderToStaticMarkup(
+			React.createElement(SelectAndMultiRelationWidget, {
+				cardinality: 'm2o',
+				multiple: false,
+				options: [{ key: '1', value: 1, label: 'One' }],
+				loading: false,
+				scalarValue: '',
+				multiValues: [],
+				maxItems: 0,
+				allowCustom: false,
+				creatable: false,
+				editableLink: false,
+				disabled: false,
+				resourceMeta: { name: 'pages', label: 'Page', icon: 'file' },
+				sortable: {
+					activeId: null,
+					draggingIndex: -1,
+					getItemProps: () => ({}),
+					getHandleProps: () => ({}),
+				} as unknown as Parameters<typeof SelectAndMultiRelationWidget>[0]['sortable'],
+				isSortable: false,
+				resolveItem: (tok) => ({ key: tok, value: tok, label: tok }),
+				onCommitScalar: () => {},
+				onCommitMulti: () => {},
+				onOpenQuickCreate: () => {},
+			})
+		);
+		expect(selectClosedHtml.match(/role="combobox"/g)).toHaveLength(1);
+
+		const morphHtml = renderToStaticMarkup(
+			React.createElement(AutocompleteAndMorphWidget, {
+				cardinality: 'm2a',
+				multiple: false,
+				scalarValue: '',
+				multiValues: [],
+				maxItems: 0,
+				allowCustom: false,
+				creatable: false,
+				editableLink: false,
+				disabled: false,
+				resourceMeta: { name: 'items', label: 'Item', icon: 'box' },
+				resources: [
+					{ name: 'article', label: 'Article', icon: 'file-text' },
+					{ name: 'video', label: 'Video', icon: 'video' },
+				],
+				allowedResources: ['article', 'video'],
+				dependsValue: '',
+				sortable: {
+					activeId: null,
+					draggingIndex: -1,
+					getItemProps: () => ({}),
+					getHandleProps: () => ({}),
+				} as unknown as Parameters<typeof AutocompleteAndMorphWidget>[0]['sortable'],
+				isSortable: false,
+				resolveItem: (tok) => ({ key: tok, value: tok, label: tok }),
+				callEndpoint: async () => null,
+				onCommitScalar: () => {},
+				onCommitMulti: () => {},
+				onOpenQuickCreate: () => {},
+			})
+		);
+		expect(morphHtml).toContain('aria-pressed="true"');
+		expect(morphHtml).toContain('aria-pressed="false"');
+		expect(morphHtml).toContain('aria-hidden="true"');
+	});
+
+	it('maintains controlled boolean open state in Combobox across readOnly toggles', () => {
+		const comboboxSrc = readFileSync(
+			resolve(import.meta.dirname, '../../resources/ts/ui/primitives/Combobox.tsx'),
+			'utf8'
+		);
+		expect(comboboxSrc).toContain('const [openState, setOpenState] = useState(false);');
+		expect(comboboxSrc).toContain('open={readOnly ? false : openState}');
+		expect(comboboxSrc).toContain('setOpenState(readOnly ? false : nextOpen)');
+		expect(comboboxSrc).not.toContain('open={readOnly ? false : undefined}');
+
+		const editableHtml = renderToStaticMarkup(
+			React.createElement(Combobox, {
+				options: [{ value: 'alpha', label: 'Alpha' }],
+				value: 'alpha',
+				readOnly: false,
+				onValueChange: () => {},
+			})
+		);
+		expect(editableHtml).toContain('value="Alpha"');
+
+		const readOnlyHtml = renderToStaticMarkup(
+			React.createElement(Combobox, {
+				options: [{ value: 'alpha', label: 'Alpha' }],
+				value: 'alpha',
+				readOnly: true,
+				onValueChange: () => {},
+			})
+		);
+		expect(readOnlyHtml).toContain('value="Alpha"');
+		expect(readOnlyHtml).toContain('readonly=""');
 	});
 });

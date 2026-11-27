@@ -1261,3 +1261,267 @@ test('FormSchemaSerializer preserves populated media filename arrays in top-leve
 	expect($declFromFiles['values']['hero_image'] ?? null)->toBe(['modified-fleet-01.jpg'])
 		->and($declFromFiles['values']['hover_image'] ?? null)->toBe([]);
 });
+
+test('MediaGateway preserves untouched gallery variations & restores partial overwrite failures, maxFiles=1 rollback, centered transform rollback, and detached PageLink guard', function (): void {
+	/** @var React $react */
+	$react = wire('react');
+	$modules = wire('modules');
+	$fields = wire('fields');
+	$fieldgroups = wire('fieldgroups');
+	$templates = wire('templates');
+	$pages = wire('pages');
+	$users = wire('users');
+	$superId = (int) (wire('config')->superUserPageID ?: 41);
+	/** @var User $superUser */
+	$superUser = $users->get($superId);
+
+	$suffix = bin2hex(random_bytes(4));
+	$tmpDir = sys_get_temp_dir() . '/rw-media-rollback-' . $suffix;
+	mkdir($tmpDir, 0775, true);
+
+	$galleryField = null;
+	$singleField = null;
+	$detachedLinkField = null;
+	$tpl = null;
+	$fg = null;
+	$page = null;
+
+	try {
+		$galleryField = new Field();
+		$galleryField->type = $modules->get('FieldtypeImage');
+		$galleryField->name = 'rw_gal_rb_' . $suffix;
+		$galleryField->extensions = 'png jpg';
+		$galleryField->maxFiles = 0;
+		$galleryField->overwrite = 1;
+		$galleryField->maxWidth = 300;
+		$galleryField->maxReject = 1;
+		$fields->save($galleryField);
+		$this->cleanupFields[] = $galleryField;
+
+		$singleField = new Field();
+		$singleField->type = $modules->get('FieldtypeImage');
+		$singleField->name = 'rw_sgl_rb_' . $suffix;
+		$singleField->extensions = 'png jpg';
+		$singleField->maxFiles = 1;
+		$singleField->overwrite = 1;
+		$singleField->maxWidth = 300;
+		$singleField->maxReject = 1;
+		$fields->save($singleField);
+		$this->cleanupFields[] = $singleField;
+
+		$detachedLinkField = new Field();
+		$detachedLinkField->type = $modules->get('FieldtypeText');
+		$detachedLinkField->name = 'rw_det_link_' . $suffix;
+		$detachedLinkField->inputfieldClass = 'InputfieldReactLink';
+		$fields->save($detachedLinkField);
+		$this->cleanupFields[] = $detachedLinkField;
+
+		$fg = new Fieldgroup();
+		$fg->name = 'rw_media_rb_tpl_' . $suffix;
+		$fg->add($fields->get('title'));
+		$fg->add($galleryField);
+		$fg->add($singleField);
+		$fieldgroups->save($fg);
+		$this->cleanupFieldgroups[] = $fg;
+
+		$tpl = new Template();
+		$tpl->name = 'rw_media_rb_tpl_' . $suffix;
+		$tpl->fieldgroup = $fg;
+		$templates->save($tpl);
+		$this->cleanupTemplates[] = $tpl;
+
+		$page = new Page();
+		$page->template = $tpl;
+		$page->parent = $pages->get(1);
+		$page->name = 'rw-media-rb-' . $suffix;
+		$page->title = 'Media Rollback Test';
+		$pages->save($page);
+		$this->cleanupPages[] = $page;
+
+		$untouchedSrc = createRwTestPngFile($tmpDir . '/untouched.png', 160, 120, [10, 80, 160]);
+		$targetSrc = createRwTestPngFile($tmpDir . '/target.png', 140, 100, [40, 140, 80]);
+		$singleSrc = createRwTestPngFile($tmpDir . '/single-orig.png', 120, 90, [90, 60, 180]);
+
+		$page->of(false);
+		$galCollection = $page->getUnformatted($galleryField->name);
+		$galCollection->add($untouchedSrc);
+		$galCollection->add($targetSrc);
+		$untouchedItem = $galCollection->get('untouched.png');
+		$targetItem = $galCollection->get('target.png');
+		$targetItem->description = 'Original Target Description';
+		$sglCollection = $page->getUnformatted($singleField->name);
+		$sglCollection->add($singleSrc);
+		$pages->save($page);
+
+		// Create a variation file on disk for untouched.png to prove it is never stripped when target.png is overwritten/rolled back
+		$pages->uncacheAll();
+		$page = $pages->get((int) $page->id);
+		$page->of(false);
+		$untouchedItem = $page->getUnformatted($galleryField->name)->get('untouched.png');
+		expect($untouchedItem)->toBeInstanceOf(Pageimage::class);
+		$variationPath = rtrim((string) $page->filesManager()->path(), '/\\') . '/untouched.80x60.png';
+		createRwTestPngFile($variationPath, 80, 60, [10, 80, 160]);
+		expect(is_file($variationPath))->toBeTrue();
+
+		// 1. Partial multi-file overwrite=true failure: target.png passes runValidatedUpload then fails ImageSizer::resize
+		// inside executeUpload() loop while added-ok.png succeeds and untouched.png variations stay intact
+		$wideTargetPath = createRwTestPngFile($tmpDir . '/target-wide.png', 280, 100, [200, 30, 30]);
+		$okNewPath = createRwTestPngFile($tmpDir . '/added-ok.png', 100, 100, [30, 200, 30]);
+		$galInput = $galleryField->getInputfield($page);
+		$galEnv = $react->media()->buildEnvelopeFromInputfield($galInput, true, $galleryField->name, ['png', 'jpg'], false);
+		expect($galEnv)->toBeArray();
+		$galInput->set('maxWidth', 250);
+		$galInput->set('maxReject', 0);
+		$galEnv['maxWidth'] = 250;
+		$galEnv['maxReject'] = false;
+		$galEnv['overwrite'] = true;
+
+		$refExecUpload = new \ReflectionMethod(MediaGateway::class, 'executeUpload');
+		$resizeThrowHook = wire('pages')->addHookBefore('ImageSizer::resize', static function (\ProcessWire\HookEvent $event): void {
+			$sizer = $event->object;
+			if ($sizer instanceof \ProcessWire\ImageSizer) {
+				$bn = basename((string) $sizer->getFilename());
+				if ($bn === 'target.png' || $bn === 'replacement-diff.png') {
+					throw new \ProcessWire\WireException('Simulated resize failure for ' . $bn);
+				}
+			}
+		});
+		try {
+			$partialRes = $refExecUpload->invoke(
+				$react->media(),
+				['kind' => 'page', 'page' => $page, 'fieldName' => $galleryField->name, 'adapter' => null],
+				$galEnv,
+				$page->getUnformatted($galleryField->name),
+				$galInput,
+				$galleryField->name,
+				true,
+				[
+					'files' => [
+						'name' => ['target.png', 'added-ok.png'],
+						'tmp_name' => [$wideTargetPath, $okNewPath],
+						'type' => ['image/png', 'image/png'],
+						'error' => [0, 0],
+						'size' => [filesize($wideTargetPath), filesize($okNewPath)],
+					],
+				]
+			);
+
+			$pages->uncacheAll();
+			$reloadedGalPage = $pages->get((int) $page->id);
+			$reloadedGalPage->of(false);
+			$afterGal = $reloadedGalPage->getUnformatted($galleryField->name);
+			$restoredTarget = $afterGal->get('target.png');
+
+			expect($partialRes['ok'] ?? false)->toBeTrue()
+				->and($afterGal->get('added-ok.png'))->toBeInstanceOf(Pageimage::class)
+				->and($restoredTarget)->toBeInstanceOf(Pageimage::class)
+				->and($restoredTarget->width())->toBe(140)
+				->and((string) $restoredTarget->description)->toBe('Original Target Description')
+				->and(is_file($variationPath))->toBeTrue();
+
+			// 2. maxFiles=1 rollback preserves pre-existing file on disk when new filename differs and fails post-staging
+			$newSinglePath = createRwTestPngFile($tmpDir . '/replacement-diff.png', 200, 100, [180, 90, 20]);
+			$sglInput = $singleField->getInputfield($reloadedGalPage);
+			$sglInput->set('maxWidth', 150);
+			$sglInput->set('maxReject', 0);
+			$sglEnv = [
+				'kind' => 'page',
+				'pageId' => (int) $reloadedGalPage->id,
+				'fieldName' => $singleField->name,
+				'maxFiles' => 1,
+				'overwrite' => true,
+				'isImage' => true,
+				'maxWidth' => 150,
+				'maxReject' => false,
+			];
+			$sglFailRes = $refExecUpload->invoke(
+				$react->media(),
+				['kind' => 'page', 'page' => $reloadedGalPage, 'fieldName' => $singleField->name, 'adapter' => null],
+				$sglEnv,
+				$reloadedGalPage->getUnformatted($singleField->name),
+				$sglInput,
+				$singleField->name,
+				true,
+				[
+					'files' => [
+						'name' => 'replacement-diff.png',
+						'tmp_name' => $newSinglePath,
+						'type' => 'image/png',
+						'error' => 0,
+						'size' => filesize($newSinglePath),
+					],
+				]
+			);
+
+			$pages->uncacheAll();
+			$afterSglPage = $pages->get((int) $page->id);
+			$afterSglPage->of(false);
+			$afterSglCol = $afterSglPage->getUnformatted($singleField->name);
+			$restoredSgl = $afterSglCol->get('single-orig.png');
+			expect($sglFailRes['ok'] ?? true)->toBeFalse()
+				->and($afterSglCol->count())->toBe(1)
+				->and($restoredSgl)->toBeInstanceOf(Pageimage::class)
+				->and(is_file((string) $restoredSgl->filename()))->toBeTrue();
+		} finally {
+			wire('pages')->removeHook($resizeThrowHook);
+		}
+
+		// 3. executeTransform() rollback restores centered '50 50 0' focus and original bytes/mtime on failure
+		$sglFilename = (string) $restoredSgl->filename();
+		$origBytes = (string) file_get_contents($sglFilename);
+		$origMtime = (int) filemtime($sglFilename);
+		$restoredSgl->focus('50 50 0');
+		$afterSglPage->save($singleField->name);
+
+		$targetPageId = (int) $afterSglPage->id;
+		$saveThrowHook = wire('pages')->addHookBefore('saveField', static function (\ProcessWire\HookEvent $event) use ($targetPageId): void {
+			$savedPage = $event->arguments(0);
+			if ($savedPage instanceof Page && (int) $savedPage->id === $targetPageId) {
+				throw new \RuntimeException('Simulated transform persist failure');
+			}
+		});
+		try {
+			$xfmRes = (new \ReflectionMethod(MediaGateway::class, 'executeTransform'))->invoke(
+				$react->media(),
+				['kind' => 'page', 'page' => $afterSglPage, 'rootPage' => $afterSglPage, 'fieldName' => $singleField->name, 'adapter' => null],
+				['useImageEditor' => true, 'maxFiles' => 1],
+				[
+					'targetName' => 'single-orig.png',
+					'operation' => 'rotate',
+					'degrees' => 90,
+				],
+				$afterSglPage->getUnformatted($singleField->name),
+				$sglInput,
+				$singleField->name,
+				true,
+				$superUser,
+			);
+			clearstatcache(true, $sglFilename);
+			expect($xfmRes['ok'] ?? true)->toBeFalse()
+				->and((string) file_get_contents($sglFilename))->toBe($origBytes)
+				->and($restoredSgl->focus()['str'] ?? '')->toBe('50 50 0')
+				->and((int) filemtime($sglFilename))->toBe($origMtime);
+		} finally {
+			wire('pages')->removeHook($saveThrowHook);
+		}
+
+		// 4. PageLinkMediaHostAdapter::resolveTargetContext() rejects field not attached to ownerPage template
+		$adapter = new \Totoglu\React\Media\PageLinkMediaHostAdapter();
+		wire($adapter);
+		$detachedCtx = $adapter->resolveTargetContext([
+			'pageId' => (int) $page->id,
+			'fieldName' => $detachedLinkField->name,
+		], $superUser, false);
+		expect($detachedCtx['ok'] ?? true)->toBeFalse()
+			->and($detachedCtx['status'] ?? 0)->toBe(404);
+	} finally {
+		foreach (glob($tmpDir . '/*') ?: [] as $f) {
+			if (is_file($f)) {
+				@unlink($f);
+			}
+		}
+		if (is_dir($tmpDir)) {
+			@rmdir($tmpDir);
+		}
+	}
+});

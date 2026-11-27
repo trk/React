@@ -337,8 +337,10 @@ describe('Runtime Utilities, Formula Engine, i18n, Sortable Tree & Media Helpers
 				React.createElement(TabsContent, { value: 'advanced' }, React.createElement('p', null, 'Pane 2'))
 			)
 		);
-		expect(tabsHtml).toContain('aria-controls=');
+		expect(tabsHtml).toContain('role="tab"');
+		expect(tabsHtml).toContain('aria-selected="true"');
 		expect(tabsHtml).toContain('aria-labelledby=');
+		expect(tabsHtml).not.toContain('aria-controls="rw-ui-panel-');
 		expect(tabsHtml).toContain('tabindex="0"');
 		expect(tabsHtml).toContain('tabindex="-1"');
 
@@ -1475,13 +1477,26 @@ describe('Runtime Utilities, Formula Engine, i18n, Sortable Tree & Media Helpers
 		const { isLinkFieldValueEmpty } = await import('../../resources/ts/fields/schemaRuntimeHelpers');
 		expect(isLinkFieldValueEmpty({ type: 'record', resourceType: 'catalog', resourceId: '' })).toBe(true);
 		expect(isLinkFieldValueEmpty({ type: 'record', resourceType: 'catalog', resourceId: 'rec_1' })).toBe(false);
+		expect(isLinkFieldValueEmpty({ type: 'tel', url: '', resourceType: 'record', resourceId: 'rec_1' })).toBe(true);
+		expect(isLinkFieldValueEmpty({ type: 'image', file: '', url: '', resourceType: 'record', resourceId: 'rec_1' })).toBe(true);
+		expect(isLinkFieldValueEmpty({ type: 'page', pageId: 0, resourceType: 'record', resourceId: 'rec_1' })).toBe(true);
+		expect(isLinkFieldValueEmpty({ type: 'email', url: '', resourceType: 'record', resourceId: 'rec_1' })).toBe(true);
+		expect(isLinkFieldValueEmpty({ type: 'image', file: 'hero.jpg' })).toBe(false);
 
 		const inlineMeta = buildLinkInlineSettingFields(
+			{ types: ['record', 'tel'], relationTokens: { record: 'tok' }, enableQuery: true },
 			{ type: 'record', resourceId: 'rec_1' },
-			{ types: ['record'], relationTokens: { record: 'tok' }, enableQuery: true },
+			false,
 			'cta_link'
 		);
 		expect(inlineMeta.fields.some((f) => f.name === `${LINK_INLINE_SETTING_PREFIX}query`)).toBe(true);
+		const telWithStaleResMeta = buildLinkInlineSettingFields(
+			{ types: ['record', 'tel'], relationTokens: { record: 'tok' }, enableQuery: true },
+			{ type: 'tel', url: '+905551112233', resourceType: 'record', resourceId: 'rec_1' },
+			false,
+			'cta_link'
+		);
+		expect(telWithStaleResMeta.fields.some((f) => f.name === `${LINK_INLINE_SETTING_PREFIX}query`)).toBe(false);
 
 		const linkSrc = fs.readFileSync(path.join(tsRoot, 'fields/controls/LinkField.tsx'), 'utf8');
 		const sharedSrc = fs.readFileSync(path.join(tsRoot, 'fields/shared.tsx'), 'utf8');
@@ -1502,7 +1517,9 @@ describe('Runtime Utilities, Formula Engine, i18n, Sortable Tree & Media Helpers
 		expect(tagsSrc).toContain("window.addEventListener('keydown', onEscape, true)");
 
 		const cbSrc = fs.readFileSync(path.join(tsRoot, 'fields/controls/ConditionBuilderField.tsx'), 'utf8');
-		expect(cbSrc).toContain('aria-controls={isOpen && groupedFields.length > 0 ? listboxId : undefined}');
+		expect(cbSrc).toContain('aria-controls={isOpen ? dialogId : undefined}');
+		expect(cbSrc).toContain('id={dialogId}');
+		expect(cbSrc).toContain('aria-expanded={groupedFields.length > 0}');
 
 		const cmdSrc = fs.readFileSync(path.join(tsRoot, 'ui/primitives/Command.tsx'), 'utf8');
 		expect(cmdSrc).toContain("ctx?.setActiveId('')");
@@ -1510,7 +1527,7 @@ describe('Runtime Utilities, Formula Engine, i18n, Sortable Tree & Media Helpers
 		expect(cmdSrc).toContain('[setActiveId, itemId]');
 		expect(cmdSrc).not.toContain('[ctx, itemId]');
 
-		expect(linkSrc).toContain('aria-controls={searchOpen ? listboxId : undefined}');
+		expect(linkSrc).toContain('aria-controls={searchOpen && searchResults.length > 0 ? listboxId : undefined}');
 		expect(linkSrc).toContain('id={`${listboxId}-opt-${idx}`}');
 		expect(linkSrc).toContain('aria-activedescendant={');
 

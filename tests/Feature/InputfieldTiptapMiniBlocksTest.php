@@ -570,8 +570,7 @@ test('FormSchemaSerializer and ScalarFieldDataProvider handle InputfieldTiptap d
 test('InputfieldTiptap enforces ProcessWire Languages::editable RBAC and avoids double purification on LanguageSupport re-entry', function (): void {
 	$languages = wire('languages');
 	if (!$languages || count($languages) < 2) {
-		expect(true)->toBeTrue();
-		return;
+		$this->markTestSkipped('Requires LanguageSupport with at least 2 languages.');
 	}
 
 	$secondaryLang = null;

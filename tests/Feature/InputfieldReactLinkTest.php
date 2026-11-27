@@ -17,6 +17,12 @@ beforeEach(function (): void {
 		$modules->install('InputfieldReactLink');
 	}
 
+	$this->prevUser = wire()->user;
+	$su = wire()->users->get((int) (wire()->config->superUserPageID ?: 41));
+	if ($su instanceof User && $su->id > 0) {
+		wire()->users->setCurrentUser($su);
+	}
+
 	$this->createdPages = [];
 	$this->createdTemplates = [];
 	$this->createdFieldgroups = [];
@@ -24,6 +30,9 @@ beforeEach(function (): void {
 });
 
 afterEach(function (): void {
+	if (($this->prevUser ?? null) instanceof User && $this->prevUser->id > 0) {
+		wire()->users->setCurrentUser($this->prevUser);
+	}
 	$pages = wire()->pages;
 	foreach (array_reverse($this->createdPages) as $p) {
 		if ($p instanceof Page && $p->id > 0) {
@@ -430,4 +439,217 @@ test('InputfieldReactLink uses canonical resourceType/resourceId via React::regi
 	$inputfield->___processInput(new WireInputData($linkPost));
 	expect($inputfield->getErrors())->not->toBe([])
 		->and(InputfieldReactLink::normalizeValue($inputfield->val())['url'])->toBe('https://processwire.com');
+});
+
+test('InputfieldReactLink enforces Languages::editable(), forwards typeLabels, resolves custom media style assets, retains resolver types, and omits guest tokens', function (): void {
+	/** @var React $react */
+	$react = wire()->react;
+	$modules = wire()->modules;
+	$users = wire()->users;
+	$prevUser = wire()->user;
+
+	// 1. buildRawLinkConfig() forwards non-empty typeLabels and getModuleStyleAssets() checks normalizeMediaProfiles()
+	/** @var InputfieldReactLink $cfgLink */
+	$cfgLink = $modules->get('InputfieldReactLink');
+	$cfgLink->set('linkTypes', ['url', 'custom_doc']);
+	$cfgLink->set('mediaProfiles', ['custom_doc' => ['label' => 'Document', 'extensions' => 'pdf']]);
+	$cfgLink->set('typeLabels', ['url' => 'Web Link', 'custom_doc' => 'Spec Sheet']);
+
+	$builtCfg = $cfgLink->buildRawLinkConfig();
+	expect($builtCfg['typeLabels'] ?? null)->toBe(['url' => 'Web Link', 'custom_doc' => 'Spec Sheet'])
+		->and($cfgLink->getModuleStyleAssets())->not->toBe([]);
+
+	/** @var InputfieldReactLink $noMediaLink */
+	$noMediaLink = $modules->get('InputfieldReactLink');
+	$noMediaLink->set('linkTypes', ['url', 'email']);
+	$noMediaLink->set('mediaProfiles', false);
+	expect($noMediaLink->getModuleStyleAssets())->toBe([]);
+
+	// 2. FormSchemaSerializer retains custom resolver-only types and emits empty relationToken/mediaToken for guests
+	$suffix = bin2hex(random_bytes(3));
+	$resolverType = 'catalog_' . $suffix;
+	$react->registerLinkResolver($resolverType, static fn(array $val): ?array => [
+		'href' => '/catalog/' . ($val['resourceId'] ?? '1'),
+		'label' => 'Catalog Item',
+	]);
+
+	try {
+		$guest = $users->getGuestUser();
+		$users->setCurrentUser($guest);
+
+		/** @var InputfieldReactLink $resolverLink */
+		$resolverLink = $modules->get('InputfieldReactLink');
+		$resolverLink->attr('name', 'custom_resolver_link');
+		$resolverLink->set('linkTypes', ['page', 'url', 'file', $resolverType]);
+		$resolverLink->set('defaultType', 'url');
+
+		$serializer = new FormSchemaSerializer();
+		wire()->wire($serializer);
+		$node = $serializer->serializeInputfieldNode($resolverLink);
+		expect($node['linkConfig']['types'] ?? [])->toContain($resolverType)
+			->and($node['linkConfig']['relationTokens']['page'] ?? null)->toBe('')
+			->and($node['linkConfig']['mediaProfiles']['file']['mediaToken'] ?? null)->toBe('');
+
+		/** @var InputfieldReactM2O $relInput */
+		$relInput = $modules->get('InputfieldReactM2O');
+		$relInput->attr('name', 'guest_rel');
+		$relInput->set('resource', 'page');
+		$relData = $relInput->inertiaWithData();
+		expect($relData['relationToken'] ?? null)->toBe('');
+	} finally {
+		$react->registerLinkResolver($resolverType, null);
+		if ($prevUser instanceof User && $prevUser->id > 0) {
+			$users->setCurrentUser($prevUser);
+		}
+	}
+
+	// 3. InputfieldReactLink::___processInput() preserves previous values for languages where Languages::editable() is false
+	$realLangs = wire()->languages;
+	if ($realLangs instanceof Languages && $realLangs->count() > 0) {
+		$defaultLang = $realLangs->getDefault();
+		$secondaryLang = null;
+		foreach ($realLangs as $candidateLang) {
+			if ($candidateLang instanceof Language && !$candidateLang->isDefault()) {
+				$secondaryLang = $candidateLang;
+				break;
+			}
+		}
+
+		$stubConfig = new Config();
+		$stubWire = new class($stubConfig) extends ProcessWire {
+			public function __construct(Config $cfg)
+			{
+				$this->fuel = new Fuel();
+				$this->fuel->set('config', $cfg);
+				$this->fuel->set('hooks', new WireHooks($this, $cfg));
+			}
+		};
+		$stubFuel = $stubWire->fuel();
+		$stubFuel->set('sanitizer', wire()->sanitizer);
+		$stubFuel->set('user', $users->getGuestUser());
+
+		$stubLangs = new class($stubWire, $defaultLang, $secondaryLang) extends Languages {
+			/** @var array<int, bool> */
+			public array $editableById = [];
+			/** @var list<Language> */
+			private array $langList = [];
+
+			public function __construct(ProcessWire $w, ?Language $def, ?Language $sec)
+			{
+				$this->setWire($w);
+				if ($def instanceof Language) {
+					$this->langList[] = $def;
+				}
+				if ($sec instanceof Language) {
+					$this->langList[] = $sec;
+				}
+			}
+
+			public function getIterator(): \Traversable
+			{
+				return new \ArrayIterator($this->langList);
+			}
+
+			public function editable($language): bool
+			{
+				if ($language instanceof Language) {
+					return $this->editableById[(int) $language->id] ?? true;
+				}
+
+				return true;
+			}
+		};
+		$stubFuel->set('languages', $stubLangs);
+
+		/** @var InputfieldReactLink $langLink */
+		$langLink = $modules->get('InputfieldReactLink');
+		$langLink->setWire($stubWire);
+		$langLink->set('hasPage', wire()->pages->get(1));
+		$langLink->attr('name', 'lang_guard_link');
+		$langLink->set('linkTypes', ['url', 'image']);
+
+		$secIdKey = $secondaryLang instanceof Language ? (string) $secondaryLang->id : '1020';
+		$secNameKey = $secondaryLang instanceof Language ? (string) $secondaryLang->name : 'tr';
+
+		// Case A: default language is NOT editable, secondary language IS editable
+		$stubLangs->editableById = [
+			(int) $defaultLang->id => false,
+		];
+		if ($secondaryLang instanceof Language) {
+			$stubLangs->editableById[(int) $secondaryLang->id] = true;
+		}
+
+		$langLink->attr('value', [
+			'type' => 'image',
+			'url' => '/site/assets/files/1/hero.png',
+			'file' => 'hero.png',
+			'label' => 'Locked Default Label',
+			'ariaLabel' => 'Locked Default Aria',
+			'alt' => 'Locked Default Alt',
+			'labels' => ['default' => 'Locked Default Label', $secIdKey => 'Old Sec Label'],
+			'ariaLabels' => ['default' => 'Locked Default Aria', $secIdKey => 'Old Sec Aria'],
+			'descriptions' => ['default' => 'Locked Default Alt', $secIdKey => 'Old Sec Alt'],
+		]);
+
+		$postCaseA = [
+			'lang_guard_link' => json_encode([
+				'type' => 'image',
+				'url' => '/site/assets/files/1/hero.png',
+				'file' => 'hero.png',
+				'label' => 'Tampered Default Label',
+				'ariaLabel' => 'Tampered Default Aria',
+				'alt' => 'Tampered Default Alt',
+				'labels' => ['default' => 'Tampered Default Label', $secIdKey => 'Updated Sec Label'],
+				'ariaLabels' => ['default' => 'Tampered Default Aria', $secIdKey => 'Updated Sec Aria'],
+				'descriptions' => ['default' => 'Tampered Default Alt', $secIdKey => 'Updated Sec Alt'],
+			]),
+		];
+		$langLink->___processInput(new WireInputData($postCaseA));
+
+		$afterCaseA = $langLink->getNormalizedLink();
+		expect($afterCaseA['label'])->toBe('Locked Default Label')
+			->and($afterCaseA['ariaLabel'])->toBe('Locked Default Aria')
+			->and($afterCaseA['alt'] ?? null)->toBe('Locked Default Alt')
+			->and($afterCaseA['labels']['default'] ?? null)->toBe('Locked Default Label')
+			->and($afterCaseA['descriptions']['default'] ?? null)->toBe('Locked Default Alt');
+		if ($secondaryLang instanceof Language) {
+			expect($afterCaseA['labels'][$secIdKey] ?? null)->toBe('Updated Sec Label')
+				->and($afterCaseA['descriptions'][$secIdKey] ?? null)->toBe('Updated Sec Alt');
+		}
+
+		// Case B: secondary language is NOT editable -> keeps previous and drops newly added keys for that language
+		if ($secondaryLang instanceof Language) {
+			$stubLangs->editableById[(int) $defaultLang->id] = true;
+			$stubLangs->editableById[(int) $secondaryLang->id] = false;
+
+			$langLink->attr('value', [
+				'type' => 'image',
+				'url' => '/site/assets/files/1/hero.png',
+				'file' => 'hero.png',
+				'label' => 'Def Label',
+				'labels' => ['default' => 'Def Label', $secIdKey => 'Preserved Sec Label'],
+				'descriptions' => ['default' => 'Def Alt'],
+			]);
+
+			$postCaseB = [
+				'lang_guard_link' => json_encode([
+					'type' => 'image',
+					'url' => '/site/assets/files/1/hero.png',
+					'file' => 'hero.png',
+					'label' => 'New Def Label',
+					'labels' => ['default' => 'New Def Label', $secIdKey => 'Tampered Sec', $secNameKey => 'Injected Name Key'],
+					'ariaLabels' => [$secIdKey => 'Injected Aria'],
+					'descriptions' => ['default' => 'New Def Alt', $secIdKey => 'Injected Desc'],
+				]),
+			];
+			$langLink->___processInput(new WireInputData($postCaseB));
+
+			$afterCaseB = $langLink->getNormalizedLink();
+			expect($afterCaseB['label'])->toBe('New Def Label')
+				->and($afterCaseB['labels'][$secIdKey] ?? null)->toBe('Preserved Sec Label')
+				->and($afterCaseB['labels'])->not->toHaveKey($secNameKey)
+				->and($afterCaseB)->not->toHaveKey('ariaLabels')
+				->and($afterCaseB['descriptions'] ?? [])->not->toHaveKey($secIdKey);
+		}
+	}
 });
