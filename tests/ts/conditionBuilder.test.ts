@@ -2,12 +2,23 @@ import { describe, expect, it, vi } from 'vitest';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import {
+	ConditionBuilder,
 	ConditionBuilderFieldControl,
 	createEmptyConditionGroup,
 	createEmptyConditionRule,
+	evaluateConditionTree,
+	formatConditionSummary,
 	getOperatorsForConditionFieldType,
 	normalizeConditionBuilderValue,
+	serializeConditionToExpression,
 } from '../../resources/ts/fields/controls/ConditionBuilderField';
+import {
+	parseConditionStringToObject,
+	resolveSourceFieldSpecs,
+	resolveTargetFieldSpecs,
+} from '../../resources/ts/fields/conditionEngine';
+import { resolveDynamicBlockFields } from '../../resources/ts/fields/shared';
+import type { SchemaFormContextValue } from '../../resources/ts/fields/types';
 import { prefetchSchemaControls } from '../../resources/ts/fields/schema/fieldControlRegistry';
 import { validateFieldWithValibot } from '../../resources/ts/fields/validation';
 import type { ConditionFieldSpec, SchemaFormPayload } from '../../resources/ts/fields/types';
@@ -184,13 +195,15 @@ describe('ConditionBuilderField rendering, WCAG accessibility, and runtime isola
 		expect(portalHtml).not.toContain('<input type="hidden"');
 	});
 
-	it('prefetches ReactExtraFields chunk when a schema contains a condition_builder field', () => {
+	it('prefetches InputfieldReactCondition chunk (and not ReactExtraFields) when a schema contains a condition_builder field', () => {
+		const ensureConditionFieldLoaded = vi.fn().mockResolvedValue(undefined);
 		const ensureExtraFieldsLoaded = vi.fn().mockResolvedValue(undefined);
 		const ensureFileFieldLoaded = vi.fn().mockResolvedValue(undefined);
 		const prevRuntime = (globalThis as { window?: unknown }).window;
 
 		(globalThis as unknown as { window: Record<string, unknown> }).window = {
 			ReactWorkspaceRuntime: {
+				ensureConditionFieldLoaded,
 				ensureExtraFieldsLoaded,
 				ensureFileFieldLoaded,
 			},
@@ -212,7 +225,8 @@ describe('ConditionBuilderField rendering, WCAG accessibility, and runtime isola
 			};
 
 			prefetchSchemaControls(payload);
-			expect(ensureExtraFieldsLoaded).toHaveBeenCalledTimes(1);
+			expect(ensureConditionFieldLoaded).toHaveBeenCalledTimes(1);
+			expect(ensureExtraFieldsLoaded).not.toHaveBeenCalled();
 			expect(ensureFileFieldLoaded).not.toHaveBeenCalled();
 		} finally {
 			if (prevRuntime === undefined) {
@@ -308,5 +322,440 @@ describe('ConditionBuilderField rendering, WCAG accessibility, and runtime isola
 		expect(
 			validateFieldWithValibot(boundedFieldDef, threeRulesVal, { rules: threeRulesVal }),
 		).toContain('at most 2');
+	});
+
+	it('evaluates condition trees across operators, negate groups, field-to-field targets, dot paths, and custom resolvers', () => {
+		const ctx = {
+			title: 'Enterprise Plan',
+			subtotal: 250,
+			min_total: 100,
+			tier: 'vip',
+			created_at: '2026-06-15',
+			active: true,
+			note: '',
+			customer: { country: 'TR' },
+		};
+
+		expect(evaluateConditionTree({ match: 'all', groups: [] }, ctx)).toBe(true);
+		expect(
+			evaluateConditionTree({ match: 'all', groups: [] }, ctx, { emptyResult: false }),
+		).toBe(false);
+
+		const tree = {
+			match: 'all',
+			groups: [
+				{
+					id: 'g1',
+					match: 'all',
+					rules: [
+						{ id: 'r1', field: 'title', operator: 'starts_with', value: 'enter' },
+						{ id: 'r2', field: 'subtotal', operator: 'gt', value: 'min_total', valueSource: 'field' as const },
+						{ id: 'r3', field: 'tier', operator: 'in', value: ['gold', 'vip'] },
+						{ id: 'r4', field: 'created_at', operator: 'between', value: ['2026-06-01', '2026-06-30'] },
+						{ id: 'r5', field: 'customer.country', operator: 'eq', value: 'TR' },
+						{ id: 'r6', field: 'active', operator: 'is_true', value: null },
+						{ id: 'r7', field: 'note', operator: 'is_empty', value: null },
+					],
+				},
+				{
+					id: 'g2',
+					match: 'any',
+					negate: true,
+					rules: [
+						{ id: 'r8', field: 'subtotal', operator: 'lt', value: 10 },
+					],
+				},
+			],
+		};
+
+		expect(evaluateConditionTree(tree, ctx)).toBe(true);
+		expect(
+			evaluateConditionTree(
+				tree,
+				(key) => (key === 'subtotal' ? 5 : (ctx as Record<string, unknown>)[key]),
+			),
+		).toBe(false);
+
+		expect(
+			evaluateConditionTree(
+				{
+					match: 'all',
+					groups: [
+						{
+							id: 'g_custom',
+							match: 'all',
+							rules: [{ id: 'rc', field: 'title', operator: 'exact_ci', value: 'enterprise plan' }],
+						},
+					],
+				},
+				ctx,
+				{
+					customOperators: {
+						exact_ci: (actual, expected) =>
+							String(actual).toLowerCase() === String(expected).toLowerCase(),
+					},
+				},
+			),
+		).toBe(true);
+	});
+
+	it('formats human condition summaries, filters sourceOnly/targetOnly fields, and renders compact/NOT UI SSR', () => {
+		const categorized: ConditionFieldSpec[] = [
+			{
+				key: 'customer_email',
+				label: 'Email',
+				type: 'text',
+				group: 'Customer',
+				icon: 'mail',
+				sourceOnly: true,
+			},
+			{
+				key: 'subtotal',
+				label: 'Subtotal',
+				type: 'number',
+				group: 'Order',
+				comparableTypes: ['number'],
+			},
+			{
+				key: 'budget_cap',
+				label: 'Budget Cap',
+				type: 'number',
+				group: 'Order',
+				targetOnly: true,
+			},
+			{
+				key: 'status',
+				label: 'Status',
+				type: 'select',
+				group: 'Order',
+			},
+		];
+
+		expect(resolveSourceFieldSpecs(categorized).map((f) => f.key)).toEqual([
+			'customer_email',
+			'subtotal',
+			'status',
+		]);
+		expect(
+			resolveTargetFieldSpecs(categorized, 'subtotal', categorized[1]).map((f) => f.key),
+		).toEqual(['budget_cap']);
+
+		const tree = {
+			match: 'all',
+			groups: [
+				{
+					id: 'g1',
+					match: 'any',
+					negate: true,
+					rules: [
+						{ id: 'r1', field: 'subtotal', operator: 'gt', value: 'budget_cap', valueSource: 'field' as const },
+					],
+				},
+			],
+		};
+
+		const summary = formatConditionSummary(tree, categorized);
+		expect(summary).toContain('NOT');
+		expect(summary).toContain('Subtotal');
+		expect(summary).toContain('{Budget Cap}');
+
+		const compactHtml = renderToStaticMarkup(
+			React.createElement(ConditionBuilderFieldControl, {
+				controlType: 'condition_builder',
+				id: 'compact_cond',
+				name: 'compact_cond',
+				value: tree,
+				conditionFields: categorized,
+				allowNegate: true,
+				showSummary: true,
+				layout: 'compact',
+			}),
+		);
+		expect(compactHtml).toContain('data-rw-layout="compact"');
+		expect(compactHtml).toContain('data-rw-condition-summary="1"');
+		expect(compactHtml).toContain('Negate group 1');
+	});
+
+	it('supports standalone controlled props without id/name/controlType, visible headings, allowRawExpression, and allowCustomValue', () => {
+		const standaloneHtml = renderToStaticMarkup(
+			React.createElement(ConditionBuilder, {
+				value: {
+					match: 'all',
+					groups: [
+						{
+							id: 'g1',
+							match: 'all',
+							rules: [
+								{ id: 'r1', field: 'plan', operator: 'eq', value: 'custom_partner' },
+								{ id: 'r2', field: 'plan', operator: 'in', value: ['pro', 'custom_tier'] },
+							],
+						},
+					],
+				},
+				onChange: vi.fn(),
+				heading: 'Eligibility Predicate',
+				allowRawExpression: true,
+				conditionFields: [
+					{
+						key: 'plan',
+						label: 'Plan',
+						type: 'select',
+						allowCustomValue: true,
+						options: [
+							{ value: 'free', label: 'Free' },
+							{ value: 'pro', label: 'Pro' },
+						],
+					},
+				],
+			}),
+		);
+
+		expect(standaloneHtml).not.toContain('<input type="hidden"');
+		expect(standaloneHtml).toContain('data-rw-condition-heading="1"');
+		expect(standaloneHtml).toContain('Eligibility Predicate');
+		expect(standaloneHtml).toContain('data-rw-condition-mode-toggle="1"');
+		expect(standaloneHtml).toContain('role="group"');
+		expect(standaloneHtml).toContain('aria-pressed=');
+		expect(standaloneHtml).toContain('focus-visible:ring-2');
+		expect(standaloneHtml).not.toContain('role="radiogroup"');
+		expect(standaloneHtml).toContain('value="custom_partner"');
+		expect(standaloneHtml).toContain('aria-label="Add custom value"');
+
+		const showLabelHtml = renderToStaticMarkup(
+			React.createElement(ConditionBuilder, {
+				label: 'Visibility Heading',
+				showLabel: true,
+				value: { match: 'all', groups: [] },
+				conditionFields: [],
+			}),
+		);
+		expect(showLabelHtml).toContain('data-rw-condition-heading="1"');
+		expect(showLabelHtml).toContain('Visibility Heading');
+	});
+
+	it('resolves DynamicBlockOptionsSource with optionsKey, typeMap, fallbackToTextWhenNoOptions, and allowCustomKey', () => {
+		const mockCtx = {
+			blocksVersion: 1,
+			values: {},
+			getRegisteredBlocks: () => [
+				{
+					id: 'blk_1',
+					type: 'choice_block',
+					prefix: 'f1',
+					values: {
+						field_key: 'plan_choice',
+						field_label: 'Plan Choice',
+						field_type: 'radios',
+						choices_list: 'free=Free\npro=Pro',
+						allow_other: '1',
+					},
+				},
+				{
+					id: 'blk_2',
+					type: 'empty_choice_block',
+					prefix: 'f2',
+					values: {
+						field_key: 'custom_note',
+						field_label: 'Custom Note',
+						field_type: 'segmented',
+						choices_list: '',
+					},
+				},
+				{
+					id: 'blk_3',
+					type: 'rating_block',
+					prefix: 'f3',
+					values: {
+						field_key: 'nps',
+						field_label: 'NPS Score',
+						field_type: 'rating',
+					},
+				},
+			],
+		} as unknown as SchemaFormContextValue;
+
+		const resolved = resolveDynamicBlockFields(
+			{
+				blockField: 'fields',
+				valueKey: 'field_key',
+				labelKey: 'field_label',
+				typeKey: 'field_type',
+				optionsKey: 'choices_list',
+				allowCustomKey: 'allow_other',
+				fallbackToTextWhenNoOptions: true,
+				typeMap: {
+					radios: 'select',
+					segmented: 'select',
+					rating: 'number',
+					consent: 'boolean',
+				},
+			},
+			mockCtx,
+		);
+
+		expect(resolved).toEqual([
+			{
+				key: 'plan_choice',
+				label: 'Plan Choice (plan_choice)',
+				type: 'select',
+				options: [
+					{ value: 'free', label: 'Free' },
+					{ value: 'pro', label: 'Pro' },
+				],
+				allowCustomValue: true,
+			},
+			{
+				key: 'custom_note',
+				label: 'Custom Note (custom_note)',
+				type: 'text',
+			},
+			{
+				key: 'nps',
+				label: 'NPS Score (nps)',
+				type: 'number',
+			},
+		]);
+	});
+
+	it('parses pipe-delimited expressions, serializes flat expressions losslessly, and supports allowWildcards', () => {
+		const parsedPipe = parseConditionStringToObject('plan=pro|enterprise, status!=draft|archived');
+		expect(parsedPipe).toEqual({
+			match: 'all',
+			groups: [
+				{
+					id: 'grp_1',
+					match: 'all',
+					rules: [
+						{ id: 'rule_1_1', field: 'plan', operator: 'in', value: ['pro', 'enterprise'] },
+						{ id: 'rule_1_2', field: 'status', operator: 'not_in', value: ['draft', 'archived'] },
+					],
+				},
+			],
+		});
+
+		const treeForRoundTrip = normalizeConditionBuilderValue(parsedPipe);
+		expect(serializeConditionToExpression(treeForRoundTrip)).toBe(
+			'plan=pro|enterprise, status!=draft|archived',
+		);
+
+		expect(
+			serializeConditionToExpression({
+				match: 'any',
+				groups: [
+					{
+						id: 'g1',
+						match: 'all',
+						rules: [
+							{ id: 'r1', field: 'tier', operator: 'eq', value: 'vip' },
+							{ id: 'r2', field: 'total', operator: 'gte', value: 100 },
+						],
+					},
+					{
+						id: 'g2',
+						match: 'all',
+						rules: [{ id: 'r3', field: 'override', operator: 'is_true', value: null }],
+					},
+				],
+			}),
+		).toBe('tier=vip, total>=100; override=1');
+
+		expect(
+			serializeConditionToExpression({
+				match: 'all',
+				groups: [
+					{
+						id: 'g1',
+						match: 'all',
+						negate: true,
+						rules: [{ id: 'r1', field: 'tier', operator: 'eq', value: 'vip' }],
+					},
+				],
+			}),
+		).toBeNull();
+
+		expect(
+			serializeConditionToExpression({
+				match: 'all',
+				groups: [
+					{
+						id: 'g1',
+						match: 'all',
+						rules: [{ id: 'r1', field: 'score', operator: 'between', value: [10, 20] }],
+					},
+				],
+			}),
+		).toBeNull();
+
+		// Wildcard evaluation
+		const wildcardTree = {
+			match: 'all',
+			groups: [
+				{
+					id: 'g1',
+					match: 'all',
+					rules: [{ id: 'r1', field: 'email', operator: 'eq', value: '*@acme.com' }],
+				},
+			],
+		};
+
+		expect(evaluateConditionTree(wildcardTree, { email: 'alice@ACME.com' }, { allowWildcards: true })).toBe(true);
+		expect(evaluateConditionTree(wildcardTree, { email: 'alice@acme.com' }, { allowWildcards: false })).toBe(false);
+		expect(
+			evaluateConditionTree(
+				wildcardTree,
+				{ email: 'alice@ACME.com' },
+				{ allowWildcards: true, caseSensitive: true },
+			),
+		).toBe(false);
+		// Linear time check on backtracking-heavy pattern
+		expect(
+			evaluateConditionTree(
+				{
+					match: 'all',
+					groups: [
+						{
+							id: 'g_perf',
+							match: 'all',
+							rules: [{ id: 'r_perf', field: 'code', operator: 'eq', value: '*a*a*a*b' }],
+						},
+					],
+				},
+				{ code: `${'a'.repeat(500)}c` },
+				{ allowWildcards: true },
+			),
+		).toBe(false);
+	});
+
+	it('renders ConditionFieldPicker search combobox outside role=listbox with role=group headers and focus-visible rings', async () => {
+		const { ConditionBuilderField } = await import('../../resources/ts/fields/controls/ConditionBuilderField');
+		const { renderToStaticMarkup } = await import('react-dom/server');
+		const React = await import('react');
+
+		const html = renderToStaticMarkup(
+			React.createElement(ConditionBuilderField, {
+				id: 'cond_a11y_check',
+				name: 'cond_a11y_check',
+				label: 'Visibility Rules',
+				allowNegate: true,
+				allowFieldComparison: true,
+				conditionFields: [
+					{ key: 'plan', label: 'Plan Tier', type: 'select', group: 'Account', options: [{ value: 'pro', label: 'Pro' }] },
+					{ key: 'seats', label: 'Seats', type: 'number', group: 'Account' },
+				],
+				value: {
+					match: 'all',
+					groups: [
+						{
+							id: 'g_a11y',
+							match: 'all',
+							negate: false,
+							rules: [{ id: 'r_a11y', field: 'plan', operator: 'eq', value: 'pro', valueSource: 'manual' }],
+						},
+					],
+				},
+			}),
+		);
+		expect(html).toContain('aria-haspopup="dialog"');
+		expect(html).toContain('focus-visible:ring-2');
 	});
 });

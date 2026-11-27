@@ -21,6 +21,7 @@ parameters:
 		- InputfieldReactM2A.module.php
 		- InputfieldReactFile.module.php
 		- InputfieldReactImage.module.php
+		- InputfieldReactCondition.module.php
 		- InputfieldTiptap.module.php
 		- TextformatterTiptapMiniBlocks.module.php
 	treatPhpDocTypesAsCertain: false

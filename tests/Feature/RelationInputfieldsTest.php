@@ -560,7 +560,14 @@ test('dependsResourceMap fallback hydrates saved alternate-resource values and F
 		->and($pageAdapter->tree($trashRootId, []))->toBe([]);
 
 	$nonSysTemplates = $workspace->relations()->get('template')->query([], ['includeSystem' => false, 'valueField' => 'name']);
-	$validTplName = (string) ($nonSysTemplates['items'][0]->value ?? 'home');
+	$validTplName = 'page';
+	foreach ($nonSysTemplates['items'] as $tplCandidate) {
+		$candTpl = wire()->templates->get((string) $tplCandidate->value);
+		if ($candTpl instanceof \ProcessWire\Template && (int) $candTpl->noParents === 0 && empty($candTpl->parentTemplates)) {
+			$validTplName = (string) $candTpl->name;
+			break;
+		}
+	}
 
 	$createdQuickPage = null;
 	try {

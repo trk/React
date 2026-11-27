@@ -56,6 +56,7 @@ function bootReactForTesting(): React
 		'MarkupReactCards' => MarkupReactCards::class,
 		'MarkupReactTab' => MarkupReactTab::class,
 		'InputfieldReactKeyValue' => InputfieldReactKeyValue::class,
+		'InputfieldReactCondition' => InputfieldReactCondition::class,
 		'InputfieldReactM2O' => InputfieldReactM2O::class,
 		'InputfieldReactM2M' => InputfieldReactM2M::class,
 		'InputfieldReactO2M' => InputfieldReactO2M::class,

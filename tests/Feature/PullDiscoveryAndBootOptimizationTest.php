@@ -645,7 +645,7 @@ test('WorkspaceRegistry::accessible batch-preloads Process admin page URLs witho
 	expect(count($processLookupQueries))->toBeLessThanOrEqual(1);
 });
 
-test('all 14 React companion .info.php files resolve via getModuleInfoExternal() and load without classloaders', function (): void {
+test('all 15 installed React companions and ProcessReactWorkspace resolve via getModuleInfoExternal() and load without classloaders', function (): void {
 	$pw = wire();
 	$modules = $pw->modules;
 	$moduleDir = dirname(__DIR__, 2);
@@ -658,6 +658,7 @@ test('all 14 React companion .info.php files resolve via getModuleInfoExternal()
 		'InputfieldReactFile',
 		'InputfieldReactImage',
 		'InputfieldReactIcon',
+		'InputfieldReactCondition',
 		'InputfieldReactKeyValue',
 		'InputfieldReactLink',
 		'InputfieldReactM2O',
@@ -665,6 +666,7 @@ test('all 14 React companion .info.php files resolve via getModuleInfoExternal()
 		'InputfieldReactO2M',
 		'InputfieldReactM2A',
 		'InputfieldTiptap',
+		'TextformatterTiptapMiniBlocks',
 	];
 
 	$infoPaths = [];
@@ -718,5 +720,5 @@ PHP;
 
 	expect($exit)->toBe(0, $stderr)
 		->and($stderr)->toBe('')
-		->and(json_decode($stdout, true, 16, JSON_THROW_ON_ERROR))->toBe(['count' => 14]);
+		->and(json_decode($stdout, true, 16, JSON_THROW_ON_ERROR))->toBe(['count' => 16]);
 });

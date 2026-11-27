@@ -76,7 +76,7 @@ test('InputfieldReactLink FieldtypeText config integration, multi-profile media 
 
 	$linkIf = $modules->get('InputfieldReactLink');
 	expect($linkIf)->toBeInstanceOf(InputfieldReactLink::class)
-		->and(InputfieldReactLink::DEFAULT_TYPES)->toBe(['page', 'entry', 'url', 'tel', 'email', 'file'])
+		->and(InputfieldReactLink::DEFAULT_TYPES)->toBe(['page', 'url', 'tel', 'email', 'file'])
 		->and(InputfieldReactLink::DEFAULT_TYPES)->not->toContain('anchor');
 
 	// Verify FieldtypeText exposes InputfieldReactLink in inputfieldClass select
@@ -256,7 +256,7 @@ test('Page lifecycle with InputfieldReactLink, PageLinkMediaHostAdapter file iso
 	expect($reloaded->get($fieldName)['href'])->toBe('#features');
 });
 
-test('InputfieldReactLink enforces 7 granular feature flags, ariaLabel storage, and FormSchemaSerializer linkConfig', function (): void {
+test('InputfieldReactLink enforces 6 granular feature flags, ariaLabel storage, and FormSchemaSerializer linkConfig', function (): void {
 	$suffix = substr(bin2hex(random_bytes(4)), 0, 8);
 	$fieldName = 'rw_link_flags_' . $suffix;
 
@@ -384,4 +384,50 @@ test('InputfieldReactLink enforces 7 granular feature flags, ariaLabel storage, 
 		expect($resolvedTr['ariaLabel'])->toBe('Belgeleri yeni sekmede aç')
 			->and($resolvedTr['customLabel'])->toBe('');
 	}
+});
+
+test('InputfieldReactLink uses canonical resourceType/resourceId via React::registerLinkResolver() and preserves prior valid value on error', function (): void {
+	/** @var React $react */
+	$react = wire('react');
+	$react->registerLinkResolver('entry', static function (array $value): ?array {
+		$resType = (string) ($value['resourceType'] ?? '');
+		$resId = (string) ($value['resourceId'] ?? '');
+		if ($resType === 'catalog' && $resId === '42') {
+			return [
+				'href' => '/catalog/42/',
+				'label' => 'Catalog Item 42',
+			];
+		}
+
+		return null;
+	});
+
+	try {
+		$resolved = InputfieldReactLink::resolveValue([
+			'type' => 'entry',
+			'resourceType' => 'catalog',
+			'resourceId' => '42',
+		]);
+		expect($resolved['type'])->toBe('entry')
+			->and($resolved['resourceType'])->toBe('catalog')
+			->and($resolved['resourceId'])->toBe('42')
+			->and($resolved['href'])->toBe('/catalog/42/')
+			->and($resolved['label'])->toBe('Catalog Item 42');
+	} finally {
+		$react->registerLinkResolver('entry', null);
+	}
+
+	/** @var InputfieldReactLink $inputfield */
+	$inputfield = wire('modules')->get('InputfieldReactLink');
+	$inputfield->attr('name', 'preserve_test_link');
+	$validInitial = json_encode(['type' => 'url', 'url' => 'https://processwire.com', 'label' => 'PW']);
+	$inputfield->attr('value', $validInitial);
+
+	$inputfield->getErrors(true);
+	$linkPost = [
+		'preserve_test_link' => json_encode(['type' => 'tel', 'url' => 'not-a-phone-number!!']),
+	];
+	$inputfield->___processInput(new WireInputData($linkPost));
+	expect($inputfield->getErrors())->not->toBe([])
+		->and(InputfieldReactLink::normalizeValue($inputfield->val())['url'])->toBe('https://processwire.com');
 });

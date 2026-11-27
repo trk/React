@@ -155,6 +155,13 @@ describe('InlineFieldSettingsPopover & useSchemaFormController first-select inte
 		expect(updateBlock).not.toContain('setLocalValues((prev)');
 		expect(updateBlock).not.toContain('props.onChange');
 		expect(updateBlock).not.toContain(', clientErrors,');
+
+		const regFragMatch = controllerSrc.match(/const registerFragment = useCallback\([\s\S]*?\n\t\);/);
+		const regBlockMatch = controllerSrc.match(/const registerBlockField = useCallback\([\s\S]*?\n\t\);/);
+		expect(regFragMatch?.[0] ?? '').toContain('parentCtxRef.current');
+		expect(regFragMatch?.[0] ?? '').toContain('[isAttachedFragment]');
+		expect(regBlockMatch?.[0] ?? '').toContain('parentCtxRef.current');
+		expect(regBlockMatch?.[0] ?? '').toContain('[isAttachedFragment]');
 	});
 
 	it('freezes popover repositioning while native <select> is focused and isolates React synthetic bubbling', () => {

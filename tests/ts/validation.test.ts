@@ -191,7 +191,7 @@ describe('SchemaForm Valibot Validation & Conditional Engine', () => {
 				meta_title: '',
 				step1_name: 'Done',
 				step2_goal: 'Done',
-				weblock_parent1_child1_cta: '',
+				rwblock_parent1_child1_cta: '',
 			},
 			{
 				registeredBlocks: [
@@ -203,19 +203,19 @@ describe('SchemaForm Valibot Validation & Conditional Engine', () => {
 							{
 								id: 'block_parent',
 								status: 1,
-								prefix: 'weblock_parent1',
+								prefix: 'rwblock_parent1',
 								schema: { fields: [] },
 							},
 							{
 								id: 'block_child',
 								status: 1,
-								prefix: 'weblock_parent1_child1',
+								prefix: 'rwblock_parent1_child1',
 								schema: {
 									fields: [
 										{
 											kind: 'control',
 											type: 'text',
-											name: 'weblock_parent1_child1_cta',
+											name: 'rwblock_parent1_child1_cta',
 											label: 'CTA Label',
 											required: true,
 										},
@@ -225,13 +225,13 @@ describe('SchemaForm Valibot Validation & Conditional Engine', () => {
 							{
 								id: 'block_hidden',
 								status: 2048, // unpublished -> skipped
-								prefix: 'weblock_hidden',
+								prefix: 'rwblock_hidden',
 								schema: {
 									fields: [
 										{
 											kind: 'control',
 											type: 'text',
-											name: 'weblock_hidden_req',
+											name: 'rwblock_hidden_req',
 											label: 'Hidden Required',
 											required: true,
 										},
@@ -263,7 +263,7 @@ describe('SchemaForm Valibot Validation & Conditional Engine', () => {
 		expect(emptyExplicit).toEqual({ found: true, value: '' });
 		expect(missingKey).toEqual({ found: false, value: undefined });
 
-		const emptyLinkJson = JSON.stringify({ type: 'page', pageId: 0, url: '', entryId: '', file: '' });
+		const emptyLinkJson = JSON.stringify({ type: 'page', pageId: 0, url: '', resourceId: '', file: '' });
 		const filledLinkJson = JSON.stringify({ type: 'url', pageId: 0, url: 'https://example.com' });
 		expect(evaluateCondition('cta', { cta: emptyLinkJson })).toBe(false);
 		expect(evaluateCondition('!cta', { cta: emptyLinkJson })).toBe(true);

@@ -185,19 +185,20 @@ test('WorkspaceDefinition and WorkspaceRegistry register, sort, resolve URLs, an
 	expect($registry->has('zeta-app'))->toBeFalse();
 });
 
-test('React::getWorkspaceDefinitions hook registers third-party workspaces cleanly', function (): void {
+test('React::registerWorkspaces hook registers third-party workspaces cleanly', function (): void {
 	$pw = wire();
-	$hookId = $pw->addHookAfter('React::getWorkspaceDefinitions', function (HookEvent $event): void {
-		$defs = is_array($event->return) ? $event->return : [];
-		$defs[] = [
-			'id' => 'hooked-crm',
-			'title' => 'Hooked CRM',
-			'description' => 'Registered via React::getWorkspaceDefinitions hook.',
-			'icon' => 'users',
-			'url' => '/processwire/setup/crm/',
-			'order' => 75,
-		];
-		$event->return = $defs;
+	$hookId = $pw->addHookAfter('React::registerWorkspaces', function (HookEvent $event): void {
+		$registry = $event->arguments(0);
+		if ($registry instanceof \Totoglu\React\Workspace\WorkspaceRegistry) {
+			$registry->register([
+				'id' => 'hooked-crm',
+				'title' => 'Hooked CRM',
+				'description' => 'Registered via React::registerWorkspaces hook.',
+				'icon' => 'users',
+				'url' => '/processwire/setup/crm/',
+				'order' => 75,
+			]);
+		}
 	});
 
 	$freshWorkspace = new React();
@@ -1563,18 +1564,22 @@ test('WorkspacePreferenceStore flock mutation preserves keys, EditPresenceStore 
 			->and($loaded['sidebarCollapsed'])->toBeTrue()
 			->and($loaded['favorites'])->toBe(['orders-ws']);
 
-		// 2. EditPresenceStore::leave() truncates to '{}' in place under LOCK_EX without unlinking inode
+		// 2. EditPresenceStore::leave() replaces payload atomically to '{}' while preserving .lock inode
 		$presenceStore->heartbeat($resourceKey, $user, 'tab-inode');
-		$lockPath = $presenceStore->filePath($resourceKey);
-		expect(is_file($lockPath))->toBeTrue();
+		$dataPath = $presenceStore->filePath($resourceKey);
+		$lockPath = $dataPath . '.lock';
+		expect(is_file($dataPath))->toBeTrue()
+			->and(is_file($lockPath))->toBeTrue();
 		clearstatcache(true, $lockPath);
 		$inodeBeforeLeave = fileinode($lockPath);
 
 		$presenceStore->leave($resourceKey, $user, 'tab-inode');
 		clearstatcache(true, $lockPath);
-		expect(is_file($lockPath))->toBeTrue()
+		clearstatcache(true, $dataPath);
+		expect(is_file($dataPath))->toBeTrue()
+			->and(is_file($lockPath))->toBeTrue()
 			->and(fileinode($lockPath))->toBe($inodeBeforeLeave)
-			->and(trim((string) file_get_contents($lockPath)))->toBe('{}');
+			->and(trim((string) file_get_contents($dataPath)))->toBe('{}');
 
 		// 3. WorkspaceLauncherProcess::___uninstall() leaves standalone React preference files intact
 		$launcher = new RwLauncherFixture();

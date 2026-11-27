@@ -397,22 +397,31 @@ test('preference and presence stores self-heal corrupted JSON cache files and In
 
 	// 3. ReactViewPreferenceStore saves, loads, and deletes presets cleanly
 	/** @var MarkupReactTable $table */
+	$vpComponentId = 'edge_vp_prefs_' . bin2hex(random_bytes(3));
 	$table = React::instance()->viewport('table')->configure(
 		[['id' => '1', 'title' => 'Item']],
-		['componentId' => 'edge_vp_prefs_' . bin2hex(random_bytes(3))],
+		['componentId' => $vpComponentId],
 	);
-	$table->searchQuery = 'charter';
+	$table->searchQuery = 'pending';
 	$viewStore = new ReactViewPreferenceStore();
 	\ProcessWire\wire($viewStore);
-	$viewStore->savePreset($table, 'Active Vessels!', 'Active Vessels');
-	$saved = $viewStore->load($table);
-	expect($saved['activeView'] ?? '')->toBe('saved:active_vessels_')
-		->and($saved['savedViews']['active_vessels_']['searchQuery'] ?? '')->toBe('charter');
+	try {
+		$viewStore->savePreset($table, 'Active Records!', 'Active Records');
+		$saved = $viewStore->load($table);
+		expect($saved['activeView'] ?? '')->toBe('saved:active_records_')
+			->and($saved['savedViews']['active_records_']['searchQuery'] ?? '')->toBe('pending');
 
-	$viewStore->deletePreset($table, 'saved:active_vessels_');
-	$afterDelete = $viewStore->load($table);
-	expect($afterDelete['activeView'] ?? '')->toBe('all')
-		->and($afterDelete['savedViews'] ?? [])->toBe([]);
+		$viewStore->deletePreset($table, 'saved:active_records_');
+		$afterDelete = $viewStore->load($table);
+		expect($afterDelete['activeView'] ?? '')->toBe('all')
+			->and($afterDelete['savedViews'] ?? [])->toBe([]);
+	} finally {
+		$metaUser = \ProcessWire\wire()->user;
+		if ($metaUser->isLoggedin()) {
+			$metaUser->meta()->remove('react_view_prefs_' . $vpComponentId);
+		}
+		\ProcessWire\wire()->session->removeFor('ReactViewPrefs', $vpComponentId);
+	}
 
 	// 4. InputfieldTiptap::set() returns $this (InputfieldTiptap) cleanly
 	$tiptap = new InputfieldTiptap();

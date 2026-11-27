@@ -390,7 +390,11 @@ test('maintains strict brand neutrality across React source files and documentat
 	}
 
 	$root = LayeringScanner::moduleRoot();
-	foreach (['README.md', 'API.md', 'AGENTS.md', '.agents/skills/pw-react/SKILL.md'] as $docFile) {
+	$docFiles = ['README.md', 'API.md', 'AGENTS.md', '.agents/skills/pw-react/SKILL.md'];
+	foreach (glob($root . '/docs/*.md') ?: [] as $docMd) {
+		$docFiles[] = 'docs/' . basename($docMd);
+	}
+	foreach ($docFiles as $docFile) {
 		$docPath = $root . '/' . $docFile;
 		if (!is_file($docPath)) {
 			continue;

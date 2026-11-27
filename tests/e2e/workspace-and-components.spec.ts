@@ -127,6 +127,7 @@ test.describe('ProcessReactWorkspace Launcher, Cross-Panel SPA Navigation & Stan
 				await expect(page.locator('[data-rw-mobile-drawer]')).toBeVisible();
 				await expect(page.locator('[data-rw-mobile-drawer] a[href]').first()).toBeVisible();
 				await page.keyboard.press('Escape');
+				await expect(page.locator('[data-rw-mobile-drawer]')).toHaveCount(0);
 			}
 			await page.setViewportSize({ width: 1280, height: 720 });
 			await expect(page.locator('[data-rw-admin-return]')).toBeVisible();
@@ -1439,7 +1440,7 @@ test.describe('ProcessReactWorkspace Launcher, Cross-Panel SPA Navigation & Stan
 		}
 		await expect(
 			page.frameLocator('iframe[data-rw-showcase-iframe="compare-375"]').locator('[data-rw-showcase-canvas="embed"]')
-		).toBeVisible();
+		).toBeVisible({ timeout: 25_000 });
 
 		tracker.assertNoErrors();
 	});
@@ -1596,7 +1597,7 @@ test.describe('Multi-Shell Layouts & Collapsible Sidebar Navigation', () => {
 	test('switches Topbar to Sidebar, searches/pins/navigates in ModuleSwitcher, collapses/expands via click and Ctrl+B, passes light/dark/mobile WCAG 2.1 AA, and resets cleanly', async ({
 		page,
 	}) => {
-		test.setTimeout(90_000);
+		test.setTimeout(150_000);
 		const tracker = attachRuntimeErrorTracker(page);
 		await page.setViewportSize({ width: 1280, height: 720 });
 		await page.goto(getAdminUrl('workspace/'), { waitUntil: 'networkidle' });

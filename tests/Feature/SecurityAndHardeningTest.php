@@ -741,6 +741,7 @@ for (const file of [
 	'MarkupReactCards.js',
 	'MarkupReactTab.js',
 	'InputfieldReactKeyValue.js',
+	'InputfieldReactCondition.js',
 	'InputfieldReactIcon.js',
 	'InputfieldReactLink.js',
 	'ReactMedia.js',

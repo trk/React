@@ -1194,4 +1194,344 @@ describe('Runtime Utilities, Formula Engine, i18n, Sortable Tree & Media Helpers
 		expect(cardsHtml).not.toContain('<dt class="truncate text-[11px] text-muted-foreground">Avatar</dt>');
 		expect(cardsHtml).not.toContain('<dt class="truncate text-[11px] text-muted-foreground">Icon</dt>');
 	});
+
+	it('renders Combobox initial custom value when allowCustom=true and hides Clear button when readOnly=true', async () => {
+		const { Combobox } = await import('../../resources/ts/ui/primitives/Combobox');
+		const customHtml = renderToStaticMarkup(
+			React.createElement(Combobox, {
+				options: [{ value: 'alpha', label: 'Alpha' }],
+				value: 'custom_slug',
+				allowCustom: true,
+				clearable: true,
+			})
+		);
+		expect(customHtml).toContain('value="custom_slug"');
+		expect(customHtml).toContain('aria-label="Clear"');
+
+		const readOnlyHtml = renderToStaticMarkup(
+			React.createElement(Combobox, {
+				options: [{ value: 'alpha', label: 'Alpha' }],
+				value: 'alpha',
+				readOnly: true,
+				clearable: true,
+			})
+		);
+		expect(readOnlyHtml).not.toContain('aria-label="Clear"');
+	});
+
+	it('hardens sanitizeImageSrc against URL-encoded control chars and SVG animation/meta payloads', async () => {
+		const { sanitizeImageSrc } = await import('../../resources/ts/lib/utils');
+		expect(sanitizeImageSrc('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10"/></svg>')).not.toBe('');
+		expect(sanitizeImageSrc('data:image/svg+xml;utf8,<svg><animate attributeName="href" values="javascript:alert(1)"/></svg>')).toBe('');
+		expect(sanitizeImageSrc('data:image/svg+xml;utf8,<svg><meta http-equiv="refresh"/></svg>')).toBe('');
+		expect(sanitizeImageSrc('data:image/svg+xml;utf8,<svg><a href="java%0ascript:alert(1)">x</a></svg>')).toBe('');
+	});
+
+	it('retries loadRuntimeScript cleanly after a failed script load even when document.readyState is complete', async () => {
+		const originalDocument = globalThis.document;
+		const scripts: Array<{
+			tagName: string;
+			type: string;
+			src: string;
+			dataset: Record<string, string>;
+			listeners: Record<string, Array<() => void>>;
+			attributes: Map<string, string>;
+			removed: boolean;
+			getAttribute: (k: string) => string | null;
+			addEventListener: (evt: string, fn: () => void) => void;
+			remove: () => void;
+			trigger: (evt: 'load' | 'error') => void;
+		}> = [];
+
+		const makeScript = (src = '', dataset: Record<string, string> = {}) => {
+			const node = {
+				tagName: 'SCRIPT',
+				type: 'module',
+				src,
+				dataset: { ...dataset },
+				listeners: {} as Record<string, Array<() => void>>,
+				attributes: new Map<string, string>(),
+				removed: false,
+				getAttribute(k: string) {
+					return k === 'src' ? node.src : node.attributes.get(k) ?? null;
+				},
+				addEventListener(evt: string, fn: () => void) {
+					node.listeners[evt] = node.listeners[evt] || [];
+					node.listeners[evt].push(fn);
+				},
+				removeEventListener(evt: string, fn: () => void) {
+					node.listeners[evt] = (node.listeners[evt] || []).filter((cb) => cb !== fn);
+				},
+				remove() {
+					node.removed = true;
+					const idx = scripts.indexOf(node);
+					if (idx >= 0) {
+						scripts.splice(idx, 1);
+					}
+				},
+				trigger(evt: 'load' | 'error') {
+					for (const fn of node.listeners[evt] || []) {
+						fn();
+					}
+				},
+			};
+			return node;
+		};
+
+		try {
+			const failedExisting = makeScript('/site/modules/React/dist/MockRetryBundle.js', { rwFailed: '1' });
+			scripts.push(failedExisting);
+
+			globalThis.document = {
+				readyState: 'complete',
+				head: {
+					appendChild: (node: ReturnType<typeof makeScript>) => {
+						scripts.push(node);
+						return node;
+					},
+				},
+				querySelectorAll: (selector: string) => {
+					if (selector.startsWith('script')) {
+						return [...scripts];
+					}
+					return [];
+				},
+				createElement: (tag: string) => makeScript(),
+			} as unknown as Document;
+
+			const { loadRuntimeScript } = await import('../../resources/ts/entries/ReactInertia');
+
+			const firstAttempt = loadRuntimeScript('/site/modules/React/dist/MockRetryBundle.js');
+			expect(failedExisting.removed).toBe(true);
+			expect(scripts).toHaveLength(1);
+			scripts[0].trigger('error');
+			await firstAttempt;
+
+			// Failed attempt removed itself so a retry creates a fresh <script> even at document.readyState === 'complete'
+			expect(scripts).toHaveLength(0);
+
+			const secondAttempt = loadRuntimeScript('/site/modules/React/dist/MockRetryBundle.js');
+			expect(scripts).toHaveLength(1);
+			scripts[0].trigger('load');
+			await secondAttempt;
+			expect(scripts[0].dataset.rwLoaded).toBe('1');
+		} finally {
+			globalThis.document = originalDocument;
+		}
+	});
+
+	it('rejects spaces in sanitizeHref, blocks named HTML5 entities in sanitizeImageSrc SVGs, and retries loadRuntimeStyle after error', async () => {
+		expect(sanitizeHref('https://example.com/hello world')).toBe('');
+
+		const { sanitizeImageSrc } = await import('../../resources/ts/lib/utils');
+		expect(sanitizeImageSrc('data:image/svg+xml;utf8,<svg><a href="javascript&colon;alert(1)">x</a></svg>')).toBe('');
+		expect(sanitizeImageSrc('data:image/svg+xml;utf8,<svg><a href="java&Tab;script:alert(1)">x</a></svg>')).toBe('');
+		expect(sanitizeImageSrc('data:image/svg+xml;utf8,<svg><a href="java&NewLine;script:alert(1)">x</a></svg>')).toBe('');
+
+		const originalDocument = globalThis.document;
+		const links: Array<{
+			rel: string;
+			href: string;
+			dataset: Record<string, string>;
+			listeners: Record<string, Array<() => void>>;
+			getAttribute: (k: string) => string | null;
+			addEventListener: (evt: string, fn: () => void) => void;
+			remove: () => void;
+			trigger: (evt: 'load' | 'error') => void;
+		}> = [];
+		const makeLink = (href = '') => {
+			const node = {
+				rel: 'stylesheet',
+				href,
+				dataset: {} as Record<string, string>,
+				listeners: {} as Record<string, Array<() => void>>,
+				getAttribute(k: string) {
+					return k === 'href' ? node.href : null;
+				},
+				addEventListener(evt: string, fn: () => void) {
+					node.listeners[evt] = node.listeners[evt] || [];
+					node.listeners[evt].push(fn);
+				},
+				removeEventListener(evt: string, fn: () => void) {
+					node.listeners[evt] = (node.listeners[evt] || []).filter((cb) => cb !== fn);
+				},
+				remove() {
+					const idx = links.indexOf(node);
+					if (idx >= 0) {
+						links.splice(idx, 1);
+					}
+				},
+				trigger(evt: 'load' | 'error') {
+					for (const fn of node.listeners[evt] || []) {
+						fn();
+					}
+				},
+			};
+			return node;
+		};
+
+		try {
+			globalThis.document = {
+				readyState: 'complete',
+				head: {
+					appendChild: (node: ReturnType<typeof makeLink>) => {
+						links.push(node);
+						return node;
+					},
+				},
+				querySelectorAll: (selector: string) => (selector.startsWith('link') ? [...links] : []),
+				createElement: () => makeLink(),
+			} as unknown as Document;
+
+			const { loadRuntimeStyle } = await import('../../resources/ts/entries/ReactInertia');
+			loadRuntimeStyle('/site/modules/React/dist/MockRetryStyle.css');
+			expect(links).toHaveLength(1);
+			links[0].trigger('error');
+			expect(links).toHaveLength(0);
+
+			loadRuntimeStyle('/site/modules/React/dist/MockRetryStyle.css');
+			expect(links).toHaveLength(1);
+			links[0].trigger('load');
+			expect(links[0].dataset.rwLoaded).toBe('1');
+		} finally {
+			globalThis.document = originalDocument;
+		}
+	});
+
+	it('wires CommandDialog aria-controls & matching listbox id, cleans up copyMarkupText textarea on throw, and keeps light select chevron overrides higher specificity', async () => {
+		const fs = await import('node:fs');
+		const path = await import('node:path');
+
+		const { CommandDialog, CommandInput, CommandList, CommandItem } = await import(
+			'../../resources/ts/ui/primitives/Command'
+		);
+		const commandHtml = renderToStaticMarkup(
+			React.createElement(
+				CommandDialog,
+				{ open: true, onOpenChange: () => {} },
+				React.createElement(CommandInput, { placeholder: 'Search...' }),
+				React.createElement(
+					CommandList,
+					null,
+					React.createElement(CommandItem, { value: 'one' }, 'First')
+				)
+			)
+		);
+		const controlsMatch = commandHtml.match(/aria-controls="([^"]+)"/);
+		const listboxMatch = commandHtml.match(/id="([^"]+)"[^>]*role="listbox"|role="listbox"[^>]*id="([^"]+)"/);
+		expect(controlsMatch?.[1]).toBeTruthy();
+		expect(controlsMatch?.[1]).toBe(listboxMatch?.[1] || listboxMatch?.[2]);
+		expect(commandHtml).toContain('role="option"');
+
+		// Verify copyMarkupText removes temporary textarea even if execCommand throws
+		const { copyMarkupText } = await import('../../resources/ts/fields/schema/SchemaLayoutNodes');
+		const originalDocument = globalThis.document;
+		const navDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+		let removedCount = 0;
+		try {
+			Object.defineProperty(globalThis, 'navigator', {
+				value: {},
+				configurable: true,
+			});
+			globalThis.document = {
+				body: { appendChild: () => {} },
+				createElement: () => ({
+					value: '',
+					style: {},
+					setAttribute: () => {},
+					select: () => {},
+					remove: () => {
+						removedCount++;
+					},
+				}),
+				execCommand: () => {
+					throw new Error('copy blocked');
+				},
+			} as unknown as Document;
+
+			const ok = await copyMarkupText('hello');
+			expect(ok).toBe(false);
+			expect(removedCount).toBe(1);
+		} finally {
+			globalThis.document = originalDocument;
+			if (navDescriptor) {
+				Object.defineProperty(globalThis, 'navigator', navDescriptor);
+			}
+		}
+
+		// Verify ReactInertia.css light override rules include #_rw_shield so dark rules cannot override .light containers
+		const cssSrc = fs.readFileSync(
+			path.resolve(__dirname, '../../resources/css/entries/ReactInertia.css'),
+			'utf8'
+		);
+		expect(cssSrc).toContain(':is(html.dark, body.dark-theme) :is(.light, .light-theme) :is(.pw-inertia-inputfield-island, [data-rw-app-shell], [data-rw-schema-form], [data-rw-portal-overlay], [data-rw-control], #_rw_shield) [data-rw-select]');
+	});
+
+	it('enforces Cycle 5 keyboard/ARIA contracts and keeps custom relation links free of hardcoded domain types', async () => {
+		const fs = await import('node:fs');
+		const path = await import('node:path');
+		const tsRoot = path.resolve(__dirname, '../../resources/ts');
+
+		const { isLinkFieldValueEmpty } = await import('../../resources/ts/fields/schemaRuntimeHelpers');
+		expect(isLinkFieldValueEmpty({ type: 'record', resourceType: 'catalog', resourceId: '' })).toBe(true);
+		expect(isLinkFieldValueEmpty({ type: 'record', resourceType: 'catalog', resourceId: 'rec_1' })).toBe(false);
+
+		const inlineMeta = buildLinkInlineSettingFields(
+			{ type: 'record', resourceId: 'rec_1' },
+			{ types: ['record'], relationTokens: { record: 'tok' }, enableQuery: true },
+			'cta_link'
+		);
+		expect(inlineMeta.fields.some((f) => f.name === `${LINK_INLINE_SETTING_PREFIX}query`)).toBe(true);
+
+		const linkSrc = fs.readFileSync(path.join(tsRoot, 'fields/controls/LinkField.tsx'), 'utf8');
+		const sharedSrc = fs.readFileSync(path.join(tsRoot, 'fields/shared.tsx'), 'utf8');
+		const helpersSrc = fs.readFileSync(path.join(tsRoot, 'fields/schemaRuntimeHelpers.ts'), 'utf8');
+		expect(linkSrc).not.toContain("entry: 'Entry'");
+		expect(linkSrc).not.toContain("'link.searchEntries'");
+		expect(sharedSrc).not.toContain("normLink.type === 'entry'");
+		expect(helpersSrc).not.toContain("type === 'entry'");
+
+		const navSrc = fs.readFileSync(path.join(tsRoot, 'layout/ModuleSectionNav.tsx'), 'utf8');
+		expect(navSrc).toContain('aria-controls={moreOpen ? moreMenuId : undefined}');
+		expect(navSrc).toContain('id={moreMenuId}');
+		expect(navSrc).toContain("document.addEventListener('keydown', onKeyDown, true)");
+		expect(navSrc).toContain('e.stopPropagation()');
+		expect(navSrc).toContain("aria-current={isActive ? 'page' : undefined}");
+
+		const tagsSrc = fs.readFileSync(path.join(tsRoot, 'fields/controls/TagsField.tsx'), 'utf8');
+		expect(tagsSrc).toContain("window.addEventListener('keydown', onEscape, true)");
+
+		const cbSrc = fs.readFileSync(path.join(tsRoot, 'fields/controls/ConditionBuilderField.tsx'), 'utf8');
+		expect(cbSrc).toContain('aria-controls={isOpen && groupedFields.length > 0 ? listboxId : undefined}');
+
+		const cmdSrc = fs.readFileSync(path.join(tsRoot, 'ui/primitives/Command.tsx'), 'utf8');
+		expect(cmdSrc).toContain("ctx?.setActiveId('')");
+		expect(cmdSrc).toContain('() => () => setActiveId?.((cur) => (cur === itemId ? \'\' : cur))');
+		expect(cmdSrc).toContain('[setActiveId, itemId]');
+		expect(cmdSrc).not.toContain('[ctx, itemId]');
+
+		expect(linkSrc).toContain('aria-controls={searchOpen ? listboxId : undefined}');
+		expect(linkSrc).toContain('id={`${listboxId}-opt-${idx}`}');
+		expect(linkSrc).toContain('aria-activedescendant={');
+
+		const inlinePopoverSrc = fs.readFileSync(
+			path.join(tsRoot, 'fields/schema/InlineFieldSettingsPopover.tsx'),
+			'utf8'
+		);
+		expect(inlinePopoverSrc).toContain('aria-controls={open ? panelId : undefined}');
+		expect(navSrc).toContain('if (moreOpen && visibleCount >= items.length)');
+
+		// Ensure generic block prefix handling without hardcoded upper-layer prefixes
+		expect(helpersSrc).not.toMatch(/weblock|entriesblock/);
+		expect(sharedSrc).not.toMatch(/weblock|entriesblock/);
+		const { lookupScopedFieldValue } = await import('../../resources/ts/fields/schemaRuntimeHelpers');
+		const { countNestedErrors } = await import('../../resources/ts/fields/shared');
+		expect(lookupScopedFieldValue({ customblock_a_title: 'x' }, 'title').found).toBe(false);
+		expect(
+			countNestedErrors(
+				[{ kind: 'control', name: 'blocks', type: 'textarea' }],
+				{ customblock_blocks_cta: 'Required' }
+			)
+		).toBe(1);
+	});
 });

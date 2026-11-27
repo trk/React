@@ -226,6 +226,7 @@ test('CommandSearch gateway and registry enforce guest 403, permission filtering
 		try {
 			expect($isolatedReact->handleCommandSearchAction(['q' => 'alpha', '_requestMethod' => 'GET'], $unprivileged)['status'])->toBe(403);
 		} finally {
+			$isolatedReact->hooks()->unregister();
 			if ($prevReact instanceof React) {
 				$pw->fuel->set('react', $prevReact);
 			}
@@ -536,6 +537,7 @@ test('React::deferCommandSearchRegistration and buildInertiaSharedContext expose
 		expect($shared['commandSearchEndpoint'] ?? '')->toEndWith('/_react/command-search');
 	} finally {
 		$pw->removeHook($hookId);
+		$freshReact->hooks()->unregister();
 		if ($prevUser instanceof User && $prevUser->id > 0) {
 			$pw->users->setCurrentUser($prevUser);
 		}

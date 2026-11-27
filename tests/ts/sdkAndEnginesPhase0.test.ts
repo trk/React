@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -183,7 +183,8 @@ console.log(JSON.stringify({
 			'ReactIcons',
 		]);
 		expect(CORE_STYLE_ENTRIES).toEqual(['ReactInertia', 'ReactMedia', 'TiptapCore', 'ReactCalendar']);
-		expect(ISOLATED_BUILD_ENTRIES).toHaveLength(20);
+		expect(ISOLATED_BUILD_ENTRIES).toHaveLength(21);
+		expect(ISOLATED_BUILD_ENTRIES).toContain('InputfieldReactCondition');
 		expect(ISOLATED_BUILD_ENTRIES).toContain('ReactGrid');
 		expect(ISOLATED_BUILD_ENTRIES).toContain('ReactDnd');
 		expect(ISOLATED_BUILD_ENTRIES).toContain('ReactCalendar');
@@ -306,5 +307,46 @@ console.log(JSON.stringify({
 		expect(result.hasEvaluateShowIf).toBe(true);
 		expect(result.hasNavigateTablist).toBe(true);
 		expect(result.recordHeaderReplaced).toBe(true);
+	});
+
+	it('exposes all 15 Layout shell symbols and extra Fields controls via typed SDK files and ReactInertia proxy', () => {
+		const sdkLayout = readFileSync(resolve(MODULE_DIR, 'resources/ts/sdk/layout.ts'), 'utf8');
+		for (const symbol of [
+			'AppShell',
+			'RecordHeader',
+			'EditPresenceBanner',
+			'postWorkspacePreferenceAction',
+			'renderNoticeMarkup',
+			'registerShellLayout',
+			'getShellLayout',
+			'listShellLayouts',
+			'resolveShellLayoutDefinition',
+			'useShellLayout',
+			'ModuleSwitcher',
+			'UserAccountMenu',
+			'TopbarShellLayout',
+			'SidebarShellLayout',
+			'useEditPresence',
+		]) {
+			expect(sdkLayout).toContain(symbol);
+		}
+
+		const sdkFields = readFileSync(resolve(MODULE_DIR, 'resources/ts/sdk/fields.ts'), 'utf8');
+		for (const ctrl of [
+			'ColorFieldControl',
+			'TagsFieldControl',
+			'ComboboxFieldControl',
+			'PhoneFieldControl',
+			'UnitNumberFieldControl',
+			'SegmentedFieldControl',
+			'SpacingFieldControl',
+			'OtpFieldControl',
+			'PasswordFieldControl',
+			'MarkdownFieldControl',
+			'ExtraFieldControlIsland',
+			'FieldControlIsland',
+		]) {
+			expect(sdkFields).toContain(ctrl);
+		}
 	});
 });

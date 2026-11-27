@@ -537,3 +537,67 @@ test('every dotted t() key referenced in TypeScript sources exists in the PHP tr
 	expect($scannedFiles)->toBeGreaterThan(50)
 		->and($missing)->toBe([]);
 });
+
+test('all React PHP source lines contain at most one translation call, preserve sprintf specifiers, and include No across all 6 CSV packs', function (): void {
+	$moduleDir = dirname(__DIR__, 2);
+	$iterator = new RecursiveIteratorIterator(
+		new RecursiveDirectoryIterator($moduleDir, FilesystemIterator::SKIP_DOTS),
+	);
+
+	$multiCallLines = [];
+	/** @var SplFileInfo $fileInfo */
+	foreach ($iterator as $fileInfo) {
+		if (!$fileInfo->isFile() || strtolower($fileInfo->getExtension()) !== 'php') {
+			continue;
+		}
+		$rel = str_replace($moduleDir . '/', '', $fileInfo->getPathname());
+		if (
+			str_starts_with($rel, 'tests/') ||
+			str_starts_with($rel, 'vendor/') ||
+			str_starts_with($rel, 'node_modules/')
+		) {
+			continue;
+		}
+		$lines = file($fileInfo->getPathname(), FILE_IGNORE_NEW_LINES) ?: [];
+		foreach ($lines as $idx => $line) {
+			if (preg_match_all('/(?:\$this->_|\b__)\(/', $line, $m) > 1) {
+				$multiCallLines[] = $rel . ':' . ($idx + 1);
+			}
+		}
+	}
+	expect($multiCallLines)->toBe([]);
+
+	$parseCsv = static function (string $csvPath): array {
+		$fp = fopen($csvPath, 'rb');
+		if ($fp === false) {
+			return [];
+		}
+		fgetcsv($fp, 0, ',', '"', '\\');
+		$rows = [];
+		while (($row = fgetcsv($fp, 0, ',', '"', '\\')) !== false) {
+			$rows[] = $row;
+		}
+		fclose($fp);
+
+		return $rows;
+	};
+
+	foreach (['en', 'tr', 'de', 'fr', 'es', 'ru'] as $locale) {
+		$rows = $parseCsv($moduleDir . '/languages/' . $locale . '.csv');
+		$hasNoFromRecord = false;
+		foreach ($rows as $row) {
+			$src = (string) ($row[0] ?? '');
+			$dst = (string) ($row[1] ?? '');
+			$file = (string) ($row[3] ?? '');
+			if ($src === 'No' && str_ends_with($file, 'ReactRecord.php')) {
+				$hasNoFromRecord = true;
+			}
+			if (preg_match_all('/%(?:\d+\$)?[sdfu]/', $src, $specMatches) > 0) {
+				foreach ($specMatches[0] as $spec) {
+					expect($dst)->toContain($spec);
+				}
+			}
+		}
+		expect($hasNoFromRecord)->toBeTrue("Missing ReactRecord 'No' entry in {$locale}.csv");
+	}
+});

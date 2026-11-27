@@ -319,3 +319,32 @@ test('set_theme_preset persists per-user overrides without overwriting site defa
 	], false, $guest);
 	expect($guestDenied['ok'])->toBeFalse()->and($guestDenied['status'])->toBe(403);
 });
+
+test('ThemeTokenParser emits :not(.dark) root selectors for light-only custom tokens and ThemeManager rejects nested light-dark()', function (): void {
+	$parser = new \Totoglu\React\Theme\ThemeTokenParser();
+	$parsed = $parser->parse(
+		':root { --background: #ffffff; --foreground: #111111; --primary: #2563eb; --primary-foreground: #ffffff; }'
+	);
+	expect($parsed['light'])->toHaveKey('primary', '#2563eb')
+		->and($parsed['dark'])->toBe([]);
+
+	$react = React::instance();
+	$prevCustom = (string) $react->get('themeCustomTokens');
+	$prevPreset = (string) $react->get('themePreset');
+	try {
+		$react->set('themePreset', 'custom');
+		$react->set('themeCustomTokens', ':root { --background: #ffffff; --foreground: #111111; --primary: #2563eb; --primary-foreground: #ffffff; }');
+		$lightCss = $react->theme()->compileTokens($parsed);
+		expect($lightCss)->toContain('--primary: #2563eb;')
+			->and($lightCss)->not->toContain('.dark');
+
+		$nestedParsed = $parser->parse(':root { --background: #ffffff; --foreground: #111111; --primary: light-dark(#111, #eee); --primary-foreground: #ffffff; }');
+		$nestedParsed['dark']['primary'] = '#eeeeee';
+		$compiledNested = $react->theme()->compileTokens($nestedParsed);
+		expect($compiledNested)->toContain('--primary: light-dark(#111, #eee);')
+			->and($compiledNested)->not->toContain('light-dark(light-dark(');
+	} finally {
+		$react->set('themePreset', $prevPreset);
+		$react->set('themeCustomTokens', $prevCustom);
+	}
+});

@@ -280,6 +280,7 @@ test('modular dist bundles exist within strict size budgets and isolate CSS/JS p
 	$schemaFormFile = $moduleDir . '/dist/SchemaForm.js';
 	$tabFile = $moduleDir . '/dist/MarkupReactTab.js';
 	$kvFile = $moduleDir . '/dist/InputfieldReactKeyValue.js';
+	$conditionFile = $moduleDir . '/dist/InputfieldReactCondition.js';
 	$iconFieldFile = $moduleDir . '/dist/InputfieldReactIcon.js';
 	$linkFile = $moduleDir . '/dist/InputfieldReactLink.js';
 	$mediaJsFile = $moduleDir . '/dist/ReactMedia.js';
@@ -313,6 +314,8 @@ test('modular dist bundles exist within strict size budgets and isolate CSS/JS p
 		->and(is_file($schemaFormFile))->toBeTrue()
 		->and(is_file($tabFile))->toBeTrue()
 		->and(is_file($kvFile))->toBeTrue()
+		->and(is_file($conditionFile))->toBeTrue()
+		->and((int) filesize($conditionFile))->toBeLessThan(120_000)
 		->and(is_file($iconFieldFile))->toBeTrue()
 		->and(is_file($linkFile))->toBeTrue()
 		->and(is_file($mediaJsFile))->toBeTrue()
@@ -392,6 +395,7 @@ test('modular dist bundles exist within strict size budgets and isolate CSS/JS p
 	$schemaFormContents = (string) file_get_contents($schemaFormFile);
 	$tabContents = (string) file_get_contents($tabFile);
 	$kvContents = (string) file_get_contents($kvFile);
+	$conditionContents = (string) file_get_contents($conditionFile);
 	$iconFieldContents = (string) file_get_contents($iconFieldFile);
 	$linkContents = (string) file_get_contents($linkFile);
 	$mediaJsContents = (string) file_get_contents($mediaJsFile);
@@ -426,6 +430,7 @@ test('modular dist bundles exist within strict size budgets and isolate CSS/JS p
 		->and($jsContents)->toContain('SchemaForm.js')
 		->and($jsContents)->toContain('MarkupReactTab.js')
 		->and($jsContents)->toContain('InputfieldReactKeyValue.js')
+		->and($jsContents)->toContain('InputfieldReactCondition.js')
 		->and($jsContents)->toContain('InputfieldReactIcon.js')
 		->and($jsContents)->toContain('InputfieldReactLink.js')
 		->and($jsContents)->toContain('ReactMedia.js')
@@ -477,6 +482,10 @@ test('modular dist bundles exist within strict size budgets and isolate CSS/JS p
 		->and($schemaFormContents)->not->toContain('new Function')
 		->and($tabContents)->toContain('__provideFieldControl')
 		->and($kvContents)->toContain('__provideFieldControl')
+		->and($conditionContents)->toContain('__provideFieldControl')
+		->and($conditionContents)->toContain('ConditionBuilderFieldControl')
+		->and($conditionContents)->not->toContain('ProseMirror')
+		->and($conditionContents)->not->toContain('AssetInspectorSheet')
 		->and($iconFieldContents)->toContain('__provideFieldControl')
 		->and($linkContents)->toContain('__provideFieldControl')
 		->and($linkContents)->not->toContain('data-rw-crop-stage')
@@ -524,6 +533,11 @@ test('every React companion submodule declares strictly isolated script and styl
 	$kvMod = $modules->get('InputfieldReactKeyValue');
 	expect(implode("\n", $kvMod->getModuleScriptAssets()))->toContain('InputfieldReactKeyValue.js')
 		->and(implode("\n", $kvMod->getModuleScriptAssets()))->not->toContain('SchemaForm.js');
+
+	$condMod = $modules->get('InputfieldReactCondition');
+	expect(implode("\n", $condMod->getModuleScriptAssets()))->toContain('InputfieldReactCondition.js')
+		->and(implode("\n", $condMod->getModuleScriptAssets()))->not->toContain('SchemaForm.js')
+		->and(implode("\n", $condMod->getModuleScriptAssets()))->not->toContain('ReactExtraFields.js');
 
 	$iconMod = $modules->get('InputfieldReactIcon');
 	$iconScripts = implode("\n", $iconMod->getModuleScriptAssets());

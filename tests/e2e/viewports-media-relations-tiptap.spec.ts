@@ -1008,7 +1008,7 @@ test.describe('ProcessReactWorkspace Comprehensive Subsystems E2E (Viewports, Me
 		// Search "heart" and select it, then switch to the Appearance tab inside the popover
 		const searchInput = popover.locator('input[type="search"]');
 		await searchInput.fill('heart');
-		const heartBtn = popover.locator('button[aria-label="heart"]').first();
+		const heartBtn = popover.locator('button[aria-label="Heart"]').first();
 		await expect(heartBtn).toBeVisible();
 		await heartBtn.click();
 
@@ -1072,7 +1072,7 @@ test.describe('ProcessReactWorkspace Comprehensive Subsystems E2E (Viewports, Me
 		const adminPopover = page.locator('[data-rw-icon-popover="true"]');
 		await expect(adminPopover).toBeVisible();
 		await adminPopover.locator('input[type="search"]').fill('compass');
-		await adminPopover.locator('button[aria-label="compass"]').first().click();
+		await adminPopover.locator('button[aria-label="Compass"]').first().click();
 
 		await expect(page.locator('#Inputfield_vectorIcon')).toHaveValue('rwv--compass');
 		// ProcessWire showIf="vectorIcon=''" hides the native Icon field immediately!
@@ -1637,6 +1637,141 @@ test.describe('ProcessReactWorkspace Comprehensive Subsystems E2E (Viewports, Me
 		await page.waitForTimeout(150);
 		await expect(nestedWidth).toHaveValue('1/2');
 		await page.keyboard.press('Escape');
+
+		tracker.assertNoErrors();
+	});
+
+	test('InputfieldReactCondition field picker keyboard accessibility, SchemaForm presenceToken roundtrip, and WCAG AA compliance', async ({ page }) => {
+		const tracker = attachRuntimeErrorTracker(page);
+		const capturedPresenceBodies: Array<Record<string, unknown>> = [];
+
+		await page.route('**/_react/presence', async (route) => {
+			try {
+				const raw = route.request().postData() || '{}';
+				capturedPresenceBodies.push(JSON.parse(raw) as Record<string, unknown>);
+			} catch {
+				// ignore parse failure
+			}
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify({
+					ok: true,
+					presence: { resourceKey: 'e2e:cond:1', coEditors: [], lastSaved: null },
+				}),
+			});
+		});
+
+		await page.goto(getAdminUrl('workspace/'));
+		await page.waitForFunction(() => Boolean((window as any).ReactWorkspaceRuntime?.mountIslands));
+
+		await page.evaluate(async () => {
+			const rt = (window as any).ReactWorkspaceRuntime;
+			await rt.ensureFieldsLoaded();
+			await rt.ensureConditionFieldLoaded();
+			const existing = document.getElementById('e2e-cond-presence-host');
+			if (existing) {
+				existing.remove();
+			}
+			const host = document.createElement('div');
+			host.id = 'e2e-cond-presence-host';
+			host.style.padding = '24px 24px 120px 24px';
+			document.body.appendChild(host);
+
+			const mountRoot = document.createElement('div');
+			host.appendChild(mountRoot);
+
+			rt.ReactDOMClient.createRoot(mountRoot).render(
+				rt.React.createElement(rt.Fields.SchemaForm, {
+					csrf: rt.getCsrfToken(),
+					schema: {
+						id: 'e2e_cond_form',
+						name: 'e2e_cond_form',
+						presenceKey: 'e2e:cond:1',
+						presenceToken: 'e2e_signed_token_payload',
+						fields: [
+							{
+								kind: 'control',
+								type: 'condition_builder',
+								name: 'visibility_rules',
+								label: 'Visibility Rules',
+								allowRawExpression: true,
+								allowNegate: true,
+								conditionFields: [
+									{ key: 'status', label: 'Status', type: 'select', options: [{ value: 'active', label: 'Active' }, { value: 'draft', label: 'Draft' }] },
+									{ key: 'score', label: 'Score', type: 'number' },
+									{ key: 'country', label: 'Country', type: 'text' },
+								],
+								value: {
+									match: 'all',
+									groups: [
+										{
+											id: 'g_e2e',
+											match: 'all',
+											rules: [
+												{ id: 'r_e2e', field: 'status', operator: 'eq', value: 'active' },
+											],
+										},
+									],
+								},
+							},
+						],
+					},
+				})
+			);
+		});
+
+		const host = page.locator('#e2e-cond-presence-host');
+		await expect(host.locator('form[data-rw-schema-form]')).toBeVisible();
+
+		// 1. Wait for presenceToken to be transmitted on heartbeat
+		await expect.poll(() => capturedPresenceBodies.length).toBeGreaterThanOrEqual(1);
+		expect(capturedPresenceBodies[0]?.resourceKey).toBe('e2e:cond:1');
+		expect(capturedPresenceBodies[0]?.presenceToken).toBe('e2e_signed_token_payload');
+
+		// 2. Verify segmented toggles use role="group" + aria-pressed
+		const modeToggle = host.locator('[data-rw-condition-mode-toggle="1"]');
+		await expect(modeToggle).toHaveAttribute('role', 'group');
+		await expect(modeToggle.getByRole('button', { name: 'Visual' })).toHaveAttribute('aria-pressed', 'true');
+		await expect(modeToggle.getByRole('button', { name: 'Expression' })).toHaveAttribute('aria-pressed', 'false');
+
+		// 3. Open ConditionFieldPicker dialog, verify search input sits outside role="listbox", keyboard navigate + select + focus restore
+		const pickerTrigger = host.locator('button[aria-haspopup="dialog"]').first();
+		await expect(pickerTrigger).toBeVisible();
+		await pickerTrigger.click();
+
+		const pickerDialog = page.locator('[role="dialog"][data-rw-portal-overlay]');
+		await expect(pickerDialog).toBeVisible();
+		const searchInput = pickerDialog.locator('input[type="search"]');
+		await expect(searchInput).toBeVisible();
+		await expect(searchInput).toHaveAttribute('role', 'combobox');
+		await expect(pickerDialog.locator('[role="listbox"] input[type="search"]')).toHaveCount(0);
+
+		const axePicker = await new AxeBuilder({ page })
+			.include('[role="dialog"][data-rw-portal-overlay]')
+			.withTags(['wcag2a', 'wcag2aa'])
+			.analyze();
+		expect(axePicker.violations).toEqual([]);
+
+		await page.keyboard.press('ArrowDown');
+		await page.keyboard.press('Enter');
+		await expect(pickerDialog).toHaveCount(0);
+		await expect(pickerTrigger).toBeFocused();
+		await expect(pickerTrigger).toContainText('Score');
+
+		// 4. Open again and press Escape -> restores focus cleanly to trigger button
+		await pickerTrigger.click();
+		await expect(pickerDialog).toBeVisible();
+		await page.keyboard.press('Escape');
+		await expect(pickerDialog).toHaveCount(0);
+		await expect(pickerTrigger).toBeFocused();
+
+		// 5. Run WCAG 2.1 AA Axe audit on rendered ConditionBuilder host
+		const axe = await new AxeBuilder({ page })
+			.include('#e2e-cond-presence-host')
+			.withTags(['wcag2a', 'wcag2aa'])
+			.analyze();
+		expect(axe.violations).toEqual([]);
 
 		tracker.assertNoErrors();
 	});
