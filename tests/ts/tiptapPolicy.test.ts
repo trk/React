@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
 	isRichHtmlEmpty,
@@ -189,5 +191,30 @@ describe('Tiptap Content Policy & CSS Sanitizer', () => {
 				['<table><tbody><tr><td>Cell</td></tr></tbody></table>', '<aside data-tiptap-block="callout"><p>Note</p></aside>']
 			)
 		).toEqual(['core', 'editor', 'blocks']);
+	});
+
+	it('maintains textbox + aria-multiline defaults on TiptapShell and restores them when slash menu closes', () => {
+		const tiptapShellSrc = readFileSync(
+			resolve(__dirname, '../../resources/ts/tiptap/core/TiptapShell.tsx'),
+			'utf8'
+		);
+
+		expect(tiptapShellSrc).toContain("role: 'textbox',");
+		expect(tiptapShellSrc).toContain("'aria-multiline': 'true',");
+
+		// Slash menu open swaps to combobox and removes aria-multiline (ARIA 1.2)
+		const openIdx = tiptapShellSrc.indexOf("dom.setAttribute('role', 'combobox');");
+		const closedIdx = tiptapShellSrc.indexOf("dom.setAttribute('role', 'textbox');");
+		expect(openIdx).toBeGreaterThan(-1);
+		expect(closedIdx).toBeGreaterThan(openIdx);
+
+		const openBranch = tiptapShellSrc.slice(openIdx, closedIdx);
+		expect(openBranch).toContain("dom.removeAttribute('aria-multiline');");
+		expect(openBranch).toContain("dom.setAttribute('aria-expanded', 'true');");
+
+		const closedBranch = tiptapShellSrc.slice(closedIdx, closedIdx + 300);
+		expect(closedBranch).toContain("dom.setAttribute('role', 'textbox');");
+		expect(closedBranch).toContain("dom.setAttribute('aria-multiline', 'true');");
+		expect(tiptapShellSrc).not.toContain("dom.removeAttribute('role')");
 	});
 });

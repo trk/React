@@ -724,4 +724,72 @@ describe('Shell Layout Registry and Multi-Shell SSR', () => {
 			globalThis.fetch = originalFetch;
 		}
 	});
+
+	it('renders sidebar layout switch control inside classic AdminTheme Topbar header bar', () => {
+		const workspace = makeWorkspaceContext({
+			shellMode: 'admin',
+			shellLayout: 'topbar',
+			preferences: {
+				themeMode: 'light',
+				shellLayout: 'topbar',
+				sidebarCollapsed: false,
+				favorites: [],
+				hidden: [],
+			},
+		});
+
+		const html = renderToStaticMarkup(
+			React.createElement(
+				AppShell,
+				{
+					workspace,
+					layout: 'topbar',
+					title: 'Forms',
+					navItems: sampleNavItems,
+					activeNav: 'overview',
+				},
+				React.createElement('div', null, 'Classic Body')
+			)
+		);
+
+		expect(html).toContain('data-rw-app-shell="admin"');
+		expect(html).toContain('data-rw-shell-layout="topbar"');
+		expect(html).toContain('data-rw-shell-layout-option="sidebar"');
+	});
+
+	it('renders ModuleSwitcher as static non-interactive header when workspaces and launcherUrl are empty', () => {
+		const workspace = makeWorkspaceContext({
+			shellMode: 'admin',
+			shellLayout: 'sidebar',
+			launcherUrl: '',
+			workspaces: [],
+			activeWorkspace: null,
+			preferences: {
+				themeMode: 'light',
+				shellLayout: 'sidebar',
+				sidebarCollapsed: false,
+				favorites: [],
+				hidden: [],
+			},
+		});
+
+		const html = renderToStaticMarkup(
+			React.createElement(ModuleSwitcher, {
+				workspace,
+				workspaces: [],
+				activeWorkspace: null,
+				favorites: [],
+				isWorkspaceActive: () => false,
+				toggleFavoriteWorkspace: () => {},
+				shellMode: 'admin',
+				returnLabel: 'Panel',
+				title: 'Forms',
+				icon: 'forms',
+			})
+		);
+
+		expect(html).toContain('Forms');
+		expect(html).not.toContain('data-rw-module-switcher');
+		expect(html).not.toContain('No matching workspaces');
+	});
 });
