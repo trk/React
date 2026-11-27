@@ -1,4 +1,22 @@
 en,de,description,file,hash
+"React Condition Builder",React-Bedingungsgenerator,,site/modules/React/InputfieldReactCondition.info.php,b2150a597f89d70bce04026581fa0627
+"Visual rule and condition builder with AND/OR groups, categorized field sources, value-or-field comparisons, and live summaries.","Visueller Regel- und Bedingungsgenerator mit UND/ODER-Gruppen, kategorisierten Feldquellen, Wert-oder-Feld-Vergleichen und Live-Zusammenfassungen.",,site/modules/React/InputfieldReactCondition.info.php,703bffc16cbde3904f303e55e0518d1a
+"Group negation is not permitted on this condition field.","Gruppennegation ist in diesem Bedingungsfeld nicht zulässig.",,site/modules/React/InputfieldReactCondition.module.php,77763504455447c594bac818ab9531ef
+"Field-to-field comparison is not permitted on this condition field.","Der Feld-zu-Feld-Vergleich ist in diesem Bedingungsfeld nicht zulässig.",,site/modules/React/InputfieldReactCondition.module.php,521cc1660c52326c3a5652c25aa13f2c
+"Maximum of %d condition group(s) allowed.","Maximal %d Bedingungsgruppe(n) zulässig.",,site/modules/React/InputfieldReactCondition.module.php,f1ddf1eab67475cfee424d64ee3219c6
+"Maximum of %d rule(s) per condition group allowed.","Maximal %d Regel(n) pro Bedingungsgruppe zulässig.",,site/modules/React/InputfieldReactCondition.module.php,6da9bb9d9cf3ee76c54d21c2eb1a7d15
+"At least one condition rule is required.","Mindestens eine Bedingungsregel ist erforderlich.",,site/modules/React/InputfieldReactCondition.module.php,3522600ca4cba1af6f82c84843851eb7
+"Condition Field Catalog (JSON)","Bedingungsfeldkatalog (JSON)",,site/modules/React/InputfieldReactCondition.module.php,f9b9167e156e868dfcc15f55c9495b6d
+"Optional JSON array of source/target field descriptors (`key`, `label`, `type`, optional `group`, `options`, `operators`).","Optionales JSON-Array mit Quell-/Zielfeldbeschreibungen (`key`, `label`, `type`, optional `group`, `options`, `operators`).",,site/modules/React/InputfieldReactCondition.module.php,ee144058e68be523b3d7ea2ee1c4ae8b
+"Layout Density",Layout-Dichte,,site/modules/React/InputfieldReactCondition.module.php,dcf4517b6cfcc2b61c6598871a462059
+"Auto (Responsive Container)","Auto (Responsiver Container)",,site/modules/React/InputfieldReactCondition.module.php,d9abf0598f1b130b5189616644e9acf8
+"Inline Grid",Inline-Raster,,site/modules/React/InputfieldReactCondition.module.php,755136c8c6f7c7ae9a6738ec5c7175a9
+"Compact Stacked","Kompakt gestapelt",,site/modules/React/InputfieldReactCondition.module.php,183107340353d0286bd62677ac7a5096
+"Maximum Groups (0 = unlimited)","Maximale Gruppen (0 = unbegrenzt)",,site/modules/React/InputfieldReactCondition.module.php,658df65785c7ef1064f206bbd9ef1d49
+"Max Rules per Group (0 = unlimited)","Max. Regeln pro Gruppe (0 = unbegrenzt)",,site/modules/React/InputfieldReactCondition.module.php,ea1b48e2a9212512a64b1ad87029c0e5
+"Allow Value-or-Field Target Comparison","Wert-oder-Feld-Zielvergleich zulassen",,site/modules/React/InputfieldReactCondition.module.php,d35258ff9d447561811dd86c4dfe011f
+"Allow Group NOT Negation","Gruppen-NICHT-Negation zulassen",,site/modules/React/InputfieldReactCondition.module.php,8169627d2c7d6a782bc63109dcfd8892
+"Show Live Expression Summary Bar","Live-Zusammenfassungsleiste anzeigen",,site/modules/React/InputfieldReactCondition.module.php,6f1d6186134b2d4fb824684e3df6a5ff
 "React File",React-Datei,,site/modules/React/InputfieldReactFile.info.php,085179f140b05e6c2841ca9a716edb68
 "File upload and management field supporting drag-and-drop, reordering, file replacement, multi-language descriptions, tags, and custom details.","Datei-Upload- und Verwaltungsfeld mit Drag-and-Drop, Neuanordnung, Dateiersatz, mehrsprachigen Beschreibungen, Schlagwörtern und benutzerdefinierten Details.",,site/modules/React/InputfieldReactFile.info.php,f4cffb0f2915b3b587cd339737749d03
 "React Icon",React-Symbol,,site/modules/React/InputfieldReactIcon.info.php,899981acab5ed4d477d9f2fd44b4cbdf
@@ -46,14 +64,13 @@ Value,Wert,,site/modules/React/InputfieldReactKeyValue.module.php,689202409e4874
 "Allow Empty Values","Leere Werte zulassen",,site/modules/React/InputfieldReactKeyValue.module.php,80da426d1e5f441eec08caa2fd2fdd7f
 "Keep keys whose value is left blank instead of omitting them.","Schlüssel mit leerem Wert beibehalten, anstatt sie auszulassen.",,site/modules/React/InputfieldReactKeyValue.module.php,8f25b7ba51ae24620d095512bb3aaa1a
 "React Link & Media Target","React Link- & Medienziel",,site/modules/React/InputfieldReactLink.info.php,a531caf428140f5a29cf7d19fb3d2940
-"All-in-one link and media selector supporting Pages, Entries, URLs, Phone numbers, Email addresses, and uploaded files, images, or videos.","Kombinierte Link- und Medienauswahl mit Unterstützung für Seiten, Einträge, URLs, Telefonnummern, E-Mail-Adressen sowie hochgeladene Dateien, Bilder oder Videos.",,site/modules/React/InputfieldReactLink.info.php,d1afaf6496b96ae57383b29fc69224ab
+"All-in-one link and media selector supporting Pages, URLs, Phone numbers, Email addresses, custom resources, and uploaded files, images, or videos.","All-in-One-Link- und Medienauswahl mit Unterstützung für Seiten, URLs, Telefonnummern, E-Mail-Adressen, benutzerdefinierte Ressourcen sowie hochgeladene Dateien, Bilder oder Videos.",,site/modules/React/InputfieldReactLink.info.php,1aebad3da3aff59c8fcfc7e646b27220
 "Phone number may only contain digits and a leading + sign.","Die Telefonnummer darf nur Ziffern und ein führendes +-Zeichen enthalten.",,site/modules/React/InputfieldReactLink.module.php,0598e3665cdb9f3216db26f52e57ba93
 "Link type ""%s"" is not permitted on this field.","Der Link-Typ ""%s"" ist für dieses Feld nicht zulässig.",,site/modules/React/InputfieldReactLink.module.php,a6075e4e6bdbc370d673e7d67e48c5fa
 "Please enter a valid email address.","Bitte geben Sie eine gültige E-Mail-Adresse ein.",,site/modules/React/InputfieldReactLink.module.php,b5bccda6d3a04e1d8f79846355290435
 "A destination link is required.","Ein Ziellink ist erforderlich.",,site/modules/React/InputfieldReactLink.module.php,cb311eaceec84e4ff0ca8c0157d55096
 "Allowed Target Types","Zulässige Zieltypen",,site/modules/React/InputfieldReactLink.module.php,f1cd66d64a739d24fa96dc925b54f80b
 Page,Seite,,site/modules/React/InputfieldReactLink.module.php,193cfc9be3b995831c6af2fea6650e60
-Entry,Eintrag,,site/modules/React/InputfieldReactLink.module.php,b948e8a02a7f8dc9f098c89e8df9892c
 "URL & Anchor (#)","URL & Anker (#)",,site/modules/React/InputfieldReactLink.module.php,c1ef16ed062f7fb8a0da64983519475b
 "Phone (+ & digits)","Telefon (+ & Ziffern)",,site/modules/React/InputfieldReactLink.module.php,23231889af1f705df7ac3422bf86ee74
 Email,E-Mail,,site/modules/React/InputfieldReactLink.module.php,ce8ae9da5b7cd6c3df2929543a9af92d
@@ -70,9 +87,9 @@ Email,E-Mail,,site/modules/React/InputfieldReactLink.module.php,ce8ae9da5b7cd6c3
 "Enable Anchor (#)","Anker (#) aktivieren",,site/modules/React/InputfieldReactLink.module.php,d8cc17bf84833cf1d80cd2ae3f3c743e
 "Enable Query (?)","Abfrageparameter (?) aktivieren",,site/modules/React/InputfieldReactLink.module.php,865d39779b680a728606720516de9506
 "Page Target Selector",Seiten-Zielselektor,,site/modules/React/InputfieldReactLink.module.php,bf0d0be8666b215319901f7a2a15cbed
-"Entry Target Blueprint",Eintrags-Ziel-Blueprint,,site/modules/React/InputfieldReactLink.module.php,2772d73ea6021f1395c49f5055fde9de
+"Target Resource Scope",Zielressourcen-Bereich,,site/modules/React/InputfieldReactLink.module.php,dc3151f77b37f5ad1c81bde4f4ff9fb2
 "React Relation (M2A — Multi-Type)","React-Beziehung (M2A — Mehrtyp)",,site/modules/React/InputfieldReactM2A.info.php,74ba65ee99beb54138156e3fd92da346
-"Select and organize related items across multiple resource types (such as pages, entries, or users) in one field.","Wählen und ordnen Sie verknüpfte Elemente aus mehreren Ressourcentypen (wie Seiten, Einträgen oder Benutzern) in einem einzigen Feld.",,site/modules/React/InputfieldReactM2A.info.php,1375baeb80961f47b64e72039f749c5d
+"Select and organize related items across multiple resource types (such as pages, users, or custom resources) in one field.","Verknüpfte Elemente aus mehreren Ressourcentypen (wie Seiten, Benutzer oder benutzerdefinierte Ressourcen) in einem Feld auswählen und ordnen.",,site/modules/React/InputfieldReactM2A.info.php,8c3178500e6990d8cc5f88b44907436a
 "Please select at least %d item(s).","Bitte wählen Sie mindestens %d Element(e) aus.",,site/modules/React/InputfieldReactM2A.module.php,cfecdec3aa548f6f05dd7fb4aac1f0fa
 "Allowed Target Resources","Zulässige Zielressourcen",,site/modules/React/InputfieldReactM2A.module.php,001d06cf09a1564ff15ee7ffe5ccf813
 "Selection Interface",Auswahloberfläche,,site/modules/React/InputfieldReactM2A.module.php,020bfcf134f4c815fba95e73e6ded8a7
@@ -370,6 +387,8 @@ Sections,Abschnitte,,site/modules/React/MarkupReactTab.module.php,855c3eca6c7aae
 "%d validation errors","%d Validierungsfehler","Plural Version",site/modules/React/MarkupReactTab.module.php,ec828fd611b57248325002f413e64b32
 "React Table Viewport",React-Tabellenansicht,,site/modules/React/MarkupReactTable.info.php,0d06a2a4eb05a7e835a3e9a4572fe325
 "Interactive data table with search, filters, inline editing, bulk actions, and pagination.","Interaktive Datentabelle mit Suche, Filtern, Inline-Bearbeitung, Massenaktionen und Seitennavigation.",,site/modules/React/MarkupReactTable.info.php,81fbcc4d713141339befa98baa9a66f0
+Workspace,Arbeitsbereich,,site/modules/React/ProcessReactWorkspace.info.php,03a21915504df93cf5dba0636080f62e
+"Optional unified Admin Workspace Dashboard, cross-module launcher, and customizable widget board powered by React.","Optionales einheitliches Admin-Arbeitsbereichs-Dashboard, modulübergreifender Starter und anpassbares Widget-Board auf Basis von React.",,site/modules/React/ProcessReactWorkspace.info.php,fb84c2e6c1af7e745324d3a77143d553
 Panel,Admin-Panel,,site/modules/React/React.module.php,b8da6df14bf06283cbf588df6998722e
 "Default Theme Mode",Standard-Designmodus,,site/modules/React/React.module.php,74435ddc2833dc22de4b519833b95a8d
 "Select the default color theme for React admin pages and data views.","Wählen Sie das Standard-Farbthema für React-Verwaltungsseiten und Datenansichten.",,site/modules/React/React.module.php,dd43061a8373ea4ab8e131b563764c0c
@@ -402,9 +421,10 @@ Teal,Petrol,,site/modules/React/React.module.php,e20385a2b41df1743f787ebef18222b
 "Adds a Vector Icon picker below the standard Icon field on Setup > Templates and Setup > Fields (as well as admin page settings), showing your chosen icon in crisp vector quality across the admin panel.","Fügt unter dem Standard-Symbolfeld unter Einrichtung > Templates und Einrichtung > Felder (sowie Admin-Seiteneinstellungen) eine Vektorsymbol-Auswahl hinzu und stellt das gewählte Symbol im gesamten Admin-Bereich gestochen scharf dar.",,site/modules/React/React.module.php,cc7cc9430d73719467c1b7e9e68f84c3
 "Admin Icon Picker Preview Size (px)","Vorschaugröße der Admin-Symbolauswahl (px)",,site/modules/React/React.module.php,9d920b0b473219ed4c53e831fac3688f
 "Preview icon size on Edit Template and Edit Field screens (16–64).","Vorschaugröße des Symbols auf den Seiten Template bearbeiten und Feld bearbeiten (16–64).",,site/modules/React/React.module.php,6230677443f310b60dfb59d7c228f10f
-"Tiptap Mini-Blocks Renderer",Tiptap-Miniblock-Renderer,,site/modules/React/TextformatterTiptapMiniBlocks.module.php,7c3faead0795ac6b3010fb3c157f2feb
-"Renders inline content blocks from the Tiptap rich text editor using templates in ./site/templates/tiptap/.","Rendert Inline-Inhaltsblöcke aus dem Tiptap-Rich-Text-Editor mit Templates in ./site/templates/tiptap/.",,site/modules/React/TextformatterTiptapMiniBlocks.module.php,41713bc7294132fb564cbd8708c8b016
+"Tiptap Mini-Blocks Renderer",Tiptap-Miniblock-Renderer,,site/modules/React/TextformatterTiptapMiniBlocks.info.php,7c3faead0795ac6b3010fb3c157f2feb
+"Renders inline content blocks from the Tiptap rich text editor using templates in ./site/templates/tiptap/.","Rendert Inline-Inhaltsblöcke aus dem Tiptap-Rich-Text-Editor mit Templates in ./site/templates/tiptap/.",,site/modules/React/TextformatterTiptapMiniBlocks.info.php,41713bc7294132fb564cbd8708c8b016
 Yes,Ja,,site/modules/React/src/Data/ReactRecord.php,93cba07454f06a4a960172bbd6e2a435
+No,Nein,,site/modules/React/src/Data/ReactRecord.php,bafd7322c6e97d25b6299b5d6fe8920b
 Submit,Absenden,,site/modules/React/src/Form/FormSchemaSerializer.php,a4d3b161ce1309df1c4e25df28694b7b
 Yes,Ja,,site/modules/React/src/Form/FormSchemaSerializer.php,93cba07454f06a4a960172bbd6e2a435
 No,Nein,,site/modules/React/src/Form/FormSchemaSerializer.php,bafd7322c6e97d25b6299b5d6fe8920b
@@ -500,6 +520,18 @@ Preview,Vorschau,,site/modules/React/src/Form/ReactControlRegistry.php,31fde7b05
 "Generated Secret Prefix","Präfix für generierte Geheimnisse",,site/modules/React/src/Form/ReactControlRegistry.php,5429debd00b3c90699cd8419ec7e1667
 "Mask Secret by Default","Geheimen Wert standardmäßig maskieren",,site/modules/React/src/Form/ReactControlRegistry.php,3a3c26ec83c1cd2f61622dfb4c8dd8f8
 "Show Generate Secret Button","Schaltfläche „Geheimnis generieren“ anzeigen",,site/modules/React/src/Form/ReactControlRegistry.php,5439e2dc92aca273e9f5f34f9cb7ec1a
+"Condition Field Specifications (JSON)","Bedingungsfeld-Spezifikationen (JSON)",,site/modules/React/src/Form/ReactControlRegistry.php,1f91907e72f1c46e8413d28eb36b3efb
+"Optional JSON array of {key, label, type, group, options} definitions for available condition source/target fields.","Optionales JSON-Array mit {key, label, type, group, options}-Definitionen für verfügbare Quell-/Zielfelder.",,site/modules/React/src/Form/ReactControlRegistry.php,8ea9ca4adf19d77bb6602b46cac69370
+"Allow Field-to-Field Comparison","Feld-zu-Feld-Vergleich zulassen",,site/modules/React/src/Form/ReactControlRegistry.php,53789cda5cfb2398f2569e0456b42e73
+"Allow rules to compare a source field against another field in the list.","Ermöglicht Regeln, ein Quellfeld mit einem anderen Feld in der Liste zu vergleichen.",,site/modules/React/src/Form/ReactControlRegistry.php,b0f43f732b18c5d8876c049705a52afc
+"Allow Group Negation (NOT)","Gruppennegation (NOT) zulassen",,site/modules/React/src/Form/ReactControlRegistry.php,757b6d5f7893f9902513fadb4d5f6329
+"Show Live Rule Summary","Live-Regelzusammenfassung anzeigen",,site/modules/React/src/Form/ReactControlRegistry.php,ed333cdc617d3b07874ea1b5069405b6
+"Builder Layout",Builder-Layout,,site/modules/React/src/Form/ReactControlRegistry.php,78c671e18400be51e3b696f5a1d7537c
+"Auto (Container Responsive)","Auto (Container-responsiv)",,site/modules/React/src/Form/ReactControlRegistry.php,d7da170111ee4e0415e9d3726a57bcb3
+"Inline Row",Inline-Zeile,,site/modules/React/src/Form/ReactControlRegistry.php,64b13867cda2bc08990b973e23c4dc79
+"Compact Stacked","Kompakt gestapelt",,site/modules/React/src/Form/ReactControlRegistry.php,183107340353d0286bd62677ac7a5096
+"Max Condition Groups","Max. Bedingungsgruppen",,site/modules/React/src/Form/ReactControlRegistry.php,ac44446567147ff4de91defe0cd80ef0
+"Max Rules Per Group","Max. Regeln pro Gruppe",,site/modules/React/src/Form/ReactControlRegistry.php,0dea43df83443967156858ed522961f4
 "Masked value","Maskierter Wert",,site/modules/React/src/Form/ReactControlRegistry.php,2f4c9a00ac26a00a5fa89ca5dc9d736f
 "Markdown Editor",Markdown-Editor,,site/modules/React/src/Form/ReactControlRegistry.php,99349dcab478a4664e5cd67c6b7ea41a
 "Signature Pad",Unterschriftenfeld,,site/modules/React/src/Form/ReactControlRegistry.php,74163795e5d5b90a36e4aaefb50a30ed
@@ -718,6 +750,7 @@ Customize,Anpassen,,site/modules/React/src/I18n/TranslationCatalogService.php,63
 Search...,Suchen...,,site/modules/React/src/I18n/TranslationCatalogService.php,2a37324bb4c331c859044121df3f576b
 Filters,Filter,,site/modules/React/src/I18n/TranslationCatalogService.php,f3f43e30c8c7d78c6ac0173515e57a00
 "Filter view","Ansicht filtern",,site/modules/React/src/I18n/TranslationCatalogService.php,5f2338679d4a0e08885fd7c0176eb6e6
+"View mode",Ansichtsmodus,,site/modules/React/src/I18n/TranslationCatalogService.php,dc685a0197537ef7458717765c8e4c55
 "Filter options...","Optionen filtern...",,site/modules/React/src/I18n/TranslationCatalogService.php,e6c46618cf501e7229c8bba662560b1c
 "Clear filters","Filter zurücksetzen",,site/modules/React/src/I18n/TranslationCatalogService.php,0b275442d6556cff30b75f37f1918899
 Columns,Spalten,,site/modules/React/src/I18n/TranslationCatalogService.php,168b82d33f8073018c50a4f658a02559
@@ -797,6 +830,7 @@ Opacity,Deckkraft,,site/modules/React/src/I18n/TranslationCatalogService.php,bad
 "Pick color","Farbe wählen",,site/modules/React/src/I18n/TranslationCatalogService.php,2d1aef70c7f6b0b10e75774c303d8caa
 "Search and add option...","Option suchen und hinzufügen...",,site/modules/React/src/I18n/TranslationCatalogService.php,f50e4ed199376387932d62905307be74
 "All options selected","Alle Optionen ausgewählt",,site/modules/React/src/I18n/TranslationCatalogService.php,4dda4044f4033e6b096e6740f2d7bd66
+"Use custom value","Benutzerdefinierten Wert verwenden",,site/modules/React/src/I18n/TranslationCatalogService.php,8e7667b35ea5540aca590f16f176932d
 Bold,Fett,,site/modules/React/src/I18n/TranslationCatalogService.php,114c3050111d8b8ddd830b99ccebd246
 chars,Zeichen,,site/modules/React/src/I18n/TranslationCatalogService.php,b69d9bc635ccd79ad2c64bc862abe3b4
 Code,Code,,site/modules/React/src/I18n/TranslationCatalogService.php,ca0dbad92a874b2f69b549293387925e
@@ -983,7 +1017,7 @@ Drop,Ablegen,,site/modules/React/src/I18n/TranslationCatalogService.php,3e679cff
 "Replace file","Datei ersetzen",,site/modules/React/src/I18n/TranslationCatalogService.php,82c8ebc9209c20ea618ffe60b58096a5
 "Remove file","Datei entfernen",,site/modules/React/src/I18n/TranslationCatalogService.php,b21f085d08623fc7a5a9da204cc66c8c
 "Clear selected target","Ausgewähltes Ziel löschen",,site/modules/React/src/I18n/TranslationCatalogService.php,3444f11aee6d3919024746cfa34331e8
-"Search entries","Einträge durchsuchen",,site/modules/React/src/I18n/TranslationCatalogService.php,39cfbd4c7c25bd8e49c6e3fd859a66cd
+"Search target","Ziel suchen",,site/modules/React/src/I18n/TranslationCatalogService.php,c146abce1cca09b2d512d97410aed120
 "Search pages","Seiten durchsuchen",,site/modules/React/src/I18n/TranslationCatalogService.php,9003fc7489e6aec510d20674d0495601
 "Cancel search","Suche abbrechen",,site/modules/React/src/I18n/TranslationCatalogService.php,036934cf9842451c835a9981a067d0c3
 "Email address",E-Mail-Adresse,,site/modules/React/src/I18n/TranslationCatalogService.php,b357b524e740bc85b9790a0712d84a30
@@ -1116,6 +1150,43 @@ False,Falsch,,site/modules/React/src/I18n/TranslationCatalogService.php,f8320b26
 "{field} numeric value","{field} numerischer Wert",,site/modules/React/src/I18n/TranslationCatalogService.php,3497637698f98bc31c6e6d899ac8e6d5
 "{field} date value","{field} Datumswert",,site/modules/React/src/I18n/TranslationCatalogService.php,b04e14eda0f792d99556884f56381ae8
 "Enter value...","Wert eingeben...",,site/modules/React/src/I18n/TranslationCatalogService.php,57c27862a56e8ab808d238f99e310efa
+"Comparison source",Vergleichsquelle,,site/modules/React/src/I18n/TranslationCatalogService.php,94ff166c1c3f24597b67cf5e339b2b7c
+"Target comparison field for {field}","Zielvergleichsfeld für {field}",,site/modules/React/src/I18n/TranslationCatalogService.php,f391c1ba48fa653fac6bd1d2bc680774
+"Select field...","Feld auswählen...",,site/modules/React/src/I18n/TranslationCatalogService.php,206d69f16e029f04e10017088c1f3e4e
+field_key,feld_schluessel,,site/modules/React/src/I18n/TranslationCatalogService.php,2ab3df1bc63417f9749a9e739fe0e397
+"Search fields...","Felder durchsuchen...",,site/modules/React/src/I18n/TranslationCatalogService.php,81b821146a1918c100c41797ed6e22df
+"No matching fields","Keine passenden Felder",,site/modules/React/src/I18n/TranslationCatalogService.php,ca832bfdaea5c89b8d1dc8e958fc5350
+0,0,,site/modules/React/src/I18n/TranslationCatalogService.php,cfcd208495d565ef66e7dff9f98764da
+"Clear all","Alles löschen",,site/modules/React/src/I18n/TranslationCatalogService.php,81aa2078d1eceede831b2976dbf32e62
+IF,WENN,,site/modules/React/src/I18n/TranslationCatalogService.php,de6ee2b5d856295add4d5e3631fbfb93
+AND,UND,,site/modules/React/src/I18n/TranslationCatalogService.php,558ffc8f5770d8e4f95f51d822685532
+OR,ODER,,site/modules/React/src/I18n/TranslationCatalogService.php,1d00e7dce692e8dc3f6877f035e3a616
+NOT,NICHT,,site/modules/React/src/I18n/TranslationCatalogService.php,10df3d67626099df882920ba6552f16d
+"Negate group {index}","Gruppe {index} negieren",,site/modules/React/src/I18n/TranslationCatalogService.php,a6e0395843bbc55ad1fc0ffbf4bc475f
+"Move group {index} up","Gruppe {index} nach oben verschieben",,site/modules/React/src/I18n/TranslationCatalogService.php,a2b8f2c61f0ea46020a617f8f15eec92
+"Move group {index} down","Gruppe {index} nach unten verschieben",,site/modules/React/src/I18n/TranslationCatalogService.php,3f8b5dbd263f74922226e17bea4325d8
+"Duplicate group {index}","Gruppe {index} duplizieren",,site/modules/React/src/I18n/TranslationCatalogService.php,356450c964f4d11c4a0386d011fcbb63
+"Duplicate rule {index}","Regel {index} duplizieren",,site/modules/React/src/I18n/TranslationCatalogService.php,61d7490abb804a6ceecb03058a96c27c
+Visual,Visuell,,site/modules/React/src/I18n/TranslationCatalogService.php,4557e77491fe3dbd9a6055aeb0ed00d7
+Expression,Ausdruck,,site/modules/React/src/I18n/TranslationCatalogService.php,a1a6657be79cc0fc1e9b23b9e108f043
+"Condition editor mode",Bedingungseditor-Modus,,site/modules/React/src/I18n/TranslationCatalogService.php,0a14ca3b97c0e6e57b6292b5588230a6
+"Condition expression",Bedingungsausdruck,,site/modules/React/src/I18n/TranslationCatalogService.php,fd4b9601ef10414ee9a0b63070fcccfa
+"status=active, subtotal>=100; tier=vip|gold","status=active, subtotal>=100; tier=vip|gold",,site/modules/React/src/I18n/TranslationCatalogService.php,5a0820838a361ce79da1efba1cb1a2f6
+"Separate AND clauses with commas (,) and OR branches with semicolons (;).","Trennen Sie UND-Klauseln mit Kommas (,) und ODER-Zweige mit Semikolons (;).",,site/modules/React/src/I18n/TranslationCatalogService.php,8016810af006108ef576c67d1dad2422
+"Invalid condition expression syntax.","Ungültige Syntax des Bedingungsausdrucks.",,site/modules/React/src/I18n/TranslationCatalogService.php,400d6ce3aafd1d541a3383d5b9871cb3
+"Some advanced rules (such as NOT groups, ranges, or OR inside ALL) cannot be represented in flat expression syntax. Applying a new expression will overwrite them.","Einige erweiterte Regeln (wie NICHT-Gruppen, Bereiche oder ODER innerhalb von ALLE) können in flacher Ausdruckssyntax nicht dargestellt werden. Das Anwenden eines neuen Ausdrucks überschreibt sie.",,site/modules/React/src/I18n/TranslationCatalogService.php,fd5aed7d98b9801464c7fd9620cbd66b
+"Apply expression","Ausdruck anwenden",,site/modules/React/src/I18n/TranslationCatalogService.php,6456c02c81872dcef60d1e554ca68198
+"Custom value...","Benutzerdefinierter Wert...",,site/modules/React/src/I18n/TranslationCatalogService.php,23bd7b97bb77be76ac8fff953f0fc6a9
+"Enter custom value...","Benutzerdefinierten Wert eingeben...",,site/modules/React/src/I18n/TranslationCatalogService.php,9f5b9b521623fc80dfc0da085d57cada
+"Choose from list","Aus Liste wählen",,site/modules/React/src/I18n/TranslationCatalogService.php,eab9b6b1ccff7a828e0205a618de7059
+"Add custom value","Benutzerdefinierten Wert hinzufügen",,site/modules/React/src/I18n/TranslationCatalogService.php,17eb70f6d99d6045e5d8089ce0e7a24f
+Text,Text,,site/modules/React/src/I18n/TranslationCatalogService.php,9dffbf69ffba8bc38bc4e01abf4b1675
+Number,Zahl,,site/modules/React/src/I18n/TranslationCatalogService.php,b2ee912b91d69b435159c7c3f6df7f5f
+Select,Auswahl,,site/modules/React/src/I18n/TranslationCatalogService.php,e0626222614bdee31951d84c64e5e9ff
+Boolean,Boolesch,,site/modules/React/src/I18n/TranslationCatalogService.php,27226c864bac7454a8504f8edb15d95b
+Country,Land,,site/modules/React/src/I18n/TranslationCatalogService.php,59716c97497eb9694541f7c3d37b1a4d
+Currency,Währung,,site/modules/React/src/I18n/TranslationCatalogService.php,386c339d37e737a436499d423a77df0c
+Date,Datum,,site/modules/React/src/I18n/TranslationCatalogService.php,44749712dbec183e983dcd78a7736c41
 Equals,"Ist gleich",,site/modules/React/src/I18n/TranslationCatalogService.php,0ccb67e7eaae09d9e4078d161eeca100
 "Does not equal","Ist ungleich",,site/modules/React/src/I18n/TranslationCatalogService.php,3255c386f4276b5c66f12d216ec71906
 Contains,Enthält,,site/modules/React/src/I18n/TranslationCatalogService.php,b270372be5b4433b4736daaf25e1c74e
@@ -1154,17 +1225,20 @@ After,Nach,,site/modules/React/src/I18n/TranslationCatalogService.php,7bfcadb553
 "No uploaded files received.","Keine hochgeladenen Dateien empfangen.",,site/modules/React/src/Media/MediaGateway.php,8a6b65fb98fe3c23aa890fec73c3db44
 "Maximum file limit (%d) reached.","Maximales Dateilimit (%d) erreicht.",,site/modules/React/src/Media/MediaGateway.php,5cbe9a0599729cfbb631c5af3e367a3a
 "File upload failed validation.","Datei-Upload hat die Validierung nicht bestanden.",,site/modules/React/src/Media/MediaGateway.php,e515bb37d0b2b257512fc385d4ac5046
+"File upload validation failed.","Die Validierung des Datei-Uploads ist fehlgeschlagen.",,site/modules/React/src/Media/MediaGateway.php,7b6ee4506be93b3dabe97223771f745b
 "Target file to replace was not found.","Die zu ersetzende Zieldatei wurde nicht gefunden.",,site/modules/React/src/Media/MediaGateway.php,556dbf32ef527824fca9759c6f71fae0
 "No replacement file received.","Keine Ersatzdatei empfangen.",,site/modules/React/src/Media/MediaGateway.php,6e4620f8bbe4ff2a337d9b8176ffb34d
 "Replacement file failed validation.","Die Ersatzdatei hat die Validierung nicht bestanden.",,site/modules/React/src/Media/MediaGateway.php,500617b105ab0b02df42ec12cf7e7b8c
 "Invalid replacement image.","Ungültiges Ersatzbild.",,site/modules/React/src/Media/MediaGateway.php,d4c97868c611d52c611f3472f9b4d1eb
 "Image (%dx%d) does not meet minimum size (%dx%d).","Das Bild (%dx%d) erreicht nicht die Mindestgröße (%dx%d).",,site/modules/React/src/Media/MediaGateway.php,f73c625295716f4b7cfb48454a19b6bb
 "Image (%dx%d) exceeds maximum allowed dimensions (%dx%d).","Bild (%dx%d) überschreitet die maximal zulässigen Abmessungen (%dx%d).",,site/modules/React/src/Media/MediaGateway.php,57c2e9119c2e11ee8003862b7e1e7a30
+"Failed to replace media file.","Mediendatei konnte nicht ersetzt werden.",,site/modules/React/src/Media/MediaGateway.php,0264f87b724e6e65699fe2bd1e0c95ca
 "Failed to attach replacement file.","Ersatzdatei konnte nicht angehängt werden.",,site/modules/React/src/Media/MediaGateway.php,f50e8c0b28af6e14767bcc2c2401dd1f
 "You do not have image editing permission.","Sie haben keine Berechtigung zur Bildbearbeitung.",,site/modules/React/src/Media/MediaGateway.php,8d3ea5fb052a462020aea95122df6af4
 "Target image was not found.","Zielbild wurde nicht gefunden.",,site/modules/React/src/Media/MediaGateway.php,a51924291b57b4b24bdebf1860a6332b
 "Vector SVG images cannot be raster-transformed.","Vektor-SVG-Bilder können nicht als Raster transformiert werden.",,site/modules/React/src/Media/MediaGateway.php,7a31eba930554089c865fa9af687a863
 "Image file does not exist on disk.","Bilddatei existiert nicht auf der Festplatte.",,site/modules/React/src/Media/MediaGateway.php,b6916bc480286d54932221a8b28a22d8
+"Image transformation failed.","Bildtransformation fehlgeschlagen.",,site/modules/React/src/Media/MediaGateway.php,90c790d586c4babbbee92f0efac7346b
 "Cropped area (%dx%d) is smaller than minimum required dimensions (%dx%d).","Der zugeschnittene Bereich (%dx%d) ist kleiner als die erforderlichen Mindestmaße (%dx%d).",,site/modules/React/src/Media/MediaGateway.php,77ae999489a1bb20938097eec8595dc9
 "Failed to crop image.","Bild konnte nicht zugeschnitten werden.",,site/modules/React/src/Media/MediaGateway.php,806957aa377b80432a64ec359d425c24
 "Invalid rotation angle.","Ungültiger Drehwinkel.",,site/modules/React/src/Media/MediaGateway.php,398c6ced70396e22f603d43a515f15fd
@@ -1172,19 +1246,23 @@ After,Nach,,site/modules/React/src/I18n/TranslationCatalogService.php,7bfcadb553
 "Failed to flip image horizontally.","Bild konnte nicht horizontal gespiegelt werden.",,site/modules/React/src/Media/MediaGateway.php,09d61192256294cd04e27a927ee7b42e
 "Failed to flip image vertically.","Bild konnte nicht vertikal gespiegelt werden.",,site/modules/React/src/Media/MediaGateway.php,142bba9d103360812ac7628da65abe8b
 "Unsupported transform operation.","Nicht unterstützte Transformationsoperation.",,site/modules/React/src/Media/MediaGateway.php,71ec2e768c401bbd2a3d82cf72f6a41e
-"Image transformation failed.","Bildtransformation fehlgeschlagen.",,site/modules/React/src/Media/MediaGateway.php,90c790d586c4babbbee92f0efac7346b
 "Media cloning is not supported for this host.","Das Klonen von Medien wird für diesen Host nicht unterstützt.",,site/modules/React/src/Media/MediaGateway.php,77bdac9dcf5f2775df50d107335c2fe0
 "Target file was not found.","Zieldatei wurde nicht gefunden.",,site/modules/React/src/Media/MediaGateway.php,b396e9122197921fbfffdaa91d322d22
 "File ""%s"" failed content security validation.","Datei ""%s"" hat die Inhaltssicherheitsprüfung nicht bestanden.",,site/modules/React/src/Media/MediaGateway.php,cd774e936bb0933082266765669fbef4
 "Invalid image dimensions.","Ungültige Bildabmessungen.",,site/modules/React/src/Media/MediaGateway.php,ad236873b8e6a03a14c4c217560895a8
-"Image resolution exceeds maximum safe pixel limit.","Die Bildauflösung überschreitet das maximal sichere Pixellimit.",,site/modules/React/src/Media/MediaGateway.php,ad53542ddcbff32755883947caf0766e
 "Image (%dx%d) does not meet minimum size requirements (%dx%d).","Das Bild (%dx%d) erfüllt die Mindestgrößenanforderungen (%dx%d) nicht.",,site/modules/React/src/Media/MediaGateway.php,9c454c8f8befc57c47bba7331ea7b563
+"Image resolution exceeds maximum safe pixel limit.","Die Bildauflösung überschreitet das maximal sichere Pixellimit.",,site/modules/React/src/Media/MediaGateway.php,ad53542ddcbff32755883947caf0766e
 "Invalid page link media identifier.","Ungültige Seiten-Link-Medienkennung.",,site/modules/React/src/Media/PageLinkMediaHostAdapter.php,d0662f56d95c67cb6e6663e58057cfe7
 "Target page link field not found.","Ziel-Seitenlinkfeld nicht gefunden.",,site/modules/React/src/Media/PageLinkMediaHostAdapter.php,32520c9554c10ccfbcb049ada646b456
 "You do not have permission to modify this link media field.","Sie sind nicht berechtigt, dieses Link-Medienfeld zu bearbeiten.",,site/modules/React/src/Media/PageLinkMediaHostAdapter.php,cd9d5ea980837bc70e94cdcbe7be9098
 "Requested media profile is not enabled on this link field.","Das angeforderte Medienprofil ist für dieses Linkfeld nicht aktiviert.",,site/modules/React/src/Media/PageLinkMediaHostAdapter.php,ce65978501e94a100eefa52250efea9b
+"File ""%s"" failed content security validation.","Datei ""%s"" hat die Inhaltssicherheitsprüfung nicht bestanden.",,site/modules/React/src/Media/UploadedFileValidator.php,cd774e936bb0933082266765669fbef4
+"Uploaded file is not a valid raster image.","Die hochgeladene Datei ist kein gültiges Rasterbild.",,site/modules/React/src/Media/UploadedFileValidator.php,0956d593fe9bd69f281f27b834a25c92
+"Invalid image dimensions.","Ungültige Bildabmessungen.",,site/modules/React/src/Media/UploadedFileValidator.php,ad236873b8e6a03a14c4c217560895a8
+"Image resolution exceeds maximum safe pixel limit.","Die Bildauflösung überschreitet das maximal sichere Pixellimit.",,site/modules/React/src/Media/UploadedFileValidator.php,ad53542ddcbff32755883947caf0766e
 Records,Datensätze,,site/modules/React/src/Provider/ArrayDataProvider.php,db231ec39f2ce4d5ad1de0abfc8970d9
 Title,Titel,,site/modules/React/src/Provider/ArrayDataProvider.php,b78a3223503896721cca1303f776159b
+Status,Status,,site/modules/React/src/Provider/ArrayDataProvider.php,ec53a8c4f07baed5d8825072c89799be
 Published,Veröffentlicht,,site/modules/React/src/Provider/ArrayDataProvider.php,9b9d8a976b42e0bd66381797644943d5
 Draft,Entwurf,,site/modules/React/src/Provider/ArrayDataProvider.php,f03ab16cd58372c77ba45a3d9a5a1cb9
 Trash,Papierkorb,,site/modules/React/src/Provider/ArrayDataProvider.php,a7e253cd8dd95da3e20daf45519a8dc2
@@ -1211,6 +1289,7 @@ Trash,Papierkorb,,site/modules/React/src/Provider/PagesDataProvider.php,a7e253cd
 Edit,Bearbeiten,,site/modules/React/src/Provider/PagesDataProvider.php,7dce122004969d56ae2e0245cb754d35
 "View Page","Seite anzeigen",,site/modules/React/src/Provider/PagesDataProvider.php,e4b846392f10f46b032cf155c39a0eaf
 Unpublish,"Veröffentlichung aufheben",,site/modules/React/src/Provider/PagesDataProvider.php,181e9a13059454fb2212f1bf10f394ac
+Publish,Veröffentlichen,,site/modules/React/src/Provider/PagesDataProvider.php,110a4b01beabd53b661a47d4b44bd7a8
 "Move to Trash","In den Papierkorb verschieben",,site/modules/React/src/Provider/PagesDataProvider.php,7a289ea949902e8fa53efb4b3b4ccea0
 "Move this page to the trash?","Diese Seite in den Papierkorb verschieben?",,site/modules/React/src/Provider/PagesDataProvider.php,33615f2cfa0bfa77144f488a75e5d178
 Restore,Wiederherstellen,,site/modules/React/src/Provider/PagesDataProvider.php,2bd339d85ee3b33e513359ce781b60cc
@@ -1251,10 +1330,16 @@ Page,Seite,,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,193
 "Target parent page does not exist.","Die übergeordnete Zielseite existiert nicht.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,59218d74256d9c13c5b562e26e5695bc
 "Cannot create pages under system or trash roots.","Unter System- oder Papierkorb-Wurzeln können keine Seiten erstellt werden.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,36917d7a51db803a7dafddb825f63395
 "Selected parent page is outside the allowed hierarchy for this field.","Die gewählte übergeordnete Seite liegt außerhalb der zulässigen Hierarchie dieses Felds.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,8f8214cd7f6cc560653dbc6dccb07ca8
-"You do not have permission to add pages under the selected parent.","Sie haben keine Berechtigung, Seiten unter der gewählten übergeordneten Seite hinzuzufügen.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,00342e3291b08e6f6cb5b0fae9a9c098
 "A target template must be configured to quick-create pages.","Für die Schnellerstellung von Seiten muss ein Ziel-Template konfiguriert sein.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,48eca31391fe73ee493dc6afe61e46bf
+"Numeric template IDs are not permitted for quick create.","Numerische Vorlagen-IDs sind für die Schnellerstellung nicht zulässig.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,4342ada25ea110d57f544c0de6bff6e8
+"Invalid template specified for quick create.","Ungültige Vorlage für die Schnellerstellung angegeben.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,3dd4cf7e9ea98c3c1a13579c0f06cc66
 "Selected template is not allowed for this relation field.","Das gewählte Template ist für dieses Beziehungsfeld nicht zulässig.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,ed7e42bcc4ec0365a82fa35247114df1
 "Invalid or system template specified for quick create.","Ungültiges oder System-Template für die Schnellerstellung angegeben.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,e947024044075ed447c710c122ad8f95
+"Selected template does not allow creating pages under a parent.","Die ausgewählte Vorlage erlaubt keine Seitenerstellung unter einer übergeordneten Seite.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,44df8ee06350547bb092239b7fb4db5b
+"Selected template is not permitted under the chosen parent template.","Die ausgewählte Vorlage ist unter der gewählten übergeordneten Vorlage nicht zulässig.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,e8e6c5e0285f6a47cef15a8bb9daf2db
+"Parent template does not allow creating pages of the selected template.","Die übergeordnete Vorlage erlaubt keine Seitenerstellung der ausgewählten Vorlage.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,9be4526f87fcc1ed9ca2a708b5faad3e
+"You do not have permission to create pages of this template under the selected parent.","Sie haben keine Berechtigung, Seiten dieser Vorlage unter der gewählten übergeordneten Seite zu erstellen.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,650cf8afe817f4c8b01a51b9959bbf9a
+"You do not have permission to edit the default language.","Sie haben keine Berechtigung, die Standardsprache zu bearbeiten.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,589ad4ffbd6ad14d0e52aa09ae04af67
 Permission,Berechtigung,,site/modules/React/src/Relation/Resource/PermissionResourceAdapter.php,ed5dea09095f671b801bee34ea28a319
 Role,Rolle,,site/modules/React/src/Relation/Resource/RoleResourceAdapter.php,bbbabdbe1b262f75d99d62880b953be1
 "%d permissions","%d Berechtigungen",,site/modules/React/src/Relation/Resource/RoleResourceAdapter.php,f2387342894ffddabc85cd8f0551c18a
@@ -1331,6 +1416,7 @@ User,Benutzer,,site/modules/React/src/Relation/Resource/UserResourceAdapter.php,
 "Target image page could not be determined.","Zielseite des Bildes konnte nicht ermittelt werden.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,eba148c1975162347a55185b6b6f7c2c
 "You do not have permission to access this image.","Sie haben keine Berechtigung, auf dieses Bild zuzugreifen.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,e8207fecc844fcb3cfb9461ae4efbf54
 "Source image was not found.","Quellbild wurde nicht gefunden.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,fbf5d0007053b9338d48b4cce31fc3c9
+"Requested image dimensions exceed the maximum allowed pixel limit.","Die angeforderten Bildabmessungen überschreiten das maximal zulässige Pixellimit.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,f4d226ffcab19a175aa93df310debbc0
 "No target page available for image upload.","Keine Zielseite für den Bild-Upload verfügbar.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,c20306bb59ba8611f6ceea3494b79e0a
 "Target page not found.","Zielseite nicht gefunden.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,1d6fd845f454b5776b511ba27868dbed
 "No editable image field is available on this page.","Auf dieser Seite ist kein bearbeitbares Bildfeld verfügbar.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,791377fb2873431f4d1dc66ed403fd08
@@ -1342,8 +1428,6 @@ User,Benutzer,,site/modules/React/src/Relation/Resource/UserResourceAdapter.php,
 "Image upload failed validation.","Die Validierung des Bild-Uploads ist fehlgeschlagen.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,be84925b5a7fb8858728f885395b1faf
 "Temporary upload directory is unavailable.","Temporäres Upload-Verzeichnis ist nicht verfügbar.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,8323b7d2177c5fdd2580494d826c8c7f
 "Uploaded image was rejected by security validation.","Das hochgeladene Bild wurde von der Sicherheitsprüfung abgelehnt.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,6d04f9af2abbc878f29f57ef50f53229
-"Uploaded file is not a valid raster image.","Die hochgeladene Datei ist kein gültiges Rasterbild.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,0956d593fe9bd69f281f27b834a25c92
-"Uploaded image dimensions exceed the maximum allowed pixel limit.","Die Abmessungen des hochgeladenen Bildes überschreiten das zulässige Pixellimit.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,c09e86b29f3403feaeb90239cfb46364
 "Uploaded image could not be saved to the page field.","Das hochgeladene Bild konnte nicht im Seitenfeld gespeichert werden.",,site/modules/React/src/Tiptap/TiptapMediaLinkGateway.php,037660c79aadf4d49018f946c2ebd59b
 "Emptied trash.","Papierkorb geleert.",,site/modules/React/src/Viewport/MarkupReactViewport.php,8758e1979803e88020ed42aca37210f4
 "Updated %d record(s).","%d Datensatz/Datensätze aktualisiert.",,site/modules/React/src/Viewport/MarkupReactViewport.php,2ef993b35328d6a5e000e0908a84a10f
@@ -1366,6 +1450,7 @@ Publish,Veröffentlichen,,site/modules/React/src/Viewport/MarkupReactViewport.ph
 "Emptied trash (%d record(s) deleted).","Papierkorb geleert (%d Einträge gelöscht).",,site/modules/React/src/Viewport/MarkupReactViewport.php,b3d4cd84f901e32c414d7cbdea1d8005
 "Trash is already empty.","Der Papierkorb ist bereits leer.",,site/modules/React/src/Viewport/MarkupReactViewport.php,34e12761626b4fb6aa968b9a22e11789
 "Record updated.","Datensatz aktualisiert.",,site/modules/React/src/Viewport/MarkupReactViewport.php,83d4b207495d6d8e7d0ea9e31391da94
+"Unable to update record.","Datensatz konnte nicht aktualisiert werden.",,site/modules/React/src/Viewport/MarkupReactViewport.php,d0705fc68b64e1345d8fc372a4a7c36e
 "Created ""%s"".","„%s“ erstellt.",,site/modules/React/src/Viewport/MarkupReactViewport.php,a1df15e8235050cfb7b8adc51769aeee
 "Exported %s.","%s exportiert.",,site/modules/React/src/Viewport/MarkupReactViewport.php,cba243b6c3b232050531edccfb21f961
 Restore,Wiederherstellen,,site/modules/React/src/Viewport/MarkupReactViewport.php,2bd339d85ee3b33e513359ce781b60cc
