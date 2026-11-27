@@ -6,7 +6,7 @@ namespace ProcessWire;
 
 return [
 	'title' => __('React Relation (O2M — Reverse / Incoming)', __FILE__),
-	'version' => 34,
+	'version' => 35,
 	'summary' => __('Display and manage records linking back to this item (as a table, cards, or list), with quick create, link, and unlink actions.', __FILE__),
 	'author' => 'Iskender TOTOGLU @trk @ukyo',
 	'icon' => 'exchange',

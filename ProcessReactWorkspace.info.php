@@ -6,7 +6,7 @@ namespace ProcessWire;
 
 return [
 	'title' => __('Workspace', __FILE__),
-	'version' => 34,
+	'version' => 35,
 	'summary' => __('Optional unified Admin Workspace Dashboard, cross-module launcher, and customizable widget board powered by React.', __FILE__),
 	'href' => 'https://github.com/trk/React',
 	'author' => 'Iskender TOTOGLU @trk @ukyo',
