@@ -129,18 +129,13 @@ class InputfieldReactIcon extends InputfieldReact
 	 */
 	public function buildIconConfig(): array
 	{
-		$flags = self::extractFieldFlags($this);
-		$rawPrefix = strtolower(trim((string) ($this->getSetting('iconPrefixMode') ?? 'none')));
-		$prefixMode = in_array($rawPrefix, ['none', 'vector', 'fa'], true) ? $rawPrefix : 'none';
-		$rootUrl = rtrim((string) ($this->wire()->config->urls->root ?: '/'), '/');
-		$totalVariants = IconManager::loadCatalog()['totalVariants'];
-
-		return array_merge($flags, [
-			'previewSize' => IconManager::clampSize($this->getSetting('previewSize'), 20),
-			'prefixMode' => $prefixMode,
-			'endpoint' => $rootUrl . '/_react/icons',
-			'totalIcons' => $totalVariants,
+		$settings = array_merge(self::extractFieldFlags($this), [
+			'previewSize' => $this->getSetting('previewSize'),
+			'prefixMode' => $this->getSetting('iconPrefixMode'),
 		]);
+		$rootUrl = (string) ($this->wire()->config->urls->root ?: '/');
+
+		return IconManager::buildControlConfig($settings, $rootUrl);
 	}
 
 	/**
@@ -186,7 +181,7 @@ class InputfieldReactIcon extends InputfieldReact
 			return '';
 		}
 		if ($property !== '') {
-			$propVal = $val->get($property);
+			$propVal = $val->data($property);
 			return is_scalar($propVal) ? htmlspecialchars((string) $propVal, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : '';
 		}
 
@@ -221,8 +216,6 @@ class InputfieldReactIcon extends InputfieldReact
 	{
 		$cfg = $this->buildIconConfig();
 		$attrs = $this->getAttributes();
-		$rawVal = $this->attr('value');
-		$norm = IconManager::normalizeValue($rawVal);
 		$readOnly = $this->isEffectivelyReadOnly();
 		$disabled = !empty($attrs['disabled']) || $readOnly;
 
@@ -239,9 +232,7 @@ class InputfieldReactIcon extends InputfieldReact
 			'required' => (bool) $this->required,
 			'readOnly' => $readOnly,
 			'disabled' => $disabled,
-			'value' => $cfg['allowCustomization']
-				? ($norm['name'] !== '' ? $norm : '')
-				: IconManager::encodeForStorage($norm, $cfg, $cfg['prefixMode']),
+			'value' => IconManager::resolveControlValue($this->attr('value'), $cfg),
 			'iconConfig' => $cfg,
 		];
 	}

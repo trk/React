@@ -67,23 +67,24 @@ class React extends WireData implements Module, ConfigurableModule
 		'commandSearch',
 		'providers',
 		'relations',
+		'linkResolvers',
 		'media',
 		'viewportModes',
 	];
 
-	/** @var array<string, WorkspaceDefinition> */
-	private static array $sharedWorkspaces = [];
+	/** @var \WeakMap<ProcessWire, array<string, WorkspaceDefinition>>|null */
+	private static ?\WeakMap $sharedWorkspaces = null;
 
-	/** @var array<string, WorkspaceWidgetDefinition> */
-	private static array $sharedWidgets = [];
+	/** @var \WeakMap<ProcessWire, array<string, WorkspaceWidgetDefinition>>|null */
+	private static ?\WeakMap $sharedWidgets = null;
 
-	/** @var array<string, array{module: string, contract: string, icon: string, label: string}> */
-	private static array $sharedViewportModes = [];
+	/** @var \WeakMap<ProcessWire, array<string, array{module: string, contract: string, icon: string, label: string}>>|null */
+	private static ?\WeakMap $sharedViewportModes = null;
 
 	/** @var array<string, list<string>> */
 	private static array $moduleAssetUrlCache = [];
-	/** @var array<int, list<string>> */
-	private static array $deferredModuleHooks = [];
+	/** @var \WeakMap<Wire, list<string>>|null */
+	private static ?\WeakMap $deferredModuleHooks = null;
 
 	private ?WorkspaceRegistry $workspaceRegistry = null;
 	private ?WorkspaceWidgetRegistry $widgetRegistry = null;
@@ -137,7 +138,7 @@ class React extends WireData implements Module, ConfigurableModule
 	{
 		return [
 			'title' => 'React',
-			'version' => 35,
+			'version' => 36,
 			'summary' => 'Shared React 19 + Inertia v3 + Tailwind CSS v4 runtime, admin shell, form controls, rich text editor, vector icons, and interactive data viewports for ProcessWire.',
 			'href' => 'https://github.com/trk/React',
 			'author' => 'Iskender TOTOGLU @trk @ukyo',
@@ -737,7 +738,7 @@ class React extends WireData implements Module, ConfigurableModule
 	 */
 	public static function deferMediaHostRegistration(Wire $module, callable $registrar): void
 	{
-		self::$deferredModuleHooks[spl_object_id($module)][] = (string) $module->addHookAfter(
+		self::recordDeferredHook($module, (string) $module->addHookAfter(
 			'React::registerMediaHosts',
 			static function (HookEvent $event) use ($registrar): void {
 				$react = $event->object;
@@ -746,7 +747,7 @@ class React extends WireData implements Module, ConfigurableModule
 					$registrar($gateway, $react);
 				}
 			},
-		);
+		));
 
 		$existing = $module->wire()->fuel->get('react');
 		if ($existing instanceof self && $existing->isMediaHostsResolved()) {
@@ -865,15 +866,18 @@ class React extends WireData implements Module, ConfigurableModule
 
 		$adminTheme = $this->wire()->adminTheme;
 		if ($adminTheme instanceof AdminTheme) {
-			$themeCss = $this->theme()->resolveThemeTokenCss($this->wire()->user);
-			if ($themeCss !== '') {
-				$cspNonceRaw = $wire->config->get('cspNonce');
-				$cspNonce = is_string($cspNonceRaw) ? trim($cspNonceRaw) : '';
-				$nonceAttr = $cspNonce !== ''
-					? ' nonce="' . $wire->sanitizer->entities($cspNonce) . '"'
-					: '';
-				$safeThemeCss = (string) preg_replace('~<\s*/\s*style~i', '<\\/style', $themeCss);
-				$adminTheme->addExtraMarkup('head', '<style id="rw-theme-tokens"' . $nonceAttr . '>' . $safeThemeCss . '</style>');
+			$existingHead = (string) ($adminTheme->getExtraMarkup()['head'] ?? '');
+			if (!str_contains($existingHead, 'id="rw-theme-tokens"')) {
+				$themeCss = $this->theme()->resolveThemeTokenCss($this->wire()->user);
+				if ($themeCss !== '') {
+					$cspNonceRaw = $wire->config->get('cspNonce');
+					$cspNonce = is_string($cspNonceRaw) ? trim($cspNonceRaw) : '';
+					$nonceAttr = $cspNonce !== ''
+						? ' nonce="' . $wire->sanitizer->entities($cspNonce) . '"'
+						: '';
+					$safeThemeCss = (string) preg_replace('~<\s*/\s*style~i', '<\\/style', $themeCss);
+					$adminTheme->addExtraMarkup('head', '<style id="rw-theme-tokens"' . $nonceAttr . '>' . $safeThemeCss . '</style>');
+				}
 			}
 		}
 
@@ -909,7 +913,11 @@ class React extends WireData implements Module, ConfigurableModule
 			'label' => is_string($meta['label'] ?? null) ? trim($meta['label']) : '',
 		];
 		$this->registeredViewportModes[$cleanMode] = $entry;
-		self::$sharedViewportModes[$cleanMode] = $entry;
+		$w = $this->wire();
+		$vpMap = self::sharedViewportModesMap();
+		$bucket = $vpMap[$w] ?? [];
+		$bucket[$cleanMode] = $entry;
+		$vpMap[$w] = $bucket;
 	}
 
 	/**
@@ -927,7 +935,7 @@ class React extends WireData implements Module, ConfigurableModule
 	 */
 	public static function deferViewportModeRegistration(Wire $module, callable $registrar): void
 	{
-		self::$deferredModuleHooks[spl_object_id($module)][] = (string) $module->addHookAfter(
+		self::recordDeferredHook($module, (string) $module->addHookAfter(
 			'React::registerViewportModes',
 			static function (HookEvent $event) use ($registrar): void {
 				$react = $event->object;
@@ -935,7 +943,7 @@ class React extends WireData implements Module, ConfigurableModule
 					$registrar($react);
 				}
 			},
-		);
+		));
 
 		$existing = $module->wire()->fuel->get('react');
 		if ($existing instanceof self && $existing->isViewportModesResolved()) {
@@ -963,7 +971,11 @@ class React extends WireData implements Module, ConfigurableModule
 			}
 		}
 
-		return array_replace(self::$sharedViewportModes, $this->registeredViewportModes);
+		$shared = self::$sharedViewportModes !== null
+			? (self::$sharedViewportModes[$this->wire()] ?? [])
+			: [];
+
+		return array_replace($shared, $this->registeredViewportModes);
 	}
 
 	/**
@@ -1171,14 +1183,111 @@ class React extends WireData implements Module, ConfigurableModule
 		return $this->widgetsResolved;
 	}
 
-	public static function forgetSharedWorkspace(string $id): void
+	private static function resolveStaticWire(?ProcessWire $wire = null): ?ProcessWire
 	{
-		unset(self::$sharedWorkspaces[strtolower(trim($id))]);
+		if ($wire instanceof ProcessWire) {
+			return $wire;
+		}
+		$current = ProcessWire::getCurrentInstance();
+
+		return $current instanceof ProcessWire ? $current : null;
 	}
 
-	public static function forgetSharedWidget(string $id): void
+	/**
+	 * @return \WeakMap<ProcessWire, array<string, WorkspaceDefinition>>
+	 */
+	private static function sharedWorkspacesMap(): \WeakMap
 	{
-		unset(self::$sharedWidgets[strtolower(trim($id))]);
+		if (self::$sharedWorkspaces === null) {
+			/** @var \WeakMap<ProcessWire, array<string, WorkspaceDefinition>> $map */
+			$map = new \WeakMap();
+			self::$sharedWorkspaces = $map;
+		}
+
+		return self::$sharedWorkspaces;
+	}
+
+	/**
+	 * @return \WeakMap<ProcessWire, array<string, WorkspaceWidgetDefinition>>
+	 */
+	private static function sharedWidgetsMap(): \WeakMap
+	{
+		if (self::$sharedWidgets === null) {
+			/** @var \WeakMap<ProcessWire, array<string, WorkspaceWidgetDefinition>> $map */
+			$map = new \WeakMap();
+			self::$sharedWidgets = $map;
+		}
+
+		return self::$sharedWidgets;
+	}
+
+	/**
+	 * @return \WeakMap<ProcessWire, array<string, array{module: string, contract: string, icon: string, label: string}>>
+	 */
+	private static function sharedViewportModesMap(): \WeakMap
+	{
+		if (self::$sharedViewportModes === null) {
+			/** @var \WeakMap<ProcessWire, array<string, array{module: string, contract: string, icon: string, label: string}>> $map */
+			$map = new \WeakMap();
+			self::$sharedViewportModes = $map;
+		}
+
+		return self::$sharedViewportModes;
+	}
+
+	public static function forgetSharedWorkspace(string $id, ?ProcessWire $wire = null): void
+	{
+		$w = self::resolveStaticWire($wire);
+		if ($w === null || self::$sharedWorkspaces === null || !isset(self::$sharedWorkspaces[$w])) {
+			return;
+		}
+		$bucket = self::$sharedWorkspaces[$w];
+		unset($bucket[strtolower(trim($id))]);
+		self::$sharedWorkspaces[$w] = $bucket;
+	}
+
+	public static function forgetSharedWidget(string $id, ?ProcessWire $wire = null): void
+	{
+		$w = self::resolveStaticWire($wire);
+		if ($w === null || self::$sharedWidgets === null || !isset(self::$sharedWidgets[$w])) {
+			return;
+		}
+		$bucket = self::$sharedWidgets[$w];
+		unset($bucket[strtolower(trim($id))]);
+		self::$sharedWidgets[$w] = $bucket;
+	}
+
+	public static function forgetSharedViewportMode(string $mode, ?ProcessWire $wire = null): void
+	{
+		$w = self::resolveStaticWire($wire);
+		if ($w === null || self::$sharedViewportModes === null || !isset(self::$sharedViewportModes[$w])) {
+			return;
+		}
+		$bucket = self::$sharedViewportModes[$w];
+		unset($bucket[strtolower(trim($mode))]);
+		self::$sharedViewportModes[$w] = $bucket;
+	}
+
+	/**
+	 * @return \WeakMap<Wire, list<string>>
+	 */
+	private static function deferredHooksMap(): \WeakMap
+	{
+		if (self::$deferredModuleHooks === null) {
+			/** @var \WeakMap<Wire, list<string>> $map */
+			$map = new \WeakMap();
+			self::$deferredModuleHooks = $map;
+		}
+
+		return self::$deferredModuleHooks;
+	}
+
+	private static function recordDeferredHook(Wire $module, string $hookId): void
+	{
+		$map = self::deferredHooksMap();
+		$existing = $map[$module] ?? [];
+		$existing[] = $hookId;
+		$map[$module] = $existing;
 	}
 
 	/**
@@ -1186,12 +1295,15 @@ class React extends WireData implements Module, ConfigurableModule
 	 */
 	public static function forgetDeferredRegistrations(Wire $module): void
 	{
-		$key = spl_object_id($module);
-		$hookIds = self::$deferredModuleHooks[$key] ?? [];
+		$map = self::$deferredModuleHooks;
+		if ($map === null || !isset($map[$module])) {
+			return;
+		}
+		$hookIds = $map[$module];
 		if ($hookIds !== []) {
 			$module->removeHook($hookIds);
-			unset(self::$deferredModuleHooks[$key]);
 		}
+		unset($map[$module]);
 	}
 
 	/**
@@ -1205,9 +1317,8 @@ class React extends WireData implements Module, ConfigurableModule
 		?callable $workspaceRegistrar = null,
 		?callable $widgetRegistrar = null,
 	): void {
-		$key = spl_object_id($module);
 		if ($workspaceRegistrar !== null) {
-			self::$deferredModuleHooks[$key][] = (string) $module->addHookAfter(
+			self::recordDeferredHook($module, (string) $module->addHookAfter(
 				'React::registerWorkspaces',
 				static function (HookEvent $event) use ($workspaceRegistrar): void {
 					$react = $event->object;
@@ -1215,11 +1326,11 @@ class React extends WireData implements Module, ConfigurableModule
 						$workspaceRegistrar($react);
 					}
 				},
-			);
+			));
 		}
 
 		if ($widgetRegistrar !== null) {
-			self::$deferredModuleHooks[$key][] = (string) $module->addHookAfter(
+			self::recordDeferredHook($module, (string) $module->addHookAfter(
 				'React::registerWidgets',
 				static function (HookEvent $event) use ($widgetRegistrar): void {
 					$react = $event->object;
@@ -1227,7 +1338,7 @@ class React extends WireData implements Module, ConfigurableModule
 						$widgetRegistrar($react);
 					}
 				},
-			);
+			));
 		}
 
 		$existing = $module->wire()->fuel->get('react');
@@ -1373,7 +1484,10 @@ class React extends WireData implements Module, ConfigurableModule
 			$this->pullCapabilities('workspace');
 			if (!$this->isWorkspacesResolved()) {
 				$this->workspacesResolved = true;
-				foreach (self::$sharedWorkspaces as $sharedDef) {
+				$sharedWorkspaces = self::$sharedWorkspaces !== null
+					? (self::$sharedWorkspaces[$this->wire()] ?? [])
+					: [];
+				foreach ($sharedWorkspaces as $sharedDef) {
 					$registry->register($sharedDef);
 				}
 				$this->registerWorkspaces($registry);
@@ -1395,7 +1509,11 @@ class React extends WireData implements Module, ConfigurableModule
 			: WorkspaceDefinition::fromArray($definition);
 
 		if ($def->id !== '' && $def->title !== '') {
-			self::$sharedWorkspaces[$def->id] = $def;
+			$w = $this->wire();
+			$wsMap = self::sharedWorkspacesMap();
+			$bucket = $wsMap[$w] ?? [];
+			$bucket[$def->id] = $def;
+			$wsMap[$w] = $bucket;
 		}
 
 		if ($this->workspaceRegistry !== null) {
@@ -1424,7 +1542,10 @@ class React extends WireData implements Module, ConfigurableModule
 			$this->pullCapabilities('workspace');
 			if (!$this->isWidgetsResolved()) {
 				$this->widgetsResolved = true;
-				foreach (self::$sharedWidgets as $sharedWidget) {
+				$sharedWidgets = self::$sharedWidgets !== null
+					? (self::$sharedWidgets[$this->wire()] ?? [])
+					: [];
+				foreach ($sharedWidgets as $sharedWidget) {
 					$registry->register($sharedWidget);
 				}
 				$this->registerWidgets($registry);
@@ -1446,7 +1567,11 @@ class React extends WireData implements Module, ConfigurableModule
 			: WorkspaceWidgetDefinition::fromArray($definition);
 
 		if ($def->id !== '' && $def->title !== '') {
-			self::$sharedWidgets[$def->id] = $def;
+			$w = $this->wire();
+			$wdMap = self::sharedWidgetsMap();
+			$bucket = $wdMap[$w] ?? [];
+			$bucket[$def->id] = $def;
+			$wdMap[$w] = $bucket;
 		}
 
 		if ($this->widgetRegistry !== null) {
@@ -1473,7 +1598,7 @@ class React extends WireData implements Module, ConfigurableModule
 	 */
 	public static function deferShellLayoutRegistration(Wire $module, callable $registrar): void
 	{
-		self::$deferredModuleHooks[spl_object_id($module)][] = (string) $module->addHookAfter(
+		self::recordDeferredHook($module, (string) $module->addHookAfter(
 			'React::registerShellLayouts',
 			static function (HookEvent $event) use ($registrar): void {
 				$react = $event->object;
@@ -1482,7 +1607,7 @@ class React extends WireData implements Module, ConfigurableModule
 					$registrar($registry, $react);
 				}
 			},
-		);
+		));
 
 		$existing = $module->wire()->fuel->get('react');
 		if ($existing instanceof self && $existing->isShellLayoutsResolved()) {
@@ -1509,7 +1634,10 @@ class React extends WireData implements Module, ConfigurableModule
 		}
 
 		if (!$this->shellLayoutsResolved) {
-			$this->pullCapabilities('workspace');
+			$hubActive = $this->isWorkspaceHubInstalled() || ($this->wire()->process instanceof WorkspaceLauncherProcess);
+			if ($hubActive) {
+				$this->pullCapabilities('workspace');
+			}
 			if (!$this->isShellLayoutsResolved()) {
 				$this->shellLayoutsResolved = true;
 				$this->registerShellLayouts($registry);
@@ -1534,7 +1662,7 @@ class React extends WireData implements Module, ConfigurableModule
 	 */
 	public static function deferCommandSearchRegistration(Wire $module, callable $registrar): void
 	{
-		self::$deferredModuleHooks[spl_object_id($module)][] = (string) $module->addHookAfter(
+		self::recordDeferredHook($module, (string) $module->addHookAfter(
 			'React::registerCommandSearch',
 			static function (HookEvent $event) use ($registrar): void {
 				$react = $event->object;
@@ -1543,7 +1671,7 @@ class React extends WireData implements Module, ConfigurableModule
 					$registrar($registry, $react);
 				}
 			},
-		);
+		));
 
 		$existing = $module->wire()->fuel->get('react');
 		if ($existing instanceof self && $existing->isCommandSearchResolved()) {
@@ -1788,6 +1916,50 @@ class React extends WireData implements Module, ConfigurableModule
 	}
 
 	/**
+	 * Defer a module's custom link target resolver registration until `resolveCustomLink()` or `linkResolverTypes()` is requested.
+	 *
+	 * @param callable(self): void $registrar
+	 */
+	public static function deferLinkResolverRegistration(Wire $module, callable $registrar): void
+	{
+		self::recordDeferredHook($module, (string) $module->addHookAfter(
+			'React::registerLinkResolvers',
+			static function (HookEvent $event) use ($registrar): void {
+				$react = $event->object;
+				if ($react instanceof self) {
+					$registrar($react);
+				}
+			},
+		));
+
+		$existing = $module->wire()->fuel->get('react');
+		if ($existing instanceof self && $existing->isLinkResolversResolved()) {
+			$registrar($existing);
+		}
+	}
+
+	/**
+	 * Pull capability modules and resolve custom link target resolvers once per instance.
+	 */
+	private function ensureLinkResolversResolved(): void
+	{
+		if ($this->linkResolversResolved) {
+			return;
+		}
+
+		$explicit = $this->linkResolvers;
+		$this->pullCapabilities('linkResolvers');
+		$this->pullCapabilities('relations');
+		if (!$this->isLinkResolversResolved()) {
+			$this->linkResolversResolved = true;
+			$this->registerLinkResolvers();
+		}
+		if ($explicit !== []) {
+			$this->linkResolvers = array_merge($this->linkResolvers, $explicit);
+		}
+	}
+
+	/**
 	 * Resolve a custom non-builtin link target type via registered link resolvers.
 	 *
 	 * @param array<string, mixed> $normalized
@@ -1800,13 +1972,7 @@ class React extends WireData implements Module, ConfigurableModule
 		if ($cleanType === '') {
 			return null;
 		}
-		if (!$this->linkResolversResolved) {
-			$this->pullCapabilities('relations');
-			if (!$this->isLinkResolversResolved()) {
-				$this->linkResolversResolved = true;
-				$this->registerLinkResolvers();
-			}
-		}
+		$this->ensureLinkResolversResolved();
 
 		$resolver = $this->linkResolvers[$cleanType] ?? null;
 		if ($resolver === null) {
@@ -1825,13 +1991,7 @@ class React extends WireData implements Module, ConfigurableModule
 	 */
 	public function linkResolverTypes(): array
 	{
-		if (!$this->linkResolversResolved) {
-			$this->pullCapabilities('relations');
-			if (!$this->isLinkResolversResolved()) {
-				$this->linkResolversResolved = true;
-				$this->registerLinkResolvers();
-			}
-		}
+		$this->ensureLinkResolversResolved();
 
 		return array_values(array_map('strval', array_keys($this->linkResolvers)));
 	}
@@ -1925,7 +2085,7 @@ class React extends WireData implements Module, ConfigurableModule
 	 */
 	public static function deferProviderRegistration(Wire $module, callable $registrar): void
 	{
-		self::$deferredModuleHooks[spl_object_id($module)][] = (string) $module->addHookAfter(
+		self::recordDeferredHook($module, (string) $module->addHookAfter(
 			'React::registerProviders',
 			static function (HookEvent $event) use ($registrar): void {
 				$react = $event->object;
@@ -1934,7 +2094,7 @@ class React extends WireData implements Module, ConfigurableModule
 					$registrar($registry, $react);
 				}
 			},
-		);
+		));
 
 		$existing = $module->wire()->fuel->get('react');
 		if ($existing instanceof self && $existing->isProvidersResolved()) {
@@ -2020,7 +2180,7 @@ class React extends WireData implements Module, ConfigurableModule
 	 */
 	public static function deferRelationRegistration(Wire $module, callable $registrar): void
 	{
-		self::$deferredModuleHooks[spl_object_id($module)][] = (string) $module->addHookAfter(
+		self::recordDeferredHook($module, (string) $module->addHookAfter(
 			'React::registerRelationResources',
 			static function (HookEvent $event) use ($registrar): void {
 				$react = $event->object;
@@ -2029,7 +2189,7 @@ class React extends WireData implements Module, ConfigurableModule
 					$registrar($registry, $react);
 				}
 			},
-		);
+		));
 
 		$existing = $module->wire()->fuel->get('react');
 		if ($existing instanceof self && $existing->isRelationsResolved()) {
@@ -2150,12 +2310,21 @@ class React extends WireData implements Module, ConfigurableModule
 		if ($this->fieldHooks !== null) {
 			$this->fieldHooks->unregister();
 		}
-		foreach (self::$deferredModuleHooks as $hookIds) {
-			if ($hookIds !== []) {
-				$w->removeHook($hookIds);
+		if (self::$deferredModuleHooks !== null) {
+			/** @var list<array{0: Wire, 1: list<string>}> $toRemove */
+			$toRemove = [];
+			foreach (self::$deferredModuleHooks as $module => $hookIds) {
+				if ($module->wire() === $w) {
+					$toRemove[] = [$module, $hookIds];
+				}
+			}
+			foreach ($toRemove as [$module, $hookIds]) {
+				if ($hookIds !== []) {
+					$module->removeHook($hookIds);
+				}
+				unset(self::$deferredModuleHooks[$module]);
 			}
 		}
-		self::$deferredModuleHooks = [];
 
 		$w->session->removeFor('ReactViewPrefs', true);
 		$db = $w->database;
@@ -2196,10 +2365,16 @@ class React extends WireData implements Module, ConfigurableModule
 		}
 		MarkupReactViewport::resetCache();
 		MiniBlockRegistry::resetCache();
-		IconManager::resetCache();
-		self::$sharedWorkspaces = [];
-		self::$sharedWidgets = [];
-		self::$sharedViewportModes = [];
+		IconManager::resetCache($w);
+		if (self::$sharedWorkspaces !== null) {
+			unset(self::$sharedWorkspaces[$w]);
+		}
+		if (self::$sharedWidgets !== null) {
+			unset(self::$sharedWidgets[$w]);
+		}
+		if (self::$sharedViewportModes !== null) {
+			unset(self::$sharedViewportModes[$w]);
+		}
 		self::$moduleAssetUrlCache = [];
 		$this->registeredViewportModes = [];
 		$this->linkResolvers = [];
@@ -2343,14 +2518,18 @@ class React extends WireData implements Module, ConfigurableModule
 			$resolvedActiveWorkspace = $activeWorkspace->toArray($resolvedActiveUrl);
 		}
 
+		$userShellLayout = $this->userShellLayoutOverride($user);
+		$siteDefaultShellLayout = $this->siteDefaultShellLayout();
+		$effectiveShellLayout = $userShellLayout !== '' ? $userShellLayout : $siteDefaultShellLayout;
+
 		return [
 			'appName' => (string) ($config->httpHost ?: 'ProcessWire'),
 			'adminUrl' => $adminUrl,
 			'adminReturnLabel' => $this->resolveAdminReturnLabel($user),
 			'shellMode' => $shellMode,
-			'shellLayout' => $this->resolveEffectiveShellLayout($user),
-			'userShellLayout' => $this->userShellLayoutOverride($user),
-			'siteDefaultShellLayout' => $this->siteDefaultShellLayout(),
+			'shellLayout' => $effectiveShellLayout,
+			'userShellLayout' => $userShellLayout,
+			'siteDefaultShellLayout' => $siteDefaultShellLayout,
 			'sidebarCollapsed' => $this->resolveSidebarCollapsed($user),
 			'availableShellLayouts' => $this->shellLayouts()->toArray(),
 			'launcherComponent' => $hubActive ? 'ReactWorkspace/WorkspaceLauncher' : '',

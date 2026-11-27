@@ -276,7 +276,7 @@ class MarkupReactTab extends InputfieldFieldset implements InertiaSerializable
 						&& $descendant->isEmpty()
 					) {
 						$reqMsg = (string) ($descendant->getSetting('requiredLabel') ?: $this->requiredLabel);
-						$descendant->error($reqMsg !== '' ? $reqMsg : 'Missing required value');
+						$descendant->error($reqMsg !== '' ? $reqMsg : $this->_('Missing required value'));
 					}
 				}
 				continue;
@@ -646,17 +646,23 @@ class MarkupReactTab extends InputfieldFieldset implements InertiaSerializable
 	{
 		$this->renderReady(null, $renderValueMode);
 
-		$payload = [
-			'component' => $this->inertiaComponent(),
-			'id' => $this->stringAttr('id'),
-			'name' => $this->stringAttr('name'),
-			'label' => (string) $this->label,
-			'description' => (string) $this->description,
-			'notes' => (string) $this->notes,
-			'icon' => (string) $this->icon,
-			'readOnly' => $renderValueMode,
-			'props' => $this->buildTabbedPayload($renderValueMode, $panes),
-		];
+		$inertia = $this->inertia();
+		$payload = Inertia::withoutEntityEncoding(function () use ($inertia, $renderValueMode, $panes): array {
+			$raw = [
+				'component' => $this->inertiaComponent(),
+				'id' => $this->stringAttr('id'),
+				'name' => $this->stringAttr('name'),
+				'label' => (string) $this->label,
+				'description' => (string) $this->description,
+				'notes' => (string) $this->notes,
+				'icon' => (string) $this->icon,
+				'readOnly' => $renderValueMode,
+				'props' => $this->buildTabbedPayload($renderValueMode, $panes),
+			];
+			$resolved = $inertia->resolver->resolveValue($raw);
+
+			return is_array($resolved) ? $resolved : $raw;
+		});
 
 		return IslandMarkup::render('MarkupReactTab', $payload, [
 			'data-readonly' => $renderValueMode ? 'true' : null,

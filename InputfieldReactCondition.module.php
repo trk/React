@@ -126,11 +126,62 @@ class InputfieldReactCondition extends InputfieldReact implements InputfieldHasA
 	}
 
 	/**
+	 * Determine whether this Inputfield is currently attached to a `FieldtypeText` / `FieldtypeTextarea` Page field.
+	 */
+	private function isBoundToTextFieldtype(): bool
+	{
+		$ft = $this->getSetting('hasFieldtype');
+		if ($ft instanceof FieldtypeText) {
+			return true;
+		}
+
+		$field = $this->getSetting('hasField');
+
+		return $field instanceof Field && $field->type instanceof FieldtypeText;
+	}
+
+	/**
 	 * @return array{match: string, groups: list<array<string, mixed>>}
 	 */
 	public function getNormalizedTree(): array
 	{
-		return ConditionNormalizer::normalizeTree($this->attr('value'));
+		return ConditionNormalizer::normalizeTree($this->attributes['value'] ?? []);
+	}
+
+	/**
+	 * @param string|array<string, mixed> $key
+	 * @param mixed $value
+	 */
+	public function setAttribute($key, $value): self
+	{
+		if ($key === 'value') {
+			$value = ConditionNormalizer::normalizeTree($value);
+		}
+
+		return parent::setAttribute($key, $value);
+	}
+
+	/**
+	 * Return canonical JSON object string when persisted directly by `FieldtypeText` / `FieldtypeTextarea`.
+	 *
+	 * @param string $key
+	 */
+	public function getAttribute($key): mixed
+	{
+		if ($key === 'value') {
+			if ($this->isBoundToTextFieldtype()) {
+				return ConditionNormalizer::encodeTree($this->attributes['value'] ?? []);
+			}
+
+			return ConditionNormalizer::normalizeTree($this->attributes['value'] ?? []);
+		}
+
+		return parent::getAttribute($key);
+	}
+
+	public function isEmpty(): bool
+	{
+		return ConditionNormalizer::isEmptyTree($this->getNormalizedTree());
 	}
 
 	/**
@@ -157,7 +208,8 @@ class InputfieldReactCondition extends InputfieldReact implements InputfieldHasA
 	{
 		$prop = parent::toInertiaProp();
 		$data = $this->inertiaWithData();
-		$prop['props'] = $data;
+		$existingProps = is_array($prop['props'] ?? null) ? $prop['props'] : [];
+		$prop['props'] = array_merge($existingProps, $data);
 		$prop['value'] = $data['value'];
 
 		return $prop;
@@ -220,8 +272,12 @@ class InputfieldReactCondition extends InputfieldReact implements InputfieldHasA
 	 */
 	public function ___renderValue(): string
 	{
-		$payload = $this->inertia()->resolver->resolveValue($this->toInertiaProp());
-		$data = is_array($payload) ? $payload : $this->toInertiaProp();
+		$inertia = $this->inertia();
+		$data = Inertia::withoutEntityEncoding(function () use ($inertia): array {
+			$payload = $inertia->resolver->resolveValue($this->toInertiaProp());
+
+			return is_array($payload) ? $payload : $this->toInertiaProp();
+		});
 		$data['readOnly'] = true;
 		if (isset($data['props']) && is_array($data['props'])) {
 			$data['props']['readOnly'] = true;
@@ -274,11 +330,8 @@ class InputfieldReactCondition extends InputfieldReact implements InputfieldHasA
 					continue;
 				}
 				foreach ($group['rules'] as &$rule) {
-					if (
-						($rule['valueSource'] ?? '') === 'field'
-						|| ($rule['valueType'] ?? '') === 'field'
-					) {
-						unset($rule['valueSource'], $rule['valueType']);
+					if (($rule['valueSource'] ?? '') === 'field') {
+						unset($rule['valueSource']);
 						$rule['value'] = null;
 						$hadDisallowedFieldCmp = true;
 					}

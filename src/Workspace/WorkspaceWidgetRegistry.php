@@ -46,7 +46,7 @@ final class WorkspaceWidgetRegistry extends Wire
 	{
 		$cleanId = strtolower(trim($id));
 		unset($this->definitions[$cleanId]);
-		\ProcessWire\React::forgetSharedWidget($cleanId);
+		\ProcessWire\React::forgetSharedWidget($cleanId, $this->wire());
 
 		return $this;
 	}

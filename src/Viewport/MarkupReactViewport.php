@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Totoglu\React\Viewport;
 
 use Closure;
+use ProcessWire\Inertia;
 use ProcessWire\PageArray;
 use ProcessWire\React;
 use Totoglu\Inertia\MarkupInertia;
@@ -141,12 +142,12 @@ abstract class MarkupReactViewport extends MarkupInertia
 	 */
 	public array $rowActions = [];
 
-	public string $emptyTitle = 'No records found';
-	public string $emptyMessage = 'Try adjusting your search or filter criteria.';
+	public string $emptyTitle = '';
+	public string $emptyMessage = '';
 	public string $emptyIcon = 'inbox';
 	public string $emptyActionLabel = '';
 	public string $emptyActionUrl = '';
-	public string $searchPlaceholder = 'Search records...';
+	public string $searchPlaceholder = '';
 	public string $searchQuery = '';
 	public string $sortField = '';
 	public string $sortDirection = 'asc';
@@ -820,12 +821,12 @@ abstract class MarkupReactViewport extends MarkupInertia
 		$this->dateTo = '';
 		$this->bulkActions = [];
 		$this->rowActions = [];
-		$this->emptyTitle = 'No records found';
-		$this->emptyMessage = 'Try adjusting your search or filter criteria.';
+		$this->emptyTitle = '';
+		$this->emptyMessage = '';
 		$this->emptyIcon = 'inbox';
 		$this->emptyActionLabel = '';
 		$this->emptyActionUrl = '';
-		$this->searchPlaceholder = 'Search records...';
+		$this->searchPlaceholder = '';
 		$this->searchQuery = '';
 		$this->sortField = '';
 		$this->sortDirection = 'asc';
@@ -1054,7 +1055,14 @@ abstract class MarkupReactViewport extends MarkupInertia
 
 		$this->renderReady();
 
-		return IslandMarkup::render($this->inertiaComponent(), $this->toInertiaProp(), [
+		$inertia = $this->inertia();
+		$data = Inertia::withoutEntityEncoding(function () use ($inertia): array {
+			$payload = $inertia->resolver->resolveValue($this->toInertiaProp());
+
+			return is_array($payload) ? $payload : $this->toInertiaProp();
+		});
+
+		return IslandMarkup::render($this->inertiaComponent(), $data, [
 			'id' => $this->componentId !== '' ? 'rw-viewport-' . $this->componentId : null,
 		]);
 	}
@@ -2274,7 +2282,6 @@ abstract class MarkupReactViewport extends MarkupInertia
 
 					if (
 						$hasFormProvider
-						&& $isFullForm
 						&& $provider instanceof ReactQuickEditProvider
 						&& $provider->supportsQuickEdit()
 					) {

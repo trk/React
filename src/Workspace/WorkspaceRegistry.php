@@ -60,7 +60,7 @@ final class WorkspaceRegistry extends Wire
 	{
 		$cleanId = strtolower(trim($id));
 		unset($this->definitions[$cleanId], $this->resolvedUrlCache[$cleanId]);
-		\ProcessWire\React::forgetSharedWorkspace($cleanId);
+		\ProcessWire\React::forgetSharedWorkspace($cleanId, $this->wire());
 
 		return $this;
 	}

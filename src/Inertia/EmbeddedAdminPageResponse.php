@@ -122,16 +122,31 @@ final class EmbeddedAdminPageResponse extends PageResponse
 			? ' nonce="' . $sanitizer->entities(trim($rawCspNonce)) . '"'
 			: '';
 
+		$adminTheme = $wire->adminTheme;
+		$existingHead = $adminTheme instanceof AdminTheme
+			? (string) ($adminTheme->getExtraMarkup()['head'] ?? '')
+			: '';
+
 		$headFragments = [];
-		if ($colorSchemeCss !== '') {
+		if ($colorSchemeCss !== '' && !str_contains($existingHead, 'id="pw-color-scheme-tokens"')) {
 			$safeCss = (string) preg_replace('~<\s*/\s*style~i', '<\\/style', $colorSchemeCss);
 			$headFragments[] = '<style id="pw-color-scheme-tokens"' . $nonceAttr . '>' . $safeCss . '</style>';
 		}
-		$headFragments[] = '<script' . $nonceAttr . '>(function(){try{var d=document.documentElement;d.setAttribute("data-rw-shell-mode","admin");d.setAttribute("data-rw-shell-layout",' . $safeShellLayoutJson . ');d.setAttribute("data-rw-sidebar-collapsed",' . $safeSidebarCollapsedJson . ');d.setAttribute("data-rw-admin-root",' . $safeAdminRootJson . ');d.setAttribute("data-rw-launcher-path",' . $safeLauncherPathJson . ');var m=' . $safeThemeJson . ';d.setAttribute("data-theme-mode",m);var dark=m==="dark"||(m==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);d.classList.toggle("dark",dark);d.classList.toggle("light",!dark);}catch(e){}})();</script>';
+		if (!str_contains($existingHead, 'id="rw-admin-shell-bootstrap"')) {
+			$headFragments[] = '<script id="rw-admin-shell-bootstrap"' . $nonceAttr . '>(function(){try{var d=document.documentElement;d.setAttribute("data-rw-shell-mode","admin");d.setAttribute("data-rw-shell-layout",' . $safeShellLayoutJson . ');d.setAttribute("data-rw-sidebar-collapsed",' . $safeSidebarCollapsedJson . ');d.setAttribute("data-rw-admin-root",' . $safeAdminRootJson . ');d.setAttribute("data-rw-launcher-path",' . $safeLauncherPathJson . ');var m=' . $safeThemeJson . ';d.setAttribute("data-theme-mode",m);var dark=m==="dark"||(m==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);d.classList.toggle("dark",dark);d.classList.toggle("light",!dark);}catch(e){}})();</script>';
+		}
 
-		$adminTheme = $wire->adminTheme;
 		if ($adminTheme instanceof AdminTheme) {
-			$adminTheme->addExtraMarkup('head', implode("\n", $headFragments));
+			$explicitThemeCss = is_string($viewData['themeCss'] ?? null)
+				? trim((string) $viewData['themeCss'])
+				: '';
+			if ($explicitThemeCss !== '' && !str_contains($existingHead, 'id="rw-theme-tokens"')) {
+				$safeThemeCss = (string) preg_replace('~<\s*/\s*style~i', '<\\/style', $explicitThemeCss);
+				$headFragments[] = '<style id="rw-theme-tokens"' . $nonceAttr . '>' . $safeThemeCss . '</style>';
+			}
+			if ($headFragments !== []) {
+				$adminTheme->addExtraMarkup('head', implode("\n", $headFragments));
+			}
 			$inlineBootstrap = '';
 		} else {
 			$themeCss = is_string($viewData['themeCss'] ?? null)

@@ -516,8 +516,12 @@ class InputfieldReactKeyValue extends InputfieldReact implements InputfieldHasAr
 	 */
 	public function ___renderValue(): string
 	{
-		$payload = $this->inertia()->resolver->resolveValue($this->toInertiaProp());
-		$data = is_array($payload) ? $payload : $this->toInertiaProp();
+		$inertia = $this->inertia();
+		$data = Inertia::withoutEntityEncoding(function () use ($inertia): array {
+			$payload = $inertia->resolver->resolveValue($this->toInertiaProp());
+
+			return is_array($payload) ? $payload : $this->toInertiaProp();
+		});
 		$data['readOnly'] = true;
 		if (isset($data['props']) && is_array($data['props'])) {
 			$data['props']['readOnly'] = true;

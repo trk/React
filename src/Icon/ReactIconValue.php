@@ -47,6 +47,7 @@ class ReactIconValue extends WireData implements \Stringable, \JsonSerializable
 	public function __construct(array $data = [])
 	{
 		parent::__construct();
+		$this->useFuel(false);
 		$name = isset($data['name']) ? trim((string) $data['name']) : '';
 		$variant = isset($data['variant']) && strtolower(trim((string) $data['variant'])) === 'filled'
 			? 'filled'

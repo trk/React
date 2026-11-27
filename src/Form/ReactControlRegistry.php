@@ -14,6 +14,7 @@ use ProcessWire\FieldtypeOptions;
 use ProcessWire\FieldtypeText;
 use ProcessWire\FieldtypeTextarea;
 use ProcessWire\HookEvent;
+use ProcessWire\Inertia;
 use ProcessWire\Inputfield;
 use ProcessWire\InputfieldCheckbox;
 use ProcessWire\InputfieldDatetime;
@@ -275,7 +276,6 @@ final class ReactControlRegistry extends Wire
 
 		$attrs = $inputfield->getAttributes();
 		$raw = $attrs['data-rw-control']
-			?? $attrs['data-control']
 			?? $inputfield->get('rwControl')
 			?? $inputfield->getSetting('rwControl')
 			?? '';
@@ -502,7 +502,16 @@ final class ReactControlRegistry extends Wire
 	private function renderSingleControlIsland(Inputfield $inputfield, array $bridge, bool $renderValueMode): ?string
 	{
 		$serializer = $this->react->forms();
-		$node = $serializer->serializeInputfieldNode($inputfield);
+		$inertia = $this->react->inertia();
+		$node = Inertia::withoutEntityEncoding(function () use ($serializer, $inertia, $inputfield): array {
+			$serialized = $serializer->serializeInputfieldNode($inputfield);
+			if ($serialized === [] || ($serialized['kind'] ?? '') !== 'control') {
+				return $serialized;
+			}
+			$resolved = $inertia->resolver->resolveValue($serialized);
+
+			return is_array($resolved) ? $resolved : $serialized;
+		});
 		if ($node === [] || ($node['kind'] ?? '') !== 'control') {
 			return null;
 		}

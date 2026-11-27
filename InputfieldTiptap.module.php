@@ -132,13 +132,6 @@ class InputfieldTiptap extends InputfieldTextarea implements ConfigurableModule,
 	private ?string $availableMiniBlocksCacheKey = null;
 
 	/**
-	 * Guard against circular `settingsField` inheritance chains.
-	 *
-	 * @var array<string, bool>
-	 */
-	private static array $resolvingFields = [];
-
-	/**
 	 * Default module and field configuration values.
 	 *
 	 * @return array<string, mixed>
@@ -298,7 +291,7 @@ class InputfieldTiptap extends InputfieldTextarea implements ConfigurableModule,
 			return $permissionName === '' ? true : (bool) $user->hasPermission($permissionName);
 		}
 
-		return true;
+		return false;
 	}
 
 	/**
@@ -818,7 +811,6 @@ class InputfieldTiptap extends InputfieldTextarea implements ConfigurableModule,
 		$ownName = is_scalar($rawOwnName) ? trim((string) $rawOwnName) : '';
 		$hasInheritedSource = $inheritFieldName !== ''
 			&& $inheritFieldName !== $ownName
-			&& !isset(self::$resolvingFields[$inheritFieldName])
 			&& $this->wire()->fields->get($inheritFieldName) instanceof Field;
 
 		$instanceLayer = [
@@ -1107,8 +1099,14 @@ class InputfieldTiptap extends InputfieldTextarea implements ConfigurableModule,
 
 	public function ___render(): string
 	{
-		$payload = $this->inertia()->resolver->resolveValue($this->toInertiaProp());
-		$data = is_array($payload) ? $payload : $this->toInertiaProp();
+		$inertia = $this->inertia();
+		$inertia->ensureXsrfCookie();
+
+		$data = Inertia::withoutEntityEncoding(function () use ($inertia): array {
+			$payload = $inertia->resolver->resolveValue($this->toInertiaProp());
+
+			return is_array($payload) ? $payload : $this->toInertiaProp();
+		});
 
 		$id = (string) ($data['id'] ?? ($this->attr('id') ?: 'tiptap_input'));
 		$name = (string) ($data['name'] ?? $this->attr('name'));
@@ -1144,12 +1142,20 @@ class InputfieldTiptap extends InputfieldTextarea implements ConfigurableModule,
 
 	public function ___renderValue(): string
 	{
-		$data = $this->toInertiaProp();
+		$inertia = $this->inertia();
+		$data = Inertia::withoutEntityEncoding(function () use ($inertia): array {
+			$payload = $inertia->resolver->resolveValue($this->toInertiaProp());
+
+			return is_array($payload) ? $payload : $this->toInertiaProp();
+		});
 		$data['readOnly'] = true;
 		if (isset($data['props']) && is_array($data['props'])) {
 			$data['props']['readOnly'] = true;
 		}
-		return IslandMarkup::render($this->inertiaComponent(), $data, ['class' => 'pw-inertia-inputfield-island']);
+		return IslandMarkup::render($this->inertiaComponent(), $data, [
+			'class' => 'pw-inertia-inputfield-island',
+			'data-readonly' => 'true',
+		]);
 	}
 
 	/**

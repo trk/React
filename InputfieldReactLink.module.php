@@ -29,6 +29,8 @@ use Totoglu\React\Support\IslandMarkup;
  * @property string $selector Optional ProcessWire selector narrowing selectable `Page` targets
  * @property string $blueprintType Optional scope identifier forwarded to custom link target resolvers
  * @property bool $readOnly Render in read-only mode
+ *
+ * @method bool isLanguageEditable(Language $lang)
  */
 class InputfieldReactLink extends InputfieldReact
 {
@@ -152,7 +154,8 @@ class InputfieldReactLink extends InputfieldReact
 	public function getModuleStyleAssets(): array
 	{
 		$types = self::normalizeTypeList($this->getSetting('linkTypes') ?? self::DEFAULT_TYPES);
-		if (array_intersect($types, ['file', 'image', 'video']) === []) {
+		$rawMedia = $this->getSetting('mediaProfiles') ?? $this->getSetting('media') ?? '';
+		if (self::normalizeMediaProfiles($rawMedia, $types) === []) {
 			return [];
 		}
 
@@ -1189,6 +1192,36 @@ class InputfieldReactLink extends InputfieldReact
 		$rawMedia = $this->getSetting('mediaProfiles') ?? $this->getSetting('media') ?? '';
 		$baseTypes = self::normalizeTypeList($this->getSetting('linkTypes') ?? self::DEFAULT_TYPES);
 		$profiles = self::normalizeMediaProfiles($rawMedia, $baseTypes);
+		$rawTypeLabels = $this->getSetting('typeLabels');
+		$defaultPresetLabels = [
+			'image' => $this->_('Image'),
+			'video' => $this->_('Video'),
+			'file' => $this->_('File'),
+		];
+		$customMediaProfiles = [];
+		if (is_array($rawMedia)) {
+			$customMediaProfiles = $rawMedia;
+		} elseif (is_string($rawMedia) && str_starts_with(trim($rawMedia), '{')) {
+			$decodedMedia = json_decode(trim($rawMedia), true, self::MAX_JSON_DEPTH);
+			if (is_array($decodedMedia)) {
+				$customMediaProfiles = $decodedMedia;
+			}
+		}
+		foreach ($defaultPresetLabels as $presetKey => $translatedLabel) {
+			if (!isset($profiles[$presetKey])) {
+				continue;
+			}
+			$hasCustomMediaLabel = isset($customMediaProfiles[$presetKey])
+				&& is_array($customMediaProfiles[$presetKey])
+				&& isset($customMediaProfiles[$presetKey]['label'])
+				&& trim((string) $customMediaProfiles[$presetKey]['label']) !== '';
+			$hasCustomTypeLabel = is_array($rawTypeLabels)
+				&& isset($rawTypeLabels[$presetKey])
+				&& trim((string) $rawTypeLabels[$presetKey]) !== '';
+			if (!$hasCustomMediaLabel && !$hasCustomTypeLabel) {
+				$profiles[$presetKey]['label'] = $translatedLabel;
+			}
+		}
 		$types = self::normalizeTypeList($baseTypes, array_keys($profiles));
 		$defaultType = strtolower(trim((string) ($this->getSetting('defaultType') ?: $types[0])));
 		if (!in_array($defaultType, $types, true)) {
@@ -1204,6 +1237,14 @@ class InputfieldReactLink extends InputfieldReact
 			'enableQuery' => $this->getSetting('enableQuery'),
 		]);
 
+		$extra = [
+			'selector' => trim((string) ($this->getSetting('selector') ?? '')),
+			'blueprintType' => trim((string) ($this->getSetting('blueprintType') ?? '')),
+		];
+		if (is_array($rawTypeLabels) && $rawTypeLabels !== []) {
+			$extra['typeLabels'] = $rawTypeLabels;
+		}
+
 		return array_merge(
 			[
 				'types' => $types,
@@ -1211,10 +1252,7 @@ class InputfieldReactLink extends InputfieldReact
 				'media' => $profiles,
 			],
 			$flags,
-			[
-				'selector' => trim((string) ($this->getSetting('selector') ?? '')),
-				'blueprintType' => trim((string) ($this->getSetting('blueprintType') ?? '')),
-			],
+			$extra,
 		);
 	}
 
@@ -1242,8 +1280,12 @@ class InputfieldReactLink extends InputfieldReact
 
 	public function ___renderValue(): string
 	{
-		$payload = $this->inertia()->resolver->resolveValue($this->toInertiaProp());
-		$data = is_array($payload) ? $payload : $this->toInertiaProp();
+		$inertia = $this->inertia();
+		$data = Inertia::withoutEntityEncoding(function () use ($inertia): array {
+			$payload = $inertia->resolver->resolveValue($this->toInertiaProp());
+
+			return is_array($payload) ? $payload : $this->toInertiaProp();
+		});
 		$data['readOnly'] = true;
 		if (isset($data['props']) && is_array($data['props'])) {
 			$data['props']['readOnly'] = true;
@@ -1262,6 +1304,39 @@ class InputfieldReactLink extends InputfieldReact
 			'class' => 'pw-inertia-inputfield-island',
 			'data-readonly' => 'true',
 		], $fallbackHtml);
+	}
+
+	/**
+	 * Check whether the current user has edit permission for `$lang` (`page-edit-lang-*`).
+	 *
+	 * On ProcessWire Page fields (`hasPage`), delegates directly to `Languages::editable()`.
+	 * In standalone or entity/block forms without a host `Page`, honors installed
+	 * `page-edit-lang-*` permissions for logged-in non-superusers without requiring `page-edit`.
+	 */
+	public function ___isLanguageEditable(Language $lang): bool
+	{
+		$user = $this->wire()->user;
+		if ($user->isSuperuser()) {
+			return true;
+		}
+
+		$languages = $this->wire()->languages;
+		if (!$languages instanceof Languages) {
+			return true;
+		}
+
+		$hasPage = $this->getSetting('hasPage');
+		if (($hasPage instanceof Page && $hasPage->id > 0) || $user->hasPermission('page-edit')) {
+			return (bool) $languages->editable($lang);
+		}
+
+		if ($user->isLoggedin()) {
+			$permissionName = (string) $languages->getPageEditPermission($lang);
+
+			return $permissionName === '' ? true : (bool) $user->hasPermission($permissionName);
+		}
+
+		return false;
 	}
 
 	public function ___processInput(WireInputData $input): self
@@ -1318,6 +1393,52 @@ class InputfieldReactLink extends InputfieldReact
 		}
 
 		$previous = $this->getNormalizedLink();
+		$languages = $this->wire()->languages;
+		if ($languages instanceof Languages) {
+			$hasMediaRef = ($normalized['file'] ?? '') !== ''
+				|| (($normalized['url'] ?? '') !== '' && (in_array($normalized['type'] ?? '', ['image', 'video', 'file'], true) || isset($cfg['media'][$normalized['type'] ?? ''])));
+			foreach ($languages as $lang) {
+				if (!$lang instanceof Language || $this->isLanguageEditable($lang)) {
+					continue;
+				}
+				$isDefault = $lang->isDefault();
+				$langKeys = $isDefault ? ['default', (string) $lang->id] : [(string) $lang->id];
+				$langName = (string) $lang->name;
+				if ($langName !== '') {
+					$langKeys[] = $langName;
+				}
+				$mapKeys = $hasMediaRef ? ['labels', 'ariaLabels', 'descriptions'] : ['labels', 'ariaLabels'];
+				foreach ($mapKeys as $mapKey) {
+					$prevMap = isset($previous[$mapKey]) && is_array($previous[$mapKey]) ? $previous[$mapKey] : [];
+					foreach ($langKeys as $lk) {
+						if (isset($prevMap[$lk]) && is_string($prevMap[$lk]) && $prevMap[$lk] !== '') {
+							if (!isset($normalized[$mapKey]) || !is_array($normalized[$mapKey])) {
+								$normalized[$mapKey] = [];
+							}
+							$normalized[$mapKey][$lk] = $prevMap[$lk];
+						} elseif (isset($normalized[$mapKey]) && is_array($normalized[$mapKey])) {
+							unset($normalized[$mapKey][$lk]);
+						}
+					}
+					if (isset($normalized[$mapKey]) && $normalized[$mapKey] === []) {
+						unset($normalized[$mapKey]);
+					}
+				}
+				if ($isDefault) {
+					$normalized['label'] = (string) ($previous['label'] ?? '');
+					$normalized['ariaLabel'] = (string) ($previous['ariaLabel'] ?? '');
+					if ($hasMediaRef) {
+						$prevAlt = isset($previous['alt']) && is_string($previous['alt']) ? $previous['alt'] : '';
+						if ($prevAlt !== '') {
+							$normalized['alt'] = $prevAlt;
+						} else {
+							unset($normalized['alt']);
+						}
+					}
+				}
+			}
+		}
+
 		if ($hasValidationErrors) {
 			$this->setAttribute('value', $previous);
 

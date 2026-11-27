@@ -516,7 +516,7 @@ class FormSchemaSerializer extends Wire
 			}
 			$rawInputType = strtolower(trim((string) ($raw['inputType'] ?? $raw['input_type'] ?? '')));
 			$isPasswordControl = $type === 'password'
-				|| $this->canonicalControlType($type) === 'password'
+				|| ReactControlRegistry::canonicalControlType($type) === 'password'
 				|| ($type === 'text' && $rawInputType === 'password');
 			$isRedactedPassword = $val instanceof Password
 				|| ($isPasswordControl && empty($raw['isSecret']) && $type !== 'secret');
@@ -671,20 +671,9 @@ class FormSchemaSerializer extends Wire
 				$rawIconCfg = isset($raw['iconConfig']) && is_array($raw['iconConfig'])
 					? array_merge($raw, $raw['iconConfig'])
 					: $raw;
-				$flags = IconManager::resolveCustomizationFlags($rawIconCfg);
-				$rawPrefix = strtolower(trim((string) ($rawIconCfg['prefixMode'] ?? $rawIconCfg['iconPrefixMode'] ?? 'none')));
-				$prefixMode = in_array($rawPrefix, ['none', 'vector', 'fa'], true) ? $rawPrefix : 'none';
-				$rootUrl = rtrim((string) ($this->wire()->config->urls->root ?: '/'), '/');
-				$iconCfg = array_merge($flags, [
-					'previewSize' => IconManager::clampSize($rawIconCfg['previewSize'] ?? null, 20),
-					'prefixMode' => $prefixMode,
-					'endpoint' => (string) ($rawIconCfg['endpoint'] ?? ($rootUrl . '/_react/icons')),
-					'totalIcons' => IconManager::loadCatalog()['totalVariants'],
-				]);
-				$normIcon = IconManager::normalizeValue($val);
-				$iconValue = $flags['allowCustomization']
-					? ($normIcon['name'] !== '' ? $normIcon : '')
-					: IconManager::encodeForStorage($normIcon, $flags, $prefixMode);
+				$rootUrl = (string) ($this->wire()->config->urls->root ?: '/');
+				$iconCfg = IconManager::buildControlConfig($rawIconCfg, $rootUrl);
+				$iconValue = IconManager::resolveControlValue($val, $iconCfg);
 
 				$iconNode = [
 					'kind' => 'control',
@@ -740,7 +729,7 @@ class FormSchemaSerializer extends Wire
 				continue;
 			}
 
-			$controlType = $this->canonicalControlType($type);
+			$controlType = ReactControlRegistry::canonicalControlType($type);
 			if ($controlType === 'range' && (!empty($raw['dual']) || strtolower(trim((string) ($raw['rangeMode'] ?? $raw['range_mode'] ?? ''))) === 'dual')) {
 				$controlType = 'range_slider';
 			}
@@ -1367,12 +1356,12 @@ class FormSchemaSerializer extends Wire
 				'defaultValue' => $kvVal,
 				'value' => $kvVal,
 				'rows' => $kvData['rows'] ?? [],
-				'keyLabel' => $kvData['keyLabel'] ?? 'Key',
-				'valueLabel' => $kvData['valueLabel'] ?? 'Value',
-				'keyPlaceholder' => $kvData['keyPlaceholder'] ?? $kvData['keyLabel'] ?? 'Key',
-				'valuePlaceholder' => $kvData['valuePlaceholder'] ?? $kvData['valueLabel'] ?? 'Value',
-				'addLabel' => $kvData['addLabel'] ?? 'Add Row',
-				'removeLabel' => $kvData['removeLabel'] ?? 'Remove row',
+				'keyLabel' => $kvData['keyLabel'] ?? $this->_('Key'),
+				'valueLabel' => $kvData['valueLabel'] ?? $this->_('Value'),
+				'keyPlaceholder' => $kvData['keyPlaceholder'] ?? $kvData['keyLabel'] ?? $this->_('Key'),
+				'valuePlaceholder' => $kvData['valuePlaceholder'] ?? $kvData['valueLabel'] ?? $this->_('Value'),
+				'addLabel' => $kvData['addLabel'] ?? $this->_('Add Row'),
+				'removeLabel' => $kvData['removeLabel'] ?? $this->_('Remove row'),
 				'minItems' => (int) ($kvData['minItems'] ?? $validation['minItems'] ?? 0),
 				'maxItems' => (int) ($kvData['maxItems'] ?? $validation['maxItems'] ?? 0),
 				'keyPattern' => $kvData['keyPattern'] ?? $validation['keyPattern'] ?? null,
@@ -1465,10 +1454,7 @@ class FormSchemaSerializer extends Wire
 			$validation = $this->extractValidationFromInputfield($inputfield, $common);
 			$fieldName = (string) ($common['name'] !== '' ? $common['name'] : ($inputfield->attr('name') ?? ''));
 			$iconCfg = $inputfield->buildIconConfig();
-			$normIcon = IconManager::normalizeValue($inputfield->attr('value'));
-			$iconVal = $iconCfg['allowCustomization']
-				? ($normIcon['name'] !== '' ? $normIcon : '')
-				: IconManager::encodeForStorage($normIcon, $iconCfg, $iconCfg['prefixMode']);
+			$iconVal = IconManager::resolveControlValue($inputfield->attr('value'), $iconCfg);
 			if ($fieldName !== '') {
 				$values[$fieldName] = $iconVal;
 			}
@@ -1895,7 +1881,7 @@ class FormSchemaSerializer extends Wire
 		$control = null;
 
 		if ($inputfield instanceof InputfieldTextarea || $shortClass === 'InputfieldTextarea') {
-			$rwTextareaControl = $this->canonicalControlType($this->resolveInputfieldRwControl($inputfield));
+			$rwTextareaControl = ReactControlRegistry::canonicalControlType(React::instance($this)->controls()->resolveExplicitControl($inputfield));
 			$val = (string) ($attrs['value'] ?? $inputfield->val() ?? '');
 
 			if ($rwTextareaControl === 'signature') {
@@ -1970,7 +1956,7 @@ class FormSchemaSerializer extends Wire
 				}
 			}
 		} elseif ($inputfield instanceof InputfieldDatetime || $shortClass === 'InputfieldDatetime') {
-			$rwDateControl = $this->canonicalControlType($this->resolveInputfieldRwControl($inputfield));
+			$rwDateControl = ReactControlRegistry::canonicalControlType(React::instance($this)->controls()->resolveExplicitControl($inputfield));
 			$rawVal = $attrs['value'] ?? $inputfield->val() ?? '';
 			$dtBag = $this->collectInputfieldExtendedBag($inputfield, $attrs);
 
@@ -2095,8 +2081,8 @@ class FormSchemaSerializer extends Wire
 				'InputfieldTextTags',
 			], true)
 		) {
-			$rawSelectControl = $this->resolveInputfieldRwControl($inputfield);
-			$rwSelectControl = $this->canonicalControlType($rawSelectControl);
+			$rawSelectControl = React::instance($this)->controls()->resolveExplicitControl($inputfield);
+			$rwSelectControl = ReactControlRegistry::canonicalControlType($rawSelectControl);
 			$isMultiple = $inputfield instanceof InputfieldHasArrayValue
 				|| in_array($shortClass, ['InputfieldCheckboxes', 'InputfieldAsmSelect', 'InputfieldSelectMultiple', 'InputfieldTextTags'], true)
 				|| (bool) ($inputfield->get('multiple') ?? $inputfield->getSetting('multiple'));
@@ -2179,8 +2165,8 @@ class FormSchemaSerializer extends Wire
 			$max = $attrs['max'] ?? $inputfield->getSetting('max');
 			$step = $attrs['step'] ?? $inputfield->getSetting('step') ?? ($shortClass === 'InputfieldInteger' ? '1' : 'any');
 			$valStr = is_scalar($rawVal) ? (string) $rawVal : '';
-			$rawRwControl = $this->resolveInputfieldRwControl($inputfield);
-			$rwControl = $this->canonicalControlType($rawRwControl);
+			$rawRwControl = React::instance($this)->controls()->resolveExplicitControl($inputfield);
+			$rwControl = ReactControlRegistry::canonicalControlType($rawRwControl);
 			$rawInputType = strtolower((string) ($attrs['type'] ?? $inputfield->get('inputType') ?? ''));
 			$valueMode = (string) (
 				$this->findDataAttribute($attrs, 'rw-value-mode', '')
@@ -2244,8 +2230,8 @@ class FormSchemaSerializer extends Wire
 			$inputfield instanceof InputfieldText
 			|| in_array($shortClass, ['InputfieldText', 'InputfieldEmail', 'InputfieldURL', 'InputfieldPageTitle', 'InputfieldName'], true)
 		) {
-			$rawTextControl = $this->resolveInputfieldRwControl($inputfield);
-			$rwTextControl = $this->canonicalControlType($rawTextControl);
+			$rawTextControl = React::instance($this)->controls()->resolveExplicitControl($inputfield);
+			$rwTextControl = ReactControlRegistry::canonicalControlType($rawTextControl);
 			if ($rwTextControl === 'link') {
 				$rawLinkCfg = $inputfield->get('linkConfig');
 				$rawLinkVal = $inputfield->get('linkValue') ?? $attrs['value'] ?? $inputfield->val();
@@ -2709,12 +2695,25 @@ class FormSchemaSerializer extends Wire
 			'conditions' => $conditions,
 			'error' => $errorStr,
 		];
-		$resetValue = $inputfield->getSetting('resetValue') ?? $inputfield->get('resetValue');
+		$resetValue = $this->readInputfieldDataSetting($inputfield, 'resetValue');
 		if ($resetValue !== null) {
 			$meta['resetValue'] = $resetValue;
 		}
 
 		return $meta;
+	}
+
+	/**
+	 * Read an `Inputfield` data/setting key safely, checking `data()` first and discarding `Wire` fuel collisions.
+	 */
+	private function readInputfieldDataSetting(Inputfield $inputfield, string $key): mixed
+	{
+		$val = $inputfield->data($key);
+		if ($val === null) {
+			$val = $inputfield->getSetting($key);
+		}
+
+		return $val instanceof Wire ? null : $val;
 	}
 
 	/**
@@ -3112,7 +3111,9 @@ class FormSchemaSerializer extends Wire
 	 */
 	private function extractValidationFromInputfield(Inputfield $inputfield, array $control): array
 	{
-		$rawRules = $inputfield->get('_rwValidation') ?? $inputfield->get('validation') ?? $inputfield->get('rules');
+		$rawRules = $this->readInputfieldDataSetting($inputfield, '_rwValidation')
+			?? $this->readInputfieldDataSetting($inputfield, 'validation')
+			?? $this->readInputfieldDataSetting($inputfield, 'rules');
 		$rulesArr = is_array($rawRules) ? $rawRules : [];
 
 		$mergedRaw = array_merge($control, [
@@ -3541,26 +3542,7 @@ class FormSchemaSerializer extends Wire
 	}
 
 	/**
-	 * Map alias control names onto canonical `SchemaForm` control types.
-	 */
-	private function canonicalControlType(string $type): string
-	{
-		return ReactControlRegistry::canonicalControlType($type);
-	}
-
-	/**
-	 * Resolve an explicit `data-rw-control` attribute or `rwControl` setting from a ProcessWire `Inputfield`
-	 * using `ReactControlRegistry` as the single source of truth.
-	 */
-	private function resolveInputfieldRwControl(Inputfield $inputfield): string
-	{
-		return React::instance($this)->controls()->resolveExplicitControl($inputfield);
-	}
-
-	/**
-	 * Normalize associative or structured option lists into `SchemaForm` option entries.
-	 *
-	 * @param array<mixed, mixed> $rawOptions
+	 * @param array<int|string, mixed> $rawOptions
 	 * @return list<array<string, mixed>>
 	 */
 	private function normalizeOptionItems(array $rawOptions): array
@@ -4725,7 +4707,7 @@ class FormSchemaSerializer extends Wire
 				$delegate->attr('name', $name);
 			}
 			foreach (['resource', 'widget', 'valueField', 'excludeGuest', 'excludeSuperuser', 'includeSystem', 'allowUnpub', 'creatable', 'editableLink', 'placeholder'] as $relKey) {
-				$parentVal = $inputfield->getSetting($relKey) ?? $inputfield->get($relKey);
+				$parentVal = $this->readInputfieldDataSetting($inputfield, $relKey);
 				if ($parentVal !== null && $parentVal !== '') {
 					$delegate->set($relKey, $parentVal);
 				}
@@ -4870,12 +4852,42 @@ class FormSchemaSerializer extends Wire
 			$configuredTypes = InputfieldReactLink::DEFAULT_TYPES;
 		}
 
+		$rawMedia = $rawConfig['media'] ?? $rawConfig['mediaProfiles'] ?? '';
 		$mediaProfiles = InputfieldReactLink::normalizeMediaProfiles(
-			$rawConfig['media'] ?? $rawConfig['mediaProfiles'] ?? '',
+			$rawMedia,
 			$configuredTypes,
 		);
 
+		$customMediaProfiles = [];
+		if (is_array($rawMedia)) {
+			$customMediaProfiles = $rawMedia;
+		} elseif (is_string($rawMedia) && str_starts_with(trim($rawMedia), '{')) {
+			$decodedMedia = json_decode(trim($rawMedia), true, InputfieldReactLink::MAX_JSON_DEPTH);
+			if (is_array($decodedMedia)) {
+				$customMediaProfiles = $decodedMedia;
+			}
+		}
+		$defaultPresetLabels = [
+			'image' => $this->_('Image'),
+			'video' => $this->_('Video'),
+			'file' => $this->_('File'),
+		];
+
 		$typeLabels = isset($rawConfig['typeLabels']) && is_array($rawConfig['typeLabels']) ? $rawConfig['typeLabels'] : [];
+		foreach ($defaultPresetLabels as $presetKey => $translatedLabel) {
+			if (!isset($mediaProfiles[$presetKey])) {
+				continue;
+			}
+			$hasCustomMediaLabel = isset($customMediaProfiles[$presetKey])
+				&& is_array($customMediaProfiles[$presetKey])
+				&& isset($customMediaProfiles[$presetKey]['label'])
+				&& trim((string) $customMediaProfiles[$presetKey]['label']) !== '';
+			$hasCustomTypeLabel = isset($typeLabels[$presetKey])
+				&& trim((string) $typeLabels[$presetKey]) !== '';
+			if (!$hasCustomMediaLabel && !$hasCustomTypeLabel) {
+				$mediaProfiles[$presetKey]['label'] = $translatedLabel;
+			}
+		}
 		foreach ($mediaProfiles as $pKey => $pDef) {
 			if (!isset($typeLabels[$pKey]) || trim((string) $typeLabels[$pKey]) === '') {
 				$typeLabels[$pKey] = $pDef['label'];
@@ -4895,6 +4907,7 @@ class FormSchemaSerializer extends Wire
 				in_array($cleanType, $builtInScalarTypes, true)
 				|| isset($mediaProfiles[$cleanType])
 				|| $relations->has($cleanType)
+				|| in_array($cleanType, $workspace->linkResolverTypes(), true)
 				|| isset($typeLabels[$cleanType])
 			) {
 				$types[] = $cleanType;
@@ -4917,7 +4930,7 @@ class FormSchemaSerializer extends Wire
 			$defaultType = $types[0];
 		}
 
-		$normVal = self::normalizeLinkPayload($rawVal, $defaultType);
+		$normVal = InputfieldReactLink::normalizeValue($rawVal, $defaultType);
 		if (!in_array($normVal['type'], $types, true)) {
 			$normVal['type'] = $defaultType;
 		}
@@ -4927,6 +4940,7 @@ class FormSchemaSerializer extends Wire
 		$parentId = isset($rawConfig['parentId']) && is_numeric($rawConfig['parentId']) ? max(0, (int) $rawConfig['parentId']) : 0;
 		$blueprintType = isset($rawConfig['blueprintType']) && is_string($rawConfig['blueprintType']) ? trim($rawConfig['blueprintType']) : '';
 
+		$isAuthenticated = AccessGuard::isAuthenticated($this->wire()->user);
 		$relationTokens = [];
 		$envelopesByType = [];
 		foreach ($types as $t) {
@@ -4953,7 +4967,7 @@ class FormSchemaSerializer extends Wire
 				$env['blueprintType'] = $blueprintType;
 			}
 			$envelopesByType[$t] = $env;
-			$relationTokens[$t] = $signer->sign($env);
+			$relationTokens[$t] = $isAuthenticated ? $signer->sign($env) : '';
 		}
 
 		$selectedTarget = null;
@@ -5009,15 +5023,27 @@ class FormSchemaSerializer extends Wire
 				if ($ownerId === '') {
 					$ownerId = $gateway->resolveEnvelopeOwnerId($baseMediaEnv);
 				}
+				$canEditImages = true;
+				if (($baseMediaEnv['kind'] ?? '') === PageLinkMediaHostAdapter::KIND) {
+					$user = $this->wire()->user;
+					$permissions = $this->wire()->permissions;
+					if ($permissions->has('page-edit-images') && !$user->isSuperuser()) {
+						$permPageId = (int) ($baseMediaEnv['rootPageId'] ?? ($baseMediaEnv['pageId'] ?? 0));
+						$permPage = $permPageId > 0 ? $this->wire()->pages->get($permPageId) : null;
+						$canEditImages = $permPage instanceof Page && $permPage->id > 0
+							? $user->hasPermission('page-edit-images', $permPage)
+							: $user->hasPermission('page-edit-images');
+					}
+				}
 				$profileEnv = array_merge($baseMediaEnv, [
 					'mediaProfile' => $pKey,
 					'isImage' => (bool) $pDef['isImage'],
 					'extensions' => $pDef['extensions'],
 					'maxFiles' => 1,
 					'maxFilesize' => (int) $pDef['maxFilesize'],
-					'useImageEditor' => (bool) $pDef['isImage'],
+					'useImageEditor' => (bool) $pDef['isImage'] && $canEditImages,
 				]);
-				$mediaToken = $gateway->sign($profileEnv, $currentUid);
+				$mediaToken = $isAuthenticated ? $gateway->sign($profileEnv, $currentUid) : '';
 			}
 			$serializedProfiles[$pKey] = [
 				'key' => $pDef['key'],
@@ -5047,47 +5073,21 @@ class FormSchemaSerializer extends Wire
 
 				if (!str_contains($rawMediaRef, '/') && $bn !== '' && $sourceInputfield instanceof Inputfield) {
 					$hostPage = $sourceInputfield->hasPage;
-					if (!$hostPage instanceof Page || (int) $hostPage->id <= 0) {
-						$proc = $this->wire()->process;
-						if ($proc instanceof \ProcessWire\WirePageEditor) {
-							try {
-								$cand = $proc->getPage();
-								if ($cand instanceof Page && $cand->id > 0) {
-									$hostPage = $cand;
-								}
-							} catch (\Throwable) {
-								$hostPage = null;
-							}
-						}
-					}
-					$diskDir = '';
-					$urlDir = '';
-					if ($hostPage instanceof Page && !($hostPage instanceof \ProcessWire\NullPage) && !MediaGateway::isPhysicalPageHost($hostPage)) {
-						$diskDir = rtrim($hostPage->filesManager()->path(), '/') . '/';
-						$urlDir = rtrim($hostPage->filesManager()->url(), '/') . '/';
-					} elseif (MediaGateway::isPhysicalPageHost($hostPage) && $hostPage instanceof Page) {
-						$hasField = $sourceInputfield->hasField;
-						$explicitDataField = $sourceInputfield->get('_rwDataFieldName');
-						$fName = $hasField instanceof \ProcessWire\Field
-							? (string) $hasField->name
-							: (is_string($explicitDataField) && $explicitDataField !== ''
-								? $explicitDataField
-								: (string) preg_replace('/_repeater\d+$/', '', $inputName));
-						$diskDir = PageLinkMediaHostAdapter::directoryPathFor($hostPage, $fName);
-						$urlDir = PageLinkMediaHostAdapter::directoryUrlFor($hostPage, $fName);
-					}
-					if ($diskDir !== '' && is_file($diskDir . $bn)) {
-						$mediaUrl = $urlDir . rawurlencode($bn);
-						$sizeBytes = (int) (@filesize($diskDir . $bn) ?: 0);
-						if ($mediaProfiles[$activeType]['isImage']) {
+					$hasField = $sourceInputfield->hasField;
+					$explicitDataField = $sourceInputfield->get('_rwDataFieldName');
+					$fName = $hasField instanceof \ProcessWire\Field
+						? (string) $hasField->name
+						: (is_string($explicitDataField) && $explicitDataField !== ''
+							? $explicitDataField
+							: (string) preg_replace('/_repeater\d+$/', '', $inputName));
+					$resolvedMedia = $gateway->resolveLinkSelectedMedia($hostPage, $fName, $bn);
+					if (is_array($resolvedMedia)) {
+						$mediaUrl = (string) ($resolvedMedia['url'] ?? '');
+						$sizeBytes = (int) ($resolvedMedia['size'] ?? 0);
+						if ($mediaProfiles[$activeType]['isImage'] && $mediaUrl !== '') {
 							$thumbUrl = $mediaUrl;
-							if ($ext !== 'svg') {
-								$dims = @getimagesize($diskDir . $bn);
-								if (is_array($dims)) {
-									$width = (int) $dims[0];
-									$height = (int) $dims[1];
-								}
-							}
+							$width = (int) ($resolvedMedia['width'] ?? 0);
+							$height = (int) ($resolvedMedia['height'] ?? 0);
 						}
 					}
 				}
@@ -5168,35 +5168,6 @@ class FormSchemaSerializer extends Wire
 		}
 
 		return $result;
-	}
-
-	/**
-	 * Normalize a raw link value into a canonical associative array for `SchemaForm`.
-	 *
-	 * @return array{
-	 *   type: string,
-	 *   pageId: int,
-	 *   resourceType: string,
-	 *   resourceId: string,
-	 *   url: string,
-	 *   file: string,
-	 *   query: string,
-	 *   anchor: string,
-	 *   label: string,
-	 *   ariaLabel: string,
-	 *   target: string,
-	 *   rel: string,
-	 *   labels?: array<string, string>,
-	 *   ariaLabels?: array<string, string>,
-	 *   alt?: string,
-	 *   descriptions?: array<string, string>,
-	 *   focus?: string,
-	 *   tags?: string
-	 * }
-	 */
-	private static function normalizeLinkPayload(mixed $raw, string $defaultType = 'url'): array
-	{
-		return InputfieldReactLink::normalizeValue($raw, $defaultType);
 	}
 
 	/**

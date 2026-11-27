@@ -126,28 +126,22 @@ final class WorkspacePreferenceStore extends Wire
 
 		$path = $this->filePath($user);
 		if ($path === '' || is_link($path) || !is_file($path) || !is_readable($path)) {
+			$this->memoryCache[$userId] = $defaults;
+
 			return $defaults;
 		}
 
-		$fp = @fopen($path, 'rb');
-		if ($fp === false) {
+		$raw = @file_get_contents($path);
+		if (!is_string($raw)) {
+			$this->memoryCache[$userId] = $defaults;
+
 			return $defaults;
 		}
 
-		try {
-			if (!@flock($fp, LOCK_SH)) {
-				return $defaults;
-			}
-			rewind($fp);
-			$raw = stream_get_contents($fp);
-			$decoded = $this->decodePreferences($userId, is_string($raw) ? $raw : '');
-			$this->memoryCache[$userId] = $decoded;
+		$decoded = $this->decodePreferences($userId, $raw);
+		$this->memoryCache[$userId] = $decoded;
 
-			return $decoded;
-		} finally {
-			@flock($fp, LOCK_UN);
-			fclose($fp);
-		}
+		return $decoded;
 	}
 
 	/**
@@ -497,6 +491,8 @@ final class WorkspacePreferenceStore extends Wire
 	 *         widgetOrder: list<string>,
 	 *         hiddenWidgets: list<string>,
 	 *         widgetSizes: array<string, string>,
+	 *         themeMode: string,
+	 *         themePreset: string,
 	 *         shellLayout: string,
 	 *         sidebarCollapsed: bool
 	 *     }
@@ -514,6 +510,8 @@ final class WorkspacePreferenceStore extends Wire
 				'widgetOrder' => $reconciled['widgetOrder'],
 				'hiddenWidgets' => $reconciled['hiddenWidgets'],
 				'widgetSizes' => $reconciled['widgetSizes'],
+				'themeMode' => $reconciled['themeMode'],
+				'themePreset' => $reconciled['themePreset'],
 				'shellLayout' => $reconciled['shellLayout'],
 				'sidebarCollapsed' => $reconciled['sidebarCollapsed'],
 			],
@@ -544,7 +542,9 @@ final class WorkspacePreferenceStore extends Wire
 		if (
 			!$hasRecognized
 			&& (
-				(array_key_exists('shellLayout', $layout) && is_string($layout['shellLayout']))
+				(array_key_exists('themeMode', $layout) && (is_string($layout['themeMode']) || is_int($layout['themeMode'])))
+				|| (array_key_exists('themePreset', $layout) && is_string($layout['themePreset']))
+				|| (array_key_exists('shellLayout', $layout) && is_string($layout['shellLayout']))
 				|| (array_key_exists('sidebarCollapsed', $layout) && is_bool($layout['sidebarCollapsed']))
 			)
 		) {
@@ -561,6 +561,12 @@ final class WorkspacePreferenceStore extends Wire
 			'hiddenWidgets' => array_key_exists('hiddenWidgets', $layout) ? $this->normalizeIdList($layout['hiddenWidgets']) : [],
 			'widgetSizes' => array_key_exists('widgetSizes', $layout) ? $this->normalizeSizeMap($layout['widgetSizes']) : [],
 		];
+		if (array_key_exists('themeMode', $layout)) {
+			$updates['themeMode'] = $this->normalizeThemeModeValue($layout['themeMode']);
+		}
+		if (array_key_exists('themePreset', $layout)) {
+			$updates['themePreset'] = $this->normalizeThemePresetValue($layout['themePreset']);
+		}
 		if (array_key_exists('shellLayout', $layout)) {
 			$updates['shellLayout'] = $this->normalizeShellLayoutValue($layout['shellLayout']);
 		}
@@ -584,23 +590,33 @@ final class WorkspacePreferenceStore extends Wire
 			$dir = $this->directoryPath();
 			$dirTrimmed = rtrim($dir, '/\\');
 			$path = $dir . $userId . '.json';
+			if (!is_file($path) && !is_link($path)) {
+				return array_merge(self::DEFAULT_PREFERENCES, [
+					'userId' => $userId,
+				]);
+			}
 			$lockPath = $dir . $userId . '.lock';
-			if (!is_link($dirTrimmed) && !is_link($lockPath) && is_dir($dir)) {
-				$lockFp = @fopen($lockPath, 'c+');
-				if ($lockFp !== false) {
-					try {
-						if (@flock($lockFp, LOCK_EX) && !is_link($path) && is_file($path)) {
-							@unlink($path);
-						}
-					} finally {
-						@flock($lockFp, LOCK_UN);
-						fclose($lockFp);
+			if (is_link($dirTrimmed) || is_link($lockPath) || is_link($path) || !is_dir($dir)) {
+				return array_merge(self::DEFAULT_PREFERENCES, [
+					'userId' => $userId,
+				]);
+			}
+			$lockFp = @fopen($lockPath, 'c+');
+			if ($lockFp === false) {
+				return array_merge(self::DEFAULT_PREFERENCES, [
+					'userId' => $userId,
+				]);
+			}
+			try {
+				if (@flock($lockFp, LOCK_EX)) {
+					clearstatcache(true, $path);
+					if (is_file($path) && @filetype($path) === 'file') {
+						@unlink($path);
 					}
-				} elseif (!is_link($path) && is_file($path)) {
-					@unlink($path);
 				}
-			} elseif (!is_link($path) && is_file($path)) {
-				@unlink($path);
+			} finally {
+				@flock($lockFp, LOCK_UN);
+				fclose($lockFp);
 			}
 		}
 

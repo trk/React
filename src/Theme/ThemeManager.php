@@ -32,6 +32,11 @@ final class ThemeManager extends Wire
 	private const string DARK_TOKEN_SCOPE = ':root.dark:root, :root.dark:root :is(body:has([data-rw-app-shell]), [data-rw-app-shell], [data-rw-portal-overlay], #_rw_portal_root, [data-rw-surface="elevated"], dialog[data-rw-modal-dialog], dialog[data-rw-sheet-dialog], dialog[data-rw-drawer-dialog], dialog[data-rw-command-dialog], dialog[data-rw-inspector-sheet], dialog[data-rw-tiptap-dialog]), body.dark-theme:has([data-rw-app-shell]), body.dark-theme :is([data-rw-app-shell], [data-rw-portal-overlay], #_rw_portal_root, [data-rw-surface="elevated"], dialog[data-rw-modal-dialog], dialog[data-rw-sheet-dialog], dialog[data-rw-drawer-dialog], dialog[data-rw-command-dialog], dialog[data-rw-inspector-sheet], dialog[data-rw-tiptap-dialog])';
 
 	/**
+	 * Selector list receiving dark-only custom tokens under OS dark preference when not forced to light.
+	 */
+	private const string SYSTEM_DARK_TOKEN_SCOPE = 'html:not(.light) body:not(.light-theme):has([data-rw-app-shell]), html:not(.light) body:not(.light-theme) :is([data-rw-app-shell], [data-rw-portal-overlay], #_rw_portal_root, [data-rw-surface="elevated"], dialog[data-rw-modal-dialog], dialog[data-rw-sheet-dialog], dialog[data-rw-drawer-dialog], dialog[data-rw-command-dialog], dialog[data-rw-inspector-sheet], dialog[data-rw-tiptap-dialog])';
+
+	/**
 	 * Semantic tokens derived from the base palette when a theme does not set them explicitly.
 	 *
 	 * @var array<string, string>
@@ -275,7 +280,12 @@ final class ThemeManager extends Wire
 			}
 		}
 		if ($darkLines !== []) {
-			$blocks[] = self::DARK_TOKEN_SCOPE . " {\n" . implode("\n", $darkLines) . "\n}";
+			$darkBody = implode("\n", $darkLines);
+			$blocks[] = self::DARK_TOKEN_SCOPE . " {\n" . $darkBody . "\n}";
+			$blocks[] = "@media (prefers-color-scheme: dark) {\n\t"
+				. self::SYSTEM_DARK_TOKEN_SCOPE . " {\n\t"
+				. str_replace("\n", "\n\t", $darkBody)
+				. "\n\t}\n}";
 		}
 
 		return implode("\n\n", $blocks);

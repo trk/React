@@ -130,7 +130,7 @@ abstract class WorkspaceLauncherProcess extends ProcessReact implements Module
 
 		$title = html_entity_decode($this->_('Workspace'), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 		$subtitle = html_entity_decode(
-			$this->_('Manage site content, menus, forms, SEO, API access, and system operations from your personalized dashboard.'),
+			$this->_('Access your registered workspaces, widgets, and administrative tools from one unified dashboard.'),
 			ENT_QUOTES | ENT_HTML5,
 			'UTF-8'
 		);
@@ -219,10 +219,5 @@ abstract class WorkspaceLauncherProcess extends ProcessReact implements Module
 			'showcaseUrl' => $showcaseUrl,
 			'sampleBaseUrl' => $showcaseUrl . '?sample=',
 		]);
-	}
-
-	public function ___uninstall(): void
-	{
-		parent::___uninstall();
 	}
 }

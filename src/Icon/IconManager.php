@@ -7,6 +7,7 @@ namespace Totoglu\React\Icon;
 use ProcessWire\Field;
 use ProcessWire\Fieldgroup;
 use ProcessWire\Page;
+use ProcessWire\ProcessWire;
 use ProcessWire\React;
 use ProcessWire\Template;
 use ProcessWire\Wire;
@@ -104,35 +105,74 @@ class IconManager extends Wire
 	private static ?array $catalogCache = null;
 
 	/**
-	 * Static registry of Admin UI icons declared by modules (`getModuleInfo`, `executeNavJSON`, `Inputfield` headers).
+	 * Static registry of Admin UI icons declared by modules (`getModuleInfo`, `executeNavJSON`, `Inputfield` headers)
+	 * keyed by `ProcessWire` instance.
 	 *
-	 * @var array<string, true>
+	 * @var \WeakMap<ProcessWire, array{icons: array<string, true>, canonical: ?array<string, true>, revision: int}>|null
 	 */
-	private static array $registeredAdminIcons = [];
-
-	/**
-	 * Normalized canonical key cache (`canonical` or `canonical-filled`) of registered admin icons.
-	 *
-	 * @var array<string, true>|null
-	 */
-	private static ?array $registeredCanonicalCache = null;
-
-	private static int $registeredIconsRevision = 0;
+	private static ?\WeakMap $registeredAdminIcons = null;
 
 	private bool $adminCssVerified = false;
 	private int $verifiedIconsRevision = -1;
 	private string $verifiedCapSig = '';
 	private ?bool $cachedHasActiveAdminCss = null;
 
+	private static function resolveStaticWire(?ProcessWire $wire = null): ?ProcessWire
+	{
+		if ($wire instanceof ProcessWire) {
+			return $wire;
+		}
+		$current = ProcessWire::getCurrentInstance();
+
+		return $current instanceof ProcessWire ? $current : null;
+	}
+
+	/**
+	 * @return \WeakMap<ProcessWire, array{icons: array<string, true>, canonical: ?array<string, true>, revision: int}>
+	 */
+	private static function adminIconsMap(): \WeakMap
+	{
+		if (self::$registeredAdminIcons === null) {
+			/** @var \WeakMap<ProcessWire, array{icons: array<string, true>, canonical: ?array<string, true>, revision: int}> $map */
+			$map = new \WeakMap();
+			self::$registeredAdminIcons = $map;
+		}
+
+		return self::$registeredAdminIcons;
+	}
+
+	/**
+	 * @return array{icons: array<string, true>, canonical: ?array<string, true>, revision: int}
+	 */
+	private function instanceAdminIconsBucket(): array
+	{
+		$w = $this->wire();
+		if (self::$registeredAdminIcons !== null && isset(self::$registeredAdminIcons[$w])) {
+			return self::$registeredAdminIcons[$w];
+		}
+
+		return [
+			'icons' => [],
+			'canonical' => null,
+			'revision' => 0,
+		];
+	}
+
 	/**
 	 * Reset static icon caches (invoked on `React::uninstall()`).
 	 */
-	public static function resetCache(): void
+	public static function resetCache(?ProcessWire $wire = null): void
 	{
+		if ($wire instanceof ProcessWire) {
+			if (self::$registeredAdminIcons !== null) {
+				unset(self::$registeredAdminIcons[$wire]);
+			}
+
+			return;
+		}
+
 		self::$catalogCache = null;
-		self::$registeredAdminIcons = [];
-		self::$registeredCanonicalCache = null;
-		self::$registeredIconsRevision = 0;
+		self::$registeredAdminIcons = null;
 	}
 
 	/**
@@ -140,60 +180,84 @@ class IconManager extends Wire
 	 *
 	 * @param list<string> $icons
 	 */
-	public static function registerAdminIcons(array $icons): void
+	public static function registerAdminIcons(array $icons, ?ProcessWire $wire = null): void
 	{
+		$w = self::resolveStaticWire($wire);
+		if ($w === null) {
+			return;
+		}
+
+		$map = self::adminIconsMap();
+		$bucket = $map[$w] ?? [
+			'icons' => [],
+			'canonical' => null,
+			'revision' => 0,
+		];
+
 		$added = false;
 		foreach ($icons as $raw) {
 			if (is_string($raw) && trim($raw) !== '') {
 				$clean = trim($raw);
-				if (!isset(self::$registeredAdminIcons[$clean])) {
-					self::$registeredAdminIcons[$clean] = true;
+				if (!isset($bucket['icons'][$clean])) {
+					$bucket['icons'][$clean] = true;
 					$added = true;
 				}
 			}
 		}
 
 		if ($added) {
-			self::$registeredCanonicalCache = null;
-			self::$registeredIconsRevision++;
+			$bucket['canonical'] = null;
+			$bucket['revision']++;
+			$map[$w] = $bucket;
 		}
 	}
 
 	/**
 	 * Check whether an icon (or its canonical alias) is registered for inclusion in `VectorIcons.css`.
 	 */
-	public static function isAdminIconRegistered(string $raw): bool
+	public static function isAdminIconRegistered(string $raw, ?ProcessWire $wire = null): bool
 	{
 		$prefixed = self::toAdminPrefixedValue($raw);
 		if ($prefixed === '') {
 			return false;
 		}
 
-		if (self::$registeredCanonicalCache === null) {
+		$w = self::resolveStaticWire($wire);
+		if ($w === null || self::$registeredAdminIcons === null || !isset(self::$registeredAdminIcons[$w])) {
+			return false;
+		}
+
+		$bucket = self::$registeredAdminIcons[$w];
+		if ($bucket['canonical'] === null) {
 			$normalized = [];
-			foreach (array_keys(self::$registeredAdminIcons) as $registeredIcon) {
+			foreach (array_keys($bucket['icons']) as $registeredIcon) {
 				$resolved = self::toAdminPrefixedValue($registeredIcon);
 				if ($resolved !== '') {
 					$normalized[substr($resolved, strlen(self::ADMIN_PREFIX))] = true;
 				}
 			}
-			self::$registeredCanonicalCache = $normalized;
+			$bucket['canonical'] = $normalized;
+			self::$registeredAdminIcons[$w] = $bucket;
 		}
 
 		$key = substr($prefixed, strlen(self::ADMIN_PREFIX));
 
-		return isset(self::$registeredCanonicalCache[$key]);
+		return isset($bucket['canonical'][$key]);
 	}
 
 	/**
-	 * Compute a deterministic hash of `self::$registeredAdminIcons` for fast O(1) `VectorIcons.css` freshness checks.
+	 * Compute a deterministic hash of registered admin icons for fast O(1) `VectorIcons.css` freshness checks.
 	 */
-	private static function registeredIconsSignature(): string
+	private static function registeredIconsSignature(?ProcessWire $wire = null): string
 	{
-		if (self::$registeredAdminIcons === []) {
+		$w = self::resolveStaticWire($wire);
+		$icons = ($w !== null && self::$registeredAdminIcons !== null && isset(self::$registeredAdminIcons[$w]))
+			? self::$registeredAdminIcons[$w]['icons']
+			: [];
+		if ($icons === []) {
 			return 'none';
 		}
-		$keys = array_keys(self::$registeredAdminIcons);
+		$keys = array_keys($icons);
 		sort($keys);
 
 		return sha1(implode("\n", $keys));
@@ -807,6 +871,70 @@ class IconManager extends Wire
 	}
 
 	/**
+	 * Build `iconConfig` payload consumed by `SchemaForm` and `InputfieldReactIcon`.
+	 *
+	 * @param array<string, mixed> $settings
+	 * @return array{
+	 *   allowCustomization: bool,
+	 *   allowVariant: bool,
+	 *   allowSize: bool,
+	 *   allowColor: bool,
+	 *   allowStrokeWidth: bool,
+	 *   allowBackground: bool,
+	 *   previewSize: int,
+	 *   prefixMode: string,
+	 *   endpoint: string,
+	 *   totalIcons: int
+	 * }
+	 */
+	public static function buildControlConfig(array $settings, string $rootUrl = '/'): array
+	{
+		$flags = self::resolveCustomizationFlags($settings);
+		$rawPrefix = strtolower(trim((string) ($settings['prefixMode'] ?? $settings['iconPrefixMode'] ?? 'none')));
+		$prefixMode = in_array($rawPrefix, ['none', 'vector', 'fa'], true) ? $rawPrefix : 'none';
+		$cleanRoot = rtrim(trim($rootUrl) !== '' ? $rootUrl : '/', '/');
+		$endpoint = isset($settings['endpoint']) && is_string($settings['endpoint']) && trim($settings['endpoint']) !== ''
+			? trim($settings['endpoint'])
+			: ($cleanRoot . '/_react/icons');
+		$totalVariants = self::loadCatalog()['totalVariants'];
+
+		return array_merge($flags, [
+			'previewSize' => self::clampSize($settings['previewSize'] ?? null, 20),
+			'prefixMode' => $prefixMode,
+			'endpoint' => $endpoint,
+			'totalIcons' => $totalVariants,
+		]);
+	}
+
+	/**
+	 * Resolve a raw icon value into the normalized control payload (`array` when customization is enabled
+	 * and non-empty, or scalar storage string when customization is disabled / empty).
+	 *
+	 * @param array<string, mixed> $iconConfig
+	 * @return array{
+	 *   name: string,
+	 *   variant: string,
+	 *   size: int,
+	 *   color: string,
+	 *   strokeWidth: float,
+	 *   background: string,
+	 *   radius: string
+	 * }|string
+	 */
+	public static function resolveControlValue(mixed $rawValue, array $iconConfig): array|string
+	{
+		$norm = self::normalizeValue($rawValue);
+		$flags = self::resolveCustomizationFlags($iconConfig);
+		if ($flags['allowCustomization']) {
+			return $norm['name'] !== '' ? $norm : '';
+		}
+		$rawPrefix = strtolower(trim((string) ($iconConfig['prefixMode'] ?? $iconConfig['iconPrefixMode'] ?? 'none')));
+		$prefixMode = in_array($rawPrefix, ['none', 'vector', 'fa'], true) ? $rawPrefix : 'none';
+
+		return self::encodeForStorage($norm, $flags, $prefixMode);
+	}
+
+	/**
 	 * Normalize arbitrary raw icon input (scalar string, JSON string, array, `\stdClass`, or `ReactIconValue`).
 	 *
 	 * @return array{
@@ -1216,9 +1344,13 @@ class IconManager extends Wire
 	{
 		$path = $this->getAdminCssPath();
 		$capSig = $this->capabilityModulesSignature();
+		$bucket = $this->instanceAdminIconsBucket();
+		$currentRevision = $bucket['revision'];
+		$registeredIcons = $bucket['icons'];
+
 		if (!is_file($path)) {
 			$this->adminCssVerified = true;
-			$this->verifiedIconsRevision = self::$registeredIconsRevision;
+			$this->verifiedIconsRevision = $currentRevision;
 			$this->verifiedCapSig = $capSig;
 
 			return $this->generateAdminCss();
@@ -1226,11 +1358,11 @@ class IconManager extends Wire
 
 		if (
 			!$this->adminCssVerified
-			|| $this->verifiedIconsRevision !== self::$registeredIconsRevision
+			|| $this->verifiedIconsRevision !== $currentRevision
 			|| $this->verifiedCapSig !== $capSig
 		) {
 			$this->adminCssVerified = true;
-			$this->verifiedIconsRevision = self::$registeredIconsRevision;
+			$this->verifiedIconsRevision = $currentRevision;
 			$this->verifiedCapSig = $capSig;
 			$head = @file_get_contents($path, false, null, 0, 320);
 			if (
@@ -1243,13 +1375,13 @@ class IconManager extends Wire
 
 			$this->cachedHasActiveAdminCss = self::parseHasActiveFromHead($head);
 
-			$expectedRegSig = 'rw-reg-sig:' . self::registeredIconsSignature();
-			if (self::$registeredAdminIcons !== [] && !str_contains($head, $expectedRegSig)) {
+			$expectedRegSig = 'rw-reg-sig:' . self::registeredIconsSignature($this->wire());
+			if ($registeredIcons !== [] && !str_contains($head, $expectedRegSig)) {
 				$fullCss = @file_get_contents($path);
 				if (!is_string($fullCss)) {
 					return $this->generateAdminCss();
 				}
-				foreach (array_keys(self::$registeredAdminIcons) as $registeredIcon) {
+				foreach (array_keys($registeredIcons) as $registeredIcon) {
 					$prefixed = self::toAdminPrefixedValue($registeredIcon);
 					if ($prefixed === '') {
 						continue;
@@ -1328,7 +1460,8 @@ class IconManager extends Wire
 			}
 		};
 
-		foreach (array_keys(self::$registeredAdminIcons) as $registeredIcon) {
+		$bucket = $this->instanceAdminIconsBucket();
+		foreach (array_keys($bucket['icons']) as $registeredIcon) {
 			$collect($registeredIcon);
 		}
 
@@ -1413,7 +1546,7 @@ class IconManager extends Wire
 
 		$capSig = $this->capabilityModulesSignature();
 		$cssLines = [
-			'/* Auto-generated by React IconManager | rw-reg-sig:' . self::registeredIconsSignature() . ' | rw-cap-sig:' . $capSig . ' | rw-count:' . count($prefixedIcons) . ' */',
+			'/* Auto-generated by React IconManager | rw-reg-sig:' . self::registeredIconsSignature($this->wire()) . ' | rw-cap-sig:' . $capSig . ' | rw-count:' . count($prefixedIcons) . ' */',
 			'[class*="fa-rwv--"]::before, [class*="fa-rwvreplaced-"]::before { content: "" !important; display: none !important; }',
 			'[class*="fa-rwv--"], [class*="fa-rwvreplaced-"] {',
 			'  display: inline-block;',
@@ -1476,10 +1609,25 @@ class IconManager extends Wire
 		if (is_link($cssPath) || is_link(rtrim($dir, '/\\'))) {
 			return $cssPath;
 		}
-		$files->filePutContents($cssPath, $css, LOCK_EX);
+		$tmpPath = $dir . '/.VectorIcons.' . bin2hex(random_bytes(6)) . '.tmp';
+		if (@file_put_contents($tmpPath, $css, LOCK_EX) === false) {
+			if (is_file($tmpPath)) {
+				@unlink($tmpPath);
+			}
+
+			return $cssPath;
+		}
+		$files->chmod($tmpPath);
+		if (!@rename($tmpPath, $cssPath)) {
+			if (is_file($tmpPath)) {
+				@unlink($tmpPath);
+			}
+
+			return $cssPath;
+		}
 
 		$this->adminCssVerified = true;
-		$this->verifiedIconsRevision = self::$registeredIconsRevision;
+		$this->verifiedIconsRevision = $bucket['revision'];
 		$this->verifiedCapSig = $capSig;
 		$this->cachedHasActiveAdminCss = count($prefixedIcons) > 0;
 
