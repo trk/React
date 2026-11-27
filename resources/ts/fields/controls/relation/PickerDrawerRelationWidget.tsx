@@ -5,9 +5,11 @@ import { Badge, Button, Input, Sheet, type useSortableList } from '../../../ui';
 import type { RelationItemData, RelationResourceDescriptor } from '../../types';
 import { SelectedItemsStack } from './SelectedItemsStack';
 import {
+	isRelationItemDisabled,
 	itemStoredToken,
 	QuickEditButton,
 	RelationItemVisual,
+	resolveRelationItemKey,
 	type RelationCallEndpointFn,
 } from './typesAndHelpers';
 
@@ -269,9 +271,9 @@ export function PickerDrawerRelationWidget({
 							const checked = selectedSet.has(tok);
 							return (
 								<button
-									key={item.key || tok}
+									key={resolveRelationItemKey(item)}
 									type="button"
-									disabled={item.disabled}
+									disabled={isRelationItemDisabled(item)}
 									aria-pressed={checked}
 									onClick={() => toggleRow(item)}
 									className={cn(

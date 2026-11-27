@@ -5,10 +5,12 @@ import { Badge, Button, Input, type useSortableList } from '../../../ui';
 import type { RelationItemData } from '../../types';
 import { SelectedItemsStack } from './SelectedItemsStack';
 import {
+	isRelationItemDisabled,
 	itemStoredToken,
 	makeFallbackItem,
 	QuickEditButton,
 	RelationItemVisual,
+	resolveRelationItemKey,
 } from './typesAndHelpers';
 
 export function SelectAndMultiRelationWidget({
@@ -350,16 +352,17 @@ export function SelectAndMultiRelationWidget({
 							>
 								{filteredOptions.map((opt, idx) => {
 									const tok = itemStoredToken(opt, cardinality);
+									const optDisabled = isRelationItemDisabled(opt);
 									const isSelected = !multiple && scalarValue === tok;
 									const isHighlighted = idx === activeIdx;
 									return (
 										<button
-											key={opt.key || tok}
+											key={resolveRelationItemKey(opt)}
 											id={`${listboxId}-opt-${idx}`}
 											type="button"
 											role="option"
 											aria-selected={isSelected}
-											disabled={opt.disabled}
+											disabled={optDisabled}
 											onMouseEnter={() => setActiveIdx(idx)}
 											onClick={() => chooseOption(opt)}
 											className={cn(
@@ -369,7 +372,7 @@ export function SelectAndMultiRelationWidget({
 													: isHighlighted
 														? 'bg-muted text-foreground'
 														: 'hover:bg-muted text-foreground',
-												opt.disabled && 'opacity-50 pointer-events-none'
+												optDisabled && 'opacity-50 pointer-events-none'
 											)}
 										>
 											<div className="flex items-start gap-2 min-w-0 flex-1">

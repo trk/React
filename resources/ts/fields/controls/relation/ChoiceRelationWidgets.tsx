@@ -3,7 +3,12 @@ import { t } from '../../../lib/i18n';
 import { cn } from '../../../lib/utils';
 import { Badge, Button, Input } from '../../../ui';
 import type { RelationItemData } from '../../types';
-import { QuickEditButton, RelationItemVisual } from './typesAndHelpers';
+import {
+	isRelationItemDisabled,
+	QuickEditButton,
+	RelationItemVisual,
+	resolveRelationItemKey,
+} from './typesAndHelpers';
 
 export function RadioRelationWidget({
 	label,
@@ -62,10 +67,11 @@ export function RadioRelationWidget({
 			>
 				{options.map((opt) => {
 					const tok = String(opt.value);
+					const optDisabled = isRelationItemDisabled(opt);
 					const checked = value === tok;
 					return (
 						<label
-							key={opt.key || tok}
+							key={resolveRelationItemKey(opt)}
 							className={cn(
 								'flex items-start justify-between gap-2 px-3 py-2 text-xs transition-colors',
 								isMultiCol
@@ -78,7 +84,7 @@ export function RadioRelationWidget({
 									: checked
 										? 'bg-primary/6'
 										: 'hover:bg-muted/35',
-								(disabled || opt.disabled) ? 'opacity-60 pointer-events-none' : 'cursor-pointer'
+								(disabled || optDisabled) ? 'opacity-60 pointer-events-none' : 'cursor-pointer'
 							)}
 						>
 							<div className="flex min-w-0 flex-1 items-start gap-2.5">
@@ -86,7 +92,7 @@ export function RadioRelationWidget({
 									type="radio"
 									name={radioGroupName}
 									checked={checked}
-									disabled={disabled || opt.disabled}
+									disabled={disabled || optDisabled}
 									onChange={() => onSelect(tok, opt)}
 									className="mt-0.5 shrink-0 accent-primary"
 								/>
@@ -206,7 +212,7 @@ export function CheckboxesRelationWidget({
 									size="xs"
 									onClick={() => {
 										const allTokens = visibleOptions
-											.filter((o) => !o.disabled)
+											.filter((o) => !isRelationItemDisabled(o))
 											.map((o) => String(o.value));
 										const merged = Array.from(new Set([...selectedValues, ...allTokens]));
 										onChange(merged, visibleOptions);
@@ -239,11 +245,12 @@ export function CheckboxesRelationWidget({
 			>
 				{visibleOptions.map((opt) => {
 					const tok = String(opt.value);
+					const optDisabled = isRelationItemDisabled(opt);
 					const checked = selectedSet.has(tok);
 					const lockedByMax = !checked && maxItems > 0 && selectedValues.length >= maxItems;
 					return (
 						<label
-							key={opt.key || tok}
+							key={resolveRelationItemKey(opt)}
 							className={cn(
 								'flex items-center justify-between gap-2 px-2.5 py-1.5 text-xs transition-colors',
 								optionColumns >= 2
@@ -256,7 +263,7 @@ export function CheckboxesRelationWidget({
 									: checked
 										? 'bg-primary/6'
 										: 'hover:bg-muted/35',
-								(disabled || opt.disabled || lockedByMax)
+								(disabled || optDisabled || lockedByMax)
 									? 'opacity-55 pointer-events-none'
 									: 'cursor-pointer'
 							)}
@@ -265,7 +272,7 @@ export function CheckboxesRelationWidget({
 								<input
 									type="checkbox"
 									checked={checked}
-									disabled={disabled || opt.disabled || lockedByMax}
+									disabled={disabled || optDisabled || lockedByMax}
 									onChange={() => toggleOption(opt)}
 									className="shrink-0 accent-primary"
 								/>

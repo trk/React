@@ -119,9 +119,42 @@ export function normalizeScalarValue(raw: unknown): string {
 
 export function itemStoredToken(item: RelationItemData, cardinality: string): string {
 	if (cardinality === 'm2a') {
-		return item.key || `${item.resource}:${String(item.value)}`;
+		return item.morphToken || item.key || `${item.resource}:${String(item.value)}`;
 	}
 	return String(item.value);
+}
+
+export function resolveRelationItemKey(item: RelationItemData): string {
+	return item.morphToken || item.key || `${item.resource || 'item'}:${String(item.value)}`;
+}
+
+export function resolveRelationNodeId(item: RelationItemData): string {
+	const raw =
+		item.meta && (typeof item.meta.id === 'string' || typeof item.meta.id === 'number')
+			? item.meta.id
+			: item.id !== undefined && item.id !== null
+				? item.id
+				: item.value;
+	if (raw === undefined || raw === null) {
+		return '';
+	}
+	const str = String(raw).trim();
+	return str === 'undefined' || str === 'null' ? '' : str;
+}
+
+export function isRelationItemDisabled(item: RelationItemData): boolean {
+	return Boolean(item.disabled || item.meta?.selectable === false);
+}
+
+export function resolveRelationNumChildren(item: RelationItemData): number {
+	if (typeof item.numChildren === 'number' && Number.isFinite(item.numChildren)) {
+		return Math.max(0, item.numChildren);
+	}
+	const metaCount = item.meta?.numChildren;
+	if (typeof metaCount === 'number' && Number.isFinite(metaCount)) {
+		return Math.max(0, metaCount);
+	}
+	return 0;
 }
 
 export function makeFallbackItem(token: string, cardinality: string, defaultResource: string): RelationItemData {
@@ -161,7 +194,7 @@ export function RelationItemVisual({
 	const boxSize = size === 'xs' ? 'size-4' : size === 'md' ? 'size-7' : 'size-5';
 	const iconSize = size === 'xs' ? 'size-3' : size === 'md' ? 'size-4' : 'size-3.5';
 
-	const safeThumb = sanitizeImageSrc(item?.thumb);
+	const safeThumb = sanitizeImageSrc(item?.thumbUrl || item?.thumb);
 	if (safeThumb) {
 		return (
 			<img

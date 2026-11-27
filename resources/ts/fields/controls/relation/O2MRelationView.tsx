@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { t } from '../../../lib/i18n';
 import { DynamicIcon } from '../../../lib/utils';
 import {
@@ -17,6 +17,7 @@ import type { RelationItemData } from '../../types';
 import {
 	QuickEditButton,
 	RelationItemVisual,
+	resolveRelationItemKey,
 	type RelationCallEndpointFn,
 } from './typesAndHelpers';
 
@@ -61,22 +62,47 @@ export function O2MRelationView({
 	const [busyTarget, setBusyTarget] = useState<string>('');
 
 	const hasOwner = Boolean(ownerId !== undefined && ownerId !== null && String(ownerId) !== '' && String(ownerId) !== '0');
+	const listAbortRef = useRef<AbortController | null>(null);
+	const listGenRef = useRef<number>(0);
+	const queryRef = useRef<string>(query);
+	queryRef.current = query;
+
+	useEffect(() => {
+		return () => {
+			listGenRef.current += 1;
+			listAbortRef.current?.abort();
+			listAbortRef.current = null;
+		};
+	}, []);
 
 	const fetchO2mList = useCallback(
-		(searchStr = query) => {
+		(searchStr?: string) => {
 			if (!hasOwner || !foreignField) return;
+			listAbortRef.current?.abort();
+			const ctrl = new AbortController();
+			listAbortRef.current = ctrl;
+			const gen = ++listGenRef.current;
 			setLoading(true);
-			callEndpoint({ action: 'o2m_list', q: searchStr, page: 1, limit: 50 })
+			callEndpoint(
+				{ action: 'o2m_list', q: searchStr ?? queryRef.current, page: 1, limit: 50 },
+				false,
+				ctrl.signal
+			)
 				.then((res) => {
+					if (ctrl.signal.aborted || gen !== listGenRef.current) return;
 					if (res?.ok && Array.isArray(res.items)) {
 						setItems(res.items);
 						setTotal(Number(res.total ?? res.items.length));
 					}
 				})
 				.catch(() => {})
-				.finally(() => setLoading(false));
+				.finally(() => {
+					if (gen === listGenRef.current && !ctrl.signal.aborted) {
+						setLoading(false);
+					}
+				});
 		},
-		[hasOwner, foreignField, query, callEndpoint]
+		[hasOwner, foreignField, callEndpoint]
 	);
 
 	useEffect(() => {
@@ -202,7 +228,7 @@ export function O2MRelationView({
 				<div className="grid grid-cols-1 gap-2 @md/rw-rel:grid-cols-2">
 					{items.map((item) => (
 						<div
-							key={item.key || String(item.value)}
+							key={resolveRelationItemKey(item)}
 							className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/15 px-3 py-2"
 						>
 							<div className="flex items-center gap-2.5 min-w-0">
@@ -238,7 +264,7 @@ export function O2MRelationView({
 				<div className="divide-y divide-border overflow-hidden rounded-md border border-border">
 					{items.map((item) => (
 						<div
-							key={item.key || String(item.value)}
+							key={resolveRelationItemKey(item)}
 							className="flex items-center justify-between gap-2 px-3 py-2 text-xs"
 						>
 							<div className="flex min-w-0 flex-1 items-center gap-2">
@@ -281,7 +307,7 @@ export function O2MRelationView({
 						</TableHeader>
 						<TableBody>
 							{items.map((item) => (
-								<TableRow key={item.key || String(item.value)}>
+								<TableRow key={resolveRelationItemKey(item)}>
 									<TableCell className="py-2 text-xs font-medium">
 										<div className="flex items-center gap-2">
 											<RelationItemVisual item={item} fallbackIcon={resourceIcon} size="sm" />
@@ -289,7 +315,7 @@ export function O2MRelationView({
 										</div>
 									</TableCell>
 									<TableCell className="py-2 font-mono text-[11px] text-muted-foreground">
-										{item.subtitle || String(item.id)}
+										{item.subtitle || String(item.value)}
 									</TableCell>
 									<TableCell className="py-2">
 										<div className="flex items-center gap-1">
@@ -348,7 +374,7 @@ export function O2MRelationView({
 							const isLinked = linkedValues.has(String(cand.value));
 							return (
 								<div
-									key={cand.key || String(cand.value)}
+									key={resolveRelationItemKey(cand)}
 									className="flex items-center justify-between gap-2 px-3 py-2 text-xs"
 								>
 									<div className="flex items-center gap-2 min-w-0">

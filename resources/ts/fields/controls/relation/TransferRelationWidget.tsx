@@ -2,7 +2,12 @@ import { useMemo, useState } from 'react';
 import { t } from '../../../lib/i18n';
 import { DynamicIcon } from '../../../lib/utils';
 import type { RelationItemData } from '../../types';
-import { QuickEditButton, RelationItemVisual } from './typesAndHelpers';
+import {
+	isRelationItemDisabled,
+	QuickEditButton,
+	RelationItemVisual,
+	resolveRelationItemKey,
+} from './typesAndHelpers';
 
 export function TransferRelationWidget({
 	options,
@@ -65,9 +70,9 @@ export function TransferRelationWidget({
 					{!disabled && available.length > 0 && maxItems === 0 ? (
 						<button
 							type="button"
-							onClick={() =>
+								onClick={() =>
 								onChange(
-									[...selectedValues, ...available.filter((a) => !a.disabled).map((a) => String(a.value))],
+									[...selectedValues, ...available.filter((a) => !isRelationItemDisabled(a)).map((a) => String(a.value))],
 									available
 								)
 							}
@@ -98,9 +103,9 @@ export function TransferRelationWidget({
 						const atLimit = maxItems > 0 && selectedValues.length >= maxItems;
 						return (
 							<button
-								key={opt.key || tok}
+								key={resolveRelationItemKey(opt)}
 								type="button"
-								disabled={disabled || opt.disabled || atLimit}
+								disabled={disabled || isRelationItemDisabled(opt) || atLimit}
 								onClick={() => onChange([...selectedValues, tok], [opt])}
 								className="flex w-full items-center justify-between gap-2 px-2.5 py-1.5 text-left text-xs transition-colors hover:bg-muted/50 disabled:opacity-50 cursor-pointer"
 							>

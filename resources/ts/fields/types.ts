@@ -584,16 +584,18 @@ export interface SchemaFieldOption {
 }
 
 export interface RelationItemData {
-	key: string;
+	key?: string;
+	morphToken?: string;
 	resource: string;
 	resourceLabel?: string;
 	value: string | number;
-	id: string | number;
+	id?: string | number;
 	label: string;
 	subtitle?: string;
 	badge?: string;
 	icon?: string;
 	thumb?: string;
+	thumbUrl?: string;
 	status?: string;
 	editUrl?: string;
 	viewUrl?: string;

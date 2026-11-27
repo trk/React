@@ -5,10 +5,12 @@ import { Badge, Button, Input, type useSortableList } from '../../../ui';
 import type { RelationItemData, RelationResourceDescriptor } from '../../types';
 import { SelectedItemsStack } from './SelectedItemsStack';
 import {
+	isRelationItemDisabled,
 	itemStoredToken,
 	makeFallbackItem,
 	QuickEditButton,
 	RelationItemVisual,
+	resolveRelationItemKey,
 	type RelationCallEndpointFn,
 } from './typesAndHelpers';
 
@@ -477,22 +479,22 @@ export function AutocompleteAndMorphWidget({
 								className="max-h-64 overflow-y-auto space-y-0.5"
 							>
 								{visibleResults.map((item, idx) => {
-									const tok = itemStoredToken(item, cardinality);
+									const itemDisabled = isRelationItemDisabled(item);
 									const isHighlighted = idx === activeIdx;
 									return (
 										<button
-											key={item.key || tok}
+											key={resolveRelationItemKey(item)}
 											id={`${listboxId}-opt-${idx}`}
 											type="button"
 											role="option"
 											aria-selected={isHighlighted}
-											disabled={item.disabled}
+											disabled={itemDisabled}
 											onMouseEnter={() => setActiveIdx(idx)}
 											onClick={() => selectResult(item)}
 											className={cn(
 												'flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-xs transition-colors',
 												isHighlighted ? 'bg-muted text-foreground' : 'text-foreground hover:bg-muted/60',
-												item.disabled && 'opacity-50 pointer-events-none'
+												itemDisabled && 'opacity-50 pointer-events-none'
 											)}
 										>
 											<div className="flex items-center gap-2 min-w-0">

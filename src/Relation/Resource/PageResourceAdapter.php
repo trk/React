@@ -1011,6 +1011,7 @@ final class PageResourceAdapter extends AbstractRelationResource
 				'name' => (string) $page->name,
 				'path' => (string) $page->path,
 				'template' => $tplName,
+				'numChildren' => (int) $page->numChildren,
 			],
 		);
 	}

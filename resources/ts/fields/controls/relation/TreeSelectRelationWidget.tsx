@@ -5,10 +5,16 @@ import { Badge, Button, type useSortableList } from '../../../ui';
 import type { RelationItemData } from '../../types';
 import { SelectedItemsStack } from './SelectedItemsStack';
 import {
+	isRelationItemDisabled,
 	QuickEditButton,
 	RelationItemVisual,
+	resolveRelationItemKey,
+	resolveRelationNodeId,
+	resolveRelationNumChildren,
 	type RelationCallEndpointFn,
 } from './typesAndHelpers';
+
+const MAX_TREE_DEPTH = 24;
 
 export function TreeSelectRelationWidget({
 	initialTree,
@@ -53,6 +59,7 @@ export function TreeSelectRelationWidget({
 }) {
 	const [open, setOpen] = useState(false);
 	const [rootNodes, setRootNodes] = useState<RelationItemData[]>(initialTree);
+	const [rootLoaded, setRootLoaded] = useState<boolean>(() => initialTree.length > 0);
 	const [childrenMap, setChildrenMap] = useState<Record<string, RelationItemData[]>>({});
 	const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 	const [loadingNode, setLoadingNode] = useState<Record<string, boolean>>({});
@@ -60,25 +67,59 @@ export function TreeSelectRelationWidget({
 	const [searchResults, setSearchResults] = useState<RelationItemData[]>([]);
 	const [searching, setSearching] = useState(false);
 
+	const treeGenRef = useRef<number>(0);
+	const nodeAbortMapRef = useRef<Map<string, AbortController>>(new Map());
+	const inFlightNodesRef = useRef<Set<string>>(new Set());
+
+	useEffect(() => {
+		return () => {
+			treeGenRef.current += 1;
+			for (const ctrl of nodeAbortMapRef.current.values()) {
+				ctrl.abort();
+			}
+			nodeAbortMapRef.current.clear();
+			inFlightNodesRef.current.clear();
+		};
+	}, []);
+
 	const prevTreeDependsRef = useRef<string | undefined>(dependsValue);
 	useEffect(() => {
 		if (prevTreeDependsRef.current !== dependsValue) {
 			prevTreeDependsRef.current = dependsValue;
+			treeGenRef.current += 1;
+			for (const ctrl of nodeAbortMapRef.current.values()) {
+				ctrl.abort();
+			}
+			nodeAbortMapRef.current.clear();
+			inFlightNodesRef.current.clear();
 			setRootNodes([]);
+			setRootLoaded(false);
 			setChildrenMap({});
 			setExpanded({});
+			setLoadingNode({});
 			setSearchResults([]);
 		}
 	}, [dependsValue]);
 
 	useEffect(() => {
-		if (!open || rootNodes.length > 0) return;
-		callEndpoint({ action: 'tree' }).then((res) => {
-			if (res?.ok && Array.isArray(res.items)) {
-				setRootNodes(res.items);
-			}
-		});
-	}, [open, rootNodes.length, callEndpoint]);
+		if (!open || rootLoaded) return;
+		const ctrl = new AbortController();
+		const gen = treeGenRef.current;
+		callEndpoint({ action: 'tree' }, false, ctrl.signal)
+			.then((res) => {
+				if (ctrl.signal.aborted || gen !== treeGenRef.current) return;
+				if (res?.ok && Array.isArray(res.items)) {
+					setRootNodes(res.items);
+				}
+				setRootLoaded(true);
+			})
+			.catch(() => {
+				if (!ctrl.signal.aborted && gen === treeGenRef.current) {
+					setRootLoaded(true);
+				}
+			});
+		return () => ctrl.abort();
+	}, [open, rootLoaded, callEndpoint]);
 
 	useEffect(() => {
 		const q = searchQuery.trim();
@@ -109,18 +150,39 @@ export function TreeSelectRelationWidget({
 	}, [searchQuery, callEndpoint]);
 
 	const toggleExpand = (node: RelationItemData) => {
-		const nodeId = String(node.id);
+		const nodeId = resolveRelationNodeId(node);
+		if (!nodeId) return;
 		const nextOpen = !expanded[nodeId];
 		setExpanded((prev) => ({ ...prev, [nodeId]: nextOpen }));
-		if (nextOpen && node.hasChildren && !childrenMap[nodeId]) {
+		if (
+			nextOpen &&
+			node.hasChildren &&
+			childrenMap[nodeId] === undefined &&
+			!inFlightNodesRef.current.has(nodeId)
+		) {
+			nodeAbortMapRef.current.get(nodeId)?.abort();
+			const ctrl = new AbortController();
+			nodeAbortMapRef.current.set(nodeId, ctrl);
+			inFlightNodesRef.current.add(nodeId);
+			const gen = treeGenRef.current;
 			setLoadingNode((prev) => ({ ...prev, [nodeId]: true }));
-			callEndpoint({ action: 'tree', parentId: node.id })
+			callEndpoint({ action: 'tree', parentId: nodeId }, false, ctrl.signal)
 				.then((res) => {
+					if (ctrl.signal.aborted || gen !== treeGenRef.current) return;
 					if (res?.ok && Array.isArray(res.items)) {
 						setChildrenMap((prev) => ({ ...prev, [nodeId]: res.items ?? [] }));
 					}
 				})
-				.finally(() => setLoadingNode((prev) => ({ ...prev, [nodeId]: false })));
+				.catch(() => {})
+				.finally(() => {
+					inFlightNodesRef.current.delete(nodeId);
+					if (nodeAbortMapRef.current.get(nodeId) === ctrl) {
+						nodeAbortMapRef.current.delete(nodeId);
+					}
+					if (gen === treeGenRef.current) {
+						setLoadingNode((prev) => ({ ...prev, [nodeId]: false }));
+					}
+				});
 		}
 	};
 
@@ -130,7 +192,7 @@ export function TreeSelectRelationWidget({
 	);
 
 	const toggleSelect = (node: RelationItemData) => {
-		if (disabled || node.disabled) return;
+		if (disabled || isRelationItemDisabled(node)) return;
 		const tok = String(node.value);
 		if (multiple) {
 			if (selectedSet.has(tok)) {
@@ -144,17 +206,35 @@ export function TreeSelectRelationWidget({
 		}
 	};
 
-	const renderTreeNodes = (nodes: RelationItemData[], depth = 0): React.ReactNode =>
-		nodes.map((node) => {
-			const nodeId = String(node.id);
+	const renderTreeNodes = (
+		nodes: RelationItemData[],
+		depth = 0,
+		ancestors: ReadonlySet<string> = new Set()
+	): React.ReactNode => {
+		if (depth >= MAX_TREE_DEPTH) {
+			return null;
+		}
+		return nodes.map((node) => {
+			const nodeId = resolveRelationNodeId(node);
+			if (nodeId !== '' && ancestors.has(nodeId)) {
+				return null;
+			}
 			const tok = String(node.value);
-			const isExp = Boolean(expanded[nodeId]);
-			const isBusy = Boolean(loadingNode[nodeId]);
+			const itemKey = resolveRelationItemKey(node);
+			const nodeDisabled = isRelationItemDisabled(node);
+			const numChildren = resolveRelationNumChildren(node);
+			const isExp = nodeId !== '' && Boolean(expanded[nodeId]);
+			const isBusy = nodeId !== '' && Boolean(loadingNode[nodeId]);
 			const isSelected = selectedSet.has(tok);
-			const subNodes = childrenMap[nodeId] || [];
+			const subNodes = nodeId !== '' ? childrenMap[nodeId] || [] : [];
+			const canExpand = Boolean(node.hasChildren && nodeId !== '');
+			const nextAncestors = new Set(ancestors);
+			if (nodeId !== '') {
+				nextAncestors.add(nodeId);
+			}
 
 			return (
-				<div key={node.key || tok}>
+				<div key={itemKey}>
 					<div
 						style={{ paddingLeft: `${depth * 16 + 6}px` }}
 						className={cn(
@@ -163,7 +243,7 @@ export function TreeSelectRelationWidget({
 						)}
 					>
 						<div className="flex items-center gap-1.5 min-w-0">
-							{node.hasChildren ? (
+							{canExpand ? (
 								<button
 									type="button"
 									onClick={() => toggleExpand(node)}
@@ -182,19 +262,19 @@ export function TreeSelectRelationWidget({
 
 							<button
 								type="button"
-								disabled={disabled || node.disabled}
+								disabled={disabled || nodeDisabled}
 								aria-pressed={isSelected}
 								onClick={() => toggleSelect(node)}
 								className="flex items-center gap-1.5 min-w-0 text-left disabled:opacity-50 cursor-pointer"
 							>
 								<DynamicIcon
-									name={node.hasChildren ? (isExp ? 'folder-open' : 'folder') : node.icon || fallbackIcon}
+									name={canExpand ? (isExp ? 'folder-open' : 'folder') : node.icon || fallbackIcon}
 									className="size-3.5 text-muted-foreground shrink-0"
 								/>
 								<span className="truncate">{node.label}</span>
-								{node.numChildren ? (
+								{numChildren > 0 ? (
 									<span className="text-[10px] text-muted-foreground tabular-nums">
-										({node.numChildren})
+										({numChildren})
 									</span>
 								) : null}
 							</button>
@@ -214,10 +294,13 @@ export function TreeSelectRelationWidget({
 							Loading children...
 						</div>
 					) : null}
-					{isExp && subNodes.length > 0 ? renderTreeNodes(subNodes, depth + 1) : null}
+					{canExpand && isExp && subNodes.length > 0 && depth + 1 < MAX_TREE_DEPTH
+						? renderTreeNodes(subNodes, depth + 1, nextAncestors)
+						: null}
 				</div>
 			);
 		});
+	};
 
 	const selectedSingle = !multiple && scalarValue ? resolveItem(scalarValue) : undefined;
 
@@ -301,9 +384,9 @@ export function TreeSelectRelationWidget({
 											const isSelected = selectedSet.has(tok);
 											return (
 												<button
-													key={item.key || tok}
+													key={resolveRelationItemKey(item)}
 													type="button"
-													disabled={item.disabled}
+													disabled={isRelationItemDisabled(item)}
 													aria-pressed={isSelected}
 													onClick={() => toggleSelect(item)}
 													className={cn(
