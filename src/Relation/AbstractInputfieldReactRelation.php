@@ -16,6 +16,7 @@ use ProcessWire\Page;
 use ProcessWire\React;
 use ProcessWire\WirePageEditor;
 use Totoglu\React\Inertia\InputfieldReact;
+use Totoglu\React\Security\AccessGuard;
 
 /**
  * AbstractInputfieldReactRelation
@@ -454,7 +455,7 @@ abstract class AbstractInputfieldReactRelation extends InputfieldReact
 			'widget' => $resolvedWidget,
 			'configuredWidget' => (string) ($this->getSetting('widget') ?: 'auto'),
 			'endpoint' => $rootUrl . '/_react/relation',
-			'relationToken' => $signer->sign($config),
+			'relationToken' => AccessGuard::isAuthenticated($this->wire()->user) ? $signer->sign($config) : '',
 			'value' => $normalizedValue,
 			'selectedItems' => $selectedItems,
 			'initialOptions' => $initialOptions,

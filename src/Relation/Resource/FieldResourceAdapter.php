@@ -74,10 +74,11 @@ final class FieldResourceAdapter extends AbstractRelationResource
 	public function query(array $params = [], array $config = []): array
 	{
 		$q = trim((string) ($params['q'] ?? ''));
+		$pinnedTemplate = trim((string) ($config['template'] ?? ''));
 		$dependsVal = $params['dependsValue'] ?? null;
-		$templateScope = is_scalar($dependsVal) && trim((string) $dependsVal) !== ''
-			? trim((string) $dependsVal)
-			: trim((string) ($config['template'] ?? ''));
+		$templateScope = $pinnedTemplate !== ''
+			? $pinnedTemplate
+			: (is_scalar($dependsVal) ? trim((string) $dependsVal) : '');
 
 		$items = [];
 		$bpItems = $templateScope !== '' ? $this->collectBlueprintFieldItems($config, $templateScope) : null;
@@ -150,16 +151,18 @@ final class FieldResourceAdapter extends AbstractRelationResource
 				}
 				$key = $strVal;
 			}
-			$field = $fields->get($key);
-			if ($field instanceof Field && (int) $field->id > 0) {
-				if ($scopedTemplate !== null && !$scopedTemplate->fieldgroup->hasField($field)) {
+			if ($templateScope === '' || $scopedTemplate !== null) {
+				$field = $fields->get($key);
+				if ($field instanceof Field && (int) $field->id > 0) {
+					if ($scopedTemplate !== null && !$scopedTemplate->fieldgroup->hasField($field)) {
+						continue;
+					}
+					if (!$this->matchesFieldScope($field, $includeSystem, $allowedTypes)) {
+						continue;
+					}
+					$items[] = $this->toRelationItem($field, $config, $templateScope);
 					continue;
 				}
-				if (!$this->matchesFieldScope($field, $includeSystem, $allowedTypes)) {
-					continue;
-				}
-				$items[] = $this->toRelationItem($field, $config, $templateScope);
-				continue;
 			}
 			if (is_string($key)) {
 				$bpItem = $this->hydrateBlueprintFieldItem($key, $config);
@@ -227,11 +230,15 @@ final class FieldResourceAdapter extends AbstractRelationResource
 			$cleanTplName = str_contains($templateScope, ':')
 				? substr($templateScope, strpos($templateScope, ':') + 1)
 				: $templateScope;
-			$tplCandidate = ctype_digit($cleanTplName) ? $templates->get((int) $cleanTplName) : $templates->get($cleanTplName);
-			if ($tplCandidate instanceof Template && $tplCandidate->fieldgroup !== null) {
-				$scopedTemplate = $tplCandidate;
-				$sourceIterable = $tplCandidate->fieldgroup;
+			if ($cleanTplName === '') {
+				return [];
 			}
+			$tplCandidate = ctype_digit($cleanTplName) ? $templates->get((int) $cleanTplName) : $templates->get($cleanTplName);
+			if (!$tplCandidate instanceof Template || $tplCandidate->fieldgroup === null) {
+				return [];
+			}
+			$scopedTemplate = $tplCandidate;
+			$sourceIterable = $tplCandidate->fieldgroup;
 		}
 
 		$list = [];

@@ -319,7 +319,7 @@ final class ReactGatewayRouter extends Wire
 		return $this->respondJsonGuarded(
 			fn(): array => $this->handleViewportAction($payload, true),
 			'React viewport error',
-			'Viewport request failed.',
+			$this->_('Viewport request failed.'),
 		);
 	}
 
@@ -336,7 +336,7 @@ final class ReactGatewayRouter extends Wire
 			return [
 				'ok' => false,
 				'status' => 403,
-				'error' => 'Authentication required.',
+				'error' => $this->_('Authentication required.'),
 			];
 		}
 
@@ -352,14 +352,14 @@ final class ReactGatewayRouter extends Wire
 				return [
 					'ok' => false,
 					'status' => 405,
-					'error' => 'Method not allowed. POST required.',
+					'error' => $this->_('Method not allowed. POST required.'),
 				];
 			}
 			if ((bool) $this->wire()->config->demo) {
 				return [
 					'ok' => false,
 					'status' => 403,
-					'error' => 'Mutations are disabled in demo mode.',
+					'error' => $this->_('Mutations are disabled in demo mode.'),
 				];
 			}
 		}
@@ -368,7 +368,7 @@ final class ReactGatewayRouter extends Wire
 			return [
 				'ok' => false,
 				'status' => 400,
-				'error' => 'Missing viewport stateToken.',
+				'error' => $this->_('Missing viewport stateToken.'),
 			];
 		}
 
@@ -378,7 +378,7 @@ final class ReactGatewayRouter extends Wire
 			return [
 				'ok' => false,
 				'status' => 403,
-				'error' => 'Invalid or expired viewport stateToken.',
+				'error' => $this->_('Invalid or expired viewport stateToken.'),
 			];
 		}
 
@@ -387,7 +387,7 @@ final class ReactGatewayRouter extends Wire
 				return [
 					'ok' => false,
 					'status' => 419,
-					'error' => 'CSRF token validation failed.',
+					'error' => $this->_('CSRF token validation failed.'),
 				];
 			}
 		}
@@ -415,21 +415,21 @@ final class ReactGatewayRouter extends Wire
 				return [
 					'ok' => false,
 					'status' => 405,
-					'error' => 'Method not allowed. POST required.',
+					'error' => $this->_('Method not allowed. POST required.'),
 				];
 			}
 			if ((bool) $this->wire()->config->demo) {
 				return [
 					'ok' => false,
 					'status' => 403,
-					'error' => 'Mutations are disabled in demo mode.',
+					'error' => $this->_('Mutations are disabled in demo mode.'),
 				];
 			}
 			if ($enforceCsrf && !$this->verifyRequestCsrf($requestPayload)) {
 				return [
 					'ok' => false,
 					'status' => 419,
-					'error' => 'CSRF token validation failed.',
+					'error' => $this->_('CSRF token validation failed.'),
 				];
 			}
 		}
@@ -470,15 +470,12 @@ final class ReactGatewayRouter extends Wire
 			throw $e;
 		} catch (\Throwable $e) {
 			$this->wire()->log->error('React viewport error: ' . $e->getMessage());
-			$isInternalWireException = $e instanceof WireDatabaseException
-				|| $e instanceof WireDatabaseQueryException
-				|| $e instanceof WireFilesException;
-			$isSafe = ($e instanceof WireException && !$isInternalWireException) || (bool) $this->wire()->config->debug;
+			$isSafe = $this->isClientSafeException($e) || (bool) $this->wire()->config->debug;
 
 			return [
 				'ok' => false,
 				'status' => 422,
-				'error' => $isSafe ? $e->getMessage() : 'Viewport action failed.',
+				'error' => $isSafe ? $e->getMessage() : $this->_('Viewport action failed.'),
 			];
 		}
 
@@ -486,7 +483,7 @@ final class ReactGatewayRouter extends Wire
 			return [
 				'ok' => false,
 				'status' => 422,
-				'error' => (string) ($updatedViewport['error'] ?? 'Viewport action failed.'),
+				'error' => (string) ($updatedViewport['error'] ?? $this->_('Viewport action failed.')),
 				'viewport' => $updatedViewport,
 			];
 		}
@@ -514,7 +511,7 @@ final class ReactGatewayRouter extends Wire
 			return $this->respondJson([
 				'ok' => false,
 				'status' => 403,
-				'error' => 'Workspace or page edit access required.',
+				'error' => $this->_('Workspace or page edit access required.'),
 			]);
 		}
 
@@ -532,7 +529,7 @@ final class ReactGatewayRouter extends Wire
 		return $this->respondJsonGuarded(
 			fn(): array => $this->handleWorkspacePrefsAction($payload, true, $user),
 			'React workspace-prefs error',
-			'Workspace preference request failed.',
+			$this->_('Workspace preference request failed.'),
 		);
 	}
 
@@ -565,7 +562,7 @@ final class ReactGatewayRouter extends Wire
 			return [
 				'ok' => false,
 				'status' => 403,
-				'error' => 'Workspace or page edit access required.',
+				'error' => $this->_('Workspace or page edit access required.'),
 			];
 		}
 
@@ -574,7 +571,7 @@ final class ReactGatewayRouter extends Wire
 			return [
 				'ok' => false,
 				'status' => 405,
-				'error' => 'Method not allowed. POST required.',
+				'error' => $this->_('Method not allowed. POST required.'),
 			];
 		}
 
@@ -582,7 +579,7 @@ final class ReactGatewayRouter extends Wire
 			return [
 				'ok' => false,
 				'status' => 419,
-				'error' => 'CSRF token validation failed.',
+				'error' => $this->_('CSRF token validation failed.'),
 			];
 		}
 
@@ -609,14 +606,14 @@ final class ReactGatewayRouter extends Wire
 			return [
 				'ok' => false,
 				'status' => 422,
-				'error' => 'Unsupported workspace preference action.',
+				'error' => $this->_('Unsupported workspace preference action.'),
 			];
 		}
 		if ($action !== 'export_layout' && (bool) $this->wire()->config->demo) {
 			return [
 				'ok' => false,
 				'status' => 403,
-				'error' => 'Mutations are disabled in demo mode.',
+				'error' => $this->_('Mutations are disabled in demo mode.'),
 			];
 		}
 		$store = $this->react->workspacePreferences();
@@ -628,7 +625,7 @@ final class ReactGatewayRouter extends Wire
 					return [
 						'ok' => false,
 						'status' => 422,
-						'error' => 'Dashboard layout preset exceeds maximum size.',
+						'error' => $this->_('Dashboard layout preset exceeds maximum size.'),
 					];
 				}
 				$decodedPreset = json_decode($rawPreset, true, 16);
@@ -636,7 +633,7 @@ final class ReactGatewayRouter extends Wire
 					return [
 						'ok' => false,
 						'status' => 422,
-						'error' => 'Invalid JSON format in dashboard layout preset.',
+						'error' => $this->_('Invalid JSON format in dashboard layout preset.'),
 					];
 				}
 				$rawPreset = $decodedPreset;
@@ -645,12 +642,27 @@ final class ReactGatewayRouter extends Wire
 				return [
 					'ok' => false,
 					'status' => 422,
-					'error' => 'Dashboard layout preset must be a JSON object.',
+					'error' => $this->_('Dashboard layout preset must be a JSON object.'),
 				];
+			}
+
+			$layoutTarget = isset($rawPreset['layout']) && is_array($rawPreset['layout']) ? $rawPreset['layout'] : $rawPreset;
+			$validatedLayout = $this->validateWorkspaceThemeAndLayoutFields($layoutTarget, $resolvedUser);
+			if (isset($validatedLayout['errorResponse'])) {
+				return $validatedLayout['errorResponse'];
+			}
+			$validatedPayload = $validatedLayout['payload'];
+			if (isset($rawPreset['layout']) && is_array($rawPreset['layout'])) {
+				$rawPreset['layout'] = $validatedPayload;
+			} else {
+				$rawPreset = $validatedPayload;
 			}
 
 			try {
 				$store->importPreset($rawPreset, $resolvedUser);
+				if (array_key_exists('themeMode', $validatedPayload) && is_string($validatedPayload['themeMode'])) {
+					$this->syncAdminDarkModeMeta($validatedPayload['themeMode'], $resolvedUser);
+				}
 			} catch (\InvalidArgumentException $e) {
 				return [
 					'ok' => false,
@@ -659,67 +671,41 @@ final class ReactGatewayRouter extends Wire
 				];
 			}
 		} elseif ($action === 'set_theme_mode') {
-			$rawMode = strtolower(trim((string) ($requestPayload['themeMode'] ?? 'system')));
-			if ($rawMode === 'auto') {
-				$rawMode = 'system';
-			}
-			if (!in_array($rawMode, ['light', 'dark', 'system'], true)) {
+			$rawModeInput = $requestPayload['themeMode'] ?? 'system';
+			$resolvedMode = $this->validateThemeModeInput($rawModeInput, false);
+			if ($resolvedMode === null) {
 				return [
 					'ok' => false,
 					'status' => 422,
-					'error' => 'Invalid themeMode value.',
+					'error' => $this->_('Invalid themeMode value.'),
 				];
 			}
-			$adminSettings = $this->wire()->config->AdminThemeUikit;
-			if (is_array($adminSettings) && !empty($adminSettings['noDarkMode'])) {
-				$rawMode = 'light';
-			}
-			$metaValue = match ($rawMode) {
-				'dark' => 1,
-				'light' => 0,
-				default => -1,
-			};
-			$store->setThemeMode($rawMode, $resolvedUser);
-			$resolvedUser->meta('adminDarkMode', $metaValue);
+			$store->setThemeMode($resolvedMode, $resolvedUser);
+			$this->syncAdminDarkModeMeta($resolvedMode, $resolvedUser);
 		} elseif ($action === 'set_theme_preset') {
-			$rawPreset = strtolower(trim((string) ($requestPayload['themePreset'] ?? '')));
-			if ($rawPreset === '' || $rawPreset === 'default') {
-				$store->setThemePreset('', $resolvedUser);
-			} else {
-				$preset = ThemePreset::tryFrom($rawPreset);
-				$customReady = $this->react->theme()->hasValidCustomTokens();
-				if ($preset === null || ($preset === ThemePreset::Custom && !$customReady)) {
-					return [
-						'ok' => false,
-						'status' => 422,
-						'error' => 'Invalid themePreset value.',
-					];
-				}
-				$store->setThemePreset($preset->value, $resolvedUser);
+			$rawPresetInput = $requestPayload['themePreset'] ?? '';
+			$resolvedPreset = $this->validateThemePresetInput($rawPresetInput);
+			if ($resolvedPreset === null) {
+				return [
+					'ok' => false,
+					'status' => 422,
+					'error' => $this->_('Invalid themePreset value.'),
+				];
 			}
+			$store->setThemePreset($resolvedPreset, $resolvedUser);
 		} elseif ($action === 'set_shell_layout') {
 			$rawLayoutInput = array_key_exists('shellLayout', $requestPayload)
 				? $requestPayload['shellLayout']
 				: ($requestPayload['layout'] ?? '');
-			if (!is_string($rawLayoutInput)) {
+			$resolvedLayout = $this->validateShellLayoutInput($rawLayoutInput);
+			if ($resolvedLayout === null) {
 				return [
 					'ok' => false,
 					'status' => 422,
-					'error' => 'Invalid shellLayout value.',
+					'error' => $this->_('Invalid shellLayout value.'),
 				];
 			}
-			$rawLayout = strtolower(trim($rawLayoutInput));
-			if ($rawLayout === '' || $rawLayout === 'default') {
-				$store->setShellLayout('', $resolvedUser);
-			} elseif (!$this->react->shellLayouts()->has($rawLayout)) {
-				return [
-					'ok' => false,
-					'status' => 422,
-					'error' => 'Invalid shellLayout value.',
-				];
-			} else {
-				$store->setShellLayout($rawLayout, $resolvedUser);
-			}
+			$store->setShellLayout($resolvedLayout, $resolvedUser);
 		} elseif ($action === 'set_sidebar_collapsed') {
 			$rawCollapsed = array_key_exists('collapsed', $requestPayload)
 				? $requestPayload['collapsed']
@@ -729,10 +715,20 @@ final class ReactGatewayRouter extends Wire
 				return [
 					'ok' => false,
 					'status' => 422,
-					'error' => 'Invalid collapsed value.',
+					'error' => $this->_('Invalid collapsed value.'),
 				];
 			}
 			$store->setSidebarCollapsed($collapsed, $resolvedUser);
+		} elseif ($action === 'save') {
+			$validated = $this->validateWorkspaceThemeAndLayoutFields($requestPayload, $resolvedUser);
+			if (isset($validated['errorResponse'])) {
+				return $validated['errorResponse'];
+			}
+			$savePayload = $validated['payload'];
+			$store->savePreferences($savePayload, $resolvedUser);
+			if (array_key_exists('themeMode', $savePayload) && is_string($savePayload['themeMode'])) {
+				$this->syncAdminDarkModeMeta($savePayload['themeMode'], $resolvedUser);
+			}
 		} elseif ($action !== 'export_layout') {
 			match ($action) {
 				'toggle_favorite' => $store->toggleFavorite((string) ($requestPayload['workspaceId'] ?? ''), $resolvedUser),
@@ -749,7 +745,6 @@ final class ReactGatewayRouter extends Wire
 					$resolvedUser
 				),
 				'reset' => $store->reset($resolvedUser),
-				default => $store->savePreferences($requestPayload, $resolvedUser),
 			};
 		}
 
@@ -793,6 +788,128 @@ final class ReactGatewayRouter extends Wire
 		return $response;
 	}
 
+	/**
+	 * Validate optional `themeMode`, `themePreset`, and `shellLayout` fields in bulk `save` / `import_layout` payloads.
+	 *
+	 * @param array<string, mixed> $payload
+	 * @return array{payload: array<string, mixed>, errorResponse?: array{ok: bool, status: int, error: string}}
+	 */
+	private function validateWorkspaceThemeAndLayoutFields(array $payload, User $user): array
+	{
+		if (array_key_exists('themeMode', $payload)) {
+			$mode = $this->validateThemeModeInput($payload['themeMode'], true);
+			if ($mode === null) {
+				return [
+					'payload' => $payload,
+					'errorResponse' => [
+						'ok' => false,
+						'status' => 422,
+						'error' => $this->_('Invalid themeMode value.'),
+					],
+				];
+			}
+			$payload['themeMode'] = $mode;
+		}
+		if (array_key_exists('themePreset', $payload)) {
+			$preset = $this->validateThemePresetInput($payload['themePreset']);
+			if ($preset === null) {
+				return [
+					'payload' => $payload,
+					'errorResponse' => [
+						'ok' => false,
+						'status' => 422,
+						'error' => $this->_('Invalid themePreset value.'),
+					],
+				];
+			}
+			$payload['themePreset'] = $preset;
+		}
+		if (array_key_exists('shellLayout', $payload)) {
+			$layout = $this->validateShellLayoutInput($payload['shellLayout']);
+			if ($layout === null) {
+				return [
+					'payload' => $payload,
+					'errorResponse' => [
+						'ok' => false,
+						'status' => 422,
+						'error' => $this->_('Invalid shellLayout value.'),
+					],
+				];
+			}
+			$payload['shellLayout'] = $layout;
+		}
+
+		return ['payload' => $payload];
+	}
+
+	private function validateThemeModeInput(mixed $raw, bool $allowEmpty): ?string
+	{
+		if (!is_string($raw) && !is_int($raw)) {
+			return null;
+		}
+		$mode = strtolower(trim((string) $raw));
+		if ($mode === 'auto' || $mode === '-1') {
+			$mode = 'system';
+		} elseif ($mode === '1') {
+			$mode = 'dark';
+		} elseif ($mode === '0') {
+			$mode = 'light';
+		}
+		if ($mode === '') {
+			if (!$allowEmpty) {
+				return null;
+			}
+		} elseif (!in_array($mode, ['light', 'dark', 'system'], true)) {
+			return null;
+		}
+		$adminSettings = $this->wire()->config->AdminThemeUikit;
+		if (is_array($adminSettings) && !empty($adminSettings['noDarkMode'])) {
+			return 'light';
+		}
+
+		return $mode;
+	}
+
+	private function validateThemePresetInput(mixed $raw): ?string
+	{
+		if (!is_string($raw)) {
+			return null;
+		}
+		$clean = strtolower(trim($raw));
+		if ($clean === '' || $clean === 'default') {
+			return '';
+		}
+		$preset = ThemePreset::tryFrom($clean);
+		if ($preset === null || ($preset === ThemePreset::Custom && !$this->react->theme()->hasValidCustomTokens())) {
+			return null;
+		}
+
+		return $preset->value;
+	}
+
+	private function validateShellLayoutInput(mixed $raw): ?string
+	{
+		if (!is_string($raw)) {
+			return null;
+		}
+		$clean = strtolower(trim($raw));
+		if ($clean === '' || $clean === 'default') {
+			return '';
+		}
+
+		return $this->react->shellLayouts()->has($clean) ? $clean : null;
+	}
+
+	private function syncAdminDarkModeMeta(string $mode, User $user): void
+	{
+		$metaValue = match ($mode) {
+			'dark' => 1,
+			'light' => 0,
+			default => -1,
+		};
+		$user->meta('adminDarkMode', $metaValue);
+	}
+
 	private function parseStrictBool(mixed $value): ?bool
 	{
 		if (is_bool($value)) {
@@ -831,7 +948,7 @@ final class ReactGatewayRouter extends Wire
 			return $this->respondJson([
 				'ok' => false,
 				'status' => 403,
-				'error' => 'Workspace access required.',
+				'error' => $this->_('Workspace access required.'),
 			]);
 		}
 
@@ -849,7 +966,7 @@ final class ReactGatewayRouter extends Wire
 		return $this->respondJsonGuarded(
 			fn(): array => $this->handlePresenceAction($payload, true, $user),
 			'React presence error',
-			'Presence request failed.',
+			$this->_('Presence request failed.'),
 		);
 	}
 
@@ -866,7 +983,7 @@ final class ReactGatewayRouter extends Wire
 			return [
 				'ok' => false,
 				'status' => 403,
-				'error' => 'Workspace access required.',
+				'error' => $this->_('Workspace access required.'),
 			];
 		}
 
@@ -875,7 +992,7 @@ final class ReactGatewayRouter extends Wire
 			return [
 				'ok' => false,
 				'status' => 405,
-				'error' => 'Method not allowed. POST required.',
+				'error' => $this->_('Method not allowed. POST required.'),
 			];
 		}
 
@@ -883,7 +1000,7 @@ final class ReactGatewayRouter extends Wire
 			return [
 				'ok' => false,
 				'status' => 419,
-				'error' => 'CSRF token validation failed.',
+				'error' => $this->_('CSRF token validation failed.'),
 			];
 		}
 
@@ -891,7 +1008,7 @@ final class ReactGatewayRouter extends Wire
 			return [
 				'ok' => false,
 				'status' => 403,
-				'error' => 'Mutations are disabled in demo mode.',
+				'error' => $this->_('Mutations are disabled in demo mode.'),
 			];
 		}
 
@@ -903,7 +1020,7 @@ final class ReactGatewayRouter extends Wire
 			return [
 				'ok' => false,
 				'status' => 422,
-				'error' => 'Unsupported presence action.',
+				'error' => $this->_('Unsupported presence action.'),
 			];
 		}
 
@@ -913,7 +1030,7 @@ final class ReactGatewayRouter extends Wire
 			return [
 				'ok' => false,
 				'status' => 403,
-				'error' => 'Invalid or expired presenceToken.',
+				'error' => $this->_('Invalid or expired presenceToken.'),
 			];
 		}
 
@@ -922,7 +1039,7 @@ final class ReactGatewayRouter extends Wire
 			return [
 				'ok' => false,
 				'status' => 403,
-				'error' => 'Presence token does not match requested resource.',
+				'error' => $this->_('Presence token does not match requested resource.'),
 			];
 		}
 
@@ -930,7 +1047,7 @@ final class ReactGatewayRouter extends Wire
 			return [
 				'ok' => false,
 				'status' => 403,
-				'error' => 'You do not have permission to mark this resource as saved.',
+				'error' => $this->_('You do not have permission to mark this resource as saved.'),
 			];
 		}
 
@@ -976,7 +1093,7 @@ final class ReactGatewayRouter extends Wire
 		return $this->respondJsonGuarded(
 			fn(): array => $this->handleRelationAction($payload, true),
 			'React relation error',
-			'Relation request failed.',
+			$this->_('Relation request failed.'),
 		);
 	}
 
@@ -993,7 +1110,7 @@ final class ReactGatewayRouter extends Wire
 			return [
 				'ok' => false,
 				'status' => 403,
-				'error' => 'Authentication required.',
+				'error' => $this->_('Authentication required.'),
 			];
 		}
 
@@ -1002,7 +1119,7 @@ final class ReactGatewayRouter extends Wire
 			return [
 				'ok' => false,
 				'status' => 400,
-				'error' => 'Missing relationToken.',
+				'error' => $this->_('Missing relationToken.'),
 			];
 		}
 
@@ -1011,7 +1128,7 @@ final class ReactGatewayRouter extends Wire
 			return [
 				'ok' => false,
 				'status' => 403,
-				'error' => 'Invalid or expired relationToken.',
+				'error' => $this->_('Invalid or expired relationToken.'),
 			];
 		}
 
@@ -1022,28 +1139,28 @@ final class ReactGatewayRouter extends Wire
 				return [
 					'ok' => false,
 					'status' => 405,
-					'error' => 'Method not allowed. POST required.',
+					'error' => $this->_('Method not allowed. POST required.'),
 				];
 			}
 			if ((bool) $this->wire()->config->demo) {
 				return [
 					'ok' => false,
 					'status' => 403,
-					'error' => 'Mutations are disabled in demo mode.',
+					'error' => $this->_('Mutations are disabled in demo mode.'),
 				];
 			}
 			if (!empty($config['readOnly'])) {
 				return [
 					'ok' => false,
 					'status' => 403,
-					'error' => 'Relation field is read-only.',
+					'error' => $this->_('Relation field is read-only.'),
 				];
 			}
 			if ($enforceCsrf && !$this->verifyRequestCsrf($requestPayload)) {
 				return [
 					'ok' => false,
 					'status' => 419,
-					'error' => 'CSRF token validation failed.',
+					'error' => $this->_('CSRF token validation failed.'),
 				];
 			}
 		}
@@ -1068,7 +1185,7 @@ final class ReactGatewayRouter extends Wire
 			return [
 				'ok' => false,
 				'status' => 403,
-				'error' => 'No allowed resources configured for this polymorphic field.',
+				'error' => $this->_('No allowed resources configured for this polymorphic field.'),
 			];
 		}
 
@@ -1079,7 +1196,7 @@ final class ReactGatewayRouter extends Wire
 					return [
 						'ok' => false,
 						'status' => 403,
-						'error' => 'Requested resource is not permitted for this polymorphic field.',
+						'error' => $this->_('Requested resource is not permitted for this polymorphic field.'),
 					];
 				}
 				$activeResource = $requestedResource;
@@ -1141,7 +1258,7 @@ final class ReactGatewayRouter extends Wire
 					return [
 						'ok' => false,
 						'status' => 422,
-						'error' => sprintf('Unknown relation resource "%s".', $activeResource),
+						'error' => sprintf($this->_('Unknown relation resource "%s".'), $activeResource),
 					];
 				}
 
@@ -1159,7 +1276,7 @@ final class ReactGatewayRouter extends Wire
 
 			if ($action === 'tree') {
 				if (!$registry->has($activeResource)) {
-					return ['ok' => false, 'status' => 422, 'error' => 'Unknown relation resource.'];
+					return ['ok' => false, 'status' => 422, 'error' => $this->_('Unknown relation resource.')];
 				}
 				$parentId = $requestPayload['parentId'] ?? ($config['parentId'] ?? 0);
 				$nodes = $registry->get($activeResource)->tree(
@@ -1181,7 +1298,7 @@ final class ReactGatewayRouter extends Wire
 					$items = $registry->hydrateMorphTokens($tokens, $allowedResources, $config);
 				} else {
 					if (!$registry->has($activeResource)) {
-						return ['ok' => false, 'status' => 422, 'error' => 'Unknown relation resource.'];
+						return ['ok' => false, 'status' => 422, 'error' => $this->_('Unknown relation resource.')];
 					}
 					$cleanVals = [];
 					foreach ($rawValues as $rv) {
@@ -1240,13 +1357,13 @@ final class ReactGatewayRouter extends Wire
 
 			if ($action === 'quick_create') {
 				if (empty($config['creatable'])) {
-					return ['ok' => false, 'status' => 403, 'error' => 'Inline creation is not enabled for this field.'];
+					return ['ok' => false, 'status' => 403, 'error' => $this->_('Inline creation is not enabled for this field.')];
 				}
 				$createRes = $cardinality === 'o2m'
 					? strtolower(trim((string) ($config['targetResource'] ?? $activeResource)))
 					: $activeResource;
 				if (!$registry->has($createRes)) {
-					return ['ok' => false, 'status' => 422, 'error' => 'Unknown relation resource.'];
+					return ['ok' => false, 'status' => 422, 'error' => $this->_('Unknown relation resource.')];
 				}
 				$createPayload = is_array($requestPayload['payload'] ?? null) ? $requestPayload['payload'] : $requestPayload;
 				$created = $registry->get($createRes)->quickCreate($createPayload, $config);
@@ -1263,21 +1380,21 @@ final class ReactGatewayRouter extends Wire
 					return [
 						'ok' => false,
 						'status' => 403,
-						'error' => 'O2M relation action requires cardinality o2m.',
+						'error' => $this->_('O2M relation action requires cardinality o2m.'),
 					];
 				}
 				if ($action === 'o2m_link' && array_key_exists('allowLink', $config) && !$config['allowLink']) {
-					return ['ok' => false, 'status' => 403, 'error' => 'Linking existing records is not enabled for this field.'];
+					return ['ok' => false, 'status' => 403, 'error' => $this->_('Linking existing records is not enabled for this field.')];
 				}
 				if ($action === 'o2m_unlink' && array_key_exists('allowUnlink', $config) && !$config['allowUnlink']) {
-					return ['ok' => false, 'status' => 403, 'error' => 'Unlinking records is not enabled for this field.'];
+					return ['ok' => false, 'status' => 403, 'error' => $this->_('Unlinking records is not enabled for this field.')];
 				}
 				$targetRes = strtolower(trim((string) ($config['targetResource'] ?? $activeResource)));
 				$ownerId = $config['ownerId'] ?? '';
 				$foreignField = trim((string) ($config['foreignField'] ?? ''));
 				$targetVal = $requestPayload['targetValue'] ?? ($requestPayload['id'] ?? '');
 				if (!$registry->has($targetRes) || $ownerId === '' || $ownerId === 0 || $foreignField === '' || $targetVal === '') {
-					return ['ok' => false, 'status' => 422, 'error' => 'Missing ownerId, foreignField, or targetValue.'];
+					return ['ok' => false, 'status' => 422, 'error' => $this->_('Missing ownerId, foreignField, or targetValue.')];
 				}
 
 				$adapter = $registry->get($targetRes);
@@ -1291,7 +1408,7 @@ final class ReactGatewayRouter extends Wire
 					return [
 						'ok' => false,
 						'status' => 422,
-						'error' => 'Operation denied or failed.',
+						'error' => $this->_('Operation denied or failed.'),
 					];
 				}
 
@@ -1309,7 +1426,7 @@ final class ReactGatewayRouter extends Wire
 			return [
 				'ok' => false,
 				'status' => 400,
-				'error' => sprintf('Unsupported relation action "%s".', $action),
+				'error' => sprintf($this->_('Unsupported relation action "%s".'), $action),
 			];
 		} catch (WirePermissionException $e) {
 			$msg = trim($e->getMessage());
@@ -1368,7 +1485,7 @@ final class ReactGatewayRouter extends Wire
 		return $this->respondJsonGuarded(
 			fn(): array => $this->handleMediaAction($payload, true),
 			'React media error',
-			'Media request failed.',
+			$this->_('Media request failed.'),
 		);
 	}
 
@@ -1424,7 +1541,7 @@ final class ReactGatewayRouter extends Wire
 		return $this->respondJsonGuarded(
 			fn(): array => $this->handleTiptapAction($payload, true),
 			'React tiptap error',
-			'Editor media request failed.',
+			$this->_('Editor media request failed.'),
 		);
 	}
 
@@ -1469,7 +1586,7 @@ final class ReactGatewayRouter extends Wire
 			return [
 				'ok' => false,
 				'status' => 405,
-				'error' => 'Method not allowed. GET required.',
+				'error' => $this->_('Method not allowed. GET required.'),
 			];
 		}
 
@@ -1519,7 +1636,7 @@ final class ReactGatewayRouter extends Wire
 		return $this->respondJsonGuarded(
 			fn(): array => $this->handleCommandSearchAction($payload),
 			'React command-search error',
-			'Search request failed.',
+			$this->_('Search request failed.'),
 			'no-store, private',
 		);
 	}
@@ -1540,7 +1657,7 @@ final class ReactGatewayRouter extends Wire
 			return [
 				'ok' => false,
 				'status' => 403,
-				'error' => 'Workspace or page edit access required.',
+				'error' => $this->_('Workspace or page edit access required.'),
 			];
 		}
 
@@ -1549,7 +1666,7 @@ final class ReactGatewayRouter extends Wire
 			return [
 				'ok' => false,
 				'status' => 405,
-				'error' => 'Method not allowed. GET required.',
+				'error' => $this->_('Method not allowed. GET required.'),
 			];
 		}
 

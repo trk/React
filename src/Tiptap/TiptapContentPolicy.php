@@ -467,6 +467,13 @@ final class TiptapContentPolicy
 		// Strip remaining CSS backslash escapes inside identifiers (`e\xpression`)
 		$clean = (string) preg_replace('/\\\\([^0-9a-fA-F\r\n])/', '$1', $clean);
 
+		// Iteratively strip CSS comments (`/* ... */` and unclosed `/*`) before tag & keyword filtering
+		do {
+			$prevComments = $clean;
+			$clean = (string) preg_replace('~/\*.*?\*/~s', '', $clean);
+			$clean = (string) preg_replace('~/\*.*$~s', '', $clean);
+		} while ($clean !== $prevComments);
+
 		// Iteratively strip embedded `<script>` / `<style>` elements and any remaining tag openers so obfuscation cannot reassemble tags
 		do {
 			$prev = $clean;
@@ -482,7 +489,7 @@ final class TiptapContentPolicy
 		$clean = (string) preg_replace('/expression\s*\(/i', 'blocked(', $clean);
 		$clean = (string) preg_replace('/-moz-binding\s*:[^;]*(?:;|$)/i', '', $clean);
 		$clean = (string) preg_replace('/behavior\s*:[^;]*(?:;|$)/i', '', $clean);
-		$clean = (string) preg_replace('/url\s*\(\s*[\'"]?\s*(?:javascript|vbscript|data\s*:\s*text\/html)\s*:/i', 'url(about:blank#', $clean);
+		$clean = (string) preg_replace('/url\s*\(\s*[\'"]?\s*(?:javascript\s*:|vbscript\s*:|data\s*:\s*(?:text\/html|image\/svg\+xml|application\/xhtml))/i', 'url(about:blank#', $clean);
 
 		return trim($clean);
 	}

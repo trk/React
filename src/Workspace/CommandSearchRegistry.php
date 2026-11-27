@@ -305,14 +305,27 @@ final class CommandSearchRegistry extends Wire
 			$adminUrl = rtrim((string) ($config->urls->admin ?: '/processwire/'), '/') . '/';
 
 			$titleField = $wire->fields->get('title');
-			$canSearchTitle = (bool) $user->isSuperuser()
-				|| !$titleField instanceof Field
-				|| !(bool) $titleField->useRoles
-				|| $titleField->viewable(null, $user);
+			$canSearchTitle = (bool) $user->isSuperuser() || !$titleField instanceof Field;
+			if (!$canSearchTitle) {
+				$canSearchTitle = !(bool) $titleField->useRoles || (bool) $titleField->viewable(null, $user);
+				if ($canSearchTitle) {
+					foreach ($wire->templates as $tpl) {
+						if (!$tpl instanceof Template || $tpl->fieldgroup === null || !$tpl->fieldgroup->hasField($titleField)) {
+							continue;
+						}
+						$ctx = $tpl->fieldgroup->getFieldContext($titleField);
+						if ($ctx instanceof Field && (bool) $ctx->useRoles && !$ctx->viewable(null, $user)) {
+							$canSearchTitle = false;
+							break;
+						}
+					}
+				}
+			}
 			$searchExpr = $canSearchTitle ? 'title|name%%=%s' : 'name%%=%s';
+			$sortExpr = $canSearchTitle ? 'sort=title, sort=id' : 'sort=name, sort=id';
 			$queryLimit = max(10, min(100, $limit * 3));
 			$selector = sprintf(
-				$searchExpr . ', has_parent!=%d, has_parent!=%d, id!=%d|%d|%d, include=unpublished, sort=title, sort=id, limit=%d',
+				$searchExpr . ', has_parent!=%d, has_parent!=%d, id!=%d|%d|%d, include=unpublished, ' . $sortExpr . ', limit=%d',
 				$sanitizer->selectorValue($query),
 				$adminId,
 				$trashId,

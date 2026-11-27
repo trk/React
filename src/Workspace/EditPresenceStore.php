@@ -316,6 +316,50 @@ final class EditPresenceStore extends Wire
 			}
 		}
 
+		foreach (glob($dir . '*.json.lock') ?: [] as $lockFile) {
+			if (is_link($lockFile) || !is_file($lockFile)) {
+				continue;
+			}
+			$jsonFile = substr($lockFile, 0, -5);
+			if (is_file($jsonFile)) {
+				continue;
+			}
+			clearstatcache(true, $lockFile);
+			$lockMtime = @filemtime($lockFile);
+			if ($lockMtime === false || ($now - $lockMtime) <= $maxAgeSeconds) {
+				continue;
+			}
+			$lockFp = @fopen($lockFile, 'r+');
+			if (!is_resource($lockFp)) {
+				continue;
+			}
+			try {
+				if (!@flock($lockFp, LOCK_EX | LOCK_NB)) {
+					continue;
+				}
+				clearstatcache(true, $jsonFile);
+				clearstatcache(true, $lockFile);
+				$fdStat = @fstat($lockFp);
+				$pathStat = !is_link($lockFile) ? @stat($lockFile) : false;
+				if (
+					!is_array($fdStat)
+					|| !is_array($pathStat)
+					|| !isset($fdStat['ino'], $pathStat['ino'], $fdStat['dev'], $pathStat['dev'])
+					|| $fdStat['ino'] !== $pathStat['ino']
+					|| $fdStat['dev'] !== $pathStat['dev']
+				) {
+					continue;
+				}
+				$freshMtime = @filemtime($lockFile);
+				if (!is_file($jsonFile) && $freshMtime !== false && ($now - $freshMtime) > $maxAgeSeconds && @unlink($lockFile)) {
+					$removed++;
+				}
+			} finally {
+				@flock($lockFp, LOCK_UN);
+				fclose($lockFp);
+			}
+		}
+
 		return $removed;
 	}
 
@@ -404,18 +448,42 @@ final class EditPresenceStore extends Wire
 		}
 
 		$lockPath = $path . '.lock';
-		if (is_link($lockPath)) {
-			return $this->emptySnapshot($cleanKey, $now, $ttlSeconds);
+		$lockFp = false;
+		for ($attempt = 0; $attempt < 5; $attempt++) {
+			if (is_link($lockPath)) {
+				return $this->emptySnapshot($cleanKey, $now, $ttlSeconds);
+			}
+			$candidateFp = @fopen($lockPath, 'c+');
+			if ($candidateFp === false) {
+				return $this->emptySnapshot($cleanKey, $now, $ttlSeconds);
+			}
+			if (!@flock($candidateFp, LOCK_EX)) {
+				fclose($candidateFp);
+
+				return $this->emptySnapshot($cleanKey, $now, $ttlSeconds);
+			}
+			clearstatcache(true, $lockPath);
+			$fdStat = @fstat($candidateFp);
+			$pathStat = !is_link($lockPath) ? @stat($lockPath) : false;
+			if (
+				is_array($fdStat)
+				&& is_array($pathStat)
+				&& isset($fdStat['ino'], $pathStat['ino'], $fdStat['dev'], $pathStat['dev'])
+				&& $fdStat['ino'] === $pathStat['ino']
+				&& $fdStat['dev'] === $pathStat['dev']
+			) {
+				$lockFp = $candidateFp;
+				break;
+			}
+			@flock($candidateFp, LOCK_UN);
+			fclose($candidateFp);
 		}
-		$lockFp = @fopen($lockPath, 'c+');
-		if ($lockFp === false) {
+		if (!is_resource($lockFp)) {
 			return $this->emptySnapshot($cleanKey, $now, $ttlSeconds);
 		}
 
 		try {
-			if (!@flock($lockFp, LOCK_EX)) {
-				return $this->emptySnapshot($cleanKey, $now, $ttlSeconds);
-			}
+			@touch($lockPath);
 
 			$raw = is_file($path) ? @file_get_contents($path) : '';
 			$decoded = is_string($raw) && trim($raw) !== '' ? json_decode($raw, true, 16) : null;
@@ -457,10 +525,16 @@ final class EditPresenceStore extends Wire
 			$state['updatedAt'] = $now;
 
 			$isEmptyState = $state['sessions'] === [] && $state['lastSaved'] === null;
+			if ($isEmptyState) {
+				if (is_file($path)) {
+					@unlink($path);
+				}
+
+				return $this->emptySnapshot($cleanKey, $now, $ttlSeconds);
+			}
+
 			try {
-				$encoded = $isEmptyState
-					? '{}'
-					: json_encode($state, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+				$encoded = json_encode($state, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
 			} catch (\Throwable) {
 				return $this->emptySnapshot($cleanKey, $now, $ttlSeconds);
 			}
@@ -482,16 +556,10 @@ final class EditPresenceStore extends Wire
 				return $this->emptySnapshot($cleanKey, $now, $ttlSeconds);
 			}
 
-			if ($isEmptyState) {
-				return $this->emptySnapshot($cleanKey, $now, $ttlSeconds);
-			}
-
 			return $this->buildSnapshotFromState($cleanKey, $state, $currentUserId, $now, $ttlSeconds);
 		} finally {
-			if (is_resource($lockFp)) {
-				@flock($lockFp, LOCK_UN);
-				fclose($lockFp);
-			}
+			@flock($lockFp, LOCK_UN);
+			fclose($lockFp);
 		}
 	}
 

@@ -27,9 +27,11 @@ use ProcessWire\RepeaterPage;
 use ProcessWire\Template;
 use ProcessWire\User;
 use ProcessWire\Wire;
+use ProcessWire\WireException;
 use ProcessWire\WirePageEditor;
 use ProcessWire\WireUpload;
 use Totoglu\React\Media\MediaGateway;
+use Totoglu\React\Media\PageLinkMediaHostAdapter;
 use Totoglu\React\Security\AccessGuard;
 use Totoglu\React\Security\SignedTokenCodec;
 
@@ -530,29 +532,39 @@ final class TiptapMediaLinkGateway extends Wire
 
 		if (MediaGateway::isPhysicalPageHost($hostPage)) {
 			/** @var Page $hostPage */
-			$pageId = (int) $hostPage->id;
+			$candidatePageId = (int) $hostPage->id;
 			$master = $this->resolveMasterPage($hostPage);
-			$editPageId = $master instanceof Page ? (int) $master->id : $pageId;
 
 			// If Repeater item has no image fields of its own, default image selection to master page
 			if ($hostPage instanceof RepeaterPage && !$this->pageHasImageFields($hostPage) && $master instanceof Page && (int) $master->id > 0) {
-				$pageId = (int) $master->id;
+				$candidatePageId = (int) $master->id;
 				$targetForUpload = $master;
 			} else {
 				$targetForUpload = $hostPage;
 			}
 
-			$displayPage = $this->wire()->pages->get($pageId);
-			if ($displayPage instanceof Page && !$displayPage instanceof NullPage && (int) $displayPage->id > 0) {
-				$pageTitle = (string) ($displayPage->get('title|name') ?: $displayPage->name);
+			$displayPage = $this->wire()->pages->get($candidatePageId);
+			if (
+				$displayPage instanceof Page
+				&& !$displayPage instanceof NullPage
+				&& (int) $displayPage->id > 0
+				&& $this->canReadPageAssets($displayPage, $user)
+			) {
+				$pageId = $candidatePageId;
+				$editPageId = $master instanceof Page ? (int) $master->id : $pageId;
+				$pageTitle = $this->resolveViewablePageTitle($displayPage, $user);
 				$pagePath = (string) $displayPage->path;
-			}
 
-			if (!$isReadOnly && !(bool) $config->demo) {
-				$uploadField = $this->resolveUploadImageField($targetForUpload, $imageFields);
-				if ($uploadField instanceof Field) {
-					$uploadFieldName = (string) $uploadField->name;
-					$canUploadImages = true;
+				if (!$isReadOnly && !(bool) $config->demo) {
+					$uploadField = $this->resolveUploadImageField($targetForUpload, $imageFields, '', $user);
+					if (
+						$uploadField instanceof Field
+						&& $targetForUpload->editable($uploadField->name, false)
+						&& AccessGuard::canEditFieldByLanguage($this->wire(), $targetForUpload, $uploadField, $user)
+					) {
+						$uploadFieldName = (string) $uploadField->name;
+						$canUploadImages = true;
+					}
 				}
 			}
 		}
@@ -690,8 +702,14 @@ final class TiptapMediaLinkGateway extends Wire
 	 *
 	 * @param list<string> $configuredFields
 	 */
-	private function resolveUploadImageField(Page $page, array $configuredFields, string $requestedField = ''): ?Field
+	private function resolveUploadImageField(Page $page, array $configuredFields, string $requestedField = '', ?User $user = null): ?Field
 	{
+		$resolvedUser = $user ?? $this->wire()->user;
+		$masterPage = $this->resolveMasterPage($page) ?? $page;
+		$permissions = $this->wire()->permissions;
+		if ($permissions->has('page-edit-images') && !$resolvedUser->isSuperuser() && !$resolvedUser->hasPermission('page-edit-images', $masterPage)) {
+			return null;
+		}
 		if (in_array('x', $configuredFields, true)) {
 			return null;
 		}
@@ -701,13 +719,19 @@ final class TiptapMediaLinkGateway extends Wire
 			return null;
 		}
 
-		$masterPage = $this->resolveMasterPage($page) ?? $page;
+		$skipFields = $this->getImageConfig()['skipFields'];
 
-		$canEditField = function (Field $field) use ($page, $masterPage): bool {
+		$canEditField = function (Field $field) use ($page, $masterPage, $skipFields, $resolvedUser): bool {
 			if (!$field->type instanceof FieldtypeImage) {
 				return false;
 			}
+			if (in_array((string) $field->name, $skipFields, true)) {
+				return false;
+			}
 			if ((bool) $field->get('noUpload')) {
+				return false;
+			}
+			if (!AccessGuard::canEditFieldByLanguage($this->wire(), $page, $field, $resolvedUser)) {
 				return false;
 			}
 			if ($page instanceof RepeaterPage) {
@@ -768,7 +792,7 @@ final class TiptapMediaLinkGateway extends Wire
 	 * @param list<string> $skipFields
 	 * @return list<array{name: string, label: string, maxFiles: int}>
 	 */
-	private function listEditableUploadFields(Page $page, array $configuredFields, array $skipFields = []): array
+	private function listEditableUploadFields(Page $page, array $configuredFields, array $skipFields = [], ?User $user = null): array
 	{
 		if (in_array('x', $configuredFields, true)) {
 			return [];
@@ -777,7 +801,12 @@ final class TiptapMediaLinkGateway extends Wire
 		if (!$template instanceof Template || $template->fieldgroup === null) {
 			return [];
 		}
+		$resolvedUser = $user ?? $this->wire()->user;
 		$masterPage = $this->resolveMasterPage($page) ?? $page;
+		$permissions = $this->wire()->permissions;
+		if ($permissions->has('page-edit-images') && !$resolvedUser->isSuperuser() && !$resolvedUser->hasPermission('page-edit-images', $masterPage)) {
+			return [];
+		}
 		$out = [];
 		foreach ($template->fieldgroup as $field) {
 			if (!$field instanceof Field || !$field->type instanceof FieldtypeImage) {
@@ -793,9 +822,10 @@ final class TiptapMediaLinkGateway extends Wire
 			if ($configuredFields !== [] && !in_array($fieldName, $configuredFields, true)) {
 				continue;
 			}
-			$editable = $page instanceof RepeaterPage
+			$editable = ($page instanceof RepeaterPage
 				? ($masterPage->editable() && $page->editable($fieldName))
-				: $page->editable($fieldName);
+				: $page->editable($fieldName))
+				&& AccessGuard::canEditFieldByLanguage($this->wire(), $page, $field, $resolvedUser);
 			if (!$editable) {
 				continue;
 			}
@@ -855,6 +885,25 @@ final class TiptapMediaLinkGateway extends Wire
 
 		$items = [];
 
+		$titleField = $this->wire()->fields->get('title');
+		$canSearchTitle = (bool) $user->isSuperuser() || !$titleField instanceof Field;
+		if (!$canSearchTitle) {
+			$canSearchTitle = !(bool) $titleField->useRoles || (bool) $titleField->viewable(null, $user);
+			if ($canSearchTitle) {
+				foreach ($this->wire()->templates as $tpl) {
+					if (!$tpl instanceof Template || $tpl->fieldgroup === null || !$tpl->fieldgroup->hasField($titleField)) {
+						continue;
+					}
+					$ctx = $tpl->fieldgroup->getFieldContext($titleField);
+					if ($ctx instanceof Field && (bool) $ctx->useRoles && !$ctx->viewable(null, $user)) {
+						$canSearchTitle = false;
+						break;
+					}
+				}
+			}
+		}
+		$sortClause = $canSearchTitle ? 'sort=title' : 'sort=name, sort=id';
+
 		if ($query !== '') {
 			$safeQ = $sanitizer->selectorValue($query);
 			$selectorParts = [
@@ -862,11 +911,6 @@ final class TiptapMediaLinkGateway extends Wire
 				"id!={$adminRootId}|{$trashPageId}|{$http404PageId}",
 				"status<" . Page::statusTrash,
 			];
-			$titleField = $this->wire()->fields->get('title');
-			$canSearchTitle = $user->isSuperuser()
-				|| !$titleField instanceof Field
-				|| !(bool) $titleField->useRoles
-				|| $titleField->viewable(null, $user);
 			$searchExpr = $canSearchTitle ? 'title|name%=' : 'name%=';
 			if (ctype_digit($query) && (int) $query > 0) {
 				$idVal = (int) $query;
@@ -877,7 +921,7 @@ final class TiptapMediaLinkGateway extends Wire
 			if ($user->isSuperuser() || $user->hasPermission('page-edit')) {
 				$selectorParts[] = 'include=hidden';
 			}
-			$selectorParts[] = 'sort=title';
+			$selectorParts[] = $sortClause;
 			$selectorParts[] = "limit={$limit}";
 
 			$found = $pages->find(implode(', ', $selectorParts));
@@ -916,7 +960,7 @@ final class TiptapMediaLinkGateway extends Wire
 			if ($user->isSuperuser() || $user->hasPermission('page-edit')) {
 				$childSelector .= ', include=unpublished';
 			}
-			$childSelector .= ", sort=title, limit={$limit}";
+			$childSelector .= ", {$sortClause}, limit={$limit}";
 
 			$children = $pages->find($childSelector);
 			foreach ($children as $child) {
@@ -1080,7 +1124,7 @@ final class TiptapMediaLinkGateway extends Wire
 
 		$configuredUploadFields = $this->normalizeFieldNames($envelope['imageFields'] ?? []);
 		$uploadFields = (empty($envelope['readOnly']) && !(bool) $this->wire()->config->demo)
-			? $this->listEditableUploadFields($page, $configuredUploadFields, $imgConfig['skipFields'])
+			? $this->listEditableUploadFields($page, $configuredUploadFields, $imgConfig['skipFields'], $user)
 			: [];
 
 		return [
@@ -1212,7 +1256,37 @@ final class TiptapMediaLinkGateway extends Wire
 				return $resolved;
 			}
 			$hostEnv = is_array($resolved['envelope'] ?? null) ? $resolved['envelope'] : [];
-			if (!empty($hostEnv['readOnly']) || !empty($envelope['readOnly']) || (bool) $this->wire()->config->demo) {
+			$useImageEditorDenied = !empty($hostEnv)
+				&& array_key_exists('useImageEditor', $hostEnv)
+				&& empty($hostEnv['useImageEditor']);
+			if (!empty($hostEnv['readOnly']) || !empty($envelope['readOnly']) || (bool) $this->wire()->config->demo || $useImageEditorDenied) {
+				return [
+					'ok' => false,
+					'status' => 403,
+					'error' => $this->_('You do not have permission to resize images here.'),
+				];
+			}
+			$permissions = $this->wire()->permissions;
+			if (in_array($resolved['kind'] ?? '', ['page', PageLinkMediaHostAdapter::KIND], true) && $permissions->has('page-edit-images') && !$user->isSuperuser()) {
+				$resolvedRoot = $resolved['rootPage'] ?? null;
+				$hasEditImages = $resolvedRoot instanceof Page
+					? $user->hasPermission('page-edit-images', $resolvedRoot)
+					: $user->hasPermission('page-edit-images');
+				if (!$hasEditImages) {
+					return [
+						'ok' => false,
+						'status' => 403,
+						'error' => $this->_('You do not have permission to resize images here.'),
+					];
+				}
+			}
+			$resolvedPage = $resolved['page'] ?? ($resolved['rootPage'] ?? null);
+			$resolvedField = $resolved['field'] ?? null;
+			if (
+				$resolvedPage instanceof Page
+				&& $resolvedField instanceof Field
+				&& !AccessGuard::canEditFieldByLanguage($this->wire(), $resolvedPage, $resolvedField, $user)
+			) {
 				return [
 					'ok' => false,
 					'status' => 403,
@@ -1261,6 +1335,7 @@ final class TiptapMediaLinkGateway extends Wire
 				$imgField = $image->field;
 				$hasFieldEdit = $imgOwner instanceof Page
 					&& $imgField instanceof Field
+					&& AccessGuard::canEditFieldByLanguage($this->wire(), $imgOwner, $imgField, $user)
 					&& (
 						!$imgOwner instanceof RepeaterPage
 							? $imgOwner->editable($imgField->name)
@@ -1542,7 +1617,7 @@ final class TiptapMediaLinkGateway extends Wire
 			$configuredFields = $this->normalizeFieldNames($envelope['imageFields'] ?? []);
 			$requestedField = trim((string) ($payload['fieldName'] ?? $envelope['uploadFieldName'] ?? ''));
 
-			$imageField = $this->resolveUploadImageField($page, $configuredFields, $requestedField);
+			$imageField = $this->resolveUploadImageField($page, $configuredFields, $requestedField, $user);
 			if (!$imageField instanceof Field) {
 				return [
 					'ok' => false,
@@ -1614,12 +1689,16 @@ final class TiptapMediaLinkGateway extends Wire
 				];
 			}
 
-			if ($maxFiles > 0 && !$overwrite && $existingCollection->count() >= $maxFiles) {
-				return [
-					'ok' => false,
-					'status' => 422,
-					'error' => $this->_('The image field on this page has reached its maximum file limit.'),
-				];
+			if ($maxFiles > 0 && $existingCollection->count() >= $maxFiles) {
+				$hasMatchingOverwrite = $overwrite
+					&& ($maxFiles === 1 || $this->incomingMatchesExistingImage($filesBag[$uploadKey], $existingCollection));
+				if (!$hasMatchingOverwrite) {
+					return [
+						'ok' => false,
+						'status' => 422,
+						'error' => $this->_('The image field on this page has reached its maximum file limit.'),
+					];
+				}
 			}
 
 			$tempDir = $this->wire()->files->tempDir('rw-tiptap-upload-' . (int) $user->id . '-' . bin2hex(random_bytes(4)));
@@ -1714,9 +1793,18 @@ final class TiptapMediaLinkGateway extends Wire
 				$basePrefix = rtrim($realTempDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
 
 				$fileValidator = React::instance($this)->media()->fileValidator();
+				$mediaGateway = React::instance($this)->media();
 				$allowSvg = in_array('svg', $allowedExts, true);
+				$fieldEnvelope = [
+					'minWidth' => (int) ($imageField->get('minWidth') ?? 0),
+					'minHeight' => (int) ($imageField->get('minHeight') ?? 0),
+					'maxWidth' => (int) ($imageField->get('maxWidth') ?? 0),
+					'maxHeight' => (int) ($imageField->get('maxHeight') ?? 0),
+					'maxReject' => (bool) ($imageField->get('maxReject') ?? false),
+					'dimensionsByAspectRatio' => (bool) ($imageField->get('dimensionsByAspectRatio') ?? false),
+				];
 				$addedImages = [];
-				$backedUpExisting = [];
+				$backedUpByBasename = [];
 				$backupDir = rtrim($tempPath, '/\\') . '/_backup';
 				foreach ($uploadedNames as $rawUploadedName) {
 					$safeBase = basename((string) $rawUploadedName);
@@ -1732,7 +1820,7 @@ final class TiptapMediaLinkGateway extends Wire
 					$ext = strtolower((string) pathinfo($realCandidate, PATHINFO_EXTENSION));
 					$validatorErr = $fileValidator->validate($realCandidate, $ext, true, $allowSvg);
 					if ($validatorErr !== null) {
-						self::rollbackAddedImages($existingCollection, $addedImages, $backedUpExisting);
+						self::rollbackAddedImages($existingCollection, $addedImages, array_values($backedUpByBasename), $page, (string) $imageField->name);
 
 						return [
 							'ok' => false,
@@ -1743,7 +1831,7 @@ final class TiptapMediaLinkGateway extends Wire
 
 					$isValid = $sanitizer->validateFile($realCandidate, ['pagefile' => null]);
 					if ($isValid === false) {
-						self::rollbackAddedImages($existingCollection, $addedImages, $backedUpExisting);
+						self::rollbackAddedImages($existingCollection, $addedImages, array_values($backedUpByBasename), $page, (string) $imageField->name);
 
 						return [
 							'ok' => false,
@@ -1752,7 +1840,24 @@ final class TiptapMediaLinkGateway extends Wire
 						];
 					}
 
-					if ($maxFiles === 1 && $overwrite && $existingCollection->count() > 0 && $backedUpExisting === []) {
+					$incomingBase = basename($realCandidate);
+					$lowerIncoming = strtolower($incomingBase);
+					$existingSame = $existingCollection->get($incomingBase);
+					if (
+						$maxFiles > 1
+						&& !($overwrite && $existingSame instanceof Pageimage)
+						&& $existingCollection->count() >= $maxFiles
+					) {
+						self::rollbackAddedImages($existingCollection, $addedImages, array_values($backedUpByBasename), $page, (string) $imageField->name);
+
+						return [
+							'ok' => false,
+							'status' => 422,
+							'error' => $this->_('The image field on this page has reached its maximum file limit.'),
+						];
+					}
+
+					if ($maxFiles === 1 && $overwrite && $existingCollection->count() > 0 && $backedUpByBasename === []) {
 						if (!is_dir($backupDir)) {
 							@mkdir($backupDir, 0775, true);
 						}
@@ -1760,11 +1865,11 @@ final class TiptapMediaLinkGateway extends Wire
 							if (!$existingItem instanceof Pageimage) {
 								continue;
 							}
-							$origPath = (string) $existingItem->filename();
-							if ($origPath !== '' && is_file($origPath)) {
-								$bakPath = $backupDir . '/' . basename($origPath);
-								if (!@copy($origPath, $bakPath)) {
-									self::rollbackAddedImages($existingCollection, $addedImages, $backedUpExisting);
+							$lowerExisting = strtolower((string) $existingItem->basename);
+							if (!isset($backedUpByBasename[$lowerExisting])) {
+								$snap = $this->snapshotExistingImageForRollback($existingItem, $backupDir);
+								if ($snap === null && (string) $existingItem->filename() !== '' && is_file((string) $existingItem->filename())) {
+									self::rollbackAddedImages($existingCollection, $addedImages, array_values($backedUpByBasename), $page, (string) $imageField->name);
 
 									return [
 										'ok' => false,
@@ -1772,78 +1877,67 @@ final class TiptapMediaLinkGateway extends Wire
 										'error' => $this->_('Uploaded image could not be saved to the page field.'),
 									];
 								}
-								$bakFocus = '50 50 0';
-								try {
-									$focusInfo = $existingItem->focus();
-									if (is_array($focusInfo) && isset($focusInfo['str']) && is_string($focusInfo['str'])) {
-										$bakFocus = $focusInfo['str'];
-									}
-								} catch (\Throwable) {
-									$bakFocus = '50 50 0';
+								if ($snap !== null) {
+									$backedUpByBasename[$lowerExisting] = $snap;
 								}
-								$bakLangDescs = [];
-								$langs = $this->wire()->languages;
-								if (is_iterable($langs)) {
-									foreach ($langs as $langObj) {
-										if ($langObj instanceof Language) {
-											$rawLangDesc = $existingItem->description($langObj);
-											$bakLangDescs[] = [$langObj, is_string($rawLangDesc) ? $rawLangDesc : ''];
-										}
-									}
-								}
-								$bakFiledata = is_array($existingItem->filedata) ? $existingItem->filedata : [];
-								$backedUpExisting[] = [
-									'path' => $bakPath,
-									'description' => (string) ($existingItem->description ?? ''),
-									'langDescriptions' => $bakLangDescs,
-									'tags' => (string) ($existingItem->tags ?? ''),
-									'focus' => $bakFocus,
-									'filedata' => $bakFiledata,
-								];
 							}
 							$existingItem->removeVariations();
 						}
 						$existingCollection->removeAll();
+						$page->trackChange($imageField->name);
+						$existingCollection->hookPageSave();
+					} elseif ($overwrite && $existingSame instanceof Pageimage && !isset($backedUpByBasename[$lowerIncoming])) {
+						if (!is_dir($backupDir)) {
+							@mkdir($backupDir, 0775, true);
+						}
+						$snap = $this->snapshotExistingImageForRollback($existingSame, $backupDir);
+						if ($snap === null && (string) $existingSame->filename() !== '' && is_file((string) $existingSame->filename())) {
+							self::rollbackAddedImages($existingCollection, $addedImages, array_values($backedUpByBasename), $page, (string) $imageField->name);
+
+							return [
+								'ok' => false,
+								'status' => 500,
+								'error' => $this->_('Uploaded image could not be saved to the page field.'),
+							];
+						}
+						if ($snap !== null) {
+							$backedUpByBasename[$lowerIncoming] = $snap;
+						}
+						$existingSame->removeVariations();
+						$existingCollection->remove($existingSame);
+						$page->trackChange($imageField->name);
 						$existingCollection->hookPageSave();
 					}
 
 					try {
 						$existingCollection->add($realCandidate);
-						$added = $existingCollection->last();
+						$added = $existingCollection->get($incomingBase);
+						if (!$added instanceof Pageimage) {
+							$added = $existingCollection->last();
+						}
 						if ($added instanceof Pageimage) {
 							$addedImages[] = $added;
-							// Apply field maxWidth / maxHeight proportional non-cropping resize if configured on FieldtypeImage
-							$fieldMaxW = (int) ($imageField->get('maxWidth') ?? 0);
-							$fieldMaxH = (int) ($imageField->get('maxHeight') ?? 0);
-							$addedW = self::readImgWidth($added);
-							$addedH = self::readImgHeight($added);
-							if (($fieldMaxW > 0 && $addedW > $fieldMaxW) || ($fieldMaxH > 0 && $addedH > $fieldMaxH)) {
-								$capW = $fieldMaxW > 0 ? $fieldMaxW : 0;
-								$capH = $fieldMaxH > 0 ? $fieldMaxH : 0;
-								$sizer = $this->wire(new ImageSizer($added->filename()));
-								$sizer->setUpscaling(false);
-								$sizer->setCropping(false);
-								$sizer->resize($capW, $capH);
-								$added->removeVariations();
-								clearstatcache(true, $added->filename());
-								$dims = @getimagesize($added->filename());
-								if (is_array($dims) && (int) $dims[0] > 0 && (int) $dims[1] > 0) {
-									$added->setImageInfo([
-										'width' => (int) $dims[0],
-										'height' => (int) $dims[1],
-									]);
-								}
-								$added->setQuietly('filesize', (int) @filesize($added->filename()));
-							}
+							$mediaGateway->validateAndConstrainUploadedImage(
+								$added,
+								$fieldEnvelope,
+								$fieldInputfield instanceof InputfieldFile ? $fieldInputfield : null,
+							);
+							$added->removeVariations();
 						}
 					} catch (\Throwable $e) {
-						self::rollbackAddedImages($existingCollection, $addedImages, $backedUpExisting);
+						self::rollbackAddedImages($existingCollection, $addedImages, array_values($backedUpByBasename), $page, (string) $imageField->name);
 						$this->wire()->log->error('React Tiptap upload attach failed: ' . $e->getMessage());
+						$isClientValidation = $e instanceof WireException
+							&& !$e instanceof \ProcessWire\WireDatabaseException
+							&& !$e instanceof \ProcessWire\WireDatabaseQueryException
+							&& !$e instanceof \ProcessWire\WireFilesException;
 
 						return [
 							'ok' => false,
 							'status' => 422,
-							'error' => $this->_('Uploaded image could not be saved to the page field.'),
+							'error' => $isClientValidation
+								? $e->getMessage()
+								: $this->_('Uploaded image could not be saved to the page field.'),
 						];
 					}
 					if ($maxFiles === 1) {
@@ -1857,7 +1951,7 @@ final class TiptapMediaLinkGateway extends Wire
 					try {
 						$page->save($imageField->name);
 					} catch (\Throwable $e) {
-						self::rollbackAddedImages($existingCollection, $addedImages, $backedUpExisting);
+						self::rollbackAddedImages($existingCollection, $addedImages, array_values($backedUpByBasename), $page, (string) $imageField->name);
 						$this->wire()->log->error('React Tiptap upload save failed: ' . $e->getMessage());
 
 						return [
@@ -2028,8 +2122,9 @@ final class TiptapMediaLinkGateway extends Wire
 			return null;
 		}
 
+		$skipFields = $this->getImageConfig()['skipFields'];
 		foreach ($template->fieldgroup as $field) {
-			if (!$field instanceof Field) {
+			if (!$field instanceof Field || in_array((string) $field->name, $skipFields, true)) {
 				continue;
 			}
 			$ft = $field->type;
@@ -2360,13 +2455,29 @@ final class TiptapMediaLinkGateway extends Wire
 		if ($page instanceof NullPage || (int) $page->id <= 0 || $page->isTrash()) {
 			return false;
 		}
-		$adminRootId = (int) ($this->wire()->config->adminRootPageID ?: 2);
+		$config = $this->wire()->config;
+		$adminRootId = (int) ($config->adminRootPageID ?: 2);
+		$protectedIds = array_values(array_filter([
+			$adminRootId,
+			(int) $config->http404PageID,
+			(int) $config->usersPageID,
+			(int) $config->rolesPageID,
+			(int) $config->permissionsPageID,
+		], static fn(int $id): bool => $id > 0));
+
 		$checkPage = $page instanceof RepeaterPage ? $this->resolveMasterPage($page) : $page;
-		if (!$checkPage instanceof Page || $checkPage->isTrash() || (int) $checkPage->id === $adminRootId) {
+		if (!$checkPage instanceof Page || $checkPage->isTrash()) {
+			return false;
+		}
+		$checkId = (int) $checkPage->id;
+		if (in_array($checkId, $protectedIds, true)) {
+			return false;
+		}
+		if ($checkId !== 1 && $checkPage->hasStatus(Page::statusSystem)) {
 			return false;
 		}
 		foreach ($checkPage->parents() as $ancestor) {
-			if ($ancestor instanceof Page && (int) $ancestor->id === $adminRootId) {
+			if ($ancestor instanceof Page && in_array((int) $ancestor->id, $protectedIds, true)) {
 				return false;
 			}
 		}
@@ -2462,6 +2573,87 @@ final class TiptapMediaLinkGateway extends Wire
 	}
 
 	/**
+	 * Determine whether incoming uploaded file entry matches an existing `Pageimage` basename in `$collection`.
+	 *
+	 * @param array<string, mixed> $fileEntry
+	 */
+	private function incomingMatchesExistingImage(array $fileEntry, Pageimages $collection): bool
+	{
+		$sanitizer = $this->wire()->sanitizer;
+		$rawNames = [];
+		$entryNames = $fileEntry['name'] ?? null;
+		if (is_array($entryNames)) {
+			foreach ($entryNames as $n) {
+				if (is_string($n) && $n !== '') {
+					$rawNames[] = $n;
+				}
+			}
+		} elseif (is_string($entryNames) && $entryNames !== '') {
+			$rawNames[] = $entryNames;
+		}
+		foreach ($rawNames as $rawName) {
+			$candidate = strtolower(basename($rawName));
+			$ext = strtolower((string) pathinfo($candidate, PATHINFO_EXTENSION));
+			$stem = (string) pathinfo($candidate, PATHINFO_FILENAME);
+			$sanitized = strtolower((string) $sanitizer->pageName($stem, \ProcessWire\Sanitizer::translate));
+			if ($sanitized !== '' && $ext !== '' && $collection->get($sanitized . '.' . $ext) instanceof Pageimage) {
+				return true;
+			}
+			if ($collection->get($candidate) instanceof Pageimage) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Snapshot an existing `Pageimage` file and metadata before an overwrite upload.
+	 *
+	 * @return array{path: string, description: string, langDescriptions: list<array{0: Language, 1: string}>, tags: string, focus: string, filedata: array<string|int, mixed>}|null
+	 */
+	private function snapshotExistingImageForRollback(Pageimage $existingItem, string $backupDir): ?array
+	{
+		$origPath = (string) $existingItem->filename();
+		if ($origPath === '' || !is_file($origPath)) {
+			return null;
+		}
+		$bakPath = $backupDir . '/' . basename($origPath);
+		if (!@copy($origPath, $bakPath)) {
+			return null;
+		}
+		$bakFocus = '50 50 0';
+		try {
+			$focusInfo = $existingItem->focus();
+			if (is_array($focusInfo) && isset($focusInfo['str']) && is_string($focusInfo['str'])) {
+				$bakFocus = $focusInfo['str'];
+			}
+		} catch (\Throwable) {
+			$bakFocus = '50 50 0';
+		}
+		$bakLangDescs = [];
+		$langs = $this->wire()->languages;
+		if (is_iterable($langs)) {
+			foreach ($langs as $langObj) {
+				if ($langObj instanceof Language) {
+					$rawLangDesc = $existingItem->description($langObj);
+					$bakLangDescs[] = [$langObj, is_string($rawLangDesc) ? $rawLangDesc : ''];
+				}
+			}
+		}
+		$bakFiledata = is_array($existingItem->filedata) ? $existingItem->filedata : [];
+
+		return [
+			'path' => $bakPath,
+			'description' => (string) ($existingItem->description ?? ''),
+			'langDescriptions' => $bakLangDescs,
+			'tags' => (string) ($existingItem->tags ?? ''),
+			'focus' => $bakFocus,
+			'filedata' => $bakFiledata,
+		];
+	}
+
+	/**
 	 * Remove any already-copied `Pageimage` files and generated variations from disk and restore backed-up prior files.
 	 *
 	 * @param list<Pageimage> $addedImages
@@ -2471,6 +2663,8 @@ final class TiptapMediaLinkGateway extends Wire
 		Pagefiles $collection,
 		array $addedImages,
 		array $backedUpExisting = [],
+		?Page $page = null,
+		string $fieldName = '',
 	): void {
 		foreach ($addedImages as $rollbackImg) {
 			$rollbackImg->removeVariations();
@@ -2481,13 +2675,19 @@ final class TiptapMediaLinkGateway extends Wire
 			}
 		}
 		if ($backedUpExisting !== []) {
+			$trackPage = $page instanceof Page ? $page : $collection->get('page');
+			$colField = $collection->get('field');
+			$trackField = $fieldName !== '' ? $fieldName : ($colField instanceof Field ? (string) $colField->name : '');
+			if ($trackPage instanceof Page && $trackField !== '') {
+				$trackPage->trackChange($trackField);
+			}
 			$collection->hookPageSave();
 			foreach ($backedUpExisting as $bak) {
 				if (!is_file($bak['path'])) {
 					continue;
 				}
 				$collection->add($bak['path']);
-				$restored = $collection->last();
+				$restored = $collection->get(basename($bak['path'])) ?: $collection->last();
 				if ($restored instanceof Pageimage) {
 					if (!empty($bak['filedata'])) {
 						$restored->set('filedata', $bak['filedata']);
@@ -2508,6 +2708,9 @@ final class TiptapMediaLinkGateway extends Wire
 						$restored->focus($bak['focus']);
 					}
 				}
+			}
+			if ($trackPage instanceof Page && $trackField !== '') {
+				$trackPage->trackChange($trackField);
 			}
 			$collection->hookPageSave();
 		}

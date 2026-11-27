@@ -17,6 +17,7 @@ use ProcessWire\Pageimage;
 use ProcessWire\Pageimages;
 use ProcessWire\User;
 use ProcessWire\Wire;
+use Totoglu\React\Security\AccessGuard;
 
 /**
  * `MediaHostAdapterInterface` implementation for `InputfieldReactLink`
@@ -209,7 +210,9 @@ final class PageLinkMediaHostAdapter extends Wire implements MediaHostAdapterInt
 			|| is_link($dir . $activeBasename)
 			|| !is_file($dir . $activeBasename)
 		) {
-			$filesTool->rmdir($dir, true);
+			if (!is_link(rtrim($dir, '/\\'))) {
+				$filesTool->rmdir($dir, true);
+			}
 			return;
 		}
 
@@ -276,6 +279,9 @@ final class PageLinkMediaHostAdapter extends Wire implements MediaHostAdapterInt
 			|| $ownerPage->id <= 0
 			|| $ownerPage->isTrash()
 			|| !$field instanceof Field
+			|| !$ownerPage->template instanceof \ProcessWire\Template
+			|| $ownerPage->template->fieldgroup === null
+			|| !$ownerPage->template->fieldgroup->hasField($field)
 			|| !InputfieldReactLink::isLinkField($field)
 		) {
 			return [
@@ -325,7 +331,11 @@ final class PageLinkMediaHostAdapter extends Wire implements MediaHostAdapterInt
 
 		if (!$user->isSuperuser()) {
 			$canAccess = $requireEdit
-				? ($ownerPage->editable($fieldName) && $rootPage->editable())
+				? (
+					$ownerPage->editable($fieldName)
+					&& $rootPage->editable()
+					&& AccessGuard::canEditFieldByLanguage($this->wire(), $ownerPage, $field, $user)
+				)
 				: (($ownerPage->viewable($fieldName) || $ownerPage->editable($fieldName))
 					&& ($rootPage === $ownerPage || $rootPage->viewable() || $rootPage->editable()));
 			if (!$canAccess) {

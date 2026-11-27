@@ -70,6 +70,10 @@ final class UploadedFileValidator extends Wire
 		'link' => true,
 		'handler' => true,
 		'style' => true,
+		'animate' => true,
+		'set' => true,
+		'animatetransform' => true,
+		'animatemotion' => true,
 	];
 
 	/**
@@ -203,6 +207,11 @@ final class UploadedFileValidator extends Wire
 		}
 
 		if ($node instanceof \DOMElement) {
+			$ns = (string) $node->namespaceURI;
+			if ($ns !== '' && $ns !== 'http://www.w3.org/2000/svg') {
+				return false;
+			}
+
 			$localName = strtolower((string) $node->localName);
 			if (isset(self::BLOCKED_SVG_ELEMENTS[$localName])) {
 				return false;
@@ -211,6 +220,17 @@ final class UploadedFileValidator extends Wire
 			foreach ($node->attributes as $attr) {
 				if (!$attr instanceof \DOMAttr) {
 					continue;
+				}
+				$attrNs = (string) $attr->namespaceURI;
+				if (
+					$attrNs !== ''
+					&& !in_array($attrNs, [
+						'http://www.w3.org/1999/xlink',
+						'http://www.w3.org/XML/1998/namespace',
+						'http://www.w3.org/2000/xmlns/',
+					], true)
+				) {
+					return false;
 				}
 				if (!$this->isSafeSvgAttribute($attr)) {
 					return false;
@@ -235,7 +255,7 @@ final class UploadedFileValidator extends Wire
 		$fullName = strtolower((string) $attr->nodeName);
 		$value = (string) $attr->nodeValue;
 
-		if (str_starts_with($localName, 'on')) {
+		if (str_starts_with($localName, 'on') || in_array($localName, ['src', 'srcdoc', 'action', 'formaction'], true)) {
 			return false;
 		}
 
@@ -247,9 +267,14 @@ final class UploadedFileValidator extends Wire
 				|| $normalizedCompact === 'href'
 				|| $normalizedCompact === 'xlink:href'
 				|| str_ends_with($normalizedCompact, ':href')
+				|| in_array($normalizedCompact, ['style', 'src', 'action', 'formaction'], true)
 			) {
 				return false;
 			}
+		}
+
+		if (preg_match('/url\s*\((?!\s*[\'"]?\s*#)/i', $normalizedCompact) === 1) {
+			return false;
 		}
 
 		if ($localName === 'href' || $fullName === 'xlink:href' || str_ends_with($fullName, ':href')) {
@@ -259,9 +284,10 @@ final class UploadedFileValidator extends Wire
 		}
 
 		if ($localName === 'style') {
+			$normalizedStyle = $this->normalizeSvgStyleValue($value);
 			if (
-				preg_match('/expression\s*\(|(?:javascript|vbscript)\s*:|data\s*:\s*(?:text\/html|application\/xhtml|image\/svg\+xml)/i', $normalizedCompact) === 1
-				|| preg_match('/url\s*\((?!\s*[\'"]?\s*#)/i', $normalizedCompact) === 1
+				preg_match('/expression\s*\(|(?:javascript|vbscript)\s*:|data\s*:\s*(?:text\/html|application\/xhtml|image\/svg\+xml)|-moz-binding\s*:|behavior\s*:/i', $normalizedStyle) === 1
+				|| preg_match('/url\s*\((?!\s*[\'"]?\s*#)/i', $normalizedStyle) === 1
 			) {
 				return false;
 			}
@@ -274,5 +300,39 @@ final class UploadedFileValidator extends Wire
 		}
 
 		return true;
+	}
+
+	/**
+	 * Decode CSS hex escapes, strip backslash escapes, and iteratively remove CSS comments
+	 * before checking inline SVG `style` attributes for executable CSS vectors.
+	 */
+	private function normalizeSvgStyleValue(string $style): string
+	{
+		$clean = str_replace("\0", '', $style);
+		if ($clean === '') {
+			return '';
+		}
+
+		$clean = (string) preg_replace_callback(
+			'/\\\\([0-9a-fA-F]{1,6})\s?/',
+			static function (array $m): string {
+				$code = (int) hexdec($m[1]);
+				if ($code <= 0 || $code > 0x10FFFF || ($code >= 0xD800 && $code <= 0xDFFF)) {
+					return '';
+				}
+
+				return mb_chr($code, 'UTF-8') ?: '';
+			},
+			$clean,
+		);
+		$clean = (string) preg_replace('/\\\\([^0-9a-fA-F\r\n])/', '$1', $clean);
+
+		do {
+			$prevComments = $clean;
+			$clean = (string) preg_replace('~/\*.*?\*/~s', '', $clean);
+			$clean = (string) preg_replace('~/\*.*$~s', '', $clean);
+		} while ($clean !== $prevComments);
+
+		return strtolower((string) preg_replace('/[\x00-\x20\x7F]+/', '', $clean));
 	}
 }

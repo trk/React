@@ -72,15 +72,11 @@ final class PageResourceAdapter extends AbstractRelationResource
 		$start = ($page - 1) * $limit;
 
 		$clauses = $this->buildBaseSelectorClauses($config, $params);
+		$scopedTemplates = $this->resolveTemplateNames($config);
+		$canSearchTitle = $this->isFieldSearchableForUser('title', $scopedTemplates);
 		$q = trim((string) ($params['q'] ?? ''));
 		if ($q !== '') {
 			$safeQ = $this->sanitizeSelectorValue($q);
-			$user = $this->wire()->user;
-			$titleField = $this->wire()->fields->get('title');
-			$canSearchTitle = (bool) $user->isSuperuser()
-				|| !$titleField instanceof Field
-				|| !(bool) $titleField->useRoles
-				|| $titleField->viewable(null, $user);
 			if (ctype_digit($q) && (int) $q > 0) {
 				$clauses[] = ($canSearchTitle ? 'id|title|name%=' : 'id|name%=') . $safeQ;
 			} else {
@@ -108,7 +104,28 @@ final class PageResourceAdapter extends AbstractRelationResource
 			}
 		}
 		if (!$hasCustomSort) {
-			$clauses[] = 'sort=title, sort=name, sort=id';
+			$clauses[] = $canSearchTitle ? 'sort=title, sort=name, sort=id' : 'sort=name, sort=id';
+		}
+
+		$user = $this->wire()->user;
+		if (!$user->isSuperuser() && $this->hasIncludeClause($clauses)) {
+			$readableTotal = 0;
+			$items = [];
+			foreach ($pages->findMany(implode(', ', $clauses)) as $p) {
+				if (!$p instanceof Page || $p instanceof NullPage || !$this->canReadPage($p)) {
+					continue;
+				}
+				if ($readableTotal >= $start && count($items) < $limit) {
+					$items[] = $this->toRelationItem($p, $config);
+				}
+				$readableTotal++;
+			}
+
+			return [
+				'items' => $items,
+				'total' => $readableTotal,
+				'hasMore' => ($start + count($items)) < $readableTotal,
+			];
 		}
 
 		$clauses[] = "start={$start}";
@@ -178,7 +195,8 @@ final class PageResourceAdapter extends AbstractRelationResource
 		}
 
 		// When parentId === 0 and no root override was set, include Home (1) or its children cleanly
-		$allowUnpub = !empty($config['allowUnpub']);
+		$user = $this->wire()->user;
+		$allowUnpub = !empty($config['allowUnpub']) && ($user->isSuperuser() || $user->hasPermission('page-edit'));
 
 		$childClauses = [];
 		if ($resolvedParentId === 1 && !$targetsAdmin) {
@@ -392,6 +410,17 @@ final class PageResourceAdapter extends AbstractRelationResource
 	public function count(array $config = []): int
 	{
 		$clauses = $this->buildBaseSelectorClauses($config);
+		$user = $this->wire()->user;
+		if (!$user->isSuperuser() && $this->hasIncludeClause($clauses)) {
+			$readable = 0;
+			foreach ($this->wire()->pages->findMany(implode(', ', $clauses)) as $p) {
+				if ($p instanceof Page && !$p instanceof NullPage && $this->canReadPage($p)) {
+					$readable++;
+				}
+			}
+
+			return $readable;
+		}
 
 		return (int) $this->wire()->pages->count(implode(', ', $clauses));
 	}
@@ -612,7 +641,7 @@ final class PageResourceAdapter extends AbstractRelationResource
 
 		$targetPage = $pages->get($targetId);
 		if (!$targetPage instanceof Page || $targetPage instanceof NullPage || (int) $targetPage->id <= 0) {
-			throw new WireException('Target page does not exist.');
+			throw new WireException($this->_('Target page does not exist.'));
 		}
 		$this->assertTargetMatchesScope($targetPage, $user, $cleanField, $config);
 
@@ -643,18 +672,18 @@ final class PageResourceAdapter extends AbstractRelationResource
 	private function assertValidOwnerPage(mixed $ownerPage, User $user): void
 	{
 		if (!$ownerPage instanceof Page || $ownerPage instanceof NullPage || (int) $ownerPage->id <= 0) {
-			throw new WireException('Owner page does not exist.');
+			throw new WireException($this->_('Owner page does not exist.'));
 		}
 		if ($ownerPage->isTrash()) {
-			throw new WireException('Cannot mutate relations on a trashed owner page.');
+			throw new WireException($this->_('Cannot mutate relations on a trashed owner page.'));
 		}
 		$adminRootId = (int) ($this->wire()->config->adminRootPageID ?: 2);
 		$trashPageId = (int) ($this->wire()->config->trashPageID ?: 7);
 		if ((int) $ownerPage->id === $adminRootId || (int) $ownerPage->id === $trashPageId || (int) $ownerPage->rootParent?->id === $adminRootId) {
-			throw new WireException('Cannot mutate relations on system or admin owner pages.');
+			throw new WireException($this->_('Cannot mutate relations on system or admin owner pages.'));
 		}
 		if (!$user->isSuperuser() && !$ownerPage->editable()) {
-			throw new WireException('You do not have permission to edit the owner page.');
+			throw new WireException($this->_('You do not have permission to edit the owner page.'));
 		}
 	}
 
@@ -666,7 +695,7 @@ final class PageResourceAdapter extends AbstractRelationResource
 	private function assertTargetMatchesScope(Page $targetPage, User $user, string $cleanField, array $config): void
 	{
 		if ($targetPage->isTrash()) {
-			throw new WireException('Cannot link or unlink trashed target pages.');
+			throw new WireException($this->_('Cannot link or unlink trashed target pages.'));
 		}
 		$adminRootId = (int) ($this->wire()->config->adminRootPageID ?: 2);
 		$trashPageId = (int) ($this->wire()->config->trashPageID ?: 7);
@@ -686,20 +715,20 @@ final class PageResourceAdapter extends AbstractRelationResource
 				|| ((int) $targetPage->status & (Page::statusSystem | Page::statusSystemID)) !== 0
 			)
 		) {
-			throw new WireException('Target page is outside the permitted scope.');
+			throw new WireException($this->_('Target page is outside the permitted scope.'));
 		}
 		$targetTpl = $targetPage->template instanceof Template ? $targetPage->template : null;
 		if ($targetTpl === null || $targetTpl->fieldgroup === null || !$targetTpl->fieldgroup->hasField($cleanField)) {
-			throw new WireException('Target page does not contain the configured foreign field.');
+			throw new WireException($this->_('Target page does not contain the configured foreign field.'));
 		}
 		if (!$user->isSuperuser() && !$targetPage->editable($cleanField)) {
-			throw new WireException('You do not have permission to edit the target page relation field.');
+			throw new WireException($this->_('You do not have permission to edit the target page relation field.'));
 		}
 		if ($allowedTemplates !== [] && !in_array((string) $targetTpl->name, $allowedTemplates, true)) {
-			throw new WireException('Target page template is not permitted for this relation field.');
+			throw new WireException($this->_('Target page template is not permitted for this relation field.'));
 		}
 		if ($parentId > 0 && (int) $targetPage->parent_id !== $parentId && !$targetPage->parents()->has("id={$parentId}")) {
-			throw new WireException('Target page is outside the configured parent hierarchy.');
+			throw new WireException($this->_('Target page is outside the configured parent hierarchy.'));
 		}
 		if ($signedSelector !== '') {
 			$selectors = new Selectors($signedSelector);
@@ -713,7 +742,7 @@ final class PageResourceAdapter extends AbstractRelationResource
 				$filteredParts[] = (string) $sel;
 			}
 			if ($filteredParts !== [] && !$targetPage->matches(implode(', ', $filteredParts))) {
-				throw new WireException('Target page does not match the configured selector constraints.');
+				throw new WireException($this->_('Target page does not match the configured selector constraints.'));
 			}
 		}
 	}
@@ -781,13 +810,76 @@ final class PageResourceAdapter extends AbstractRelationResource
 			$clauses[] = "id!={$adminRootId}|{$trashPageId}";
 		}
 
+		$user = $this->wire()->user;
 		if (!str_contains($signedSelector, 'include=')) {
-			if (!empty($config['allowUnpub'])) {
+			if (!empty($config['allowUnpub']) && ($user->isSuperuser() || $user->hasPermission('page-edit'))) {
 				$clauses[] = 'include=unpublished';
 			}
 		}
 
 		return $clauses;
+	}
+
+	/**
+	 * @param list<string> $clauses
+	 */
+	private function hasIncludeClause(array $clauses): bool
+	{
+		foreach ($clauses as $clause) {
+			if (preg_match('/\binclude\s*=/i', $clause) === 1 || preg_match('/\bcheck_access\s*=\s*0\b/i', $clause) === 1) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Check whether `$fieldName` is safe to search/sort on across `$scopedTemplateNames` (or all templates when empty),
+	 * inspecting both global `Field::$useRoles` and template-context `Field::$useRoles` overrides.
+	 *
+	 * @param list<string> $scopedTemplateNames
+	 */
+	private function isFieldSearchableForUser(string $fieldName, array $scopedTemplateNames = []): bool
+	{
+		$user = $this->wire()->user;
+		if ($user->isSuperuser()) {
+			return true;
+		}
+		$field = $this->wire()->fields->get($fieldName);
+		if (!$field instanceof Field) {
+			return true;
+		}
+		if ((bool) $field->useRoles && !$field->viewable(null, $user)) {
+			return false;
+		}
+		$templates = $this->wire()->templates;
+		$checkTemplates = [];
+		if ($scopedTemplateNames !== []) {
+			foreach ($scopedTemplateNames as $tplName) {
+				$t = $templates->get($tplName);
+				if ($t instanceof Template) {
+					$checkTemplates[] = $t;
+				}
+			}
+		} else {
+			foreach ($templates as $t) {
+				if ($t instanceof Template) {
+					$checkTemplates[] = $t;
+				}
+			}
+		}
+		foreach ($checkTemplates as $tpl) {
+			if ($tpl->fieldgroup === null || !$tpl->fieldgroup->hasField($field)) {
+				continue;
+			}
+			$ctx = $tpl->fieldgroup->getFieldContext($field);
+			if ($ctx instanceof Field && (bool) $ctx->useRoles && !$ctx->viewable(null, $user)) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	/**

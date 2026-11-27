@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Totoglu\React\Media;
 
+use ProcessWire\Inertia;
 use ProcessWire\Inputfield;
 use ProcessWire\Pagefile;
 use ProcessWire\Pagefiles;
@@ -151,8 +152,14 @@ trait InteractWithReactMediaInputfield
 			$this->renderListReady($val);
 		}
 
-		$payload = $this->inertia()->resolver->resolveValue($this->toInertiaProp());
-		$data = is_array($payload) ? $payload : $this->toInertiaProp();
+		$inertia = $this->inertia();
+		$inertia->ensureXsrfCookie();
+
+		$data = Inertia::withoutEntityEncoding(function () use ($inertia): array {
+			$payload = $inertia->resolver->resolveValue($this->toInertiaProp());
+
+			return is_array($payload) ? $payload : $this->toInertiaProp();
+		});
 
 		$id = (string) ($data['id'] ?? ($this->attr('id') ?: $this->defaultReactMediaInputId()));
 		$name = (string) ($data['name'] ?? $this->attr('name'));
@@ -171,10 +178,15 @@ trait InteractWithReactMediaInputfield
 
 	public function ___renderValue(): string
 	{
+		$inertia = $this->inertia();
 		$prevMode = $this->renderValueMode;
 		$this->renderValueMode = true;
 		try {
-			$data = $this->toInertiaProp();
+			$data = Inertia::withoutEntityEncoding(function () use ($inertia): array {
+				$payload = $inertia->resolver->resolveValue($this->toInertiaProp());
+
+				return is_array($payload) ? $payload : $this->toInertiaProp();
+			});
 		} finally {
 			$this->renderValueMode = $prevMode;
 		}
@@ -183,7 +195,10 @@ trait InteractWithReactMediaInputfield
 			$data['props']['readOnly'] = true;
 		}
 
-		return IslandMarkup::render($this->inertiaComponent(), $data, ['class' => 'pw-inertia-inputfield-island']);
+		return IslandMarkup::render($this->inertiaComponent(), $data, [
+			'class' => 'pw-inertia-inputfield-island',
+			'data-readonly' => 'true',
+		]);
 	}
 
 	public function ___processInput(WireInputData $input): static

@@ -8,8 +8,11 @@ use Closure;
 use ProcessWire\Field;
 use ProcessWire\FieldtypeCheckbox;
 use ProcessWire\FieldtypeDatetime;
+use ProcessWire\FieldtypeFieldsetOpen;
+use ProcessWire\FieldtypeFile;
 use ProcessWire\FieldtypeLanguageInterface;
 use ProcessWire\FieldtypePassword;
+use ProcessWire\FieldtypeToggle;
 use ProcessWire\Inputfield;
 use ProcessWire\InputfieldForm;
 use ProcessWire\InputfieldHidden;
@@ -39,6 +42,7 @@ use Totoglu\React\Data\ReactPageResult;
 use Totoglu\React\Data\ReactRecord;
 use Totoglu\React\Icon\IconManager;
 use Totoglu\React\Icon\ReactIconValue;
+use Totoglu\React\Security\AccessGuard;
 use Totoglu\React\Security\UrlSanitizer;
 use Totoglu\React\Viewport\MarkupReactViewport;
 
@@ -79,6 +83,24 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 		'fieldgroup' => true,
 		'created_users_id' => true,
 		'modified_users_id' => true,
+	];
+
+	/**
+	 * Complex, layout, media, rich-text, and structured `Inputfield` classes blocked from raw `OP_UPDATE_FIELD`.
+	 *
+	 * @var list<string>
+	 */
+	private const array BLOCKED_RAW_INPUTFIELDS = [
+		'inputfieldtiptap',
+		'inputfieldckeditor',
+		'inputfieldtinymce',
+		'inputfieldreactlink',
+		'inputfieldreactkeyvalue',
+		'inputfieldreactcondition',
+		'inputfieldreactm2o',
+		'inputfieldreactm2m',
+		'inputfieldreacto2m',
+		'inputfieldreactm2a',
 	];
 
 	private string $baseSelector = 'id>1';
@@ -377,6 +399,7 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 		$isSystemProtected = $p !== null ? $this->isProtectedSystemPage($p) : ((int) $record->id <= 1);
 		$canEdit = $p !== null ? $p->editable() : true;
 		$canTrash = !$isSystemProtected && ($p !== null ? $p->trashable() : ((int) $record->id > 1));
+		$canRestore = !$isSystemProtected && ($p !== null ? $p->restorable() : ((int) $record->id > 1));
 		$canDelete = !$isSystemProtected && ($p !== null ? $p->deleteable() : ((int) $record->id > 1));
 
 		$actions = [];
@@ -420,12 +443,15 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 			];
 		}
 
-		if ($record->isTrash() && $canDelete) {
+		if ($record->isTrash() && $canRestore) {
 			$actions[] = [
 				'key' => ReactDataProviderInterface::OP_RESTORE,
 				'label' => $this->_('Restore'),
 				'icon' => 'rotate-ccw',
 			];
+		}
+
+		if ($record->isTrash() && $canDelete) {
 			$actions[] = [
 				'key' => ReactDataProviderInterface::OP_DELETE,
 				'label' => $this->_('Delete Permanently'),
@@ -565,7 +591,8 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 	 */
 	private function isFieldViewableForUser(string $fieldName): bool
 	{
-		if ($this->wire()->user->isSuperuser()) {
+		$user = $this->wire()->user;
+		if ($user->isSuperuser()) {
 			return true;
 		}
 		$cleanName = trim($fieldName);
@@ -576,11 +603,20 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 		if (!$field instanceof Field) {
 			return true;
 		}
-		if (!(bool) $field->useRoles) {
-			return true;
+		if ((bool) $field->useRoles && !$field->viewable(null, $user)) {
+			return false;
+		}
+		foreach ($this->wire()->templates as $tpl) {
+			if (!$tpl instanceof Template || $tpl->fieldgroup === null || !$tpl->fieldgroup->hasField($field)) {
+				continue;
+			}
+			$ctx = $tpl->fieldgroup->getFieldContext($field);
+			if ($ctx instanceof Field && (bool) $ctx->useRoles && !$ctx->viewable(null, $user)) {
+				return false;
+			}
 		}
 
-		return (bool) $field->viewable();
+		return true;
 	}
 
 	/**
@@ -610,8 +646,6 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 		}
 
 		$fields = $this->wire()->fields;
-		$user = $this->wire()->user;
-		$isSuperuser = (bool) $user->isSuperuser();
 		/** @var array<string, true> $allowed */
 		$allowed = [];
 		foreach ($candidates as $candidate) {
@@ -630,7 +664,7 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 			) {
 				continue;
 			}
-			if (!$isSuperuser && $fieldObj instanceof Field && (bool) $fieldObj->useRoles && !$fieldObj->viewable(null, $user)) {
+			if (!$this->isFieldViewableForUser($key)) {
 				continue;
 			}
 			$allowed[$key] = true;
@@ -717,12 +751,7 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 
 		if ($search !== '') {
 			$safeSearch = $sanitizer->selectorValue($search);
-			$user = $this->wire()->user;
-			$titleField = $this->wire()->fields->get('title');
-			$canSearchTitle = (bool) $user->isSuperuser()
-				|| !$titleField instanceof Field
-				|| !(bool) $titleField->useRoles
-				|| $titleField->viewable(null, $user);
+			$canSearchTitle = $this->isFieldViewableForUser('title');
 			$parts[] = $canSearchTitle ? "title|name%={$safeSearch}" : "name%={$safeSearch}";
 		}
 
@@ -1279,25 +1308,45 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 			if (!$user->isSuperuser() && !$user->hasPermission('page-delete')) {
 				return 0;
 			}
+			$adminRootId = (int) ($this->wire()->config->adminRootPageID ?: 2);
+			$targetsAdmin = str_contains($this->baseSelector, 'template=admin')
+				|| str_contains($this->baseSelector, "has_parent={$adminRootId}")
+				|| str_contains($this->baseSelector, "parent={$adminRootId}");
 			$deleted = 0;
 			if ($this->pageItems !== null) {
 				foreach ($this->pageItems as $candidate) {
+					if (!$candidate instanceof Page || $candidate->id <= 1) {
+						continue;
+					}
+					if ($pages->count('id=' . (int) $candidate->id . ', include=all') === 0) {
+						continue;
+					}
 					if (
-						$candidate instanceof Page
-						&& $candidate->id > 1
-						&& $candidate->isTrash()
+						$candidate->isTrash()
 						&& !$this->isProtectedSystemPage($candidate)
+						&& ($targetsAdmin || ((int) $candidate->id !== $adminRootId && (int) $candidate->rootParent?->id !== $adminRootId))
 						&& $candidate->deleteable()
+						&& $this->canDeleteSubtree($candidate, $adminRootId, $targetsAdmin)
 					) {
 						$pages->delete($candidate, true);
 						$deleted++;
 					}
+				}
+				if ($deleted > 0) {
+					$pages->uncacheAll();
 				}
 
 				return $deleted;
 			}
 
 			$trashParts = $this->buildTrashScopeClauses();
+			if (trim($this->baseSelector) !== '' && $trashParts === []) {
+				return 0;
+			}
+			if (!$targetsAdmin) {
+				$trashParts[] = "has_parent!={$adminRootId}";
+				$trashParts[] = "id!={$adminRootId}";
+			}
 			$trashParts[] = 'include=trash';
 			$trashParts[] = 'status>=' . Page::statusTrash;
 			$trashParts[] = 'sort=id';
@@ -1316,11 +1365,15 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 					}
 					$batchSeen++;
 					$lastId = max($lastId, (int) $candidate->id);
+					if ($candidate->id <= 1 || $pages->count('id=' . (int) $candidate->id . ', include=all') === 0) {
+						continue;
+					}
 					if (
-						$candidate->id > 1
-						&& $candidate->isTrash()
+						$candidate->isTrash()
 						&& !$this->isProtectedSystemPage($candidate)
+						&& ($targetsAdmin || ((int) $candidate->id !== $adminRootId && (int) $candidate->rootParent?->id !== $adminRootId))
 						&& $candidate->deleteable()
+						&& $this->canDeleteSubtree($candidate, $adminRootId, $targetsAdmin)
 					) {
 						$pages->delete($candidate, true);
 						$deleted++;
@@ -1343,6 +1396,10 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 
 		$user = $this->wire()->user;
 		$sanitizer = $this->wire()->sanitizer;
+		$adminRootId = (int) ($this->wire()->config->adminRootPageID ?: 2);
+		$targetsAdmin = str_contains($this->baseSelector, 'template=admin')
+			|| str_contains($this->baseSelector, "has_parent={$adminRootId}")
+			|| str_contains($this->baseSelector, "parent={$adminRootId}");
 		$affected = 0;
 		foreach ($ids as $idx => $rawId) {
 			$pageId = (int) $rawId;
@@ -1366,6 +1423,9 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 				continue;
 			}
 			if ($operation === 'trash' && !$p->trashable()) {
+				continue;
+			}
+			if ($operation === 'restore' && !$p->restorable()) {
 				continue;
 			}
 
@@ -1419,13 +1479,13 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 						$affected++;
 						break;
 					case 'restore':
-						if ($p->isTrash()) {
+						if ($p->isTrash() && $p->restorable()) {
 							$pages->restore($p);
 							$affected++;
 						}
 						break;
 					case 'delete':
-						if ($p->deleteable()) {
+						if ($p->deleteable() && $this->canDeleteSubtree($p, $adminRootId, $targetsAdmin)) {
 							$pages->delete($p, true);
 							$affected++;
 						}
@@ -1442,6 +1502,9 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 						if ($field !== '' && $this->canWriteField($p, $field, true)) {
 							$rawVal = $payload['value'] ?? '';
 							$fieldObj = $p->getField($field);
+							if ($fieldObj instanceof Field && $this->isBlockedRawUpdateField($p, $fieldObj)) {
+								break;
+							}
 							$fieldTypeObj = $fieldObj?->type;
 							$fieldTypeClass = $fieldTypeObj !== null ? $fieldTypeObj->className() : '';
 							$langs = $this->wire()->languages;
@@ -1497,8 +1560,13 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 						}
 						break;
 					case 'toggle_field':
-						$field = (string) ($payload['field'] ?? '');
+						$field = trim((string) ($payload['field'] ?? ''));
 						if ($field !== '' && $this->canWriteField($p, $field)) {
+							$fieldObj = $p->getField($field);
+							$fieldTypeObj = $fieldObj?->type;
+							if (!$fieldTypeObj instanceof FieldtypeCheckbox && !$fieldTypeObj instanceof FieldtypeToggle) {
+								break;
+							}
 							$curVal = $p->getUnformatted($field);
 							$isTruthy = $curVal === true || $curVal === 1 || $curVal === '1' || $curVal === 'true';
 							$p->setAndSave($field, $isTruthy ? 0 : 1);
@@ -1611,7 +1679,18 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 			return $page->editable('name');
 		}
 
-		return $page->hasField($clean) && $page->editable($clean);
+		if (!$page->hasField($clean)) {
+			return false;
+		}
+		$fieldObj = $page->getField($clean);
+		if ($fieldObj instanceof Field && $fieldObj->type instanceof FieldtypePassword) {
+			return false;
+		}
+		if ($fieldObj instanceof Field && !AccessGuard::canEditFieldByLanguage($this->wire(), $page, $fieldObj)) {
+			return false;
+		}
+
+		return $page->editable($clean);
 	}
 
 	public function supportsQuickEdit(): bool
@@ -1721,35 +1800,7 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 				];
 			}
 
-			$languages = $this->wire()->languages;
-			$prevOf = $p->of();
-			$p->of(false);
-			try {
-				foreach ($built['fields'] as $fieldName => $inputfield) {
-					if (!$inputfield->isChanged()) {
-						continue;
-					}
-					if (!$this->canWriteField($p, $fieldName, true) || !$p->editable($fieldName, false)) {
-						continue;
-					}
-					if ($languages instanceof Languages && $inputfield->getSetting('useLanguages')) {
-						$valObj = $p->get($fieldName);
-						if (is_object($valObj) && method_exists($valObj, 'setFromInputfield')) {
-							$cloned = clone $valObj;
-							$cloned->setFromInputfield($inputfield);
-							$p->set($fieldName, $cloned);
-						} else {
-							$p->set($fieldName, $inputfield->val());
-						}
-					} else {
-						$p->set($fieldName, $inputfield->val());
-					}
-				}
-				$pages->save($p);
-				$pages->uncacheAll();
-			} finally {
-				$p->of($prevOf);
-			}
+			$this->persistQuickEditFields($p, $built['fields']);
 
 			return [
 				'ok' => true,
@@ -1757,29 +1808,227 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 			];
 		}
 
-		/** @var array<string, mixed> $validated */
-		$validated = [];
+		$built = $this->buildQuickEditPageForm($p, false, []);
+		$languages = $this->wire()->languages;
+		/** @var array<string, array<string, mixed>> $groupedInputs */
+		$groupedInputs = [];
+
 		foreach ($input as $fKey => $fVal) {
 			if (!is_string($fKey) || $fKey === '' || str_starts_with($fKey, '_')) {
 				continue;
 			}
-			if (!$this->canWriteField($p, $fKey, true)) {
+
+			$baseField = $fKey;
+			$isLanguageSlot = false;
+			if (!isset($built['fields'][$fKey]) && preg_match('/^(.+)__(\d+)$/', $fKey, $langMatch) === 1) {
+				$candidateBase = $langMatch[1];
+				$langId = (int) $langMatch[2];
+				if (
+					isset($built['fields'][$candidateBase])
+					&& (bool) $built['fields'][$candidateBase]->getSetting('useLanguages')
+					&& $languages instanceof Languages
+				) {
+					$targetLang = $languages->get($langId);
+					if (!$targetLang instanceof Language || $targetLang->id <= 0 || !$languages->editable($targetLang)) {
+						return ['ok' => false, 'message' => $this->_('Field is not editable.')];
+					}
+					$baseField = $candidateBase;
+					$isLanguageSlot = true;
+				}
+			}
+
+			if (
+				!isset($built['fields'][$baseField])
+				|| !$this->canWriteField($p, $baseField, true)
+				|| !$p->editable($baseField, false)
+			) {
 				return ['ok' => false, 'message' => $this->_('Field is not editable.')];
 			}
-			$validated[$fKey] = $fVal;
+
+			if (!$isLanguageSlot && (bool) $built['fields'][$baseField]->getSetting('useLanguages') && $languages instanceof Languages) {
+				$defaultLang = $languages->getDefault();
+				if (!$defaultLang instanceof Language || $defaultLang->id <= 0 || !$languages->editable($defaultLang)) {
+					return ['ok' => false, 'message' => $this->_('Field is not editable.')];
+				}
+			}
+
+			$groupedInputs[$baseField][$fKey] = $fVal;
 		}
 
-		foreach ($validated as $fKey => $fVal) {
-			$this->mutate(ReactDataProviderInterface::OP_UPDATE_FIELD, [$id], [
-				'field' => $fKey,
-				'value' => $fVal,
-			]);
+		if ($groupedInputs === []) {
+			return [
+				'ok' => true,
+				'message' => $this->_('Page updated.'),
+			];
 		}
+
+		/** @var array<string, string> $errors */
+		$errors = [];
+		/** @var array<string, Inputfield> $fieldsToSave */
+		$fieldsToSave = [];
+
+		foreach ($groupedInputs as $fieldName => $submittedMap) {
+			$inputfield = $built['fields'][$fieldName];
+			$filteredMap = $submittedMap;
+			if ((bool) $inputfield->getSetting('useLanguages') && $languages instanceof Languages) {
+				if (!array_key_exists($fieldName, $filteredMap)) {
+					$defaultLang = $languages->getDefault();
+					$defaultVal = $defaultLang instanceof Language && $defaultLang->id > 0
+						? $inputfield->get('value' . (int) $defaultLang->id)
+						: null;
+					$filteredMap[$fieldName] = $defaultVal !== null ? $defaultVal : $inputfield->attr('value');
+				}
+				foreach ($languages as $lang) {
+					if (!$lang instanceof Language || $lang->isDefault()) {
+						continue;
+					}
+					$langKey = $fieldName . '__' . (int) $lang->id;
+					if (!array_key_exists($langKey, $filteredMap)) {
+						$filteredMap[$langKey] = $inputfield->get('value' . (int) $lang->id);
+					}
+				}
+			}
+
+			$wireInput = new WireInputData($filteredMap);
+			$inputfield->processInput($wireInput);
+			if (
+				$inputfield->getSetting('required')
+				&& trim((string) $inputfield->getSetting('requiredIf')) === ''
+				&& $inputfield->isEmpty()
+			) {
+				$reqLabel = (string) ($inputfield->getSetting('requiredLabel') ?: $built['form']->requiredLabel ?: $this->_('Missing required value'));
+				$inputfield->error($reqLabel);
+			}
+			$fieldErrors = $inputfield->getErrors(true);
+			if ($fieldErrors !== []) {
+				$errors[$fieldName] = implode(' ', array_map('strval', $fieldErrors));
+			}
+			$fieldsToSave[$fieldName] = $inputfield;
+		}
+
+		$this->clearWireErrorNotices();
+		if ($errors !== []) {
+			return [
+				'ok' => false,
+				'message' => $this->_('Please fix the highlighted errors.'),
+				'errors' => $errors,
+			];
+		}
+
+		$this->persistQuickEditFields($p, $fieldsToSave);
 
 		return [
 			'ok' => true,
 			'message' => $this->_('Page updated.'),
 		];
+	}
+
+	/**
+	 * Persist validated and changed Quick Edit `Inputfield` values onto `$p`.
+	 *
+	 * @param array<string, Inputfield> $fields
+	 */
+	private function persistQuickEditFields(Page $p, array $fields): void
+	{
+		$pages = $this->wire()->pages;
+		$languages = $this->wire()->languages;
+		$prevOf = $p->of();
+		$p->of(false);
+		try {
+			foreach ($fields as $fieldName => $inputfield) {
+				if (!$inputfield->isChanged()) {
+					continue;
+				}
+				if (!$this->canWriteField($p, $fieldName, true) || !$p->editable($fieldName, false)) {
+					continue;
+				}
+				if ($languages instanceof Languages && $inputfield->getSetting('useLanguages')) {
+					$valObj = $p->get($fieldName);
+					if (is_object($valObj) && method_exists($valObj, 'setFromInputfield')) {
+						$cloned = clone $valObj;
+						$cloned->setFromInputfield($inputfield);
+						$p->set($fieldName, $cloned);
+					} else {
+						$p->set($fieldName, $inputfield->val());
+					}
+				} else {
+					$p->set($fieldName, $inputfield->val());
+				}
+			}
+			$pages->save($p);
+			$pages->uncacheAll();
+		} finally {
+			$p->of($prevOf);
+		}
+	}
+
+	/**
+	 * Verify every descendant page in `$page`'s subtree is non-protected, deleteable, and within scope.
+	 */
+	private function canDeleteSubtree(Page $page, int $adminRootId, bool $targetsAdmin): bool
+	{
+		$pages = $this->wire()->pages;
+		foreach ($pages->findMany("has_parent={$page->id}, include=all") as $desc) {
+			if (!$desc instanceof Page) {
+				continue;
+			}
+			if (
+				$desc->id <= 1
+				|| $this->isProtectedSystemPage($desc)
+				|| !$desc->deleteable()
+				|| (!$targetsAdmin && ((int) $desc->id === $adminRootId || (int) $desc->rootParent?->id === $adminRootId))
+			) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Reject raw `OP_UPDATE_FIELD` writes against file, layout, rich-text, or structured `Inputfield` types
+	 * that require `Inputfield::processInput()` sanitization and normalization.
+	 */
+	private function isBlockedRawUpdateField(Page $page, Field $fieldObj): bool
+	{
+		$fieldTypeObj = $fieldObj->type;
+		if (
+			$fieldTypeObj instanceof FieldtypeFile
+			|| $fieldTypeObj instanceof FieldtypeFieldsetOpen
+			|| ($fieldTypeObj !== null && in_array(strtolower($fieldTypeObj->className()), [
+				'fieldtypeimage',
+				'fieldtypefieldsetclose',
+				'fieldtypefieldsettabopen',
+			], true))
+		) {
+			return true;
+		}
+
+		$inputfieldClass = strtolower(trim((string) ($fieldObj->get('inputfieldClass') ?: $fieldObj->get('inputfield') ?: '')));
+		if ($inputfieldClass !== '' && in_array($inputfieldClass, self::BLOCKED_RAW_INPUTFIELDS, true)) {
+			return true;
+		}
+
+		$inputfieldObj = $fieldObj->getInputfield($page);
+		if ($inputfieldObj instanceof Inputfield) {
+			$resolvedClass = strtolower(trim($inputfieldObj->className()));
+			if (in_array($resolvedClass, self::BLOCKED_RAW_INPUTFIELDS, true)) {
+				return true;
+			}
+			$parents = array_map(
+				static function (string $fqcn): string {
+					$pos = strrpos($fqcn, '\\');
+
+					return strtolower($pos !== false ? substr($fqcn, $pos + 1) : $fqcn);
+				},
+				array_merge([get_class($inputfieldObj)], array_values(class_parents($inputfieldObj) ?: [])),
+			);
+			if (array_intersect($parents, self::BLOCKED_RAW_INPUTFIELDS) !== []) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**

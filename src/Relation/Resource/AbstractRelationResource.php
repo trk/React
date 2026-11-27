@@ -52,7 +52,7 @@ abstract class AbstractRelationResource extends Wire implements RelationResource
 	 */
 	public function quickCreate(array $payload, array $config = []): RelationItem
 	{
-		throw new WireException(sprintf('Resource "%s" does not support inline quick creation.', $this->name()));
+		throw new WireException(sprintf($this->_('Resource "%s" does not support inline quick creation.'), $this->name()));
 	}
 
 	/**

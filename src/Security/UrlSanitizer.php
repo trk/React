@@ -91,7 +91,12 @@ final class UrlSanitizer
 					&& preg_match('/[\x00-\x1F\x7F]/', $entityDecoded) !== 1
 					&& stripos($decoded, '<svg') !== false
 					&& !preg_match('/&#[xX]?[0-9a-fA-F]+;?/', $decoded)
-					&& preg_match('/<\s*(?:[a-z0-9_-]+:)?(?:script|foreignobject|iframe|object|embed|use|handler|style|animate|set|animatetransform|animatemotion|meta|base|link|feimage|tref)\b|\bon[a-z0-9_]+\s*=|(?:javascript|vbscript):/i', $entityDecoded) !== 1
+					&& !str_contains($entityDecoded, '<?')
+					&& stripos($entityDecoded, '<!DOCTYPE') === false
+					&& stripos($entityDecoded, '<!ENTITY') === false
+					&& preg_match('/<\s*(?:[a-z0-9_-]+:)?(?:script|foreignobject|iframe|object|embed|use|handler|style|animate|set|animatetransform|animatemotion|meta|base|link|feimage|tref)\b|\bon[a-z0-9_]+\s*=|(?:javascript|vbscript|data)\s*:/i', $entityDecoded) !== 1
+					&& preg_match('/(?:^|[\s<"\'])(?:[a-z0-9_-]+:)?href\s*=\s*[\'"]?\s*(?!#)[^\s"\'>]+/i', $entityDecoded) !== 1
+					&& preg_match('/url\s*\((?!\s*[\'"]?\s*#)/i', $entityDecoded) !== 1
 				) {
 					return $trimmed;
 				}
