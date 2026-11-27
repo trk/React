@@ -9,7 +9,7 @@ use function ProcessWire\__;
 /**
  * Immutable normalized record value object returned by any `ReactDataProviderInterface` adapter.
  *
- * Bridges `EntryItem`, `Page`, and associative array rows behind a uniform interface for
+ * Bridges custom domain entity objects, `Page`, and associative array rows behind a uniform interface for
  * `MarkupReactTable`, `MarkupReactCards`, and custom `MarkupReactViewport` viewports.
  */
 final readonly class ReactRecord
@@ -37,7 +37,7 @@ final readonly class ReactRecord
 	 * @param int $created Unix timestamp of creation
 	 * @param int $modified Unix timestamp of last modification
 	 * @param bool $hasDraft Whether an unpublished working draft exists
-	 * @param object|array<string, mixed>|null $raw Underlying domain entity (`EntryItem`, `Page`, or `array`)
+	 * @param object|array<string, mixed>|null $raw Underlying domain entity (`object`, `Page`, or `array`)
 	 * @param string $subtitle Optional pre-resolved subtitle for Cards and custom viewports
 	 * @param string $thumbHtml Optional sanitized thumbnail HTML (`<img>` or `<svg>`) for Table, Cards, and custom viewports
 	 * @param bool $formattedIsHtml When true, all `$formatted[$col]` values are pre-sanitized HTML
@@ -135,7 +135,11 @@ final readonly class ReactRecord
 
 		$val = $this->getValue($column, '');
 		if (is_bool($val)) {
-			$label = $val ? __('Yes', __FILE__) : __('No', __FILE__);
+			if ($val) {
+				$label = __('Yes', __FILE__);
+			} else {
+				$label = __('No', __FILE__);
+			}
 
 			return is_string($label) ? $label : ($val ? 'Yes' : 'No');
 		}

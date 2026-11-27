@@ -181,12 +181,8 @@ final class UserResourceAdapter extends AbstractRelationResource
 			$safeNames = array_map(fn(string $n): string => $this->sanitizeSelectorValue($n), array_values($names));
 			$matchGroups[] = 'name=' . implode('|', $safeNames);
 		}
-		if (count($matchGroups) === 1) {
+		if ($matchGroups !== []) {
 			$clauses[] = $matchGroups[0];
-		} else {
-			foreach ($matchGroups as $mg) {
-				$clauses[] = "_hydrate_match=({$mg})";
-			}
 		}
 
 		$clauses[] = 'limit=500';

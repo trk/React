@@ -22,6 +22,7 @@ use Totoglu\React\Support\IslandMarkup;
 use Totoglu\React\Theme\ThemeManager;
 use Totoglu\React\Theme\ThemePreset;
 use Totoglu\React\Theme\ThemeTokenParser;
+use Totoglu\React\Tiptap\MiniBlockRegistry;
 use Totoglu\React\Tiptap\TiptapMediaLinkGateway;
 use Totoglu\React\Viewport\MarkupReactViewport;
 use Totoglu\React\Workspace\CommandSearchRegistry;
@@ -44,21 +45,17 @@ use Totoglu\React\Workspace\WorkspaceWidgetRegistry;
  * for ProcessWire, with optional `ProcessReactWorkspace` (`Admin > Workspace`) hub support.
  *
  * @method void registerWorkspaces(WorkspaceRegistry $registry)
- * @method void initWorkspaceRegistry(WorkspaceRegistry $registry)
- * @method list<WorkspaceDefinition|array<string, mixed>> getWorkspaceDefinitions()
  * @method void registerWidgets(WorkspaceWidgetRegistry $registry)
- * @method void initWidgetRegistry(WorkspaceWidgetRegistry $registry)
- * @method list<WorkspaceWidgetDefinition|array<string, mixed>> getWidgetDefinitions()
  * @method void registerProviders(ProviderRegistry $registry)
- * @method void initProviderRegistry(ProviderRegistry $registry)
  * @method void registerRelationResources(RelationResourceRegistry $registry)
- * @method void initRelationRegistry(RelationResourceRegistry $registry)
  * @method void registerMediaHosts(MediaGateway $mediaGateway)
+ * @method void registerLinkResolvers()
  * @method void registerShellLayouts(ShellLayoutRegistry $registry)
  * @method void registerCommandSearch(CommandSearchRegistry $registry)
  * @method void registerViewportModes()
  * @method array<string, mixed> translations()
  * @method void install()
+ * @method void upgrade(int|string $fromVersion, int|string $toVersion)
  * @method void uninstall()
  */
 class React extends WireData implements Module, ConfigurableModule
@@ -112,6 +109,8 @@ class React extends WireData implements Module, ConfigurableModule
 	private ?bool $workspaceHubEnabledOverride = null;
 	/** @var array<string, array{module: string, contract: string, icon: string, label: string}> */
 	private array $registeredViewportModes = [];
+	/** @var array<string, callable(array<string, mixed>, array<string, mixed>): ?array<string, mixed>> */
+	private array $linkResolvers = [];
 	/** @var list<string> */
 	private array $urlHookIds = [];
 	private bool $hooksRegistered = false;
@@ -123,6 +122,7 @@ class React extends WireData implements Module, ConfigurableModule
 	private bool $relationsResolved = false;
 	private bool $mediaHostsResolved = false;
 	private bool $viewportModesResolved = false;
+	private bool $linkResolversResolved = false;
 	/** @var array<string, list<string>>|null */
 	private ?array $capabilityModulesIndex = null;
 	/** @var array<string, bool> */
@@ -154,6 +154,7 @@ class React extends WireData implements Module, ConfigurableModule
 				'MarkupReactCards',
 				'MarkupReactTab',
 				'InputfieldReactKeyValue',
+				'InputfieldReactCondition',
 				'InputfieldReactLink',
 				'InputfieldReactIcon',
 				'InputfieldReactM2O',
@@ -357,6 +358,7 @@ class React extends WireData implements Module, ConfigurableModule
 	public function wired(): void
 	{
 		parent::wired();
+		$this->wire()->classLoader->addNamespace('Totoglu\\React', __DIR__ . '/src/');
 		$this->wire('react', $this);
 	}
 
@@ -379,8 +381,9 @@ class React extends WireData implements Module, ConfigurableModule
 			];
 		}
 
+		$this->hooks()->registerDataHooks();
 		if ($this->shouldRegisterFieldHooks()) {
-			$this->hooks()->register();
+			$this->hooks()->registerAdminHooks();
 		}
 	}
 
@@ -864,7 +867,13 @@ class React extends WireData implements Module, ConfigurableModule
 		if ($adminTheme instanceof AdminTheme) {
 			$themeCss = $this->theme()->resolveThemeTokenCss($this->wire()->user);
 			if ($themeCss !== '') {
-				$adminTheme->addExtraMarkup('head', '<style id="rw-theme-tokens">' . $themeCss . '</style>');
+				$cspNonceRaw = $wire->config->get('cspNonce');
+				$cspNonce = is_string($cspNonceRaw) ? trim($cspNonceRaw) : '';
+				$nonceAttr = $cspNonce !== ''
+					? ' nonce="' . $wire->sanitizer->entities($cspNonce) . '"'
+					: '';
+				$safeThemeCss = (string) preg_replace('~<\s*/\s*style~i', '<\\/style', $themeCss);
+				$adminTheme->addExtraMarkup('head', '<style id="rw-theme-tokens"' . $nonceAttr . '>' . $safeThemeCss . '</style>');
 			}
 		}
 
@@ -1320,13 +1329,17 @@ class React extends WireData implements Module, ConfigurableModule
 			if (!$modules->isInstalled($moduleName)) {
 				continue;
 			}
-			$mod = $modules->getModule($moduleName, [
-				'noPermissionCheck' => true,
-				'noInstall' => true,
-				'noThrow' => true,
-			]);
-			if ($mod instanceof Module) {
-				$pulled[] = $moduleName;
+			try {
+				$mod = $modules->getModule($moduleName, [
+					'noPermissionCheck' => true,
+					'noInstall' => true,
+					'noThrow' => true,
+				]);
+				if ($mod instanceof Module) {
+					$pulled[] = $moduleName;
+				}
+			} catch (\Throwable $e) {
+				$this->wire()->log->error(sprintf('React capability discovery failed for %s: %s', $moduleName, $e->getMessage()));
 			}
 		}
 
@@ -1363,13 +1376,7 @@ class React extends WireData implements Module, ConfigurableModule
 				foreach (self::$sharedWorkspaces as $sharedDef) {
 					$registry->register($sharedDef);
 				}
-				$this->initWorkspaceRegistry($registry);
 				$this->registerWorkspaces($registry);
-				foreach ($this->getWorkspaceDefinitions() as $def) {
-					if ($def instanceof WorkspaceDefinition || is_array($def)) {
-						$registry->register($def);
-					}
-				}
 			}
 		}
 
@@ -1398,17 +1405,7 @@ class React extends WireData implements Module, ConfigurableModule
 		return $this;
 	}
 
-	public function ___initWorkspaceRegistry(WorkspaceRegistry $registry): void {}
-
 	public function ___registerWorkspaces(WorkspaceRegistry $registry): void {}
-
-	/**
-	 * @return list<WorkspaceDefinition|array<string, mixed>>
-	 */
-	public function ___getWorkspaceDefinitions(): array
-	{
-		return [];
-	}
 
 	/**
 	 * Return the `WorkspaceWidgetRegistry` singleton and trigger widget discovery hooks once.
@@ -1430,13 +1427,7 @@ class React extends WireData implements Module, ConfigurableModule
 				foreach (self::$sharedWidgets as $sharedWidget) {
 					$registry->register($sharedWidget);
 				}
-				$this->initWidgetRegistry($registry);
 				$this->registerWidgets($registry);
-				foreach ($this->getWidgetDefinitions() as $def) {
-					if ($def instanceof WorkspaceWidgetDefinition || is_array($def)) {
-						$registry->register($def);
-					}
-				}
 			}
 		}
 
@@ -1465,17 +1456,7 @@ class React extends WireData implements Module, ConfigurableModule
 		return $this;
 	}
 
-	public function ___initWidgetRegistry(WorkspaceWidgetRegistry $registry): void {}
-
 	public function ___registerWidgets(WorkspaceWidgetRegistry $registry): void {}
-
-	/**
-	 * @return list<WorkspaceWidgetDefinition|array<string, mixed>>
-	 */
-	public function ___getWidgetDefinitions(): array
-	{
-		return [];
-	}
 
 	/**
 	 * Determine whether the `ShellLayoutRegistry` has already run `React::registerShellLayouts` hooks on this instance.
@@ -1528,8 +1509,11 @@ class React extends WireData implements Module, ConfigurableModule
 		}
 
 		if (!$this->shellLayoutsResolved) {
-			$this->shellLayoutsResolved = true;
-			$this->registerShellLayouts($registry);
+			$this->pullCapabilities('workspace');
+			if (!$this->isShellLayoutsResolved()) {
+				$this->shellLayoutsResolved = true;
+				$this->registerShellLayouts($registry);
+			}
 		}
 
 		return $registry;
@@ -1722,6 +1706,137 @@ class React extends WireData implements Module, ConfigurableModule
 	}
 
 	/**
+	 * Issue a user-bound HMAC-SHA256 signed token authorizing `/_react/presence` actions on `$resourceKey`.
+	 */
+	public function issuePresenceToken(string $resourceKey, bool $canMarkSaved = true, ?User $user = null): string
+	{
+		$resolvedUser = $user ?? $this->wire()->user;
+		if (!AccessGuard::isAuthenticated($resolvedUser)) {
+			return '';
+		}
+
+		$cleanKey = $this->presence()->sanitizeResourceKey($resourceKey);
+		if ($cleanKey === '') {
+			return '';
+		}
+
+		return $this->tokenCodec()->encode([
+			'typ' => 'presence',
+			'uid' => (int) $resolvedUser->id,
+			'resourceKey' => $cleanKey,
+			'canMarkSaved' => $canMarkSaved,
+		], 'presence');
+	}
+
+	/**
+	 * Verify a signed `presenceToken` against the active user and return its decoded claims or `null`.
+	 *
+	 * @return array{resourceKey: string, canMarkSaved: bool, uid: int, iat: int}|null
+	 */
+	public function verifyPresenceToken(string $token, ?User $user = null): ?array
+	{
+		$resolvedUser = $user ?? $this->wire()->user;
+		if (!AccessGuard::isAuthenticated($resolvedUser)) {
+			return null;
+		}
+
+		$decoded = $this->tokenCodec()->decode($token, (int) $resolvedUser->id, SignedTokenCodec::DEFAULT_TTL, 'presence');
+		if (!is_array($decoded) || ($decoded['typ'] ?? '') !== 'presence') {
+			return null;
+		}
+
+		$cleanKey = $this->presence()->sanitizeResourceKey((string) ($decoded['resourceKey'] ?? ''));
+		if ($cleanKey === '') {
+			return null;
+		}
+
+		return [
+			'resourceKey' => $cleanKey,
+			'canMarkSaved' => !empty($decoded['canMarkSaved']),
+			'uid' => (int) $decoded['uid'],
+			'iat' => (int) $decoded['iat'],
+		];
+	}
+
+	/**
+	 * Register a custom link target resolver callback for a non-builtin link `type`.
+	 *
+	 * @param callable(array<string, mixed>, array<string, mixed>): (array<string, mixed>|null) $resolver
+	 */
+	public function registerLinkResolver(string $type, ?callable $resolver): self
+	{
+		$cleanType = strtolower(trim($type));
+		if ($cleanType !== '') {
+			if ($resolver === null) {
+				unset($this->linkResolvers[$cleanType]);
+			} else {
+				$this->linkResolvers[$cleanType] = $resolver;
+			}
+		}
+
+		return $this;
+	}
+
+	/**
+	 * Hookable lifecycle method for extension modules to register custom link target resolvers.
+	 */
+	public function ___registerLinkResolvers(): void {}
+
+	public function isLinkResolversResolved(): bool
+	{
+		return $this->linkResolversResolved;
+	}
+
+	/**
+	 * Resolve a custom non-builtin link target type via registered link resolvers.
+	 *
+	 * @param array<string, mixed> $normalized
+	 * @param array<string, mixed> $options
+	 * @return array<string, mixed>|null
+	 */
+	public function resolveCustomLink(string $type, array $normalized, array $options = []): ?array
+	{
+		$cleanType = strtolower(trim($type));
+		if ($cleanType === '') {
+			return null;
+		}
+		if (!$this->linkResolversResolved) {
+			$this->pullCapabilities('relations');
+			if (!$this->isLinkResolversResolved()) {
+				$this->linkResolversResolved = true;
+				$this->registerLinkResolvers();
+			}
+		}
+
+		$resolver = $this->linkResolvers[$cleanType] ?? null;
+		if ($resolver === null) {
+			return null;
+		}
+
+		$resolved = $resolver($normalized, $options);
+
+		return is_array($resolved) ? $resolved : null;
+	}
+
+	/**
+	 * Return canonical lowercase link target types registered by extension resolvers.
+	 *
+	 * @return list<string>
+	 */
+	public function linkResolverTypes(): array
+	{
+		if (!$this->linkResolversResolved) {
+			$this->pullCapabilities('relations');
+			if (!$this->isLinkResolversResolved()) {
+				$this->linkResolversResolved = true;
+				$this->registerLinkResolvers();
+			}
+		}
+
+		return array_values(array_map('strval', array_keys($this->linkResolvers)));
+	}
+
+	/**
 	 * @param array<string, mixed> $requestPayload
 	 * @return array{ok: bool, status?: int, error?: string, presence?: array<string, mixed>}
 	 */
@@ -1793,7 +1908,6 @@ class React extends WireData implements Module, ConfigurableModule
 			$this->pullCapabilities('providers');
 			if (!$this->isProvidersResolved()) {
 				$this->providersResolved = true;
-				$this->initProviderRegistry($registry);
 				$this->registerProviders($registry);
 			}
 		}
@@ -1827,8 +1941,6 @@ class React extends WireData implements Module, ConfigurableModule
 			$registrar($existing->providers(), $existing);
 		}
 	}
-
-	public function ___initProviderRegistry(ProviderRegistry $registry): void {}
 
 	public function ___registerProviders(ProviderRegistry $registry): void {}
 
@@ -1942,7 +2054,6 @@ class React extends WireData implements Module, ConfigurableModule
 			$this->pullCapabilities('relations');
 			if (!$this->isRelationsResolved()) {
 				$this->relationsResolved = true;
-				$this->initRelationRegistry($registry);
 				$this->registerRelationResources($registry);
 			}
 		}
@@ -1962,8 +2073,6 @@ class React extends WireData implements Module, ConfigurableModule
 
 		return $this->relationStateSigner;
 	}
-
-	public function ___initRelationRegistry(RelationResourceRegistry $registry): void {}
 
 	public function ___registerRelationResources(RelationResourceRegistry $registry): void {}
 
@@ -2007,6 +2116,29 @@ class React extends WireData implements Module, ConfigurableModule
 
 	public function ___install(): void {}
 
+	/**
+	 * Install any missing companion sub-modules declared in `getModuleInfo()['installs']` on upgrade.
+	 *
+	 * @param int|string $fromVersion
+	 * @param int|string $toVersion
+	 */
+	public function ___upgrade($fromVersion, $toVersion): void
+	{
+		$modules = $this->wire()->modules;
+		$info = self::getModuleInfo();
+		$installs = is_array($info['installs'] ?? null) ? $info['installs'] : [];
+		foreach ($installs as $companion) {
+			if (!is_string($companion) || $companion === '' || $modules->isInstalled($companion)) {
+				continue;
+			}
+			try {
+				$modules->install($companion);
+			} catch (\Throwable $e) {
+				$this->wire()->log->error("React upgrade could not install companion {$companion}: " . $e->getMessage());
+			}
+		}
+	}
+
 	public function ___uninstall(): void
 	{
 		$w = $this->wire();
@@ -2040,24 +2172,42 @@ class React extends WireData implements Module, ConfigurableModule
 		$this->workspacePreferences()->purgeAll();
 		$files = $w->files;
 		$assetsPath = (string) $w->config->paths->assets;
+		$assetsCacheReactDir = '';
 		if ($assetsPath !== '') {
-			$iconCssDir = rtrim($assetsPath, '/') . '/vector-icons';
+			$iconCssDir = rtrim($assetsPath, '/\\') . '/vector-icons';
 			if (!is_link(rtrim($iconCssDir, '/\\')) && is_dir($iconCssDir)) {
 				$files->rmdir($iconCssDir, true);
 			}
-			$cacheRootDir = rtrim($assetsPath, '/') . '/cache/React';
-			if (!is_link(rtrim($cacheRootDir, '/\\')) && is_dir($cacheRootDir)) {
-				$files->rmdir($cacheRootDir, true);
+			$assetsCacheReactDir = rtrim($assetsPath, '/\\') . '/cache/React';
+			if (!is_link(rtrim($assetsCacheReactDir, '/\\')) && is_dir($assetsCacheReactDir)) {
+				$files->rmdir($assetsCacheReactDir, true);
 			}
 		}
+		$configCachePath = rtrim((string) $w->config->paths->cache, '/\\');
+		if ($configCachePath !== '') {
+			$configCacheReactDir = $configCachePath . '/React';
+			if (
+				$configCacheReactDir !== $assetsCacheReactDir
+				&& !is_link($configCacheReactDir)
+				&& is_dir($configCacheReactDir)
+			) {
+				$files->rmdir($configCacheReactDir, true);
+			}
+		}
+		MarkupReactViewport::resetCache();
+		MiniBlockRegistry::resetCache();
+		IconManager::resetCache();
 		self::$sharedWorkspaces = [];
 		self::$sharedWidgets = [];
 		self::$sharedViewportModes = [];
 		self::$moduleAssetUrlCache = [];
 		$this->registeredViewportModes = [];
+		$this->linkResolvers = [];
+		$this->linkResolversResolved = false;
 		$this->relationStateSigner = null;
 		$this->tokenCodec = null;
 		$this->mediaGateway = null;
+		$this->tiptapGateway = null;
 		$this->mediaHostsResolved = false;
 		$this->formSerializer = null;
 		$this->controlRegistry = null;

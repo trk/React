@@ -36,28 +36,7 @@ class ReactViewPreferenceStore extends WireData
 	 */
 	public function load(MarkupReactViewport $component): array
 	{
-		$key = $this->storageKey($component);
-		$session = $this->wire()->session;
-		$cached = $session->getFor(self::SESSION_NAMESPACE, $key);
-		if (is_array($cached)) {
-			return $cached;
-		}
-
-		$user = $this->wire()->user;
-		if ($user->isLoggedin()) {
-			try {
-				$meta = $user->meta(self::USER_META_PREFIX . $key);
-				if (is_array($meta)) {
-					$session->setFor(self::SESSION_NAMESPACE, $key, $meta);
-
-					return $meta;
-				}
-			} catch (\Throwable) {
-				// Ignore if user meta table is unavailable
-			}
-		}
-
-		return [];
+		return self::readPreferences($this, $this->storageKey($component));
 	}
 
 	/**
@@ -68,12 +47,25 @@ class ReactViewPreferenceStore extends WireData
 	public function save(MarkupReactViewport $component, array $prefs): void
 	{
 		$key = $this->storageKey($component);
-		$current = $this->load($component);
+		$user = $this->wire()->user;
+		$current = null;
+		if ($user->isLoggedin()) {
+			try {
+				$freshMeta = $user->meta(self::USER_META_PREFIX . $key);
+				if (is_array($freshMeta)) {
+					$current = $freshMeta;
+				}
+			} catch (\Throwable) {
+				$current = null;
+			}
+		}
+		if ($current === null) {
+			$current = $this->load($component);
+		}
 		$merged = array_replace($current, $prefs);
 
 		$this->wire()->session->setFor(self::SESSION_NAMESPACE, $key, $merged);
 
-		$user = $this->wire()->user;
 		if ($user->isLoggedin() && !(bool) $this->wire()->config->demo) {
 			try {
 				$user->meta(self::USER_META_PREFIX . $key, $merged);
@@ -172,7 +164,22 @@ class ReactViewPreferenceStore extends WireData
 	 */
 	public static function getSessionViewPreferences(\ProcessWire\Wire $context, string $providerKey): array
 	{
-		$key = self::normalizeStorageKey($providerKey);
+		return self::readPreferences($context, self::normalizeStorageKey($providerKey));
+	}
+
+	/**
+	 * @return array{
+	 *   activeView?: string,
+	 *   viewMode?: string,
+	 *   hiddenColumns?: list<string>,
+	 *   sortField?: string,
+	 *   sortDirection?: string,
+	 *   limit?: int,
+	 *   savedViews?: array<string, array{label: string, filters: array<string, mixed>, searchQuery?: string, sortField?: string, sortDirection?: string, viewMode?: string, hiddenColumns?: list<string>}>
+	 * }
+	 */
+	private static function readPreferences(\ProcessWire\Wire $context, string $key): array
+	{
 		$session = $context->wire()->session;
 		$cached = $session->getFor(self::SESSION_NAMESPACE, $key);
 		if (is_array($cached)) {

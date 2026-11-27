@@ -81,6 +81,13 @@ final class ThemeManager extends Wire
 		'radius-button' => 'calc(var(--radius) - 2px)',
 	];
 
+	/**
+	 * Per-request cache of parsed `themeCustomTokens` keyed by source CSS string.
+	 *
+	 * @var array{source: string, tokens: array{light: array<string, string>, dark: array<string, string>}, valid: bool}|null
+	 */
+	private ?array $parsedCustomTokensCache = null;
+
 	public function __construct(private readonly React $react)
 	{
 		parent::__construct();
@@ -139,17 +146,48 @@ final class ThemeManager extends Wire
 	}
 
 	/**
+	 * Parse and cache `themeCustomTokens` per-request (re-parsed automatically if module config changes).
+	 *
+	 * @return array{light: array<string, string>, dark: array<string, string>}
+	 */
+	public function parsedCustomTokens(): array
+	{
+		$raw = (string) $this->react->get('themeCustomTokens');
+		if ($this->parsedCustomTokensCache !== null && $this->parsedCustomTokensCache['source'] === $raw) {
+			return $this->parsedCustomTokensCache['tokens'];
+		}
+
+		if (trim($raw) === '') {
+			$tokens = ['light' => [], 'dark' => []];
+			$this->parsedCustomTokensCache = [
+				'source' => $raw,
+				'tokens' => $tokens,
+				'valid' => false,
+			];
+
+			return $tokens;
+		}
+
+		$parser = new ThemeTokenParser();
+		$tokens = $parser->parse($raw);
+		$valid = $parser->isComplete($tokens);
+		$this->parsedCustomTokensCache = [
+			'source' => $raw,
+			'tokens' => $tokens,
+			'valid' => $valid,
+		];
+
+		return $tokens;
+	}
+
+	/**
 	 * Whether custom CSS tokens configured on the module satisfy all required variables.
 	 */
 	public function hasValidCustomTokens(): bool
 	{
-		$raw = trim((string) $this->react->get('themeCustomTokens'));
-		if ($raw === '') {
-			return false;
-		}
-		$parser = new ThemeTokenParser();
+		$this->parsedCustomTokens();
 
-		return $parser->isComplete($parser->parse($raw));
+		return $this->parsedCustomTokensCache['valid'] ?? false;
 	}
 
 	/**
@@ -164,10 +202,9 @@ final class ThemeManager extends Wire
 			return $preset->tokens();
 		}
 
-		$parser = new ThemeTokenParser();
-		$tokens = $parser->parse((string) $this->react->get('themeCustomTokens'));
+		$tokens = $this->parsedCustomTokens();
 
-		return $parser->isComplete($tokens) ? $tokens : ['light' => [], 'dark' => []];
+		return ($this->parsedCustomTokensCache['valid'] ?? false) ? $tokens : ['light' => [], 'dark' => []];
 	}
 
 	/**
@@ -180,7 +217,7 @@ final class ThemeManager extends Wire
 
 	/**
 	 * Compile light/dark token maps into a single `light-dark()` based declaration block
-	 * plus scoped dark-only token overrides when dark mode defines extra variables.
+	 * plus scoped dark-only / dark-scalar token overrides when dark mode defines extra or differing variables.
 	 *
 	 * @param array{light: array<string, string>, dark: array<string, string>} $tokens
 	 */
@@ -192,14 +229,25 @@ final class ThemeManager extends Wire
 
 		$colorTokens = array_flip(ThemeTokenParser::COLOR_TOKENS);
 		$blocks = [];
+		$darkOverrides = [];
 
 		if ($tokens['light'] !== []) {
 			$declarations = [];
 			foreach ($tokens['light'] as $name => $lightValue) {
 				$darkValue = $tokens['dark'][$name] ?? null;
-				$declarations[$name] = isset($colorTokens[$name]) && $darkValue !== null && $darkValue !== $lightValue
-					? "light-dark({$lightValue}, {$darkValue})"
-					: $lightValue;
+				$isColor = isset($colorTokens[$name]);
+				if ($isColor && $darkValue !== null && $darkValue !== $lightValue) {
+					$hasNestedLightDark = stripos($lightValue, 'light-dark(') !== false
+						|| stripos($darkValue, 'light-dark(') !== false;
+					if ($hasNestedLightDark) {
+						$declarations[$name] = $lightValue;
+						$darkOverrides[$name] = $darkValue;
+					} else {
+						$declarations[$name] = "light-dark({$lightValue}, {$darkValue})";
+					}
+				} else {
+					$declarations[$name] = $lightValue;
+				}
 			}
 			foreach (self::DERIVED_TOKENS as $name => $value) {
 				$declarations[$name] ??= $value;
@@ -215,14 +263,19 @@ final class ThemeManager extends Wire
 			$blocks[] = self::TOKEN_SCOPE . " {\n" . implode("\n", $lines) . "\n}";
 		}
 
-		$darkOnlyLines = [];
+		$darkLines = [];
 		foreach ($tokens['dark'] as $name => $darkValue) {
-			if (!array_key_exists($name, $tokens['light'])) {
-				$darkOnlyLines[] = "\t--{$name}: {$darkValue};";
+			$lightValue = $tokens['light'][$name] ?? null;
+			if ($lightValue === null) {
+				$darkLines[] = "\t--{$name}: {$darkValue};";
+			} elseif (!isset($colorTokens[$name]) && $darkValue !== $lightValue) {
+				$darkLines[] = "\t--{$name}: {$darkValue};";
+			} elseif (isset($darkOverrides[$name])) {
+				$darkLines[] = "\t--{$name}: {$darkOverrides[$name]};";
 			}
 		}
-		if ($darkOnlyLines !== []) {
-			$blocks[] = self::DARK_TOKEN_SCOPE . " {\n" . implode("\n", $darkOnlyLines) . "\n}";
+		if ($darkLines !== []) {
+			$blocks[] = self::DARK_TOKEN_SCOPE . " {\n" . implode("\n", $darkLines) . "\n}";
 		}
 
 		return implode("\n\n", $blocks);

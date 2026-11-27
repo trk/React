@@ -13,6 +13,7 @@ use ProcessWire\FieldtypeText;
 use ProcessWire\FieldtypeTextarea;
 use ProcessWire\HookEvent;
 use ProcessWire\Inputfield;
+use ProcessWire\InputfieldReactCondition;
 use ProcessWire\InputfieldReactIcon;
 use ProcessWire\InputfieldReactKeyValue;
 use ProcessWire\InputfieldReactLink;
@@ -36,7 +37,10 @@ use Totoglu\React\Media\PageLinkMediaHostAdapter;
 final class FieldIntegrationHooks extends Wire
 {
 	private bool $registered = false;
+	private bool $dataHooksRegistered = false;
 	private bool $executingProcessController = false;
+	/** @var list<string> */
+	private array $dataHookIds = [];
 	/** @var list<string> */
 	private array $hookIds = [];
 
@@ -50,10 +54,35 @@ final class FieldIntegrationHooks extends Wire
 		return $this->registered;
 	}
 
+	public function isDataHooksRegistered(): bool
+	{
+		return $this->dataHooksRegistered;
+	}
+
 	/**
-	 * Register all ProcessWire core lifecycle and field hooks once.
+	 * Register always-on data/persistence hooks (`FieldtypeText` sleep/format/markup and `Pages::saved` link media)
+	 * so frontend rendering and CLI saves behave identically regardless of admin gating.
 	 */
-	public function register(): void
+	public function registerDataHooks(): void
+	{
+		if ($this->dataHooksRegistered) {
+			return;
+		}
+		$this->dataHooksRegistered = true;
+
+		$wire = $this->wire();
+		$this->dataHookIds = [
+			(string) $wire->addHookBefore('FieldtypeText::sleepValue', $this, 'hookFieldtypeTextSleepValue'),
+			(string) $wire->addHookBefore('FieldtypeText::formatValue', $this, 'hookFieldtypeTextFormatValue'),
+			(string) $wire->addHookBefore('FieldtypeText::markupValue', $this, 'hookFieldtypeTextMarkupValue'),
+			(string) $wire->addHookAfter('Pages::saved', $this, 'hookPagesSavedLinkMedia'),
+		];
+	}
+
+	/**
+	 * Register admin/form/process/icon hooks gated by `React::shouldRegisterFieldHooks()`.
+	 */
+	public function registerAdminHooks(): void
 	{
 		if ($this->registered) {
 			return;
@@ -67,9 +96,6 @@ final class FieldIntegrationHooks extends Wire
 			(string) $wire->addHookBefore('InputfieldPage::getInputfield', $this, 'hookInputfieldPageClasses'),
 			(string) $wire->addHookAfter('FieldtypeFile::getConfigInputfields', $this, 'hookFieldtypeFileConfigInputfields'),
 			(string) $wire->addHookAfter('FieldtypeText::getConfigInputfields', $this, 'hookFieldtypeTextConfigInputfields'),
-			(string) $wire->addHookBefore('FieldtypeText::sleepValue', $this, 'hookFieldtypeTextSleepValue'),
-			(string) $wire->addHookBefore('FieldtypeText::formatValue', $this, 'hookFieldtypeTextFormatValue'),
-			(string) $wire->addHookBefore('FieldtypeText::markupValue', $this, 'hookFieldtypeTextMarkupValue'),
 			(string) $wire->addHookBefore('Field::getInputfield', $this, 'hookFieldBeforeGetInputfield'),
 			(string) $wire->addHookAfter('Field::getInputfield', $this, 'hookFieldAfterGetInputfield'),
 			(string) $wire->addHookAfter('Field::getConfigInputfields', $this, 'hookFieldGetConfigInputfields'),
@@ -77,7 +103,6 @@ final class FieldIntegrationHooks extends Wire
 			(string) $wire->addHookAfter('Inputfield::render', $this, 'hookRwControlAfterRender', ['priority' => '40.0']),
 			(string) $wire->addHookAfter('Inputfield::renderValue', $this, 'hookRwControlAfterRenderValue', ['priority' => '40.0']),
 			(string) $wire->addHookBefore('Inputfield::processInput', $this, 'hookRwControlBeforeProcessInput'),
-			(string) $wire->addHookAfter('Pages::saved', $this, 'hookPagesSavedLinkMedia'),
 			(string) $wire->addHookAfter('ProcessField::buildEditForm, ProcessTemplate::buildEditForm', $this, 'hookAdminIconBuildEditForm'),
 			(string) $wire->addHookBefore('Fields::save', $this, 'hookAdminIconFieldSave'),
 			(string) $wire->addHookBefore('Fields::saveFieldgroupContext', $this, 'hookAdminIconFieldContextSave'),
@@ -95,14 +120,29 @@ final class FieldIntegrationHooks extends Wire
 	}
 
 	/**
+	 * Register both always-on data hooks and admin field/template/process hooks once.
+	 */
+	public function register(): void
+	{
+		$this->registerDataHooks();
+		$this->registerAdminHooks();
+	}
+
+	/**
 	 * Detach all registered lifecycle hooks and reset registration state cleanly.
 	 */
 	public function unregister(): void
 	{
+		$wire = $this->wire();
+		if ($this->dataHookIds !== []) {
+			$wire->removeHook($this->dataHookIds);
+			$this->dataHookIds = [];
+		}
 		if ($this->hookIds !== []) {
-			$this->wire()->removeHook($this->hookIds);
+			$wire->removeHook($this->hookIds);
 			$this->hookIds = [];
 		}
+		$this->dataHooksRegistered = false;
 		$this->registered = false;
 		$this->executingProcessController = false;
 	}
@@ -319,6 +359,22 @@ final class FieldIntegrationHooks extends Wire
 				$select->val('InputfieldReactIcon');
 			}
 		}
+
+		if ($modules->isInstalled('InputfieldReactCondition')) {
+			$condInfo = $modules->getModuleInfoVerbose('InputfieldReactCondition');
+			$condTitle = (string) ($condInfo['title'] ?? 'React Condition Builder');
+			$condSummary = (string) ($condInfo['summary'] ?? '');
+			if ($fieldtype->className() === 'FieldtypeText') {
+				$condLabel = $condSummary !== '' ? "{$condTitle} [span.detail] - {$condSummary} [/span]" : $condTitle;
+				$select->addOption('InputfieldReactCondition', $condLabel);
+			} else {
+				$select->addOption('InputfieldReactCondition', $condTitle);
+			}
+
+			if ($field instanceof Field && InputfieldReactCondition::isConditionField($field)) {
+				$select->val('InputfieldReactCondition');
+			}
+		}
 	}
 
 	/**
@@ -352,6 +408,12 @@ final class FieldIntegrationHooks extends Wire
 		if ($cls === 'inputfieldreacticon') {
 			$event->replace = true;
 			$event->return = InputfieldReactIcon::encodeStorageValue($event->arguments(2), $field);
+			return;
+		}
+
+		if ($cls === 'inputfieldreactcondition') {
+			$event->replace = true;
+			$event->return = InputfieldReactCondition::encodeJson($event->arguments(2));
 			return;
 		}
 
@@ -397,6 +459,12 @@ final class FieldIntegrationHooks extends Wire
 		if ($cls === 'inputfieldreacticon') {
 			$event->replace = true;
 			$event->return = InputfieldReactIcon::resolveValue($event->arguments(2));
+			return;
+		}
+
+		if ($cls === 'inputfieldreactcondition') {
+			$event->replace = true;
+			$event->return = InputfieldReactCondition::normalizeValue($event->arguments(2));
 			return;
 		}
 
@@ -446,6 +514,13 @@ final class FieldIntegrationHooks extends Wire
 			if ($cls === 'inputfieldreacticon') {
 				$event->replace = true;
 				$event->return = InputfieldReactIcon::renderIconMarkup($rawValue, $property);
+				return;
+			}
+
+			if ($cls === 'inputfieldreactcondition') {
+				$event->replace = true;
+				$specs = \Totoglu\React\Condition\ConditionNormalizer::normalizeFieldSpecs($field->get('conditionFields'));
+				$event->return = InputfieldReactCondition::renderConditionMarkup($rawValue, $specs, $property);
 				return;
 			}
 		}
@@ -579,6 +654,9 @@ final class FieldIntegrationHooks extends Wire
 		if (!$inputfield instanceof Inputfield) {
 			return;
 		}
+		if (str_contains((string) $event->return, 'data-rw-bridge-control=')) {
+			return;
+		}
 
 		$islandHtml = $this->react->controls()->renderControlIsland($inputfield, false);
 		if ($islandHtml !== null) {
@@ -593,6 +671,9 @@ final class FieldIntegrationHooks extends Wire
 	{
 		$inputfield = $event->object;
 		if (!$inputfield instanceof Inputfield) {
+			return;
+		}
+		if (str_contains((string) $event->return, 'data-rw-bridge-control=')) {
 			return;
 		}
 

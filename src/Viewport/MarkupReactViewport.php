@@ -21,6 +21,7 @@ use Totoglu\React\Data\ReactColumn;
 use Totoglu\React\Data\ReactPageResult;
 use Totoglu\React\Data\ReactRecord;
 use Totoglu\React\Inertia\InteractWithReactTranslations;
+use Totoglu\React\Security\SignedTokenCodec;
 use Totoglu\React\Security\UrlSanitizer;
 use Totoglu\React\Support\IslandMarkup;
 
@@ -45,7 +46,7 @@ abstract class MarkupReactViewport extends MarkupInertia
 	public string $componentId = '';
 
 	/**
-	 * Registered provider descriptor in `React::instance()->providers()` (e.g., `'pages:template=basic-page'`, `'entries:blog_post'`).
+	 * Registered provider descriptor in `React::instance()->providers()` (e.g., `'pages:template=basic-page'`, `'custom:articles'`).
 	 */
 	public string $provider = '';
 
@@ -2344,9 +2345,10 @@ abstract class MarkupReactViewport extends MarkupInertia
 					}
 
 					$isSavedOk = ($result['ok'] ?? true) === true;
-					$this->noticeMessage = (string) (
-						$result['message'] ?? ($isSavedOk ? $this->_('Record updated.') : $this->_('Unable to update record.'))
-					);
+					$fallbackNotice = $isSavedOk
+						? $this->_('Record updated.')
+						: $this->_('Unable to update record.');
+					$this->noticeMessage = (string) ($result['message'] ?? $fallbackNotice);
 					$this->noticeType = $isSavedOk ? 'success' : 'error';
 					if ($isSavedOk) {
 						$this->quickEditRecordId = '';
@@ -2705,7 +2707,7 @@ abstract class MarkupReactViewport extends MarkupInertia
 			'uid' => (int) $this->wire()->user->id,
 		];
 
-		return React::instance($this)->tokenCodec()->encode($envelope);
+		return React::instance($this)->tokenCodec()->encode($envelope, 'viewport');
 	}
 
 	/**
@@ -2716,7 +2718,7 @@ abstract class MarkupReactViewport extends MarkupInertia
 	public function verifyViewportState(string $token): ?array
 	{
 		$currentUserId = (int) $this->wire()->user->id;
-		$decoded = React::instance($this)->tokenCodec()->decode($token, $currentUserId);
+		$decoded = React::instance($this)->tokenCodec()->decode($token, $currentUserId, SignedTokenCodec::DEFAULT_TTL, 'viewport');
 		if (
 			$decoded === null
 			|| ($decoded['typ'] ?? '') !== 'viewport'
@@ -2741,6 +2743,15 @@ abstract class MarkupReactViewport extends MarkupInertia
 	 * @var array<string, list<string>>
 	 */
 	private static array $viewStylesCache = [];
+
+	/**
+	 * Reset static asset caches (invoked on `React::uninstall()`).
+	 */
+	public static function resetCache(): void
+	{
+		self::$viewScriptsCache = [];
+		self::$viewStylesCache = [];
+	}
 
 	/**
 	 * Resolve toolbar metadata (`icon`, `label`) for allowed and registered viewport layout modes.

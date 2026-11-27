@@ -122,6 +122,18 @@ class IconManager extends Wire
 	private bool $adminCssVerified = false;
 	private int $verifiedIconsRevision = -1;
 	private string $verifiedCapSig = '';
+	private ?bool $cachedHasActiveAdminCss = null;
+
+	/**
+	 * Reset static icon caches (invoked on `React::uninstall()`).
+	 */
+	public static function resetCache(): void
+	{
+		self::$catalogCache = null;
+		self::$registeredAdminIcons = [];
+		self::$registeredCanonicalCache = null;
+		self::$registeredIconsRevision = 0;
+	}
 
 	/**
 	 * Register canonical or `rwv--*` icon identifiers so `VectorIcons.css` includes `mask-image` rules for them.
@@ -1229,6 +1241,8 @@ class IconManager extends Wire
 				return $this->generateAdminCss();
 			}
 
+			$this->cachedHasActiveAdminCss = self::parseHasActiveFromHead($head);
+
 			$expectedRegSig = 'rw-reg-sig:' . self::registeredIconsSignature();
 			if (self::$registeredAdminIcons !== [] && !str_contains($head, $expectedRegSig)) {
 				$fullCss = @file_get_contents($path);
@@ -1259,6 +1273,9 @@ class IconManager extends Wire
 	public function hasActiveAdminCss(): bool
 	{
 		$path = $this->ensureAdminCss();
+		if ($this->cachedHasActiveAdminCss !== null) {
+			return $this->cachedHasActiveAdminCss;
+		}
 		if (!is_file($path)) {
 			return false;
 		}
@@ -1266,6 +1283,12 @@ class IconManager extends Wire
 		if (!is_string($head)) {
 			return false;
 		}
+
+		return $this->cachedHasActiveAdminCss = self::parseHasActiveFromHead($head);
+	}
+
+	private static function parseHasActiveFromHead(string $head): bool
+	{
 		if (preg_match('/rw-count:(\d+)/', $head, $matches) === 1) {
 			return (int) $matches[1] > 0;
 		}
@@ -1309,77 +1332,69 @@ class IconManager extends Wire
 			$collect($registeredIcon);
 		}
 
-		if ($modules !== null) {
-			foreach ($modules as $mod) {
-				$modName = is_object($mod) ? (method_exists($mod, 'className') ? (string) $mod->className() : '') : (string) $mod;
-				if ($modName === '') {
+		foreach ($modules as $mod) {
+			$modName = is_object($mod) ? (method_exists($mod, 'className') ? (string) $mod->className() : '') : (string) $mod;
+			if ($modName === '') {
+				continue;
+			}
+			try {
+				$info = $modules->getModuleInfo($modName);
+				$modIcon = isset($info['icon']) && is_string($info['icon']) ? trim($info['icon']) : '';
+				if ($modIcon !== '' && self::isAdminVectorIcon($modIcon)) {
+					$collect($modIcon);
+				}
+			} catch (\Throwable) {
+				// Ignore uninstalled or transient module metadata
+			}
+		}
+
+		foreach ($templates as $template) {
+			if (!$template instanceof Template) {
+				continue;
+			}
+			$vectorProp = $template->get('vectorIcon');
+			if (is_string($vectorProp) && trim($vectorProp) !== '') {
+				$collect($vectorProp);
+			}
+			$tplIcon = (string) $template->getIcon(false);
+			if ($tplIcon !== '' && self::isAdminVectorIcon($tplIcon)) {
+				$collect($tplIcon);
+			}
+		}
+
+		foreach ($fields as $field) {
+			if (!$field instanceof Field) {
+				continue;
+			}
+			$vectorProp = $field->get('vectorIcon');
+			if (is_string($vectorProp) && trim($vectorProp) !== '') {
+				$collect($vectorProp);
+			}
+			$fIcon = (string) $field->getIcon(false);
+			if ($fIcon !== '' && self::isAdminVectorIcon($fIcon)) {
+				$collect($fIcon);
+			}
+		}
+
+		foreach ($fieldgroups as $fg) {
+			if (!$fg instanceof Fieldgroup) {
+				continue;
+			}
+			foreach ($fg as $field) {
+				if (!$field instanceof Field || !$fg->hasFieldContext($field)) {
 					continue;
 				}
-				try {
-					$info = $modules->getModuleInfo($modName);
-					$modIcon = isset($info['icon']) && is_string($info['icon']) ? trim($info['icon']) : '';
-					if ($modIcon !== '' && self::isAdminVectorIcon($modIcon)) {
-						$collect($modIcon);
-					}
-				} catch (\Throwable) {
-					// Ignore uninstalled or transient module metadata
+				$ctx = $fg->getFieldContextArray($field->id);
+				if (isset($ctx['vectorIcon']) && is_string($ctx['vectorIcon']) && trim($ctx['vectorIcon']) !== '') {
+					$collect($ctx['vectorIcon']);
+				}
+				if (isset($ctx['icon']) && is_string($ctx['icon']) && self::isAdminVectorIcon($ctx['icon'])) {
+					$collect($ctx['icon']);
 				}
 			}
 		}
 
-		if ($templates !== null) {
-			foreach ($templates as $template) {
-				if (!$template instanceof Template) {
-					continue;
-				}
-				$vectorProp = $template->get('vectorIcon');
-				if (is_string($vectorProp) && trim($vectorProp) !== '') {
-					$collect($vectorProp);
-				}
-				$tplIcon = (string) $template->getIcon(false);
-				if ($tplIcon !== '' && self::isAdminVectorIcon($tplIcon)) {
-					$collect($tplIcon);
-				}
-			}
-		}
-
-		if ($fields !== null) {
-			foreach ($fields as $field) {
-				if (!$field instanceof Field) {
-					continue;
-				}
-				$vectorProp = $field->get('vectorIcon');
-				if (is_string($vectorProp) && trim($vectorProp) !== '') {
-					$collect($vectorProp);
-				}
-				$fIcon = (string) $field->getIcon(false);
-				if ($fIcon !== '' && self::isAdminVectorIcon($fIcon)) {
-					$collect($fIcon);
-				}
-			}
-		}
-
-		if ($fieldgroups !== null) {
-			foreach ($fieldgroups as $fg) {
-				if (!$fg instanceof Fieldgroup) {
-					continue;
-				}
-				foreach ($fg as $field) {
-					if (!$field instanceof Field || !$fg->hasFieldContext($field)) {
-						continue;
-					}
-					$ctx = $fg->getFieldContextArray($field->id);
-					if (isset($ctx['vectorIcon']) && is_string($ctx['vectorIcon']) && trim($ctx['vectorIcon']) !== '') {
-						$collect($ctx['vectorIcon']);
-					}
-					if (isset($ctx['icon']) && is_string($ctx['icon']) && self::isAdminVectorIcon($ctx['icon'])) {
-						$collect($ctx['icon']);
-					}
-				}
-			}
-		}
-
-		if ($fields !== null && $pages !== null && $fields->get('page_icon') instanceof Field) {
+		if ($fields->get('page_icon') instanceof Field) {
 			try {
 				$adminPages = $pages->find("template=admin, page_icon!='', include=unpublished, check_access=0, sort=id, limit=500");
 				foreach ($adminPages as $adminPage) {
@@ -1456,24 +1471,17 @@ class IconManager extends Wire
 		$cssPath = $this->getAdminCssPath();
 		$dir = dirname($cssPath);
 		if (!is_dir($dir)) {
-			if ($files !== null) {
-				$files->mkdir($dir, true);
-			} else {
-				@mkdir($dir, 0755, true);
-			}
+			$files->mkdir($dir, true);
 		}
 		if (is_link($cssPath) || is_link(rtrim($dir, '/\\'))) {
 			return $cssPath;
 		}
-		if ($files !== null) {
-			$files->filePutContents($cssPath, $css, LOCK_EX);
-		} else {
-			@file_put_contents($cssPath, $css, LOCK_EX);
-		}
+		$files->filePutContents($cssPath, $css, LOCK_EX);
 
 		$this->adminCssVerified = true;
 		$this->verifiedIconsRevision = self::$registeredIconsRevision;
 		$this->verifiedCapSig = $capSig;
+		$this->cachedHasActiveAdminCss = count($prefixedIcons) > 0;
 
 		return $cssPath;
 	}

@@ -8,12 +8,14 @@ use ProcessWire\HookEvent;
 use ProcessWire\React;
 use ProcessWire\User;
 use ProcessWire\Wire;
+use ProcessWire\WireDatabaseException;
+use ProcessWire\WireDatabaseQueryException;
 use ProcessWire\WireException;
+use ProcessWire\WireFilesException;
 use ProcessWire\WirePermissionException;
 use Totoglu\React\Relation\RelationItem;
 use Totoglu\React\Security\AccessGuard;
 use Totoglu\React\Theme\ThemePreset;
-use Totoglu\React\Theme\ThemeTokenParser;
 use Totoglu\React\Viewport\MarkupReactViewport;
 
 /**
@@ -191,6 +193,57 @@ final class ReactGatewayRouter extends Wire
 	}
 
 	/**
+	 * Determine whether an exception message is safe to expose to non-debug HTTP clients.
+	 */
+	private function isClientSafeException(\Throwable $e): bool
+	{
+		if ((bool) $this->wire()->config->debug) {
+			return true;
+		}
+
+		$isInternalWireException = $e instanceof WireDatabaseException
+			|| $e instanceof WireDatabaseQueryException
+			|| $e instanceof WireFilesException;
+
+		return ($e instanceof WireException && !$isInternalWireException)
+			|| $e instanceof \InvalidArgumentException
+			|| $e instanceof \DomainException;
+	}
+
+	/**
+	 * Execute a gateway HTTP callback and map unexpected internal exceptions to safe JSON responses.
+	 *
+	 * @param callable(): array<string, mixed> $callback
+	 */
+	private function respondJsonGuarded(
+		callable $callback,
+		string $logPrefix,
+		string $fallbackError,
+		string $cacheControl = 'no-store',
+	): string {
+		try {
+			return $this->respondJson($callback(), $cacheControl);
+		} catch (WirePermissionException $e) {
+			$msg = trim($e->getMessage());
+
+			return $this->respondJson([
+				'ok' => false,
+				'status' => 403,
+				'error' => $msg !== '' ? $msg : $this->_('Access denied.'),
+			], $cacheControl);
+		} catch (\Throwable $e) {
+			$this->wire()->log->error($logPrefix . ': ' . $e->getMessage());
+			$isSafe = $this->isClientSafeException($e);
+
+			return $this->respondJson([
+				'ok' => false,
+				'status' => 422,
+				'error' => $isSafe ? $e->getMessage() : $fallbackError,
+			], $cacheControl);
+		}
+	}
+
+	/**
 	 * Resolve a `MarkupReactViewport` module instance by short class name.
 	 */
 	public function resolveViewportInstance(string $viewportClass): MarkupReactViewport
@@ -263,17 +316,11 @@ final class ReactGatewayRouter extends Wire
 
 		$payload['_requestMethod'] = strtoupper(trim((string) ($_SERVER['REQUEST_METHOD'] ?? 'POST')));
 
-		try {
-			return $this->respondJson($this->handleViewportAction($payload, true));
-		} catch (WirePermissionException $e) {
-			$msg = trim($e->getMessage());
-
-			return $this->respondJson([
-				'ok' => false,
-				'status' => 403,
-				'error' => $msg !== '' ? $msg : $this->_('Access denied.'),
-			]);
-		}
+		return $this->respondJsonGuarded(
+			fn(): array => $this->handleViewportAction($payload, true),
+			'React viewport error',
+			'Viewport request failed.',
+		);
 	}
 
 	/**
@@ -423,7 +470,10 @@ final class ReactGatewayRouter extends Wire
 			throw $e;
 		} catch (\Throwable $e) {
 			$this->wire()->log->error('React viewport error: ' . $e->getMessage());
-			$isSafe = $e instanceof WireException || (bool) $this->wire()->config->debug;
+			$isInternalWireException = $e instanceof WireDatabaseException
+				|| $e instanceof WireDatabaseQueryException
+				|| $e instanceof WireFilesException;
+			$isSafe = ($e instanceof WireException && !$isInternalWireException) || (bool) $this->wire()->config->debug;
 
 			return [
 				'ok' => false,
@@ -479,7 +529,11 @@ final class ReactGatewayRouter extends Wire
 
 		$payload['_requestMethod'] = strtoupper(trim((string) ($_SERVER['REQUEST_METHOD'] ?? 'POST')));
 
-		return $this->respondJson($this->handleWorkspacePrefsAction($payload, true, $user));
+		return $this->respondJsonGuarded(
+			fn(): array => $this->handleWorkspacePrefsAction($payload, true, $user),
+			'React workspace-prefs error',
+			'Workspace preference request failed.',
+		);
 	}
 
 	/**
@@ -633,8 +687,7 @@ final class ReactGatewayRouter extends Wire
 				$store->setThemePreset('', $resolvedUser);
 			} else {
 				$preset = ThemePreset::tryFrom($rawPreset);
-				$tokenParser = new ThemeTokenParser();
-				$customReady = $tokenParser->isComplete($tokenParser->parse((string) $this->react->get('themeCustomTokens')));
+				$customReady = $this->react->theme()->hasValidCustomTokens();
 				if ($preset === null || ($preset === ThemePreset::Custom && !$customReady)) {
 					return [
 						'ok' => false,
@@ -793,7 +846,11 @@ final class ReactGatewayRouter extends Wire
 
 		$payload['_requestMethod'] = strtoupper(trim((string) ($_SERVER['REQUEST_METHOD'] ?? 'POST')));
 
-		return $this->respondJson($this->handlePresenceAction($payload, true, $user));
+		return $this->respondJsonGuarded(
+			fn(): array => $this->handlePresenceAction($payload, true, $user),
+			'React presence error',
+			'Presence request failed.',
+		);
 	}
 
 	/**
@@ -838,16 +895,6 @@ final class ReactGatewayRouter extends Wire
 			];
 		}
 
-		$store = $this->react->presence();
-		$resourceKey = $store->sanitizeResourceKey((string) ($requestPayload['resourceKey'] ?? ''));
-		if ($resourceKey === '') {
-			return [
-				'ok' => false,
-				'status' => 422,
-				'error' => 'Missing or invalid resourceKey.',
-			];
-		}
-
 		$action = strtolower(trim((string) ($requestPayload['action'] ?? 'heartbeat')));
 		if ($action === '') {
 			$action = 'heartbeat';
@@ -859,6 +906,36 @@ final class ReactGatewayRouter extends Wire
 				'error' => 'Unsupported presence action.',
 			];
 		}
+
+		$presenceToken = trim((string) ($requestPayload['presenceToken'] ?? ''));
+		$verified = $presenceToken !== '' ? $this->react->verifyPresenceToken($presenceToken, $resolvedUser) : null;
+		if ($verified === null) {
+			return [
+				'ok' => false,
+				'status' => 403,
+				'error' => 'Invalid or expired presenceToken.',
+			];
+		}
+
+		$requestedKey = trim((string) ($requestPayload['resourceKey'] ?? ''));
+		if ($requestedKey !== '' && $requestedKey !== $verified['resourceKey']) {
+			return [
+				'ok' => false,
+				'status' => 403,
+				'error' => 'Presence token does not match requested resource.',
+			];
+		}
+
+		if ($action === 'saved' && $verified['canMarkSaved'] !== true) {
+			return [
+				'ok' => false,
+				'status' => 403,
+				'error' => 'You do not have permission to mark this resource as saved.',
+			];
+		}
+
+		$store = $this->react->presence();
+		$resourceKey = $verified['resourceKey'];
 		$clientId = (string) ($requestPayload['clientId'] ?? '');
 
 		$snapshot = match ($action) {
@@ -896,7 +973,11 @@ final class ReactGatewayRouter extends Wire
 
 		$payload['_requestMethod'] = strtoupper(trim((string) ($_SERVER['REQUEST_METHOD'] ?? 'POST')));
 
-		return $this->respondJson($this->handleRelationAction($payload, true));
+		return $this->respondJsonGuarded(
+			fn(): array => $this->handleRelationAction($payload, true),
+			'React relation error',
+			'Relation request failed.',
+		);
 	}
 
 	/**
@@ -983,11 +1064,18 @@ final class ReactGatewayRouter extends Wire
 		$allowedResources = is_array($config['allowedResources'] ?? null)
 			? array_values(array_map(static fn($r): string => strtolower(trim((string) $r)), $config['allowedResources']))
 			: [];
+		if ($cardinality === 'm2a' && $allowedResources === []) {
+			return [
+				'ok' => false,
+				'status' => 403,
+				'error' => 'No allowed resources configured for this polymorphic field.',
+			];
+		}
 
 		$requestedResource = strtolower(trim((string) ($requestPayload['resource'] ?? '')));
 		if ($requestedResource !== '' && $requestedResource !== '_all') {
 			if ($cardinality === 'm2a') {
-				if ($allowedResources !== [] && !in_array($requestedResource, $allowedResources, true)) {
+				if (!in_array($requestedResource, $allowedResources, true)) {
 					return [
 						'ok' => false,
 						'status' => 403,
@@ -1232,7 +1320,10 @@ final class ReactGatewayRouter extends Wire
 				'error' => $msg !== '' ? $msg : $this->_('Access denied.'),
 			];
 		} catch (\Throwable $e) {
-			$isClientException = $e instanceof WireException
+			$isInternalWireException = $e instanceof WireDatabaseException
+				|| $e instanceof WireDatabaseQueryException
+				|| $e instanceof WireFilesException;
+			$isClientException = ($e instanceof WireException && !$isInternalWireException)
 				|| $e instanceof \InvalidArgumentException
 				|| $e instanceof \DomainException;
 			if (!$isClientException) {
@@ -1274,7 +1365,11 @@ final class ReactGatewayRouter extends Wire
 
 		$payload['_requestMethod'] = strtoupper(trim((string) ($_SERVER['REQUEST_METHOD'] ?? 'POST')));
 
-		return $this->respondJson($this->handleMediaAction($payload, true));
+		return $this->respondJsonGuarded(
+			fn(): array => $this->handleMediaAction($payload, true),
+			'React media error',
+			'Media request failed.',
+		);
 	}
 
 	/**
@@ -1326,7 +1421,11 @@ final class ReactGatewayRouter extends Wire
 
 		$payload['_requestMethod'] = $reqMethod;
 
-		return $this->respondJson($this->handleTiptapAction($payload, true));
+		return $this->respondJsonGuarded(
+			fn(): array => $this->handleTiptapAction($payload, true),
+			'React tiptap error',
+			'Editor media request failed.',
+		);
 	}
 
 	/**
@@ -1417,7 +1516,12 @@ final class ReactGatewayRouter extends Wire
 		}
 		$payload['_requestMethod'] = strtoupper(trim((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')));
 
-		return $this->respondJson($this->handleCommandSearchAction($payload), 'no-store, private');
+		return $this->respondJsonGuarded(
+			fn(): array => $this->handleCommandSearchAction($payload),
+			'React command-search error',
+			'Search request failed.',
+			'no-store, private',
+		);
 	}
 
 	/**

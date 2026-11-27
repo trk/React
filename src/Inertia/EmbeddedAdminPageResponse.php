@@ -117,12 +117,17 @@ final class EmbeddedAdminPageResponse extends PageResponse
 		$safeAdminRootJson = (string) json_encode($adminRootAttr, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES);
 		$safeLauncherPathJson = (string) json_encode($launcherPathAttr, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES);
 
+		$rawCspNonce = $config->get('cspNonce');
+		$nonceAttr = is_string($rawCspNonce) && trim($rawCspNonce) !== ''
+			? ' nonce="' . $sanitizer->entities(trim($rawCspNonce)) . '"'
+			: '';
+
 		$headFragments = [];
 		if ($colorSchemeCss !== '') {
 			$safeCss = (string) preg_replace('~<\s*/\s*style~i', '<\\/style', $colorSchemeCss);
-			$headFragments[] = '<style id="pw-color-scheme-tokens">' . $safeCss . '</style>';
+			$headFragments[] = '<style id="pw-color-scheme-tokens"' . $nonceAttr . '>' . $safeCss . '</style>';
 		}
-		$headFragments[] = '<script>(function(){try{var d=document.documentElement;d.setAttribute("data-rw-shell-mode","admin");d.setAttribute("data-rw-shell-layout",' . $safeShellLayoutJson . ');d.setAttribute("data-rw-sidebar-collapsed",' . $safeSidebarCollapsedJson . ');d.setAttribute("data-rw-admin-root",' . $safeAdminRootJson . ');d.setAttribute("data-rw-launcher-path",' . $safeLauncherPathJson . ');var m=' . $safeThemeJson . ';d.setAttribute("data-theme-mode",m);var dark=m==="dark"||(m==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);d.classList.toggle("dark",dark);d.classList.toggle("light",!dark);}catch(e){}})();</script>';
+		$headFragments[] = '<script' . $nonceAttr . '>(function(){try{var d=document.documentElement;d.setAttribute("data-rw-shell-mode","admin");d.setAttribute("data-rw-shell-layout",' . $safeShellLayoutJson . ');d.setAttribute("data-rw-sidebar-collapsed",' . $safeSidebarCollapsedJson . ');d.setAttribute("data-rw-admin-root",' . $safeAdminRootJson . ');d.setAttribute("data-rw-launcher-path",' . $safeLauncherPathJson . ');var m=' . $safeThemeJson . ';d.setAttribute("data-theme-mode",m);var dark=m==="dark"||(m==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);d.classList.toggle("dark",dark);d.classList.toggle("light",!dark);}catch(e){}})();</script>';
 
 		$adminTheme = $wire->adminTheme;
 		if ($adminTheme instanceof AdminTheme) {
@@ -134,7 +139,7 @@ final class EmbeddedAdminPageResponse extends PageResponse
 				: $react->theme()->resolveThemeTokenCss($wire->user);
 			if ($themeCss !== '') {
 				$safeThemeCss = (string) preg_replace('~<\s*/\s*style~i', '<\\/style', $themeCss);
-				$headFragments[] = '<style id="rw-theme-tokens">' . $safeThemeCss . '</style>';
+				$headFragments[] = '<style id="rw-theme-tokens"' . $nonceAttr . '>' . $safeThemeCss . '</style>';
 			}
 			$inlineBootstrap = implode("\n", $headFragments) . "\n";
 		}

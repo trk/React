@@ -245,10 +245,11 @@ final class ThemeTokenParser
 		if ($selector === '' || str_starts_with($selector, '@')) {
 			return null;
 		}
-		if (preg_match('/\.dark\b|\[data-theme=["\']?dark["\']?\]|\[data-mode=["\']?dark["\']?\]/', $selector) === 1) {
+		$withoutNot = (string) preg_replace('/:not\([^)]*\)/i', '', $selector);
+		if (preg_match('/\.dark\b|\[data-theme=["\']?dark["\']?\]|\[data-mode=["\']?dark["\']?\]/', $withoutNot) === 1) {
 			return 'dark';
 		}
-		if (preg_match('/(?:^|[\s,]):root\b|(?:^|[\s,])html\b|\.light\b/', $selector) === 1) {
+		if (preg_match('/(?:^|[\s,]):root\b|(?:^|[\s,])html\b|\.light\b/', $withoutNot) === 1) {
 			return 'light';
 		}
 

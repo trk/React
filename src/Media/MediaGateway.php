@@ -19,12 +19,17 @@ use ProcessWire\Pageimage;
 use ProcessWire\Pageimages;
 use ProcessWire\React;
 use ProcessWire\Sanitizer;
+use ProcessWire\Template;
 use ProcessWire\User;
 use ProcessWire\Wire;
+use ProcessWire\WireDatabaseException;
+use ProcessWire\WireDatabaseQueryException;
 use ProcessWire\WireException;
+use ProcessWire\WireFilesException;
 use ProcessWire\WirePageEditor;
 use ProcessWire\WireUpload;
 use Totoglu\React\Security\AccessGuard;
+use Totoglu\React\Security\SignedTokenCodec;
 
 /**
  * MediaGateway
@@ -44,6 +49,8 @@ final class MediaGateway extends Wire
 	 * @var array<string, MediaHostAdapterInterface>
 	 */
 	private array $hostAdapters = [];
+
+	private ?UploadedFileValidator $fileValidator = null;
 	/**
 	 * Maximum decoded raster pixel budget (64 megapixels) and per-axis cap to prevent decompression bombs.
 	 */
@@ -78,8 +85,7 @@ final class MediaGateway extends Wire
 		'pageId',
 		'rootPageId',
 		'hostPageId',
-		'entryUuid',
-		'entryType',
+		'ownerId',
 		'prefix',
 		'extensions',
 		'maxFiles',
@@ -95,6 +101,18 @@ final class MediaGateway extends Wire
 		'overwrite',
 		'noLang',
 		'readOnly',
+	];
+
+	/**
+	 * Token claim keys reserved exclusively by `SignedTokenCodec` / `MediaGateway`.
+	 *
+	 * @var list<string>
+	 */
+	private const RESERVED_TOKEN_KEYS = [
+		'typ',
+		'uid',
+		'iat',
+		'exp',
 	];
 
 	/**
@@ -129,11 +147,33 @@ final class MediaGateway extends Wire
 			$envelope[$key] = $val;
 		}
 
+		$kind = strtolower(trim((string) ($config['kind'] ?? '')));
+		if (
+			$kind !== ''
+			&& $kind !== 'page'
+			&& $kind !== PageLinkMediaHostAdapter::KIND
+			&& $this->hasHostAdapter($kind)
+		) {
+			foreach ($config as $extKey => $extVal) {
+				if (
+					!is_string($extKey)
+					|| $extKey === ''
+					|| in_array($extKey, self::ALLOWED_ENVELOPE_KEYS, true)
+					|| in_array($extKey, self::RESERVED_TOKEN_KEYS, true)
+				) {
+					continue;
+				}
+				if (is_scalar($extVal) || $extVal === null) {
+					$envelope[$extKey] = $extVal;
+				}
+			}
+		}
+
 		$resolvedUid = $userId ?? (int) $this->wire()->user->id;
 		$envelope['typ'] = 'media';
 		$envelope['uid'] = $resolvedUid;
 
-		return React::instance($this)->tokenCodec()->encode($envelope);
+		return React::instance($this)->tokenCodec()->encode($envelope, 'media');
 	}
 
 	/**
@@ -144,7 +184,7 @@ final class MediaGateway extends Wire
 	public function verify(string $token, ?int $expectedUserId = null): ?array
 	{
 		$currentUid = $expectedUserId ?? (int) $this->wire()->user->id;
-		$decoded = React::instance($this)->tokenCodec()->decode($token, $currentUid);
+		$decoded = React::instance($this)->tokenCodec()->decode($token, $currentUid, SignedTokenCodec::DEFAULT_TTL, 'media');
 		if (
 			$decoded === null
 			|| ($decoded['typ'] ?? '') !== 'media'
@@ -154,6 +194,19 @@ final class MediaGateway extends Wire
 		}
 
 		return $decoded;
+	}
+
+	/**
+	 * Determine whether `$hostPage` is a database-backed template `Page` (including `RepeaterPage`)
+	 * rather than a virtual in-memory `Pagefiles` host object.
+	 */
+	public static function isPhysicalPageHost(mixed $hostPage): bool
+	{
+		return $hostPage instanceof Page
+			&& !$hostPage instanceof NullPage
+			&& (int) $hostPage->id > 0
+			&& $hostPage->template instanceof Template
+			&& (int) $hostPage->template->id > 0;
 	}
 
 	/**
@@ -185,6 +238,137 @@ final class MediaGateway extends Wire
 	public function getHostAdapter(string $kind): ?MediaHostAdapterInterface
 	{
 		return $this->hostAdapters[strtolower(trim($kind))] ?? null;
+	}
+
+	/**
+	 * Return the shared `UploadedFileValidator` helper.
+	 */
+	public function fileValidator(): UploadedFileValidator
+	{
+		if ($this->fileValidator === null) {
+			$this->fileValidator = new UploadedFileValidator();
+			$this->wire($this->fileValidator);
+		}
+
+		return $this->fileValidator;
+	}
+
+	/**
+	 * Extract a host owner identifier from a signed media envelope (`ownerId` or adapter-supplied `*Uuid`).
+	 *
+	 * @param array<string, mixed> $envelope
+	 */
+	public function resolveEnvelopeOwnerId(array $envelope): string
+	{
+		$ownerId = trim((string) ($envelope['ownerId'] ?? ''));
+		if ($ownerId !== '') {
+			return $ownerId;
+		}
+
+		foreach ($envelope as $key => $value) {
+			if (
+				is_string($key)
+				&& str_ends_with($key, 'Uuid')
+				&& is_string($value)
+				&& trim($value) !== ''
+			) {
+				return trim($value);
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * Build a fallback envelope for a registered non-builtin `MediaHostAdapterInterface`
+	 * when no host `Inputfield` / `VirtualFileHost` is attached directly.
+	 *
+	 * @param array<string, mixed> $rawConfig
+	 * @return array<string, mixed>|null
+	 */
+	public function buildCustomHostFallbackEnvelope(
+		array $rawConfig,
+		string $ownerId,
+		string $inputName,
+		bool $readOnly = false,
+	): ?array {
+		if ($ownerId === '') {
+			return null;
+		}
+
+		$requestedKind = isset($rawConfig['hostKind']) && is_string($rawConfig['hostKind'])
+			? strtolower(trim($rawConfig['hostKind']))
+			: '';
+		$targetKind = '';
+
+		if (
+			$requestedKind !== ''
+			&& $requestedKind !== 'page'
+			&& $requestedKind !== PageLinkMediaHostAdapter::KIND
+			&& $this->hasHostAdapter($requestedKind)
+		) {
+			$targetKind = $requestedKind;
+		} else {
+			foreach (array_keys($this->hostAdapters) as $kind) {
+				if ($kind !== PageLinkMediaHostAdapter::KIND) {
+					$targetKind = $kind;
+					break;
+				}
+			}
+		}
+
+		if ($targetKind === '') {
+			return null;
+		}
+
+		$declFieldName = isset($rawConfig['fieldName']) && is_string($rawConfig['fieldName']) && trim($rawConfig['fieldName']) !== ''
+			? trim($rawConfig['fieldName'])
+			: $inputName;
+
+		$envelope = [
+			'kind' => $targetKind,
+			'ownerId' => $ownerId,
+			'fieldName' => $declFieldName,
+			'inputName' => $inputName,
+			'readOnly' => $readOnly,
+		];
+
+		$skipConfigKeys = [
+			'types',
+			'defaultType',
+			'media',
+			'mediaProfiles',
+			'selector',
+			'templates',
+			'parentId',
+			'typeLabels',
+			'enableLabel',
+			'enableAriaLabel',
+			'enableTarget',
+			'enableRel',
+			'enableAnchor',
+			'enableQuery',
+			'hostKind',
+			'ownerId',
+			'fieldName',
+			'inputName',
+			'readOnly',
+			'typ',
+			'uid',
+			'iat',
+			'exp',
+		];
+
+		foreach ($rawConfig as $key => $val) {
+			if (!is_string($key) || $key === '' || in_array($key, $skipConfigKeys, true)) {
+				continue;
+			}
+			if (is_scalar($val) || $val === null) {
+				$envelope[$key] = $val;
+			}
+		}
+
+		return $envelope;
 	}
 
 	/**
@@ -893,102 +1077,170 @@ final class MediaGateway extends Wire
 			? 1
 			: ($maxFiles > 1 && !$overwrite ? max(1, $maxFiles - $pagefiles->count()) : 0);
 
-		[$savedPaths, $uploadErrors] = $this->runValidatedUpload($uploadKey, $destPath, $envelope, $inputfield, $overwrite || $maxFiles === 1, $uploadedFiles, $maxUploadBatch);
-		if ($savedPaths === []) {
-			return [
-				'ok' => false,
-				'status' => 422,
-				'error' => $uploadErrors !== [] ? implode(' ', $uploadErrors) : $this->_('File upload failed validation.'),
-			];
-		}
+		$uploadBackupDirObj = null;
+		/** @var list<array{basename: string, backupPath: string, index: int, filedata: array<string|int, mixed>, langDescriptions: array<int, array{0: Language, 1: string}>, description: string, tags: string, focus: string, isTemp: bool}> $uploadBackups */
+		$uploadBackups = [];
+		$orderedNamesBefore = [];
 
-		$addedHashes = [];
-		$validationErrors = [];
-
-		foreach ($savedPaths as $fullPath) {
-			if (!is_file($fullPath)) {
-				continue;
+		try {
+			if (($maxFiles === 1 || $overwrite) && $pagefiles->count() > 0) {
+				$uploadBackupDirObj = $this->wire()->files->tempDir('rw-media-upload-bak-' . bin2hex(random_bytes(4)));
+				$uploadBackupDir = (string) $uploadBackupDirObj->get();
+				if (!is_dir($uploadBackupDir)) {
+					@mkdir($uploadBackupDir, 0775, true);
+				}
+				$idxPos = 0;
+				foreach ($pagefiles as $pfExisting) {
+					if (!$pfExisting instanceof Pagefile) {
+						continue;
+					}
+					$orderedNamesBefore[] = (string) $pfExisting->basename;
+					$snap = $this->snapshotPagefileForRollback($pfExisting, $uploadBackupDir, $noLang, $idxPos);
+					if ($snap === null) {
+						return [
+							'ok' => false,
+							'status' => 500,
+							'error' => $this->_('File upload failed validation.'),
+						];
+					}
+					$uploadBackups[] = $snap;
+					$idxPos++;
+				}
 			}
+
+			[$savedPaths, $uploadErrors] = $this->runValidatedUpload($uploadKey, $destPath, $envelope, $inputfield, $overwrite || $maxFiles === 1, $uploadedFiles, $maxUploadBatch);
+			if ($savedPaths === []) {
+				return [
+					'ok' => false,
+					'status' => 422,
+					'error' => $uploadErrors !== [] ? implode(' ', $uploadErrors) : $this->_('File upload failed validation.'),
+				];
+			}
+
+			$addedHashes = [];
+			/** @var list<Pagefile> $addedItems */
+			$addedItems = [];
+			$validationErrors = [];
+
+			foreach ($savedPaths as $fullPath) {
+				if (!is_file($fullPath)) {
+					continue;
+				}
+				$added = null;
+				try {
+					$basename = basename($fullPath);
+					$existingSame = $pagefiles->get($basename);
+
+					if ($maxFiles === 1 && $pagefiles->count() >= 1) {
+						foreach (iterator_to_array($pagefiles) as $existing) {
+							if (!$existing instanceof Pagefile) {
+								continue;
+							}
+							if ($existing instanceof Pageimage) {
+								$existing->removeVariations();
+							}
+							if ($existing->basename !== $basename) {
+								$pagefiles->remove($existing);
+							}
+						}
+						clearstatcache(true, $fullPath);
+					} elseif ($existingSame instanceof Pagefile && $overwrite) {
+						if ($existingSame instanceof Pageimage) {
+							$existingSame->removeVariations();
+						}
+						clearstatcache(true, $fullPath);
+					} elseif ($maxFiles > 1 && $pagefiles->count() >= $maxFiles) {
+						@unlink($fullPath);
+						$validationErrors[] = sprintf($this->_('Maximum file limit (%d) reached.'), $maxFiles);
+						continue;
+					}
+
+					$pagefiles->add($fullPath);
+					$added = $pagefiles->get($basename);
+					if (!$added instanceof Pagefile) {
+						$added = $pagefiles->last();
+					}
+					if (!$added instanceof Pagefile) {
+						continue;
+					}
+
+					if ($added instanceof Pageimage) {
+						$this->validateAndConstrainUploadedImage($added, $envelope, $inputfield);
+					}
+
+					if ($resolved['kind'] === 'page' && !$overwrite && $maxFiles !== 1) {
+						$added->isTemp(true);
+					}
+
+					$addedItems[] = $added;
+					$addedHashes[(string) $added->hash] = true;
+				} catch (\Throwable $e) {
+					if ($added instanceof Pagefile) {
+						if ($added instanceof Pageimage) {
+							$added->removeVariations();
+						}
+						$pagefiles->remove($added);
+					}
+					if (is_file($fullPath)) {
+						@unlink($fullPath);
+					}
+					$this->wire()->log->error('React media upload error: ' . $e->getMessage());
+					$isInternalWireException = $e instanceof WireDatabaseException
+						|| $e instanceof WireDatabaseQueryException
+						|| $e instanceof WireFilesException;
+					$isSafeClientException = ($e instanceof WireException && !$isInternalWireException)
+						|| (bool) $this->wire()->config->debug;
+					$validationErrors[] = $isSafeClientException
+						? $e->getMessage()
+						: $this->_('File upload validation failed.');
+				}
+			}
+
+			if ($addedHashes === [] && $validationErrors !== []) {
+				$this->restoreUploadBackups($resolved, $pagefiles, $addedItems, $uploadBackups, $orderedNamesBefore, $maxFiles);
+
+				return [
+					'ok' => false,
+					'status' => 422,
+					'error' => implode(' ', $validationErrors),
+				];
+			}
+
 			try {
-				$basename = basename($fullPath);
-				$existingSame = $pagefiles->get($basename);
-
-				if ($maxFiles === 1 && $pagefiles->count() >= 1) {
-					foreach (iterator_to_array($pagefiles) as $existing) {
-						if (!$existing instanceof Pagefile) {
-							continue;
-						}
-						if ($existing instanceof Pageimage) {
-							$existing->removeVariations();
-						}
-						if ($existing->basename !== $basename) {
-							$pagefiles->remove($existing);
-						}
-					}
-					clearstatcache(true, $fullPath);
-				} elseif ($existingSame instanceof Pagefile && $overwrite) {
-					if ($existingSame instanceof Pageimage) {
-						$existingSame->removeVariations();
-					}
-					clearstatcache(true, $fullPath);
-				} elseif ($maxFiles > 1 && $pagefiles->count() >= $maxFiles) {
-					@unlink($fullPath);
-					$validationErrors[] = sprintf($this->_('Maximum file limit (%d) reached.'), $maxFiles);
-					continue;
-				}
-
-				$pagefiles->add($fullPath);
-				$added = $pagefiles->get($basename);
-				if (!$added instanceof Pagefile) {
-					$added = $pagefiles->last();
-				}
-				if (!$added instanceof Pagefile) {
-					continue;
-				}
-
-				if ($added instanceof Pageimage) {
-					$this->validateAndConstrainUploadedImage($added, $envelope, $inputfield);
-				}
-
-				if ($resolved['kind'] === 'page' && !$overwrite && $maxFiles !== 1) {
-					$added->isTemp(true);
-				}
-
-				$addedHashes[(string) $added->hash] = true;
+				$this->persistPagefiles($resolved, $pagefiles, $maxFiles);
 			} catch (\Throwable $e) {
-				if (isset($added) && $added instanceof Pagefile) {
-					$pagefiles->remove($added);
+				$this->restoreUploadBackups($resolved, $pagefiles, $addedItems, $uploadBackups, $orderedNamesBefore, $maxFiles);
+				$this->wire()->log->error('React media upload persist failed: ' . $e->getMessage());
+
+				return [
+					'ok' => false,
+					'status' => 500,
+					'error' => $this->_('File upload validation failed.'),
+				];
+			}
+
+			$allFiles = $this->serializeCollection($pagefiles, $inputfield, $inputName, $noLang, true);
+			$newItems = array_values(array_filter(
+				$allFiles,
+				static fn(array $item): bool => isset($addedHashes[(string) ($item['hash'] ?? '')]),
+			));
+
+			return [
+				'ok' => true,
+				'status' => 200,
+				'items' => $newItems,
+				'files' => $allFiles,
+				'warnings' => array_values(array_merge($uploadErrors, $validationErrors)),
+			];
+		} finally {
+			if ($uploadBackupDirObj !== null) {
+				try {
+					$uploadBackupDirObj->remove();
+				} catch (\Throwable) {
+					// Best-effort cleanup of upload backup directory
 				}
-				if (is_file($fullPath)) {
-					@unlink($fullPath);
-				}
-				$validationErrors[] = $e->getMessage();
 			}
 		}
-
-		if ($addedHashes === [] && $validationErrors !== []) {
-			return [
-				'ok' => false,
-				'status' => 422,
-				'error' => implode(' ', $validationErrors),
-			];
-		}
-
-		$this->persistPagefiles($resolved, $pagefiles, $maxFiles);
-
-		$allFiles = $this->serializeCollection($pagefiles, $inputfield, $inputName, $noLang, true);
-		$newItems = array_values(array_filter(
-			$allFiles,
-			static fn(array $item): bool => isset($addedHashes[(string) ($item['hash'] ?? '')]),
-		));
-
-		return [
-			'ok' => true,
-			'status' => 200,
-			'items' => $newItems,
-			'files' => $allFiles,
-			'warnings' => array_values(array_merge($uploadErrors, $validationErrors)),
-		];
 	}
 
 	/**
@@ -1117,79 +1369,114 @@ final class MediaGateway extends Wire
 				}
 			}
 
+			$backupDir = $stagingDir . '/backup';
+			if (!is_dir($backupDir)) {
+				@mkdir($backupDir, 0775, true);
+			}
+			$originalDiskPath = (string) $targetFile->filename();
+			$backupOriginalPath = ($originalDiskPath !== '' && is_file($originalDiskPath))
+				? $backupDir . '/' . basename($originalDiskPath)
+				: '';
+			if ($backupOriginalPath !== '' && !@copy($originalDiskPath, $backupOriginalPath)) {
+				return [
+					'ok' => false,
+					'status' => 500,
+					'error' => $this->_('Failed to replace media file.'),
+				];
+			}
+
 			$pagefiles->page->filesManager()->createPath();
-			if ($resolved['kind'] === 'page') {
+			$replacement = null;
+			try {
 				if ($targetFile instanceof Pageimage) {
 					$targetFile->removeVariations();
 				}
 				$pagefiles->remove($targetFile);
 				$pagefiles->hookPageSave();
-			} else {
-				$sameBasename = strtolower(basename($stagedPath)) === strtolower((string) $targetFile->basename());
-				if ($sameBasename && $targetFile instanceof Pageimage) {
-					$targetFile->removeVariations();
+
+				$pagefiles->add($stagedPath);
+				$replacement = $pagefiles->last();
+				if (!$replacement instanceof Pagefile) {
+					throw new WireException($this->_('Failed to attach replacement file.'));
 				}
-				$pagefiles->remove($targetFile);
-				if ($sameBasename) {
+
+				if ($replacement instanceof Pageimage) {
+					$this->validateAndConstrainUploadedImage($replacement, $envelope, $inputfield);
+				}
+
+				if ($savedFiledata !== []) {
+					$replacement->set('filedata', $savedFiledata);
+				}
+				if ($savedLangDescriptions !== []) {
+					foreach ($savedLangDescriptions as [$langObj, $descVal]) {
+						$replacement->description($langObj, $descVal);
+					}
+				} elseif ($savedDefaultDesc !== '') {
+					$replacement->description = $savedDefaultDesc;
+				}
+				if ($savedTags !== '') {
+					$replacement->tags = $savedTags;
+				}
+				if ($replacement instanceof Pageimage && $savedFocus !== '' && $savedFocus !== '50 50 0') {
+					$replacement->focus($savedFocus);
+				}
+				$replacement->isTemp($wasTemp);
+
+				$this->restorePagefilesOrder($pagefiles, $orderedNamesBefore, $targetIndex, $replacement);
+
+				$maxFiles = (int) ($envelope['maxFiles'] ?? $inputfield->maxFiles ?? 0);
+				$this->persistPagefiles($resolved, $pagefiles, $maxFiles);
+			} catch (\Throwable $e) {
+				if ($replacement instanceof Pagefile) {
+					if ($replacement instanceof Pageimage) {
+						$replacement->removeVariations();
+					}
+					$pagefiles->remove($replacement);
 					$pagefiles->hookPageSave();
 				}
-			}
+				if ($backupOriginalPath !== '' && is_file($backupOriginalPath)) {
+					$pagefiles->add($backupOriginalPath);
+					$restored = $pagefiles->last();
+					if ($restored instanceof Pagefile) {
+						if ($savedFiledata !== []) {
+							$restored->set('filedata', $savedFiledata);
+						}
+						if ($savedLangDescriptions !== []) {
+							foreach ($savedLangDescriptions as [$langObj, $descVal]) {
+								$restored->description($langObj, $descVal);
+							}
+						} elseif ($savedDefaultDesc !== '') {
+							$restored->description = $savedDefaultDesc;
+						}
+						if ($savedTags !== '') {
+							$restored->tags = $savedTags;
+						}
+						if ($restored instanceof Pageimage && $savedFocus !== '' && $savedFocus !== '50 50 0') {
+							$restored->focus($savedFocus);
+						}
+						$restored->isTemp($wasTemp);
+						$this->restorePagefilesOrder($pagefiles, $orderedNamesBefore, $targetIndex, $restored);
+					}
+					try {
+						$this->persistPagefiles($resolved, $pagefiles, (int) ($envelope['maxFiles'] ?? $inputfield->maxFiles ?? 0));
+					} catch (\Throwable) {
+						// Best-effort rollback persistence
+					}
+				}
 
-			$pagefiles->add($stagedPath);
-			$replacement = $pagefiles->last();
-			if (!$replacement instanceof Pagefile) {
+				$this->wire()->log->error('React media replace failed: ' . $e->getMessage());
+				$isInternalWireException = $e instanceof WireDatabaseException
+					|| $e instanceof WireDatabaseQueryException
+					|| $e instanceof WireFilesException;
+				$isSafe = ($e instanceof WireException && !$isInternalWireException)
+					|| (bool) $this->wire()->config->debug;
+
 				return [
 					'ok' => false,
 					'status' => 500,
-					'error' => $this->_('Failed to attach replacement file.'),
+					'error' => $isSafe ? $e->getMessage() : $this->_('Failed to replace media file.'),
 				];
 			}
-
-			if ($replacement instanceof Pageimage) {
-				$this->validateAndConstrainUploadedImage($replacement, $envelope, $inputfield);
-			}
-
-			if ($savedFiledata !== []) {
-				$replacement->set('filedata', $savedFiledata);
-			}
-			if ($savedLangDescriptions !== []) {
-				foreach ($savedLangDescriptions as [$langObj, $descVal]) {
-					$replacement->description($langObj, $descVal);
-				}
-			} elseif ($savedDefaultDesc !== '') {
-				$replacement->description = $savedDefaultDesc;
-			}
-			if ($savedTags !== '') {
-				$replacement->tags = $savedTags;
-			}
-			if ($replacement instanceof Pageimage && $savedFocus !== '' && $savedFocus !== '50 50 0') {
-				$replacement->focus($savedFocus);
-			}
-			$replacement->isTemp($wasTemp);
-
-			// Restore original sort position inside `$pagefiles`
-			$reordered = [];
-			$inserted = false;
-			foreach ($orderedNamesBefore as $pos => $existingName) {
-				if ($pos === $targetIndex) {
-					$reordered[] = $replacement;
-					$inserted = true;
-				}
-				$pf = $pagefiles->get($existingName);
-				if ($pf instanceof Pagefile) {
-					$reordered[] = $pf;
-				}
-			}
-			if (!$inserted) {
-				$reordered[] = $replacement;
-			}
-			foreach ($reordered as $newSort => $pf) {
-				$pf->set('sort', $newSort);
-			}
-			$pagefiles->sort('sort');
-
-			$maxFiles = (int) ($envelope['maxFiles'] ?? $inputfield->maxFiles ?? 0);
-			$this->persistPagefiles($resolved, $pagefiles, $maxFiles);
 
 			$allFiles = $this->serializeCollection($pagefiles, $inputfield, $inputName, $noLang, true);
 			$replacedHash = (string) $replacement->hash;
@@ -1308,6 +1595,26 @@ final class MediaGateway extends Wire
 
 		$nextFocusStr = null;
 		$prevMtime = (int) @filemtime($filename);
+		$prevFocusStr = round($focusBefore['top'], 1) . ' ' . round($focusBefore['left'], 1) . ' ' . $focusBefore['zoom'];
+		$transformBackupDirObj = $this->wire()->files->tempDir('rw-media-xfm-' . bin2hex(random_bytes(4)));
+		$transformBackupDir = rtrim((string) $transformBackupDirObj->get(), '/\\');
+		if (!is_dir($transformBackupDir)) {
+			@mkdir($transformBackupDir, 0775, true);
+		}
+		$transformBackupFile = $transformBackupDir . '/' . basename($filename);
+		if (!@copy($filename, $transformBackupFile)) {
+			try {
+				$transformBackupDirObj->remove();
+			} catch (\Throwable) {
+				// Best-effort cleanup
+			}
+
+			return [
+				'ok' => false,
+				'status' => 500,
+				'error' => $this->_('Image transformation failed.'),
+			];
+		}
 
 		try {
 			if ($operation === 'crop') {
@@ -1328,6 +1635,8 @@ final class MediaGateway extends Wire
 				}
 
 				if (!$this->applyCropInPlace($filename, $ext, $cropX, $cropY, $cropW, $cropH)) {
+					@copy($transformBackupFile, $filename);
+
 					return [
 						'ok' => false,
 						'status' => 500,
@@ -1346,6 +1655,8 @@ final class MediaGateway extends Wire
 				}
 				$sizer = $this->wire(new ImageSizer($filename));
 				if (!$sizer->rotate($degrees)) {
+					@copy($transformBackupFile, $filename);
+
 					return [
 						'ok' => false,
 						'status' => 500,
@@ -1362,6 +1673,8 @@ final class MediaGateway extends Wire
 			} elseif ($operation === 'flip_h') {
 				$sizer = $this->wire(new ImageSizer($filename));
 				if (!$sizer->flipHorizontal()) {
+					@copy($transformBackupFile, $filename);
+
 					return [
 						'ok' => false,
 						'status' => 500,
@@ -1372,6 +1685,8 @@ final class MediaGateway extends Wire
 			} elseif ($operation === 'flip_v') {
 				$sizer = $this->wire(new ImageSizer($filename));
 				if (!$sizer->flipVertical()) {
+					@copy($transformBackupFile, $filename);
+
 					return [
 						'ok' => false,
 						'status' => 500,
@@ -1386,7 +1701,51 @@ final class MediaGateway extends Wire
 					'error' => $this->_('Unsupported transform operation.'),
 				];
 			}
+
+			clearstatcache(true, $filename);
+			$nextMtime = max(time(), $prevMtime + 1);
+			@touch($filename, $nextMtime);
+			clearstatcache(true, $filename);
+
+			$lqipSidecar = $filename . '.lqip.webp';
+			if (is_file($lqipSidecar)) {
+				@unlink($lqipSidecar);
+			}
+			if ($operation === 'crop') {
+				$colorsSidecar = $filename . '.colors.json';
+				if (is_file($colorsSidecar)) {
+					@unlink($colorsSidecar);
+				}
+			}
+
+			$targetFile->removeVariations();
+			$dims = @getimagesize($filename);
+			if (is_array($dims) && (int) $dims[0] > 0 && (int) $dims[1] > 0) {
+				$targetFile->setImageInfo([
+					'width' => (int) $dims[0],
+					'height' => (int) $dims[1],
+				]);
+			} else {
+				$targetFile->getImageInfo(true);
+			}
+			$targetFile->setQuietly('filesize', (int) @filesize($filename));
+			$targetFile->set('modified', $nextMtime);
+			$targetFile->focus($nextFocusStr);
+
+			$maxFiles = (int) ($envelope['maxFiles'] ?? $inputfield->maxFiles ?? 0);
+			$this->persistPagefiles($resolved, $pagefiles, $maxFiles);
 		} catch (\Throwable $e) {
+			if (is_file($transformBackupFile)) {
+				@copy($transformBackupFile, $filename);
+				@touch($filename, $prevMtime);
+				clearstatcache(true, $filename);
+				$targetFile->setQuietly('filesize', (int) @filesize($filename));
+				$targetFile->set('modified', $prevMtime);
+				if ($prevFocusStr !== '50 50 0') {
+					$targetFile->focus($prevFocusStr);
+				}
+				$targetFile->getImageInfo(true);
+			}
 			$this->wire()->log->error('React media transform failed: ' . $e->getMessage());
 
 			return [
@@ -1396,40 +1755,13 @@ final class MediaGateway extends Wire
 					? $e->getMessage()
 					: $this->_('Image transformation failed.'),
 			];
-		}
-
-		clearstatcache(true, $filename);
-		$nextMtime = max(time(), $prevMtime + 1);
-		@touch($filename, $nextMtime);
-		clearstatcache(true, $filename);
-
-		$lqipSidecar = $filename . '.lqip.webp';
-		if (is_file($lqipSidecar)) {
-			@unlink($lqipSidecar);
-		}
-		if ($operation === 'crop') {
-			$colorsSidecar = $filename . '.colors.json';
-			if (is_file($colorsSidecar)) {
-				@unlink($colorsSidecar);
+		} finally {
+			try {
+				$transformBackupDirObj->remove();
+			} catch (\Throwable) {
+				// Best-effort cleanup of transform backup directory
 			}
 		}
-
-		$targetFile->removeVariations();
-		$dims = @getimagesize($filename);
-		if (is_array($dims) && (int) $dims[0] > 0 && (int) $dims[1] > 0) {
-			$targetFile->setImageInfo([
-				'width' => (int) $dims[0],
-				'height' => (int) $dims[1],
-			]);
-		} else {
-			$targetFile->getImageInfo(true);
-		}
-		$targetFile->setQuietly('filesize', (int) @filesize($filename));
-		$targetFile->set('modified', $nextMtime);
-		$targetFile->focus($nextFocusStr);
-
-		$maxFiles = (int) ($envelope['maxFiles'] ?? $inputfield->maxFiles ?? 0);
-		$this->persistPagefiles($resolved, $pagefiles, $maxFiles);
 
 		$allFiles = $this->serializeCollection($pagefiles, $inputfield, $inputName, $noLang, true);
 		$updatedItem = null;
@@ -1636,7 +1968,9 @@ final class MediaGateway extends Wire
 	}
 
 	/**
-	 * Run `WireUpload` + extension, size, and `FileValidator` checks into `$destinationPath`.
+	 * Stage incoming uploads in an isolated temporary directory, execute `UploadedFileValidator` and
+	 * `Sanitizer::validateFile()`, and move validated files into `$destinationPath` without ever
+	 * overwriting live files prior to validation.
 	 *
 	 * @param array<string, mixed> $envelope
 	 * @param array<string, mixed>|null $uploadedFiles
@@ -1657,9 +1991,18 @@ final class MediaGateway extends Wire
 			$_FILES = $uploadedFiles;
 		}
 
+		$filesApi = $this->wire()->files;
+		$tempDirObj = $filesApi->tempDir('rw-media-upload-' . bin2hex(random_bytes(4)));
+		$stagingRoot = rtrim((string) $tempDirObj->get(), '/\\') . '/';
+		if (!is_dir($stagingRoot)) {
+			$filesApi->mkdir($stagingRoot, true);
+		}
+		$destRoot = rtrim($destinationPath, '/\\') . '/';
+
 		try {
 			$isImage = !empty($envelope['isImage']) || $inputfield instanceof InputfieldImage;
 			$extensions = $this->resolveAllowedExtensions($inputfield, $envelope, $isImage);
+			$allowSvg = !$isImage || $extensions === [] || in_array('svg', $extensions, true);
 
 			$liveMaxFilesize = (int) ($inputfield->getSetting('maxFilesize') ?? 0);
 			$maxFilesize = $liveMaxFilesize > 0 ? $liveMaxFilesize : (int) ($envelope['maxFilesize'] ?? 0);
@@ -1680,8 +2023,8 @@ final class MediaGateway extends Wire
 					$_FILES[$slotKey] = array_merge($entry, ['ajax' => true]);
 					$ul = new WireUpload($slotKey);
 					$this->wire($ul);
-					$ul->setDestinationPath(rtrim($destinationPath, '/') . '/');
-					$ul->setOverwrite($overwrite);
+					$ul->setDestinationPath($stagingRoot);
+					$ul->setOverwrite(false);
 					$ul->setLowercase(true);
 					if ($maxUploadBatch > 0) {
 						$ul->setMaxFiles(1);
@@ -1703,8 +2046,8 @@ final class MediaGateway extends Wire
 			} else {
 				$ul = new WireUpload($uploadKey);
 				$this->wire($ul);
-				$ul->setDestinationPath(rtrim($destinationPath, '/') . '/');
-				$ul->setOverwrite($overwrite);
+				$ul->setDestinationPath($stagingRoot);
+				$ul->setOverwrite(false);
 				$ul->setLowercase(true);
 				if ($maxUploadBatch > 0) {
 					$ul->setMaxFiles($maxUploadBatch);
@@ -1718,28 +2061,90 @@ final class MediaGateway extends Wire
 				$savedNames = $ul->execute();
 				$errors = array_values(array_map('strval', $ul->getErrors()));
 			}
+
 			$savedPaths = [];
 			$sanitizer = $this->wire()->sanitizer;
+			$realStaging = realpath(rtrim($stagingRoot, '/\\'));
+			$stagingPrefix = is_string($realStaging) ? rtrim($realStaging, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR : '';
 
 			foreach ($savedNames as $savedName) {
-				$fullPath = rtrim($destinationPath, '/') . '/' . basename((string) $savedName);
-				if (!is_file($fullPath)) {
+				$safeBase = basename((string) $savedName);
+				$stagedPath = $stagingRoot . $safeBase;
+				if ($safeBase === '' || is_link($stagedPath) || !is_file($stagedPath)) {
 					continue;
 				}
-				$ext = strtolower((string) pathinfo($fullPath, PATHINFO_EXTENSION));
-				$contentErr = $this->validateUploadedFileContent($fullPath, $ext, $isImage);
+				$realStaged = realpath($stagedPath);
+				if ($stagingPrefix === '' || !is_string($realStaged) || !str_starts_with($realStaged, $stagingPrefix)) {
+					continue;
+				}
+
+				$ext = strtolower((string) pathinfo($realStaged, PATHINFO_EXTENSION));
+				$contentErr = $this->validateUploadedFileContent($realStaged, $ext, $isImage, $allowSvg);
 				if ($contentErr !== null) {
-					@unlink($fullPath);
+					@unlink($realStaged);
 					$errors[] = $contentErr;
 					continue;
 				}
-				$valid = $sanitizer->validateFile($fullPath, ['extensions' => $extensions]);
+
+				$valid = $sanitizer->validateFile($realStaged, ['extensions' => $extensions]);
 				if ($valid === false) {
-					@unlink($fullPath);
-					$errors[] = sprintf($this->_('File "%s" failed content security validation.'), basename($fullPath));
+					@unlink($realStaged);
+					$errors[] = sprintf($this->_('File "%s" failed content security validation.'), $safeBase);
 					continue;
 				}
-				$savedPaths[] = $fullPath;
+
+				if ($isImage && $ext !== 'svg') {
+					$dims = @getimagesize($realStaged);
+					$imgW = is_array($dims) ? (int) $dims[0] : 0;
+					$imgH = is_array($dims) ? (int) $dims[1] : 0;
+					if ($imgW <= 0 || $imgH <= 0) {
+						@unlink($realStaged);
+						$errors[] = $this->_('Invalid image dimensions.');
+						continue;
+					}
+					$bounds = $this->resolveImageDimensionBounds($imgW, $imgH, $envelope, $inputfield);
+					if (($bounds['minW'] > 0 && $imgW < $bounds['minW']) || ($bounds['minH'] > 0 && $imgH < $bounds['minH'])) {
+						@unlink($realStaged);
+						$errors[] = sprintf($this->_('Image (%dx%d) does not meet minimum size requirements (%dx%d).'), $imgW, $imgH, $bounds['minW'], $bounds['minH']);
+						continue;
+					}
+					if ($bounds['maxReject'] && (($bounds['maxW'] > 0 && $imgW > $bounds['maxW']) || ($bounds['maxH'] > 0 && $imgH > $bounds['maxH']))) {
+						@unlink($realStaged);
+						$errors[] = sprintf($this->_('Image (%dx%d) exceeds maximum allowed dimensions (%dx%d).'), $imgW, $imgH, $bounds['maxW'], $bounds['maxH']);
+						continue;
+					}
+				}
+
+				if (!is_dir($destRoot)) {
+					$filesApi->mkdir($destRoot, true);
+				}
+				$targetBase = $safeBase;
+				$targetPath = $destRoot . $targetBase;
+				if (!$overwrite && file_exists($targetPath)) {
+					$pi = pathinfo($safeBase);
+					$stem = (string) ($pi['filename'] ?? 'file');
+					$extPart = isset($pi['extension']) && $pi['extension'] !== '' ? '.' . $pi['extension'] : '';
+					$counter = 1;
+					while (file_exists($targetPath) && $counter < 1000) {
+						$targetBase = $stem . '-' . $counter . $extPart;
+						$targetPath = $destRoot . $targetBase;
+						$counter++;
+					}
+				}
+				if (is_link($targetPath)) {
+					@unlink($realStaged);
+					$errors[] = sprintf($this->_('File "%s" failed content security validation.'), $safeBase);
+					continue;
+				}
+
+				$moved = @rename($realStaged, $targetPath);
+				if (!$moved) {
+					$moved = @copy($realStaged, $targetPath);
+					@unlink($realStaged);
+				}
+				if ($moved && is_file($targetPath)) {
+					$savedPaths[] = $targetPath;
+				}
 			}
 
 			return [$savedPaths, $errors];
@@ -1747,107 +2152,176 @@ final class MediaGateway extends Wire
 			if ($prevFiles !== null) {
 				$_FILES = $prevFiles;
 			}
+			try {
+				$tempDirObj->remove();
+			} catch (\Throwable) {
+				// Best-effort cleanup of staging temp directory
+			}
 		}
 	}
 
 	/**
 	 * Perform built-in MIME, SVG XSS, and raster decompression-bomb validation on an uploaded file.
 	 */
-	private function validateUploadedFileContent(string $fullPath, string $ext, bool $isImage): ?string
+	private function validateUploadedFileContent(string $fullPath, string $ext, bool $isImage, bool $allowSvg = true): ?string
 	{
-		$basename = basename($fullPath);
-		$detectedMime = '';
-		if (function_exists('finfo_open')) {
-			$finfo = @finfo_open(FILEINFO_MIME_TYPE);
-			if ($finfo !== false) {
-				$mime = @finfo_file($finfo, $fullPath);
-				if (is_string($mime)) {
-					$detectedMime = strtolower(trim($mime));
-				}
-			}
-		}
-
-		$blockedMimes = [
-			'text/html',
-			'application/xhtml+xml',
-			'text/x-php',
-			'application/x-php',
-			'application/x-httpd-php',
-			'text/javascript',
-			'application/javascript',
-			'application/x-sh',
-			'application/x-executable',
-			'application/x-dosexec',
-		];
-		if ($detectedMime !== '' && in_array($detectedMime, $blockedMimes, true)) {
-			return sprintf($this->_('File "%s" failed content security validation.'), $basename);
-		}
-
-		if ($ext === 'svg' || $detectedMime === 'image/svg+xml') {
-			return $this->validateSafeSvgFile($fullPath, $basename);
-		}
-
-		$isRasterCandidate = $isImage || in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'bmp', 'tif', 'tiff'], true);
-		if ($isRasterCandidate) {
-			$dims = @getimagesize($fullPath);
-			if (!is_array($dims) || (int) $dims[0] <= 0 || (int) $dims[1] <= 0) {
-				return $this->_('Invalid image dimensions.');
-			}
-			$w = (int) $dims[0];
-			$h = (int) $dims[1];
-			if ($w > self::MAX_RASTER_AXIS || $h > self::MAX_RASTER_AXIS || ($w * $h) > self::MAX_RASTER_PIXELS) {
-				return $this->_('Image resolution exceeds maximum safe pixel limit.');
-			}
-		}
-
-		return null;
+		return $this->fileValidator()->validate($fullPath, $ext, $isImage, $allowSvg);
 	}
 
 	/**
 	 * Reject SVG payloads containing active scripts, inline event handlers, external entities, or dangerous URIs.
 	 */
-	private function validateSafeSvgFile(string $fullPath, string $basename): ?string
+	public function validateSafeSvgFile(string $fullPath, string $basename): ?string
 	{
-		$size = (int) @filesize($fullPath);
-		if ($size <= 0 || $size > 8_388_608) {
-			return sprintf($this->_('File "%s" failed content security validation.'), $basename);
+		return $this->fileValidator()->validateSvgFile($fullPath, $basename);
+	}
+
+	/**
+	 * Snapshot an existing `Pagefile` (file copy + metadata) prior to a potentially destructive upload.
+	 *
+	 * @return array{basename: string, backupPath: string, index: int, filedata: array<string|int, mixed>, langDescriptions: array<int, array{0: Language, 1: string}>, description: string, tags: string, focus: string, isTemp: bool}|null
+	 */
+	private function snapshotPagefileForRollback(Pagefile $pf, string $backupDir, bool $noLang, int $index): ?array
+	{
+		$origPath = (string) $pf->filename();
+		$bn = (string) $pf->basename;
+		$backupPath = rtrim($backupDir, '/\\') . '/' . $bn;
+		if ($origPath === '' || !is_file($origPath) || !@copy($origPath, $backupPath)) {
+			return null;
 		}
-
-		$raw = @file_get_contents($fullPath);
-		if (!is_string($raw) || $raw === '' || str_contains($raw, "\0")) {
-			return sprintf($this->_('File "%s" failed content security validation.'), $basename);
+		$langs = !$noLang ? $this->wire()->languages : null;
+		$langDescs = [];
+		if (is_iterable($langs)) {
+			foreach ($langs as $lang) {
+				if ($lang instanceof Language) {
+					$rawDesc = $pf->description($lang);
+					$langDescs[(int) $lang->id] = [$lang, is_string($rawDesc) ? $rawDesc : ''];
+				}
+			}
 		}
-
-		if (
-			str_starts_with($raw, "\xFE\xFF")
-			|| str_starts_with($raw, "\xFF\xFE")
-			|| preg_match('/<!ENTITY\b/i', $raw) === 1
-			|| preg_match('/<\?xml-stylesheet\b/i', $raw) === 1
-		) {
-			return sprintf($this->_('File "%s" failed content security validation.'), $basename);
-		}
-
-		$withoutComments = (string) preg_replace('/<!--[\s\S]*?-->/', '', $raw);
-		$decoded = html_entity_decode($withoutComments, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-		$strippedControl = (string) preg_replace('/[\x00-\x1F\x7F]+/', '', $decoded);
-
-		if (stripos($decoded, '<svg') === false) {
-			return sprintf($this->_('File "%s" failed content security validation.'), $basename);
-		}
-
-		foreach ([$withoutComments, $decoded, $strippedControl] as $candidate) {
-			if (
-				preg_match('/<\s*\/?\s*(?:script|foreignobject|iframe|embed|object|applet|meta|base|link)\b/i', $candidate) === 1
-				|| preg_match('/<\s*(?:animate|set|animateTransform|animateMotion)\b[^>]*\battributeName\s*=\s*["\']?\s*(?:on[a-z0-9_]+|href|xlink:href)\b/i', $candidate) === 1
-				|| preg_match('/\bon[a-z0-9_]+\s*=/i', $candidate) === 1
-				|| preg_match('/(?:javascript|vbscript)\s*:/i', $candidate) === 1
-				|| preg_match('/data\s*:\s*(?:text\/html|application\/xhtml|image\/svg\+xml)/i', $candidate) === 1
-			) {
-				return sprintf($this->_('File "%s" failed content security validation.'), $basename);
+		$focus = '50 50 0';
+		if ($pf instanceof Pageimage) {
+			try {
+				$focusInfo = $pf->focus();
+				if (is_array($focusInfo) && isset($focusInfo['str']) && is_string($focusInfo['str'])) {
+					$focus = $focusInfo['str'];
+				}
+			} catch (\Throwable) {
+				$focus = '50 50 0';
 			}
 		}
 
-		return null;
+		return [
+			'basename' => $bn,
+			'backupPath' => $backupPath,
+			'index' => $index,
+			'filedata' => is_array($pf->filedata) ? $pf->filedata : [],
+			'langDescriptions' => $langDescs,
+			'description' => (string) ($pf->description ?? ''),
+			'tags' => (string) ($pf->tags ?? ''),
+			'focus' => $focus,
+			'isTemp' => (bool) $pf->isTemp(),
+		];
+	}
+
+	/**
+	 * Roll back newly added upload items and restore backed-up `Pagefile` records & metadata.
+	 *
+	 * @param array<string, mixed> $resolved
+	 * @param list<Pagefile> $addedItems
+	 * @param list<array{basename: string, backupPath: string, index: int, filedata: array<string|int, mixed>, langDescriptions: array<int, array{0: Language, 1: string}>, description: string, tags: string, focus: string, isTemp: bool}> $backups
+	 * @param list<string> $orderedNamesBefore
+	 */
+	private function restoreUploadBackups(
+		array $resolved,
+		Pagefiles $pagefiles,
+		array $addedItems,
+		array $backups,
+		array $orderedNamesBefore,
+		int $maxFiles,
+	): void {
+		foreach ($addedItems as $added) {
+			if ($added instanceof Pageimage) {
+				$added->removeVariations();
+			}
+			$pagefiles->remove($added);
+			$addedFile = (string) $added->filename();
+			if ($addedFile !== '' && is_file($addedFile)) {
+				@unlink($addedFile);
+			}
+		}
+		foreach ($backups as $bak) {
+			$existing = $pagefiles->get($bak['basename']);
+			if ($existing instanceof Pagefile) {
+				if ($existing instanceof Pageimage) {
+					$existing->removeVariations();
+				}
+				$pagefiles->remove($existing);
+				$pagefiles->hookPageSave();
+			}
+			if (is_file($bak['backupPath'])) {
+				$pagefiles->add($bak['backupPath']);
+				$restored = $pagefiles->get($bak['basename']) ?: $pagefiles->last();
+				if ($restored instanceof Pagefile) {
+					if ($bak['filedata'] !== []) {
+						$restored->set('filedata', $bak['filedata']);
+					}
+					if ($bak['langDescriptions'] !== []) {
+						foreach ($bak['langDescriptions'] as [$langObj, $descVal]) {
+							$restored->description($langObj, $descVal);
+						}
+					} elseif ($bak['description'] !== '') {
+						$restored->description = $bak['description'];
+					}
+					if ($bak['tags'] !== '') {
+						$restored->tags = $bak['tags'];
+					}
+					if ($restored instanceof Pageimage && $bak['focus'] !== '' && $bak['focus'] !== '50 50 0') {
+						$restored->focus($bak['focus']);
+					}
+					$restored->isTemp($bak['isTemp']);
+					$this->restorePagefilesOrder($pagefiles, $orderedNamesBefore, $bak['index'], $restored);
+				}
+			}
+		}
+		$pagefiles->hookPageSave();
+		try {
+			$this->persistPagefiles($resolved, $pagefiles, $maxFiles);
+		} catch (\Throwable) {
+			// Best-effort rollback persistence
+		}
+	}
+
+	/**
+	 * Restore a replacement/restored `Pagefile` back to its prior sort index inside `$pagefiles`.
+	 *
+	 * @param list<string> $orderedNamesBefore
+	 */
+	private function restorePagefilesOrder(
+		Pagefiles $pagefiles,
+		array $orderedNamesBefore,
+		int $targetIndex,
+		Pagefile $targetItem,
+	): void {
+		$reordered = [];
+		$inserted = false;
+		foreach ($orderedNamesBefore as $pos => $existingName) {
+			if ($pos === $targetIndex) {
+				$reordered[] = $targetItem;
+				$inserted = true;
+			}
+			$pf = $pagefiles->get($existingName);
+			if ($pf instanceof Pagefile && $pf !== $targetItem) {
+				$reordered[] = $pf;
+			}
+		}
+		if (!$inserted) {
+			$reordered[] = $targetItem;
+		}
+		foreach ($reordered as $newSort => $pf) {
+			$pf->set('sort', $newSort);
+		}
+		$pagefiles->sort('sort');
 	}
 
 	/**

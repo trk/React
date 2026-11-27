@@ -14,8 +14,8 @@ use Totoglu\React\Support\IslandMarkup;
  * InputfieldReactLink
  *
  * Dual-mode Inertia + React ProcessWire Inputfield (`extends InputfieldReact`) for polymorphic
- * link & media selection (`page`, `entry`, `url` with native `#anchor` support, strict `tel`, `email`,
- * and configurable multi-profile `media` uploads such as `file`, `image`, `video`, or custom keys).
+ * link & media selection (`page`, `url` with native `#anchor` support, strict `tel`, `email`,
+ * configurable multi-profile `media` uploads such as `file`, `image`, `video`, or registered custom resolver types).
  *
  * @property array<int, string>|string $linkTypes Allowed target types (e.g. `['page', 'url', 'tel', 'email', 'file']`)
  * @property string $defaultType Default active target type (default: `'page'`)
@@ -27,7 +27,7 @@ use Totoglu\React\Support\IslandMarkup;
  * @property bool $enableAnchor Show `#anchor` fragment input in Link Settings (default: `true`)
  * @property bool $enableQuery Show `?query` parameter input in Link Settings (default: `true`)
  * @property string $selector Optional ProcessWire selector narrowing selectable `Page` targets
- * @property string $blueprintType Optional entity blueprint handle narrowing selectable `Entry` targets
+ * @property string $blueprintType Optional scope identifier forwarded to custom link target resolvers
  * @property bool $readOnly Render in read-only mode
  */
 class InputfieldReactLink extends InputfieldReact
@@ -43,7 +43,6 @@ class InputfieldReactLink extends InputfieldReact
 	 */
 	public const array DEFAULT_TYPES = [
 		'page',
-		'entry',
 		'url',
 		'tel',
 		'email',
@@ -464,8 +463,8 @@ class InputfieldReactLink extends InputfieldReact
 	 * @return array{
 	 *   type: string,
 	 *   pageId: int,
-	 *   entryType: string,
-	 *   entryId: string,
+	 *   resourceType: string,
+	 *   resourceId: string,
 	 *   url: string,
 	 *   file: string,
 	 *   query: string,
@@ -492,8 +491,8 @@ class InputfieldReactLink extends InputfieldReact
 		$empty = [
 			'type' => $fallbackType,
 			'pageId' => 0,
-			'entryType' => '',
-			'entryId' => '',
+			'resourceType' => '',
+			'resourceId' => '',
 			'url' => '',
 			'file' => '',
 			'query' => '',
@@ -554,11 +553,11 @@ class InputfieldReactLink extends InputfieldReact
 		$pageId = isset($value['pageId']) && is_numeric($value['pageId'])
 			? max(0, (int) $value['pageId'])
 			: 0;
-		$entryType = isset($value['entryType']) && is_string($value['entryType'])
-			? trim($value['entryType'])
+		$resourceType = isset($value['resourceType']) && is_string($value['resourceType'])
+			? trim($value['resourceType'])
 			: '';
-		$entryId = isset($value['entryId']) && is_scalar($value['entryId'])
-			? trim((string) $value['entryId'])
+		$resourceId = isset($value['resourceId']) && is_scalar($value['resourceId'])
+			? trim((string) $value['resourceId'])
 			: '';
 		$rawUrl = isset($value['url']) && is_scalar($value['url'])
 			? trim((string) $value['url'])
@@ -603,8 +602,8 @@ class InputfieldReactLink extends InputfieldReact
 		$out = [
 			'type' => $type,
 			'pageId' => $pageId,
-			'entryType' => $entryType,
-			'entryId' => $entryId,
+			'resourceType' => $resourceType,
+			'resourceId' => $resourceId,
 			'url' => $cleanUrl,
 			'file' => $cleanFile,
 			'query' => $rawQuery,
@@ -715,9 +714,8 @@ class InputfieldReactLink extends InputfieldReact
 
 		return match ($norm['type']) {
 			'page' => $norm['pageId'] <= 0,
-			'entry' => $norm['entryId'] === '',
 			'url', 'email', 'tel' => $norm['url'] === '' && ($norm['type'] !== 'url' || $norm['anchor'] === ''),
-			default => $norm['file'] === '' && $norm['url'] === '' && $norm['pageId'] <= 0 && $norm['entryId'] === '',
+			default => $norm['file'] === '' && $norm['url'] === '' && $norm['pageId'] <= 0 && $norm['resourceId'] === '',
 		};
 	}
 
@@ -923,28 +921,11 @@ class InputfieldReactLink extends InputfieldReact
 						: trim((string) ($targetPage->title ?: $targetPage->name));
 				}
 			}
-		} elseif ($type === 'entry') {
-			if ($norm['entryId'] !== '' && $wireContext instanceof ProcessWire) {
-				$entries = $wireContext->wire('entries');
-				if (is_object($entries) && method_exists($entries, 'links')) {
-					$linksService = $entries->links();
-					if (is_object($linksService) && method_exists($linksService, 'resolve')) {
-						$resolvedByEntries = $linksService->resolve($norm, [
-							'language' => $language,
-							'fallbackToTargetLabel' => true,
-						]);
-						if (is_array($resolvedByEntries)) {
-							$href = self::sanitizeHref((string) ($resolvedByEntries['href'] ?? ''));
-							$fallbackLabel = (string) ($resolvedByEntries['label'] ?? '');
-							$isExternal = !empty($resolvedByEntries['isExternal']);
-						}
-					}
-				}
-			}
 		} elseif ($type === 'email') {
 			$cleanEmail = (string) preg_replace('/[\x00-\x20\x7F]+/', '', $norm['url']);
 			if ($cleanEmail !== '' && str_contains($cleanEmail, '@')) {
-				$href = 'mailto:' . $cleanEmail . ($norm['query'] !== '' ? '?' . ltrim($norm['query'], '?') : '');
+				$cleanMailQuery = (string) preg_replace('/[\x00-\x20\x7F]+/', '', ltrim($norm['query'], '?&'));
+				$href = 'mailto:' . $cleanEmail . ($cleanMailQuery !== '' ? '?' . $cleanMailQuery : '');
 				$fallbackLabel = $cleanEmail;
 			}
 		} elseif ($type === 'tel') {
@@ -953,7 +934,7 @@ class InputfieldReactLink extends InputfieldReact
 				$href = 'tel:' . $dial;
 				$fallbackLabel = $dial;
 			}
-		} elseif (isset($profiles[$type]) || ($norm['file'] !== '' && !in_array($type, ['url', 'page', 'entry', 'email', 'tel'], true))) {
+		} elseif (isset($profiles[$type]) || ($norm['file'] !== '' && !in_array($type, ['url', 'page', 'email', 'tel'], true) && $norm['resourceId'] === '')) {
 			$isMedia = true;
 			$profile = $profiles[$type] ?? self::buildMediaProfileEntry($type, []);
 			$mediaKind = $profile['kind'];
@@ -964,12 +945,18 @@ class InputfieldReactLink extends InputfieldReact
 				$diskDir = PageLinkMediaHostAdapter::directoryPathFor($ownerPage, $field->name);
 				$urlDir = PageLinkMediaHostAdapter::directoryUrlFor($ownerPage, $field->name);
 				$diskFile = $diskDir . $bn;
-				if (is_file($diskFile)) {
+				$realDir = $diskDir !== '' && !is_link(rtrim($diskDir, '/\\')) ? realpath($diskDir) : false;
+				$realFile = is_string($realDir) && !is_link($diskFile) && is_file($diskFile) ? realpath($diskFile) : false;
+				if (
+					is_string($realDir)
+					&& is_string($realFile)
+					&& str_starts_with($realFile, rtrim($realDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR)
+				) {
 					$href = self::appendQueryAndAnchor($urlDir . rawurlencode($bn), $norm['query'], $norm['anchor']);
-					$filesize = (int) (@filesize($diskFile) ?: 0);
+					$filesize = (int) (@filesize($realFile) ?: 0);
 					$ext = strtolower(pathinfo($bn, PATHINFO_EXTENSION));
 					if ($mediaKind === 'image' && $ext !== 'svg') {
-						$dims = @getimagesize($diskFile);
+						$dims = @getimagesize($realFile);
 						if (is_array($dims)) {
 							$width = (int) $dims[0];
 							$height = (int) $dims[1];
@@ -985,6 +972,21 @@ class InputfieldReactLink extends InputfieldReact
 					$pathPart = (string) parse_url($cleanMediaUrl, PHP_URL_PATH);
 					$fallbackLabel = $pathPart !== '' ? basename($pathPart) : $cleanMediaUrl;
 					$ext = strtolower(pathinfo($fallbackLabel, PATHINFO_EXTENSION));
+				}
+			}
+		} elseif ($type !== 'url' && $wireContext instanceof ProcessWire) {
+			$reactInst = $wireContext->wire('react');
+			if ($reactInst instanceof React) {
+				$customResolved = $reactInst->resolveCustomLink($type, $norm, [
+					'language' => $language,
+					'ownerPage' => $ownerPage,
+					'field' => $field,
+					'fallbackToTargetLabel' => true,
+				]);
+				if (is_array($customResolved)) {
+					$href = self::sanitizeHref((string) ($customResolved['href'] ?? ''));
+					$fallbackLabel = (string) ($customResolved['label'] ?? '');
+					$isExternal = !empty($customResolved['isExternal']);
 				}
 			}
 		} else {
@@ -1051,8 +1053,8 @@ class InputfieldReactLink extends InputfieldReact
 			'filesize' => $filesize,
 			'ext' => $ext,
 			'pageId' => $norm['pageId'],
-			'entryType' => $norm['entryType'],
-			'entryId' => $norm['entryId'],
+			'resourceType' => $norm['resourceType'],
+			'resourceId' => $norm['resourceId'],
 		];
 	}
 
@@ -1280,6 +1282,8 @@ class InputfieldReactLink extends InputfieldReact
 			: self::DEFAULT_TYPES;
 		$defaultType = (string) ($cfg['defaultType'] ?? $allowedTypes[0]);
 
+		$hasValidationErrors = false;
+
 		// Check raw phone format BEFORE stripping invalid chars so user receives clear validation feedback if tampered
 		$rawDecoded = is_string($rawPosted) && strlen($rawPosted) <= self::MAX_JSON_BYTES && str_starts_with(trim($rawPosted), '{')
 			? json_decode(trim($rawPosted), true, self::MAX_JSON_DEPTH)
@@ -1288,6 +1292,7 @@ class InputfieldReactLink extends InputfieldReact
 			$rawPhoneCandidate = trim((string) ($rawDecoded['url'] ?? ''));
 			if ($rawPhoneCandidate !== '' && !self::isValidPhoneInput($rawPhoneCandidate)) {
 				$this->error($this->_('Phone number may only contain digits and a leading + sign.'));
+				$hasValidationErrors = true;
 			}
 		}
 
@@ -1299,17 +1304,26 @@ class InputfieldReactLink extends InputfieldReact
 				$this->_('Link type "%s" is not permitted on this field.'),
 				$normalized['type']
 			));
+			$hasValidationErrors = true;
 		}
 
 		if (!$isEmpty && $normalized['type'] === 'email' && filter_var($normalized['url'], FILTER_VALIDATE_EMAIL) === false) {
 			$this->error($this->_('Please enter a valid email address.'));
+			$hasValidationErrors = true;
 		}
 
 		if ((bool) $this->getSetting('required') && $isEmpty) {
 			$this->error($this->_('A destination link is required.'));
+			$hasValidationErrors = true;
 		}
 
 		$previous = $this->getNormalizedLink();
+		if ($hasValidationErrors) {
+			$this->setAttribute('value', $previous);
+
+			return $this;
+		}
+
 		if ($normalized !== $previous) {
 			if (!$this->trackChanges()) {
 				$this->setTrackChanges(true);
@@ -1326,6 +1340,8 @@ class InputfieldReactLink extends InputfieldReact
 		$inputfields = parent::___getConfigInputfields();
 		$modules = $this->wire()->modules;
 
+		$registeredResolverTypes = React::instance($this)->linkResolverTypes();
+
 		/** @var InputfieldAsmSelect|InputfieldCheckboxes|null $typesField */
 		$typesField = $modules->isInstalled('InputfieldAsmSelect')
 			? $modules->get('InputfieldAsmSelect')
@@ -1334,7 +1350,6 @@ class InputfieldReactLink extends InputfieldReact
 			$typesField->attr('name', 'linkTypes');
 			$typesField->label = $this->_('Allowed Target Types');
 			$typesField->addOption('page', $this->_('Page'));
-			$typesField->addOption('entry', $this->_('Entry'));
 			$typesField->addOption('url', $this->_('URL & Anchor (#)'));
 			$typesField->addOption('tel', $this->_('Phone (+ & digits)'));
 			$typesField->addOption('email', $this->_('Email'));
@@ -1342,8 +1357,8 @@ class InputfieldReactLink extends InputfieldReact
 			$typesField->addOption('image', $this->_('Media: Image'));
 			$typesField->addOption('video', $this->_('Media: Video'));
 			$currentTypes = self::normalizeTypeList($this->getSetting('linkTypes') ?? self::DEFAULT_TYPES);
-			foreach ($currentTypes as $ct) {
-				if (!isset($typesField->getOptions()[$ct])) {
+			foreach (array_merge($registeredResolverTypes, $currentTypes) as $ct) {
+				if ($ct !== '' && !isset($typesField->getOptions()[$ct])) {
 					$typesField->addOption($ct, ucfirst($ct));
 				}
 			}
@@ -1358,7 +1373,6 @@ class InputfieldReactLink extends InputfieldReact
 			$defTypeField->attr('name', 'defaultType');
 			$defTypeField->label = $this->_('Default Target Type');
 			$defTypeField->addOption('page', $this->_('Page'));
-			$defTypeField->addOption('entry', $this->_('Entry'));
 			$defTypeField->addOption('url', $this->_('URL & Anchor (#)'));
 			$defTypeField->addOption('tel', $this->_('Phone (+ & digits)'));
 			$defTypeField->addOption('email', $this->_('Email'));
@@ -1366,8 +1380,8 @@ class InputfieldReactLink extends InputfieldReact
 			$defTypeField->addOption('image', $this->_('Media: Image'));
 			$defTypeField->addOption('video', $this->_('Media: Video'));
 			$currentDefaultType = strtolower(trim((string) ($this->getSetting('defaultType') ?: 'page')));
-			foreach (self::normalizeTypeList($this->getSetting('linkTypes') ?? self::DEFAULT_TYPES) as $ct) {
-				if (!isset($defTypeField->getOptions()[$ct])) {
+			foreach (array_merge($registeredResolverTypes, self::normalizeTypeList($this->getSetting('linkTypes') ?? self::DEFAULT_TYPES)) as $ct) {
+				if ($ct !== '' && !isset($defTypeField->getOptions()[$ct])) {
 					$defTypeField->addOption($ct, ucfirst($ct));
 				}
 			}
@@ -1425,7 +1439,7 @@ class InputfieldReactLink extends InputfieldReact
 		$bpField = $modules->get('InputfieldText');
 		if ($bpField) {
 			$bpField->attr('name', 'blueprintType');
-			$bpField->label = $this->_('Entry Target Blueprint');
+			$bpField->label = $this->_('Target Resource Scope');
 			$bpField->val((string) ($this->getSetting('blueprintType') ?? ''));
 			$bpField->columnWidth = 50;
 			$inputfields->add($bpField);

@@ -31,6 +31,7 @@ use ProcessWire\React;
 use ProcessWire\Wire;
 use ProcessWire\WireInputData;
 use Stringable;
+use Totoglu\React\Condition\ConditionNormalizer;
 use Totoglu\React\Inertia\InputfieldReact;
 use Totoglu\React\Support\IntlCatalog;
 use Totoglu\React\Support\IslandMarkup;
@@ -44,6 +45,7 @@ final class ReactControlRegistry extends Wire
 {
 	public const EXTRA_ISLAND = 'ReactWorkspace/ExtraFieldControl';
 	public const CORE_ISLAND = 'ReactWorkspace/FieldControl';
+	public const CONDITION_ISLAND = 'InputfieldReactCondition';
 
 	/** @var list<string> */
 	public const EXTRA_CONTROLS = [
@@ -57,7 +59,6 @@ final class ReactControlRegistry extends Wire
 		'otp',
 		'password',
 		'markdown',
-		'condition_builder',
 	];
 
 	/** @var list<string> */
@@ -155,6 +156,13 @@ final class ReactControlRegistry extends Wire
 		'rwMaxStars' => 'maxStars',
 		'rwFormula' => 'formula',
 		'rwValueMode' => 'valueMode',
+		'rwConditionFields' => 'conditionFields',
+		'rwAllowFieldComparison' => 'allowFieldComparison',
+		'rwAllowNegate' => 'allowNegate',
+		'rwShowSummary' => 'showSummary',
+		'rwLayout' => 'layout',
+		'rwMaxGroups' => 'maxGroups',
+		'rwMaxRulesPerGroup' => 'maxRulesPerGroup',
 	];
 
 	/** @var list<string> */
@@ -198,6 +206,9 @@ final class ReactControlRegistry extends Wire
 		'rwSlugLocked',
 		'rwSecretMasked',
 		'rwSecretAutogen',
+		'rwAllowFieldComparison',
+		'rwAllowNegate',
+		'rwShowSummary',
 	];
 
 	/** @var list<string> */
@@ -211,6 +222,8 @@ final class ReactControlRegistry extends Wire
 		'rwNumberOfMonths',
 		'rwMaxStars',
 		'rwSlugMaxLength',
+		'rwMaxGroups',
+		'rwMaxRulesPerGroup',
 	];
 
 	public function __construct(private React $react)
@@ -277,7 +290,7 @@ final class ReactControlRegistry extends Wire
 	/**
 	 * Determine whether an `Inputfield` explicitly opts into the universal React control bridge.
 	 *
-	 * @return array{explicit: string, canonical: string, island: string, isExtra: bool, needsCalendar: bool}|null
+	 * @return array{explicit: string, canonical: string, island: string, isExtra: bool, isCondition: bool, needsCalendar: bool}|null
 	 */
 	public function resolveControlBridge(Inputfield $inputfield): ?array
 	{
@@ -287,11 +300,12 @@ final class ReactControlRegistry extends Wire
 		}
 
 		$canonical = self::canonicalControlType($explicit);
+		$isCondition = $canonical === 'condition_builder';
 		$isExtra = in_array($canonical, self::EXTRA_CONTROLS, true);
 		$isCore = in_array($canonical, self::CORE_CONTROLS, true)
 			|| in_array($explicit, self::EXPLICIT_TEXT_VARIANTS, true);
 
-		if (!$isExtra && !$isCore) {
+		if (!$isCondition && !$isExtra && !$isCore) {
 			return null;
 		}
 
@@ -308,8 +322,11 @@ final class ReactControlRegistry extends Wire
 		return [
 			'explicit' => $explicit,
 			'canonical' => $canonical,
-			'island' => $isExtra ? self::EXTRA_ISLAND : self::CORE_ISLAND,
+			'island' => $isCondition
+				? self::CONDITION_ISLAND
+				: ($isExtra ? self::EXTRA_ISLAND : self::CORE_ISLAND),
 			'isExtra' => $isExtra,
+			'isCondition' => $isCondition,
 			'needsCalendar' => $needsCalendar,
 		];
 	}
@@ -330,7 +347,7 @@ final class ReactControlRegistry extends Wire
 	/**
 	 * Enqueue the exact bundle(s) required for an already-resolved control bridge descriptor.
 	 *
-	 * @param array{explicit: string, canonical: string, island: string, isExtra: bool, needsCalendar: bool} $bridge
+	 * @param array{explicit: string, canonical: string, island: string, isExtra: bool, isCondition?: bool, needsCalendar: bool} $bridge
 	 */
 	public function enqueueAssetsForBridge(array $bridge): void
 	{
@@ -345,9 +362,11 @@ final class ReactControlRegistry extends Wire
 			}
 		}
 
-		$extraScripts = $bridge['isExtra']
-			? $this->react->resolveModuleAssetUrl('ReactExtraFields.js')
-			: $this->react->resolveModuleAssetUrl('SchemaForm.js');
+		$extraScripts = !empty($bridge['isCondition'])
+			? $this->react->resolveModuleAssetUrl('InputfieldReactCondition.js')
+			: ($bridge['isExtra']
+				? $this->react->resolveModuleAssetUrl('ReactExtraFields.js')
+				: $this->react->resolveModuleAssetUrl('SchemaForm.js'));
 
 		if ($bridge['needsCalendar']) {
 			$extraScripts = array_merge($extraScripts, $this->react->resolveModuleAssetUrl('ReactCalendar.js'));
@@ -478,7 +497,7 @@ final class ReactControlRegistry extends Wire
 	/**
 	 * Render a single non-tabbed React control island node for the given `Inputfield`.
 	 *
-	 * @param array{explicit: string, canonical: string, island: string, isExtra: bool, needsCalendar: bool} $bridge
+	 * @param array{explicit: string, canonical: string, island: string, isExtra: bool, isCondition?: bool, needsCalendar: bool} $bridge
 	 */
 	private function renderSingleControlIsland(Inputfield $inputfield, array $bridge, bool $renderValueMode): ?string
 	{
@@ -1122,6 +1141,71 @@ final class ReactControlRegistry extends Wire
 			['columnWidth' => 33, 'default' => true],
 		);
 
+		// Condition Builder options
+		$addOptionField(
+			'InputfieldTextarea',
+			'rwConditionFields',
+			$this->_('Condition Field Specifications (JSON)'),
+			['condition_builder'],
+			$this->_('Optional JSON array of {key, label, type, group, options} definitions for available condition source/target fields.'),
+			['columnWidth' => 100, 'rows' => 4],
+		);
+		$addOptionField(
+			'InputfieldCheckbox',
+			'rwAllowFieldComparison',
+			$this->_('Allow Field-to-Field Comparison'),
+			['condition_builder'],
+			$this->_('Allow rules to compare a source field against another field in the list.'),
+			['columnWidth' => 33],
+		);
+		$addOptionField(
+			'InputfieldCheckbox',
+			'rwAllowNegate',
+			$this->_('Allow Group Negation (NOT)'),
+			['condition_builder'],
+			'',
+			['columnWidth' => 33, 'default' => true],
+		);
+		$addOptionField(
+			'InputfieldCheckbox',
+			'rwShowSummary',
+			$this->_('Show Live Rule Summary'),
+			['condition_builder'],
+			'',
+			['columnWidth' => 34, 'default' => true],
+		);
+		$addOptionField(
+			'InputfieldSelect',
+			'rwLayout',
+			$this->_('Builder Layout'),
+			['condition_builder'],
+			'',
+			[
+				'columnWidth' => 34,
+				'options' => [
+					'auto' => $this->_('Auto (Container Responsive)'),
+					'inline' => $this->_('Inline Row'),
+					'compact' => $this->_('Compact Stacked'),
+				],
+			],
+		);
+		$addOptionField(
+			'InputfieldInteger',
+			'rwMaxGroups',
+			$this->_('Max Condition Groups'),
+			['condition_builder'],
+			'',
+			['columnWidth' => 33],
+		);
+		$addOptionField(
+			'InputfieldInteger',
+			'rwMaxRulesPerGroup',
+			$this->_('Max Rules Per Group'),
+			['condition_builder'],
+			'',
+			['columnWidth' => 33],
+		);
+
 		$sanitizedId = $sanitizer->name('rwControlFieldset');
 		if ($sanitizedId !== '') {
 			$fieldset->attr('id', 'Inputfield_' . $sanitizedId);
@@ -1187,6 +1271,19 @@ final class ReactControlRegistry extends Wire
 			if ($fieldKey === 'rwMinDistance' && is_numeric($val)) {
 				$str = trim((string) $val);
 				$inputfield->set($inputKey, str_contains($str, '.') ? (float) $str : (int) $str);
+				continue;
+			}
+
+			if ($fieldKey === 'rwConditionFields') {
+				$rawFields = is_array($val)
+					? $val
+					: (is_string($val) ? json_decode(trim($val), true) : null);
+				if (is_array($rawFields)) {
+					$normalizedFields = ConditionNormalizer::normalizeFieldSpecs($rawFields);
+					if ($normalizedFields !== []) {
+						$inputfield->set($inputKey, $normalizedFields);
+					}
+				}
 				continue;
 			}
 
@@ -1494,11 +1591,11 @@ final class ReactControlRegistry extends Wire
 				))),
 				'range_slider' => $sanitizer->entities(((string) ($arr['min'] ?? '')) . ' – ' . ((string) ($arr['max'] ?? ''))),
 				'daterange' => $sanitizer->entities(((string) ($arr['from'] ?? '')) . ' – ' . ((string) ($arr['to'] ?? ''))),
-				default => $sanitizer->entities(sprintf(
-					'%s (%d)',
-					strtoupper((string) ($arr['match'] ?? 'all')),
-					is_array($arr['groups'] ?? null) ? count($arr['groups']) : 0,
-				)),
+				'condition_builder' => ConditionNormalizer::renderSummaryMarkup(
+					$arr,
+					ConditionNormalizer::normalizeFieldSpecs($field->get('rwConditionFields') ?? $field->get('conditionFields')),
+					$property
+				),
 			};
 		}
 
@@ -1641,6 +1738,11 @@ final class ReactControlRegistry extends Wire
 		}
 
 		$strVal = is_scalar($val) ? (string) $val : '';
+		$isPasswordInput = $type === 'password'
+			|| ($type === 'text' && strtolower((string) ($node['inputType'] ?? '')) === 'password');
+		if ($isPasswordInput && empty($node['isSecret'])) {
+			$strVal = '';
+		}
 		if ($type === 'checkbox') {
 			return !empty($node['checked'])
 				? '<input type="hidden" name="' . $escName . '" value="' . $sanitizer->entities((string) ($node['checkedValue'] ?? '1')) . '">'

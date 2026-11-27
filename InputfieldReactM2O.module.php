@@ -150,25 +150,23 @@ class InputfieldReactM2O extends AbstractInputfieldReactRelation implements Inpu
 		$inputfields = parent::___getConfigInputfields();
 		$modules = $this->wire()->modules;
 
-		if ($modules !== null) {
-			/** @var InputfieldSelect|null $widgetField */
-			$widgetField = $modules->get('InputfieldSelect');
-			if ($widgetField !== null) {
-				$widgetField->attr('name', 'widget');
-				$widgetField->label = $this->_('UI Selection Widget');
-				$widgetField->addOptions([
-					'auto' => $this->_('Auto (Smart adaptation by item count & hierarchy)'),
-					'select' => $this->_('Select Dropdown'),
-					'radios' => $this->_('Radio List'),
-					'radio-cards' => $this->_('Radio Cards (Rich subtitle & icon)'),
-					'autocomplete' => $this->_('Autocomplete Search Combobox'),
-					'treeselect' => $this->_('Hierarchical TreeSelect (Pages)'),
-					'picker' => $this->_('Drawer Table/Card Picker'),
-				]);
-				$widgetField->val((string) ($this->getSetting('widget') ?: 'auto'));
-				$widgetField->columnWidth = 33;
-				$inputfields->add($widgetField);
-			}
+		/** @var InputfieldSelect|null $widgetField */
+		$widgetField = $modules->get('InputfieldSelect');
+		if ($widgetField !== null) {
+			$widgetField->attr('name', 'widget');
+			$widgetField->label = $this->_('UI Selection Widget');
+			$widgetField->addOptions([
+				'auto' => $this->_('Auto (Smart adaptation by item count & hierarchy)'),
+				'select' => $this->_('Select Dropdown'),
+				'radios' => $this->_('Radio List'),
+				'radio-cards' => $this->_('Radio Cards (Rich subtitle & icon)'),
+				'autocomplete' => $this->_('Autocomplete Search Combobox'),
+				'treeselect' => $this->_('Hierarchical TreeSelect (Pages)'),
+				'picker' => $this->_('Drawer Table/Card Picker'),
+			]);
+			$widgetField->val((string) ($this->getSetting('widget') ?: 'auto'));
+			$widgetField->columnWidth = 33;
+			$inputfields->add($widgetField);
 		}
 
 		$this->appendBaseRelationConfigFields($inputfields, true);

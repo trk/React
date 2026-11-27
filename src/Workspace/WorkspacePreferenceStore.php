@@ -24,6 +24,24 @@ final class WorkspacePreferenceStore extends Wire
 	private const string SHELL_LAYOUT_PATTERN = '/^[a-z0-9_-]{1,40}$/';
 
 	/**
+	 * Per-request preference cache keyed by user ID (invalidated on write/reset/purgeAll).
+	 *
+	 * @var array<int, array{
+	 *     userId: int,
+	 *     favorites: list<string>,
+	 *     widgetOrder: list<string>,
+	 *     hiddenWidgets: list<string>,
+	 *     widgetSizes: array<string, string>,
+	 *     themeMode: string,
+	 *     themePreset: string,
+	 *     shellLayout: string,
+	 *     sidebarCollapsed: bool,
+	 *     updatedAt: string
+	 * }>
+	 */
+	private array $memoryCache = [];
+
+	/**
 	 * Canonical default per-user workspace preference payload.
 	 *
 	 * @var array{
@@ -102,6 +120,10 @@ final class WorkspacePreferenceStore extends Wire
 			return $defaults;
 		}
 
+		if (isset($this->memoryCache[$userId])) {
+			return $this->memoryCache[$userId];
+		}
+
 		$path = $this->filePath($user);
 		if ($path === '' || is_link($path) || !is_file($path) || !is_readable($path)) {
 			return $defaults;
@@ -118,8 +140,10 @@ final class WorkspacePreferenceStore extends Wire
 			}
 			rewind($fp);
 			$raw = stream_get_contents($fp);
+			$decoded = $this->decodePreferences($userId, is_string($raw) ? $raw : '');
+			$this->memoryCache[$userId] = $decoded;
 
-			return $this->decodePreferences($userId, is_string($raw) ? $raw : '');
+			return $decoded;
 		} finally {
 			@flock($fp, LOCK_UN);
 			fclose($fp);
@@ -169,57 +193,58 @@ final class WorkspacePreferenceStore extends Wire
 			}
 		}
 
-		$prefs = $this->mutate(
-			$user,
-			static function (array $current) use ($validWorkspaceIds, $validWidgetIds, $accessibleWidgets): ?array {
-				$favorites = array_values(array_filter(
-					$current['favorites'],
-					static fn(string $id): bool => isset($validWorkspaceIds[$id])
-				));
+		$pruneMutator = static function (array $current) use ($validWorkspaceIds, $validWidgetIds, $accessibleWidgets): ?array {
+			$favorites = array_values(array_filter(
+				$current['favorites'],
+				static fn(string $id): bool => isset($validWorkspaceIds[$id])
+			));
 
-				if ($accessibleWidgets === null) {
-					if (count($favorites) === count($current['favorites'])) {
-						return null;
-					}
-
-					return array_merge($current, ['favorites' => $favorites]);
-				}
-
-				$widgetOrder = array_values(array_filter(
-					$current['widgetOrder'],
-					static fn(string $id): bool => isset($validWidgetIds[$id])
-				));
-
-				$hiddenWidgets = array_values(array_filter(
-					$current['hiddenWidgets'],
-					static fn(string $id): bool => isset($validWidgetIds[$id])
-				));
-
-				$widgetSizes = [];
-				foreach ($current['widgetSizes'] as $wId => $size) {
-					if (isset($validWidgetIds[$wId])) {
-						$widgetSizes[$wId] = $size;
-					}
-				}
-
-				$wasPruned = count($favorites) !== count($current['favorites'])
-					|| count($widgetOrder) !== count($current['widgetOrder'])
-					|| count($hiddenWidgets) !== count($current['hiddenWidgets'])
-					|| count($widgetSizes) !== count($current['widgetSizes']);
-
-				if (!$wasPruned) {
+			if ($accessibleWidgets === null) {
+				if (count($favorites) === count($current['favorites'])) {
 					return null;
 				}
 
-				return array_merge($current, [
-					'favorites' => $favorites,
-					'widgetOrder' => $widgetOrder,
-					'hiddenWidgets' => $hiddenWidgets,
-					'widgetSizes' => $widgetSizes,
-				]);
-			},
-			true,
-		);
+				return array_merge($current, ['favorites' => $favorites]);
+			}
+
+			$widgetOrder = array_values(array_filter(
+				$current['widgetOrder'],
+				static fn(string $id): bool => isset($validWidgetIds[$id])
+			));
+
+			$hiddenWidgets = array_values(array_filter(
+				$current['hiddenWidgets'],
+				static fn(string $id): bool => isset($validWidgetIds[$id])
+			));
+
+			$widgetSizes = [];
+			foreach ($current['widgetSizes'] as $wId => $size) {
+				if (isset($validWidgetIds[$wId])) {
+					$widgetSizes[$wId] = $size;
+				}
+			}
+
+			$wasPruned = count($favorites) !== count($current['favorites'])
+				|| count($widgetOrder) !== count($current['widgetOrder'])
+				|| count($hiddenWidgets) !== count($current['hiddenWidgets'])
+				|| count($widgetSizes) !== count($current['widgetSizes']);
+
+			if (!$wasPruned) {
+				return null;
+			}
+
+			return array_merge($current, [
+				'favorites' => $favorites,
+				'widgetOrder' => $widgetOrder,
+				'hiddenWidgets' => $hiddenWidgets,
+				'widgetSizes' => $widgetSizes,
+			]);
+		};
+
+		$loaded = $this->load($user);
+		$prefs = $pruneMutator($loaded) !== null
+			? $this->mutate($user, $pruneMutator, true)
+			: $loaded;
 
 		$favorites = array_values(array_filter(
 			$prefs['favorites'],
@@ -554,9 +579,29 @@ final class WorkspacePreferenceStore extends Wire
 	public function reset(?User $user = null): array
 	{
 		$userId = $this->resolveUserId($user);
-		$path = $this->filePath($user);
-		if ($path !== '' && is_file($path)) {
-			@unlink($path);
+		if ($userId > 0) {
+			unset($this->memoryCache[$userId]);
+			$dir = $this->directoryPath();
+			$dirTrimmed = rtrim($dir, '/\\');
+			$path = $dir . $userId . '.json';
+			$lockPath = $dir . $userId . '.lock';
+			if (!is_link($dirTrimmed) && !is_link($lockPath) && is_dir($dir)) {
+				$lockFp = @fopen($lockPath, 'c+');
+				if ($lockFp !== false) {
+					try {
+						if (@flock($lockFp, LOCK_EX) && !is_link($path) && is_file($path)) {
+							@unlink($path);
+						}
+					} finally {
+						@flock($lockFp, LOCK_UN);
+						fclose($lockFp);
+					}
+				} elseif (!is_link($path) && is_file($path)) {
+					@unlink($path);
+				}
+			} elseif (!is_link($path) && is_file($path)) {
+				@unlink($path);
+			}
 		}
 
 		return array_merge(self::DEFAULT_PREFERENCES, [
@@ -569,6 +614,7 @@ final class WorkspacePreferenceStore extends Wire
 	 */
 	public function purgeAll(): void
 	{
+		$this->memoryCache = [];
 		$dir = $this->directoryPath();
 		if (!is_dir($dir)) {
 			return;
@@ -582,7 +628,7 @@ final class WorkspacePreferenceStore extends Wire
 			// Fallback below
 		}
 
-		foreach (glob($dir . '*.json') ?: [] as $file) {
+		foreach (glob($dir . '*.{json,lock}', GLOB_BRACE) ?: [] as $file) {
 			if (is_file($file)) {
 				@unlink($file);
 			}
@@ -638,43 +684,67 @@ final class WorkspacePreferenceStore extends Wire
 		}
 
 		$path = $dir . $userId . '.json';
-		if (is_link($path)) {
+		$lockPath = $dir . $userId . '.lock';
+		if (is_link($path) || is_link($lockPath)) {
 			return $defaults;
 		}
 		if ($requireExistingFile && !is_file($path)) {
 			return $defaults;
 		}
 
-		$fp = @fopen($path, 'c+');
-		if ($fp === false) {
+		$lockFp = @fopen($lockPath, 'c+');
+		if ($lockFp === false) {
 			return $this->load($user);
 		}
 
 		try {
-			if (!@flock($fp, LOCK_EX)) {
+			if (!@flock($lockFp, LOCK_EX)) {
 				return $this->load($user);
 			}
 
-			rewind($fp);
-			$raw = stream_get_contents($fp);
+			if ($requireExistingFile && !is_file($path)) {
+				return $defaults;
+			}
+
+			$raw = is_file($path) ? @file_get_contents($path) : '';
 			$current = $this->decodePreferences($userId, is_string($raw) ? $raw : '');
 			$next = $mutator($current);
 			if ($next === null) {
+				$this->memoryCache[$userId] = $current;
+
 				return $current;
 			}
 
 			$payload = $this->normalizePayload($userId, $next, true);
-			$encoded = (string) json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-			ftruncate($fp, 0);
-			rewind($fp);
-			fwrite($fp, $encoded);
-			fflush($fp);
-			@chmod($path, 0600);
+			try {
+				$encoded = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+			} catch (\Throwable) {
+				return $current;
+			}
+
+			$tmpPath = $dir . '.tmp.' . $userId . '.' . bin2hex(random_bytes(6));
+			if (@file_put_contents($tmpPath, $encoded) === false) {
+				if (is_file($tmpPath)) {
+					@unlink($tmpPath);
+				}
+
+				return $current;
+			}
+			@chmod($tmpPath, 0600);
+			if (!@rename($tmpPath, $path)) {
+				if (is_file($tmpPath)) {
+					@unlink($tmpPath);
+				}
+
+				return $current;
+			}
+
+			$this->memoryCache[$userId] = $payload;
 
 			return $payload;
 		} finally {
-			@flock($fp, LOCK_UN);
-			fclose($fp);
+			@flock($lockFp, LOCK_UN);
+			fclose($lockFp);
 		}
 	}
 

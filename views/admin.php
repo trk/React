@@ -67,6 +67,10 @@ $uikitFontDir = rtrim((string) $this->wire()->config->paths->modules, '/') . '/A
 $uikitFontUrlBase = is_dir($uikitFontDir)
 	? rtrim((string) $this->wire()->config->urls->modules, '/') . '/AdminTheme/AdminThemeUikit/themes/default/fonts'
 	: '';
+$rawCspNonce = $this->wire()->config->get('cspNonce');
+$nonceAttr = is_string($rawCspNonce) && trim($rawCspNonce) !== ''
+	? ' nonce="' . $sanitizer->entities(trim($rawCspNonce)) . '"'
+	: '';
 ?>
 <!DOCTYPE html>
 <html lang="<?= $safeLocale ?>" class="<?= $sanitizer->entities($htmlThemeClass) ?>" data-theme-mode="<?= $sanitizer->entities($resolvedThemeMode) ?>" data-rw-shell-mode="<?= $sanitizer->entities($resolvedShellMode) ?>" data-rw-shell-layout="<?= $sanitizer->entities($resolvedShellLayout) ?>" data-rw-sidebar-collapsed="<?= $sidebarCollapsedAttr ?>" data-rw-admin-root="<?= $sanitizer->entities($adminRootAttr) ?>" data-rw-launcher-path="<?= $sanitizer->entities($launcherPathAttr) ?>">
@@ -76,7 +80,7 @@ $uikitFontUrlBase = is_dir($uikitFontDir)
 	<link rel="icon" href="data:," />
 	<title inertia><?= $safeTitle ?> &mdash; ProcessWire</title>
 <?php if ($uikitFontUrlBase !== '') { ?>
-	<style id="pw-inter-font">
+	<style id="pw-inter-font"<?= $nonceAttr ?>>
 		@font-face { font-display: swap; font-family: "Inter"; font-style: normal; font-weight: 400; src: url("<?= $sanitizer->entities($uikitFontUrlBase . '/Inter-Regular.woff2') ?>") format("woff2"); }
 		@font-face { font-display: swap; font-family: "Inter"; font-style: italic; font-weight: 400; src: url("<?= $sanitizer->entities($uikitFontUrlBase . '/Inter-Italic.woff2') ?>") format("woff2"); }
 		@font-face { font-display: swap; font-family: "Inter"; font-style: normal; font-weight: 600; src: url("<?= $sanitizer->entities($uikitFontUrlBase . '/Inter-SemiBold.woff2') ?>") format("woff2"); }
@@ -84,10 +88,10 @@ $uikitFontUrlBase = is_dir($uikitFontDir)
 	</style>
 <?php } ?>
 <?php if (!empty($colorSchemeCss)) { ?>
-	<style id="pw-color-scheme-tokens"><?= (string) preg_replace('~<\s*/\s*style~i', '<\\/style', (string) $colorSchemeCss) ?></style>
+	<style id="pw-color-scheme-tokens"<?= $nonceAttr ?>><?= (string) preg_replace('~<\s*/\s*style~i', '<\\/style', (string) $colorSchemeCss) ?></style>
 <?php } ?>
 <?php if (!empty($themeCss)) { ?>
-	<style id="rw-theme-tokens"><?= (string) preg_replace('~<\s*/\s*style~i', '<\\/style', (string) $themeCss) ?></style>
+	<style id="rw-theme-tokens"<?= $nonceAttr ?>><?= (string) preg_replace('~<\s*/\s*style~i', '<\\/style', (string) $themeCss) ?></style>
 <?php } ?>
 <?php if (!empty($styles) && is_array($styles)) { ?>
 <?php foreach ($styles as $styleUrl) { ?>
@@ -97,7 +101,7 @@ $uikitFontUrlBase = is_dir($uikitFontDir)
 <?php if (!empty($head)) { ?>
 	<?= $head . "\n" ?>
 <?php } ?>
-	<script>
+	<script<?= $nonceAttr ?>>
 		(function () {
 			try {
 				var d = document.documentElement;

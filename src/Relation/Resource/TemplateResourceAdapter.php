@@ -145,6 +145,7 @@ final class TemplateResourceAdapter extends AbstractRelationResource
 		usort(
 			$list,
 			static fn(Template $a, Template $b): int => strcasecmp((string) ($a->getLabel() ?: $a->name), (string) ($b->getLabel() ?: $b->name))
+				?: strcmp((string) $a->name, (string) $b->name)
 		);
 
 		return $list;

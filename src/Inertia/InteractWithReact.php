@@ -71,12 +71,26 @@ trait InteractWithReact
 			return false;
 		}
 
+		$adminTemplates = $wire->config->adminTemplates;
+		$adminTemplateNames = is_array($adminTemplates) && $adminTemplates !== []
+			? array_map('strval', $adminTemplates)
+			: ['admin'];
 		$page = $wire->page;
-		if (!$page instanceof Page || !$page->template instanceof Template || $page->template->name !== 'admin') {
+		if (!$page instanceof Page || !$page->template instanceof Template || !in_array($page->template->name, $adminTemplateNames, true)) {
 			return false;
 		}
 
 		return $this->react()->resolveShellMode($this) === 'admin';
+	}
+
+	/**
+	 * URL segment 1 values that bypass full-page Inertia rendering (JSON feeds, exports, file downloads).
+	 *
+	 * @return list<string>
+	 */
+	protected function nonInertiaUrlSegments(): array
+	{
+		return ['navjson', 'export'];
 	}
 
 	/**
@@ -89,7 +103,7 @@ trait InteractWithReact
 		if ($this instanceof Wire) {
 			$input = $this->wire()->input;
 			$seg1 = strtolower(trim((string) $input->urlSegment1));
-			if (in_array($seg1, ['navjson', 'export', 'download-backup'], true)) {
+			if (in_array($seg1, $this->nonInertiaUrlSegments(), true) || str_starts_with($seg1, 'download')) {
 				return false;
 			}
 			if ((int) $input->get('modal') === 1 || (string) $input->post('_rw_modal') === '1') {
@@ -228,10 +242,9 @@ trait InteractWithReact
 				return null;
 			}
 			$className = $this->className();
-			foreach ($react->workspaces()->all() as $definition) {
-				if ($definition->process === $className) {
-					return $definition;
-				}
+			$matched = $react->workspaces()->get($className);
+			if ($matched instanceof WorkspaceDefinition) {
+				return $matched;
 			}
 		}
 

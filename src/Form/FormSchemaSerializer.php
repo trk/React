@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Totoglu\React\Form;
 
+use ProcessWire\FieldtypePassword;
 use ProcessWire\Inputfield;
 use ProcessWire\InputfieldCheckbox;
 use ProcessWire\InputfieldDatetime;
@@ -14,6 +15,8 @@ use ProcessWire\InputfieldHidden;
 use ProcessWire\InputfieldImage;
 use ProcessWire\InputfieldMarkup;
 use ProcessWire\InputfieldPage;
+use ProcessWire\InputfieldPassword;
+use ProcessWire\InputfieldReactCondition;
 use ProcessWire\InputfieldReactIcon;
 use ProcessWire\InputfieldReactKeyValue;
 use ProcessWire\InputfieldReactLink;
@@ -33,11 +36,14 @@ use ProcessWire\MarkupReactTab;
 use ProcessWire\Page;
 use ProcessWire\Pagefile;
 use ProcessWire\Pagefiles;
+use ProcessWire\Password;
 use ProcessWire\React;
 use ProcessWire\SelectableOption;
 use ProcessWire\Wire;
+use Totoglu\React\Condition\ConditionNormalizer;
 use Totoglu\React\Icon\IconManager;
 use Totoglu\React\Inertia\InputfieldReact;
+use Totoglu\React\Media\MediaGateway;
 use Totoglu\React\Media\PageLinkMediaHostAdapter;
 use Totoglu\React\Relation\AbstractInputfieldReactRelation;
 use Totoglu\React\Support\IntlCatalog;
@@ -367,6 +373,17 @@ class FormSchemaSerializer extends Wire
 		$presenceEndpoint = !$isFragment && $presenceKey !== ''
 			? trim((string) ($options['presenceEndpoint'] ?? ($rootUrl . '/_react/presence')))
 			: '';
+		$presenceToken = '';
+		if (!$isFragment && $presenceKey !== '') {
+			try {
+				$presenceToken = React::instance($this)->issuePresenceToken(
+					$presenceKey,
+					!array_key_exists('canMarkSaved', $options) || (bool) $options['canMarkSaved'],
+				);
+			} catch (\Throwable) {
+				$presenceToken = '';
+			}
+		}
 
 		$surfaceRaw = strtolower(trim((string) ($options['surface'] ?? $wrapper->attr('data-rw-surface') ?? '')));
 		$surface = $surfaceRaw === 'card' ? 'card' : null;
@@ -383,6 +400,7 @@ class FormSchemaSerializer extends Wire
 			'surface' => $surface,
 			'tabsLayout' => $tabsLayout,
 			'presenceKey' => !$isFragment && $presenceKey !== '' ? $presenceKey : null,
+			'presenceToken' => $presenceToken !== '' ? $presenceToken : null,
 			'presenceEndpoint' => $presenceEndpoint !== '' ? $presenceEndpoint : null,
 			'csrf' => $csrf,
 			'hiddenInputs' => $hiddenInputs,
@@ -496,20 +514,45 @@ class FormSchemaSerializer extends Wire
 					$val = $derivedFiles;
 				}
 			}
+			$rawInputType = strtolower(trim((string) ($raw['inputType'] ?? $raw['input_type'] ?? '')));
+			$isPasswordControl = $type === 'password'
+				|| $this->canonicalControlType($type) === 'password'
+				|| ($type === 'text' && $rawInputType === 'password');
+			$isRedactedPassword = $val instanceof Password
+				|| ($isPasswordControl && empty($raw['isSecret']) && $type !== 'secret');
 			$langTabs = [];
 			if ($useLanguages) {
 				$langTabs = $this->extractDeclarativeLanguageValues($name, $raw, $isMediaField ? '' : $val, $values);
 				if (!$isMediaField) {
 					if ($langTabs !== []) {
-						foreach ($langTabs as $langTab) {
-							$values[$langTab['inputName']] = $langTab['value'];
-							if ($langTab['isDefault']) {
-								$val = $langTab['value'];
+						foreach ($langTabs as $ltIdx => $langTab) {
+							$ltVal = $langTab['value'];
+							if ($ltVal instanceof Password) {
+								$isRedactedPassword = true;
+							}
+							if ($isRedactedPassword) {
+								$langTabs[$ltIdx]['value'] = '';
+								$values[$langTab['inputName']] = '';
+							} else {
+								$values[$langTab['inputName']] = $ltVal;
+								if ($langTab['isDefault']) {
+									$val = $ltVal;
+								}
 							}
 						}
 					} elseif (is_array($val)) {
-						$val = (string) ($val['default'] ?? reset($val) ?: '');
+						$val = $isRedactedPassword ? '' : (string) ($val['default'] ?? reset($val) ?: '');
 					}
+				}
+			}
+			if ($val instanceof Password) {
+				$isRedactedPassword = true;
+			}
+			if ($isRedactedPassword) {
+				$val = '';
+				foreach ($langTabs as $ltIdx => $langTab) {
+					$langTabs[$ltIdx]['value'] = '';
+					$values[$langTab['inputName']] = '';
 				}
 			}
 			$values[$name] = $val;
@@ -724,7 +767,7 @@ class FormSchemaSerializer extends Wire
 			} elseif ($controlType === 'condition_builder') {
 				$useLanguages = false;
 				$langTabs = [];
-				$val = $this->normalizeConditionBuilderValue($val);
+				$val = ConditionNormalizer::normalizeTree($val);
 				$values[$name] = $val;
 			}
 			$kvRows = [];
@@ -789,6 +832,7 @@ class FormSchemaSerializer extends Wire
 
 			$defaultInputType = match ($controlType) {
 				'email', 'url', 'tel', 'phone' => $controlType === 'phone' ? 'tel' : $controlType,
+				'password' => 'password',
 				'range', 'colspan' => 'range',
 				'date' => 'date',
 				'time' => 'time',
@@ -906,7 +950,7 @@ class FormSchemaSerializer extends Wire
 				'error' => $err,
 			];
 			$rawNodeReset = $raw['resetValue'] ?? ($raw['default'] ?? null);
-			if ($rawNodeReset !== null) {
+			if (!$isRedactedPassword && $rawNodeReset !== null) {
 				$fieldNode['resetValue'] = $rawNodeReset;
 			}
 
@@ -972,6 +1016,17 @@ class FormSchemaSerializer extends Wire
 		$presenceEndpoint = !$isFragment && $presenceKey !== ''
 			? trim((string) ($options['presenceEndpoint'] ?? ($rootUrl . '/_react/presence')))
 			: '';
+		$presenceToken = '';
+		if (!$isFragment && $presenceKey !== '') {
+			try {
+				$presenceToken = React::instance($this)->issuePresenceToken(
+					$presenceKey,
+					!array_key_exists('canMarkSaved', $options) || (bool) $options['canMarkSaved'],
+				);
+			} catch (\Throwable) {
+				$presenceToken = '';
+			}
+		}
 
 		$emptyTabs = [];
 		$this->attachSiblingMediaFieldsToTiptap($emptyTabs, $fields);
@@ -991,6 +1046,7 @@ class FormSchemaSerializer extends Wire
 			'surface' => $surface,
 			'tabsLayout' => $tabsLayout,
 			'presenceKey' => !$isFragment && $presenceKey !== '' ? $presenceKey : null,
+			'presenceToken' => $presenceToken !== '' ? $presenceToken : null,
 			'presenceEndpoint' => $presenceEndpoint !== '' ? $presenceEndpoint : null,
 			'csrf' => $csrf,
 			'hiddenInputs' => $hiddenInputs,
@@ -1328,6 +1384,45 @@ class FormSchemaSerializer extends Wire
 			]);
 		}
 
+		if ($inputfield instanceof InputfieldReactCondition) {
+			$condData = $inputfield->inertiaWithData();
+			$common = $this->extractCommonFieldMeta($inputfield, $errors);
+			$attrs = $inputfield->getAttributes();
+			$isDynamicReadOnly = (bool) $inputfield->get('_rwDynamicReadOnly');
+			$isLockedCollapsed = in_array((int) ($inputfield->collapsed ?? 0), [Inputfield::collapsedNoLocked, Inputfield::collapsedYesLocked], true);
+			$disabled = !$isDynamicReadOnly && !empty($attrs['disabled']);
+			$readOnly = $isLockedCollapsed || (!$isDynamicReadOnly && !empty($condData['readOnly']));
+			$validation = $this->extractValidationFromInputfield($inputfield, $common);
+			$fieldName = (string) ($common['name'] !== '' ? $common['name'] : ($condData['name'] ?? $inputfield->attr('name') ?? ''));
+			$condVal = ConditionNormalizer::normalizeTree($condData['value'] ?? null);
+			if ($fieldName !== '') {
+				$values[$fieldName] = $condVal;
+			}
+
+			return array_merge($common, [
+				'kind' => 'control',
+				'type' => 'condition_builder',
+				'name' => $fieldName,
+				'defaultValue' => $condVal,
+				'value' => $condVal,
+				'conditionFields' => is_array($condData['conditionFields'] ?? null) ? $condData['conditionFields'] : [],
+				'conditionFieldsSource' => is_array($condData['conditionFieldsSource'] ?? null) ? $condData['conditionFieldsSource'] : null,
+				'allowFieldComparison' => array_key_exists('allowFieldComparison', $condData) ? (bool) $condData['allowFieldComparison'] : true,
+				'allowNegate' => array_key_exists('allowNegate', $condData) ? (bool) $condData['allowNegate'] : true,
+				'showSummary' => array_key_exists('showSummary', $condData) ? (bool) $condData['showSummary'] : true,
+				'allowRawExpression' => !empty($condData['allowRawExpression']),
+				'showLabel' => !empty($condData['showLabel']),
+				'heading' => (string) ($condData['heading'] ?? ''),
+				'layout' => (string) ($condData['layout'] ?? 'auto'),
+				'maxGroups' => (int) ($condData['maxGroups'] ?? 0),
+				'maxRulesPerGroup' => (int) ($condData['maxRulesPerGroup'] ?? 0),
+				'emptyMessage' => (string) ($condData['emptyMessage'] ?? ''),
+				'disabled' => $disabled,
+				'readOnly' => $readOnly,
+				'validation' => $validation,
+			]);
+		}
+
 		if ($inputfield instanceof InputfieldReactLink) {
 			$common = $this->extractCommonFieldMeta($inputfield, $errors);
 			$attrs = $inputfield->getAttributes();
@@ -1532,13 +1627,15 @@ class FormSchemaSerializer extends Wire
 					}
 				}
 				if (!$isMediaField && !empty($control['useLanguages']) && isset($control['languages']) && is_array($control['languages'])) {
+					$isRedactedPasswordCtrl = ($ctrlType === 'password' || ($ctrlType === 'text' && (($control['inputType'] ?? '') === 'password')))
+						&& empty($control['isSecret']);
 					foreach ($control['languages'] as $langEntry) {
 						if (!is_array($langEntry)) {
 							continue;
 						}
 						$langInputName = (string) ($langEntry['inputName'] ?? '');
 						if ($langInputName !== '') {
-							$values[$langInputName] = (string) ($langEntry['value'] ?? '');
+							$values[$langInputName] = $isRedactedPasswordCtrl ? '' : (string) ($langEntry['value'] ?? '');
 						}
 					}
 				}
@@ -1798,7 +1895,7 @@ class FormSchemaSerializer extends Wire
 		$control = null;
 
 		if ($inputfield instanceof InputfieldTextarea || $shortClass === 'InputfieldTextarea') {
-			$rwTextareaControl = $this->canonicalControlType($this->resolveInputfieldRwControl($inputfield, $attrs));
+			$rwTextareaControl = $this->canonicalControlType($this->resolveInputfieldRwControl($inputfield));
 			$val = (string) ($attrs['value'] ?? $inputfield->val() ?? '');
 
 			if ($rwTextareaControl === 'signature') {
@@ -1808,7 +1905,7 @@ class FormSchemaSerializer extends Wire
 					'value' => $val,
 				]);
 			} elseif ($rwTextareaControl === 'condition_builder') {
-				$normalizedCb = $this->normalizeConditionBuilderValue($inputfield->val() ?? $val);
+				$normalizedCb = ConditionNormalizer::normalizeTree($inputfield->val() ?? $val);
 				$control = array_merge($base, [
 					'type' => 'condition_builder',
 					'defaultValue' => $normalizedCb,
@@ -1873,7 +1970,7 @@ class FormSchemaSerializer extends Wire
 				}
 			}
 		} elseif ($inputfield instanceof InputfieldDatetime || $shortClass === 'InputfieldDatetime') {
-			$rwDateControl = $this->canonicalControlType($this->resolveInputfieldRwControl($inputfield, $attrs));
+			$rwDateControl = $this->canonicalControlType($this->resolveInputfieldRwControl($inputfield));
 			$rawVal = $attrs['value'] ?? $inputfield->val() ?? '';
 			$dtBag = $this->collectInputfieldExtendedBag($inputfield, $attrs);
 
@@ -1998,7 +2095,7 @@ class FormSchemaSerializer extends Wire
 				'InputfieldTextTags',
 			], true)
 		) {
-			$rawSelectControl = $this->resolveInputfieldRwControl($inputfield, $attrs);
+			$rawSelectControl = $this->resolveInputfieldRwControl($inputfield);
 			$rwSelectControl = $this->canonicalControlType($rawSelectControl);
 			$isMultiple = $inputfield instanceof InputfieldHasArrayValue
 				|| in_array($shortClass, ['InputfieldCheckboxes', 'InputfieldAsmSelect', 'InputfieldSelectMultiple', 'InputfieldTextTags'], true)
@@ -2082,7 +2179,7 @@ class FormSchemaSerializer extends Wire
 			$max = $attrs['max'] ?? $inputfield->getSetting('max');
 			$step = $attrs['step'] ?? $inputfield->getSetting('step') ?? ($shortClass === 'InputfieldInteger' ? '1' : 'any');
 			$valStr = is_scalar($rawVal) ? (string) $rawVal : '';
-			$rawRwControl = $this->resolveInputfieldRwControl($inputfield, $attrs);
+			$rawRwControl = $this->resolveInputfieldRwControl($inputfield);
 			$rwControl = $this->canonicalControlType($rawRwControl);
 			$rawInputType = strtolower((string) ($attrs['type'] ?? $inputfield->get('inputType') ?? ''));
 			$valueMode = (string) (
@@ -2131,11 +2228,23 @@ class FormSchemaSerializer extends Wire
 			if (in_array($resolvedType, ['range_slider', 'unit_number'], true)) {
 				$this->applyExtendedControlOptions($resolvedType, $control, $numBag, $rawRwControl);
 			}
+		} elseif ($inputfield instanceof InputfieldPassword || $shortClass === 'InputfieldPassword') {
+			$secretMeta = $this->resolveSecretSerializationMeta(true, true, null, null, null);
+			$control = $this->redactPasswordControlState(array_merge($base, [
+				'type' => 'text',
+				'inputType' => 'password',
+				'defaultValue' => '',
+				'value' => '',
+				'pattern' => null,
+				'slugFrom' => null,
+				'slugSeparator' => '-',
+				'slugLocked' => false,
+			], $secretMeta));
 		} elseif (
 			$inputfield instanceof InputfieldText
 			|| in_array($shortClass, ['InputfieldText', 'InputfieldEmail', 'InputfieldURL', 'InputfieldPageTitle', 'InputfieldName'], true)
 		) {
-			$rawTextControl = $this->resolveInputfieldRwControl($inputfield, $attrs);
+			$rawTextControl = $this->resolveInputfieldRwControl($inputfield);
 			$rwTextControl = $this->canonicalControlType($rawTextControl);
 			if ($rwTextControl === 'link') {
 				$rawLinkCfg = $inputfield->get('linkConfig');
@@ -2185,15 +2294,20 @@ class FormSchemaSerializer extends Wire
 					?: ($inputfield->get('slugFrom') ?? $inputfield->get('connectedField') ?? '')
 				);
 				$slugSeparator = (string) ($this->findDataAttribute($attrs, 'slug-separator', '') ?: ($inputfield->get('slugSeparator') ?? '-'));
-				$valStr = (string) ($attrs['value'] ?? $inputfield->val() ?? '');
+				$secretMaskedAttr = $this->findDataAttribute($attrs, 'secret-masked');
+				$hasExplicitSecretFlag = $secretMaskedAttr !== null || (bool) $inputfield->get('isSecret');
+				$rawTextVal = $attrs['value'] ?? $inputfield->val() ?? '';
+				$isPasswordObjValue = $rawTextVal instanceof Password
+					|| $inputfield->hasField?->type instanceof FieldtypePassword
+					|| ($rawType === 'password' && !$hasExplicitSecretFlag);
+				$valStr = $isPasswordObjValue ? '' : (string) $rawTextVal;
 				$allSlugPopulated = $useLanguages && $langTabs !== []
 					? array_all($langTabs, static fn(array $lt): bool => trim((string) ($lt['value'] ?? '')) !== '')
 					: trim($valStr) !== '';
 				$slugLocked = $this->findDataAttribute($attrs, 'slug-locked') === '1'
 					|| (bool) $inputfield->get('slugLocked')
 					|| ($slugFrom !== '' && $allSlugPopulated);
-				$secretMaskedAttr = $this->findDataAttribute($attrs, 'secret-masked');
-				$isSecret = $secretMaskedAttr !== null || (bool) $inputfield->get('isSecret') || $rawType === 'password';
+				$isSecret = $hasExplicitSecretFlag || $rawType === 'password';
 				$secretMeta = $this->resolveSecretSerializationMeta(
 					$isSecret,
 					$secretMaskedAttr ?? ($rawType === 'password' ? true : $inputfield->get('secretMasked')),
@@ -2216,6 +2330,9 @@ class FormSchemaSerializer extends Wire
 					'slugSeparator' => $slugSeparator !== '' ? $slugSeparator : '-',
 					'slugLocked' => $slugLocked,
 				], $secretMeta);
+				if ($isPasswordObjValue) {
+					$control = $this->redactPasswordControlState($control);
+				}
 			}
 		} elseif ($inputfield instanceof InputfieldFile || $shortClass === 'InputfieldFile' || $shortClass === 'InputfieldImage') {
 			$isImage = $inputfield instanceof InputfieldImage || $shortClass === 'InputfieldImage';
@@ -2381,10 +2498,7 @@ class FormSchemaSerializer extends Wire
 			}
 		}
 
-		$isPhysicalPageHost = $hostPage instanceof \ProcessWire\Page
-			&& !($hostPage instanceof \ProcessWire\NullPage)
-			&& (int) $hostPage->id > 0
-			&& !method_exists($hostPage, 'getEntryUuid');
+		$isPhysicalPageHost = MediaGateway::isPhysicalPageHost($hostPage);
 
 		$user = $this->wire()->user;
 		if ($useImageEditor && $isPhysicalPageHost && !$user->isSuperuser()) {
@@ -2437,7 +2551,7 @@ class FormSchemaSerializer extends Wire
 			$envelope = $gateway->buildEnvelopeFromInputfield($inputfield, $isImage, $name, $extensions, $isReadOnly);
 			if ($envelope !== null) {
 				$mediaToken = $gateway->sign($envelope, (int) $user->id);
-				$mediaOwnerId = (string) ($envelope['entryUuid'] ?? $envelope['ownerId'] ?? '');
+				$mediaOwnerId = $gateway->resolveEnvelopeOwnerId($envelope);
 			}
 		}
 
@@ -3435,17 +3549,12 @@ class FormSchemaSerializer extends Wire
 	}
 
 	/**
-	 * Resolve an explicit `data-rw-control` attribute or `rwControl` setting from a ProcessWire `Inputfield`.
-	 *
-	 * @param array<string, mixed> $attrs
+	 * Resolve an explicit `data-rw-control` attribute or `rwControl` setting from a ProcessWire `Inputfield`
+	 * using `ReactControlRegistry` as the single source of truth.
 	 */
-	private function resolveInputfieldRwControl(Inputfield $inputfield, array $attrs): string
+	private function resolveInputfieldRwControl(Inputfield $inputfield): string
 	{
-		return strtolower(trim((string) (
-			$this->findDataAttribute($attrs, 'control', '')
-			?: $this->findDataAttribute($attrs, 'rw-control', '')
-			?: ($inputfield->get('rwControl') ?? '')
-		)));
+		return React::instance($this)->controls()->resolveExplicitControl($inputfield);
 	}
 
 	/**
@@ -3674,174 +3783,7 @@ class FormSchemaSerializer extends Wire
 		return $val;
 	}
 
-	/**
-	 * Normalize a condition builder rule tree into `{match: 'all'|'any', groups: [...]}`.
-	 *
-	 * @return array{match: string, groups: list<array{id: string, match: string, rules: list<array{id: string, field: string, operator: string, value: mixed}>}>}
-	 */
-	private function normalizeConditionBuilderValue(mixed $val): array
-	{
-		if (is_string($val)) {
-			$trimmed = trim($val);
-			if ($trimmed === '' || $trimmed === '[]') {
-				$val = [];
-			} else {
-				$decoded = json_decode($trimmed, true);
-				$val = is_array($decoded) ? $decoded : [];
-			}
-		}
-
-		if (!is_array($val)) {
-			return [
-				'match' => 'all',
-				'groups' => [],
-			];
-		}
-
-		$rootMatch = is_string($val['match'] ?? null) && strtolower(trim($val['match'])) === 'any'
-			? 'any'
-			: 'all';
-		$rawGroups = is_array($val['groups'] ?? null) ? $val['groups'] : [];
-		$groups = [];
-		$gIdx = 0;
-
-		foreach ($rawGroups as $rawGroup) {
-			if (!is_array($rawGroup)) {
-				continue;
-			}
-			$gIdx++;
-			$groupId = is_string($rawGroup['id'] ?? null) && trim($rawGroup['id']) !== ''
-				? trim($rawGroup['id'])
-				: 'grp_' . $gIdx;
-			$groupMatch = is_string($rawGroup['match'] ?? null) && strtolower(trim($rawGroup['match'])) === 'any'
-				? 'any'
-				: 'all';
-			$rawRules = is_array($rawGroup['rules'] ?? null) ? $rawGroup['rules'] : [];
-			$rules = [];
-			$rIdx = 0;
-
-			foreach ($rawRules as $rawRule) {
-				if (!is_array($rawRule)) {
-					continue;
-				}
-				$rIdx++;
-				$ruleId = is_string($rawRule['id'] ?? null) && trim($rawRule['id']) !== ''
-					? trim($rawRule['id'])
-					: 'rule_' . $gIdx . '_' . $rIdx;
-				$fieldKey = is_scalar($rawRule['field'] ?? null) ? trim((string) $rawRule['field']) : '';
-				$operator = is_scalar($rawRule['operator'] ?? null) && trim((string) $rawRule['operator']) !== ''
-					? trim((string) $rawRule['operator'])
-					: 'eq';
-				$rules[] = [
-					'id' => $ruleId,
-					'field' => $fieldKey,
-					'operator' => $operator,
-					'value' => array_key_exists('value', $rawRule) ? $rawRule['value'] : null,
-				];
-			}
-
-			$groups[] = [
-				'id' => $groupId,
-				'match' => $groupMatch,
-				'rules' => $rules,
-			];
-		}
-
-		return [
-			'match' => $rootMatch,
-			'groups' => $groups,
-		];
-	}
-
-	/**
-	 * Normalize declarative `conditionFields` definitions for `condition_builder` controls.
-	 *
-	 * @return list<array<string, mixed>>
-	 */
-	private function normalizeConditionFields(mixed $rawFields): array
-	{
-		if (is_string($rawFields)) {
-			$trimmed = trim($rawFields);
-			if ($trimmed === '') {
-				return [];
-			}
-			$decoded = json_decode($trimmed, true);
-			$rawFields = is_array($decoded) ? $decoded : [];
-		}
-
-		if (!is_array($rawFields)) {
-			return [];
-		}
-
-		$allowedTypes = ['text', 'number', 'select', 'boolean', 'country', 'currency', 'date'];
-		$seenKeys = [];
-		$normalized = [];
-
-		foreach ($rawFields as $entry) {
-			if (!is_array($entry)) {
-				continue;
-			}
-			$key = is_scalar($entry['key'] ?? null) ? trim((string) $entry['key']) : '';
-			if ($key === '' || isset($seenKeys[$key])) {
-				continue;
-			}
-			$seenKeys[$key] = true;
-
-			$label = is_scalar($entry['label'] ?? null) && trim((string) $entry['label']) !== ''
-				? trim((string) $entry['label'])
-				: $key;
-			$rawType = is_scalar($entry['type'] ?? null) ? strtolower(trim((string) $entry['type'])) : 'text';
-			$type = in_array($rawType, $allowedTypes, true) ? $rawType : 'text';
-
-			$spec = [
-				'key' => $key,
-				'label' => $label,
-				'type' => $type,
-			];
-
-			if (isset($entry['options']) && is_array($entry['options'])) {
-				$opts = [];
-				foreach ($this->normalizeOptionItems($entry['options']) as $optItem) {
-					$opts[] = [
-						'value' => (string) ($optItem['value'] ?? ''),
-						'label' => (string) ($optItem['label'] ?? $optItem['value'] ?? ''),
-					];
-				}
-				if ($opts !== []) {
-					$spec['options'] = $opts;
-				}
-			} elseif ($type === 'country') {
-				$opts = [];
-				foreach ($this->normalizeOptionItems(IntlCatalog::countryOptions()) as $optItem) {
-					$opts[] = [
-						'value' => (string) ($optItem['value'] ?? ''),
-						'label' => (string) ($optItem['label'] ?? $optItem['value'] ?? ''),
-					];
-				}
-				$spec['options'] = $opts;
-			} elseif ($type === 'currency') {
-				$opts = [];
-				foreach ($this->normalizeOptionItems(IntlCatalog::currencyOptions()) as $optItem) {
-					$opts[] = [
-						'value' => (string) ($optItem['value'] ?? ''),
-						'label' => (string) ($optItem['label'] ?? $optItem['value'] ?? ''),
-					];
-				}
-				$spec['options'] = $opts;
-			}
-
-			if (isset($entry['operators']) && is_array($entry['operators'])) {
-				$ops = self::normalizeStringList($entry['operators']);
-				if ($ops !== []) {
-					$spec['operators'] = $ops;
-				}
-			}
-
-			$normalized[] = $spec;
-		}
-
-		return $normalized;
-	}
+	// ConditionBuilder tree and field normalization live in Totoglu\React\Condition\ConditionNormalizer.
 
 	/**
 	 * Resolve canonical unit-number fallback unit from explicit settings or currency variant hints.
@@ -3951,6 +3893,14 @@ class FormSchemaSerializer extends Wire
 			'previewMode', 'allowSplit', 'showToolbar',
 			'maxStars', 'formula',
 			'conditionFields', 'condition_fields',
+			'dynamicOptionsFromBlocks', 'conditionFieldsSource', 'allowFieldComparison',
+			'allowNegate', 'allow_negate',
+			'showSummary', 'show_summary',
+			'allowRawExpression', 'allow_raw_expression',
+			'showLabel', 'show_label', 'heading',
+			'layout', 'maxGroups', 'max_groups',
+			'maxRulesPerGroup', 'max_rules_per_group',
+			'emptyMessage', 'empty_message',
 		];
 		foreach ($keys as $key) {
 			$val = $inputfield->data($key);
@@ -4100,6 +4050,9 @@ class FormSchemaSerializer extends Wire
 			}
 			if (array_key_exists('allowCustom', $raw) || array_key_exists('allow_custom', $raw)) {
 				$fieldNode['allowCustom'] = !empty($raw['allowCustom'] ?? $raw['allow_custom'] ?? null);
+			}
+			if (isset($raw['dynamicOptionsFromBlocks']) && is_array($raw['dynamicOptionsFromBlocks'])) {
+				$fieldNode['dynamicOptionsFromBlocks'] = $raw['dynamicOptionsFromBlocks'];
 			}
 			$lowerExplicit = strtolower(trim($explicitType));
 			if (array_key_exists('multiple', $raw)) {
@@ -4259,9 +4212,42 @@ class FormSchemaSerializer extends Wire
 		} elseif ($controlType === 'condition_builder') {
 			$rawConditionFields = $raw['conditionFields'] ?? $raw['condition_fields'] ?? null;
 			if ($rawConditionFields !== null) {
-				$fieldNode['conditionFields'] = $this->normalizeConditionFields($rawConditionFields);
+				$fieldNode['conditionFields'] = ConditionNormalizer::normalizeFieldSpecs($rawConditionFields);
 			} elseif (!isset($fieldNode['conditionFields'])) {
 				$fieldNode['conditionFields'] = [];
+			}
+			if (isset($raw['conditionFieldsSource']) && is_array($raw['conditionFieldsSource'])) {
+				$fieldNode['conditionFieldsSource'] = $raw['conditionFieldsSource'];
+			}
+			if (array_key_exists('allowFieldComparison', $raw)) {
+				$fieldNode['allowFieldComparison'] = (bool) $raw['allowFieldComparison'];
+			}
+			if (array_key_exists('allowNegate', $raw) || array_key_exists('allow_negate', $raw)) {
+				$fieldNode['allowNegate'] = (bool) ($raw['allowNegate'] ?? $raw['allow_negate'] ?? true);
+			}
+			if (array_key_exists('showSummary', $raw) || array_key_exists('show_summary', $raw)) {
+				$fieldNode['showSummary'] = (bool) ($raw['showSummary'] ?? $raw['show_summary'] ?? true);
+			}
+			if (array_key_exists('allowRawExpression', $raw) || array_key_exists('allow_raw_expression', $raw)) {
+				$fieldNode['allowRawExpression'] = (bool) ($raw['allowRawExpression'] ?? $raw['allow_raw_expression'] ?? false);
+			}
+			if (array_key_exists('showLabel', $raw) || array_key_exists('show_label', $raw)) {
+				$fieldNode['showLabel'] = (bool) ($raw['showLabel'] ?? $raw['show_label'] ?? false);
+			}
+			if (is_scalar($raw['heading'] ?? null) && trim((string) $raw['heading']) !== '') {
+				$fieldNode['heading'] = trim((string) $raw['heading']);
+			}
+			if (is_scalar($raw['layout'] ?? null) && in_array(strtolower(trim((string) $raw['layout'])), ['auto', 'inline', 'compact'], true)) {
+				$fieldNode['layout'] = strtolower(trim((string) $raw['layout']));
+			}
+			if (array_key_exists('maxGroups', $raw) || array_key_exists('max_groups', $raw)) {
+				$fieldNode['maxGroups'] = max(0, (int) ($raw['maxGroups'] ?? $raw['max_groups'] ?? 0));
+			}
+			if (array_key_exists('maxRulesPerGroup', $raw) || array_key_exists('max_rules_per_group', $raw)) {
+				$fieldNode['maxRulesPerGroup'] = max(0, (int) ($raw['maxRulesPerGroup'] ?? $raw['max_rules_per_group'] ?? 0));
+			}
+			if (is_scalar($raw['emptyMessage'] ?? $raw['empty_message'] ?? null) && trim((string) ($raw['emptyMessage'] ?? $raw['empty_message'] ?? '')) !== '') {
+				$fieldNode['emptyMessage'] = trim((string) ($raw['emptyMessage'] ?? $raw['empty_message'] ?? ''));
 			}
 		}
 	}
@@ -4388,16 +4374,22 @@ class FormSchemaSerializer extends Wire
 					'step' => $step !== null && $step !== '' ? (string) $step : null,
 				]);
 			})(),
-			'password' => (function () use ($attrs, $base, $valStr): array {
+			'password' => (function () use ($inputfield, $attrs, $base, $rawVal, $valStr): array {
 				$secretMasked = $this->findDataAttribute($attrs, 'secret-masked');
-				return array_merge($base, [
+				$hasExplicitSecretFlag = $secretMasked !== null || (bool) $inputfield->get('isSecret');
+				$shouldRedactPassword = $rawVal instanceof Password
+					|| $inputfield->hasField?->type instanceof FieldtypePassword
+					|| !$hasExplicitSecretFlag;
+				$safePasswordVal = $shouldRedactPassword ? '' : $valStr;
+				$pwControl = array_merge($base, [
 					'type' => 'password',
 					'inputType' => 'password',
-					'defaultValue' => $valStr,
-					'value' => $valStr,
-					'isSecret' => $secretMasked !== null,
-					'secretMasked' => $secretMasked === '1',
+					'defaultValue' => $safePasswordVal,
+					'value' => $safePasswordVal,
+					'isSecret' => $hasExplicitSecretFlag,
+					'secretMasked' => $secretMasked === '1' || ($hasExplicitSecretFlag && (bool) $inputfield->get('secretMasked')),
 				]);
+				return $shouldRedactPassword ? $this->redactPasswordControlState($pwControl) : $pwControl;
 			})(),
 			'markdown' => array_merge($base, [
 				'type' => 'markdown',
@@ -4424,7 +4416,7 @@ class FormSchemaSerializer extends Wire
 				'precision' => is_numeric($bag['precision'] ?? null) ? (int) $bag['precision'] : 2,
 			]),
 			'condition_builder' => (function () use ($base, $rawVal): array {
-				$normalizedCb = $this->normalizeConditionBuilderValue($rawVal);
+				$normalizedCb = ConditionNormalizer::normalizeTree($rawVal);
 				return array_merge($base, [
 					'type' => 'condition_builder',
 					'defaultValue' => $normalizedCb,
@@ -4440,6 +4432,37 @@ class FormSchemaSerializer extends Wire
 		};
 
 		$this->applyExtendedControlOptions($controlType, $control, $bag, $explicitControl);
+
+		if (($control['type'] ?? '') === 'password' && empty($control['isSecret'])) {
+			$control = $this->redactPasswordControlState($control);
+		}
+
+		return $control;
+	}
+
+	/**
+	 * Strip resetValue and per-language cleartext values from a redacted password control schema.
+	 *
+	 * @param array<string, mixed> $control
+	 * @return array<string, mixed>
+	 */
+	private function redactPasswordControlState(array $control): array
+	{
+		unset($control['resetValue']);
+		if (isset($control['languages']) && is_array($control['languages'])) {
+			foreach ($control['languages'] as $idx => $langTab) {
+				if (is_array($langTab)) {
+					$control['languages'][$idx]['value'] = '';
+				}
+			}
+		}
+		if (isset($control['i18n']) && is_array($control['i18n']) && isset($control['i18n']['languages']) && is_array($control['i18n']['languages'])) {
+			foreach ($control['i18n']['languages'] as $idx => $langTab) {
+				if (is_array($langTab)) {
+					$control['i18n']['languages'][$idx]['value'] = '';
+				}
+			}
+		}
 
 		return $control;
 	}
@@ -4938,7 +4961,7 @@ class FormSchemaSerializer extends Wire
 		if ($relations->has($activeType) && isset($envelopesByType[$activeType])) {
 			$targetIdentifier = $activeType === 'page'
 				? ($normVal['pageId'] > 0 ? (string) $normVal['pageId'] : '')
-				: $normVal['entryId'];
+				: $normVal['resourceId'];
 			if ($targetIdentifier !== '') {
 				try {
 					$hydrated = $relations->get($activeType)->hydrate([$targetIdentifier], $envelopesByType[$activeType]);
@@ -4952,16 +4975,16 @@ class FormSchemaSerializer extends Wire
 		}
 
 		$ownerId = isset($rawConfig['ownerId']) && is_string($rawConfig['ownerId']) ? trim($rawConfig['ownerId']) : '';
-		if ($ownerId === '' && $sourceInputfield instanceof Inputfield) {
-			$hostCandidate = $sourceInputfield->hasPage;
-			if ($hostCandidate instanceof Page && method_exists($hostCandidate, 'getEntryUuid')) {
-				$ownerId = trim((string) $hostCandidate->getEntryUuid());
-			}
-		}
 
 		$inputName = (string) ($base['name'] ?? ($sourceInputfield?->attr('name') ?? ''));
 		$currentUid = (int) $this->wire()->user->id;
 		$serializedProfiles = [];
+		$fallbackSourceEnv = ($ownerId === '' && $sourceInputfield instanceof Inputfield)
+			? $gateway->buildEnvelopeFromInputfield($sourceInputfield, false, $inputName, [], $isReadOnly)
+			: null;
+		if ($ownerId === '' && is_array($fallbackSourceEnv)) {
+			$ownerId = $gateway->resolveEnvelopeOwnerId($fallbackSourceEnv);
+		}
 		foreach ($mediaProfiles as $pKey => $pDef) {
 			$mediaToken = '';
 			$baseMediaEnv = null;
@@ -4974,22 +4997,17 @@ class FormSchemaSerializer extends Wire
 					$isReadOnly,
 				);
 			}
-			if (!is_array($baseMediaEnv) && $ownerId !== '' && $gateway->hasHostAdapter('entry')) {
-				$declFieldName = isset($rawConfig['fieldName']) && is_string($rawConfig['fieldName']) && trim($rawConfig['fieldName']) !== ''
-					? trim($rawConfig['fieldName'])
-					: $inputName;
-				$baseMediaEnv = [
-					'kind' => 'entry',
-					'entryUuid' => $ownerId,
-					'entryType' => isset($rawConfig['entryType']) && is_string($rawConfig['entryType']) ? trim($rawConfig['entryType']) : '',
-					'fieldName' => $declFieldName,
-					'inputName' => $inputName,
-					'readOnly' => $isReadOnly,
-				];
+			if (!is_array($baseMediaEnv) && $ownerId !== '') {
+				$baseMediaEnv = $gateway->buildCustomHostFallbackEnvelope(
+					$rawConfig,
+					$ownerId,
+					$inputName,
+					$isReadOnly,
+				);
 			}
 			if (is_array($baseMediaEnv)) {
-				if ($ownerId === '' && !empty($baseMediaEnv['entryUuid']) && is_string($baseMediaEnv['entryUuid'])) {
-					$ownerId = trim($baseMediaEnv['entryUuid']);
+				if ($ownerId === '') {
+					$ownerId = $gateway->resolveEnvelopeOwnerId($baseMediaEnv);
 				}
 				$profileEnv = array_merge($baseMediaEnv, [
 					'mediaProfile' => $pKey,
@@ -5044,10 +5062,10 @@ class FormSchemaSerializer extends Wire
 					}
 					$diskDir = '';
 					$urlDir = '';
-					if ($hostPage instanceof Page && method_exists($hostPage, 'getEntryUuid')) {
+					if ($hostPage instanceof Page && !($hostPage instanceof \ProcessWire\NullPage) && !MediaGateway::isPhysicalPageHost($hostPage)) {
 						$diskDir = rtrim($hostPage->filesManager()->path(), '/') . '/';
 						$urlDir = rtrim($hostPage->filesManager()->url(), '/') . '/';
-					} elseif ($hostPage instanceof Page && $hostPage->id > 0) {
+					} elseif (MediaGateway::isPhysicalPageHost($hostPage) && $hostPage instanceof Page) {
 						$hasField = $sourceInputfield->hasField;
 						$explicitDataField = $sourceInputfield->get('_rwDataFieldName');
 						$fName = $hasField instanceof \ProcessWire\Field
@@ -5158,8 +5176,8 @@ class FormSchemaSerializer extends Wire
 	 * @return array{
 	 *   type: string,
 	 *   pageId: int,
-	 *   entryType: string,
-	 *   entryId: string,
+	 *   resourceType: string,
+	 *   resourceId: string,
 	 *   url: string,
 	 *   file: string,
 	 *   query: string,

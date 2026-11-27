@@ -18,7 +18,7 @@ use ProcessWire\User;
 interface MediaHostAdapterInterface
 {
 	/**
-	 * Unique lowercase host kind identifier stored in signed `mediaToken` envelopes (e.g. `'entry'`).
+	 * Unique lowercase host kind identifier stored in signed `mediaToken` envelopes (e.g. `'custom'`).
 	 */
 	public function kind(): string;
 

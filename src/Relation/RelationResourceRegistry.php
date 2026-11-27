@@ -31,7 +31,24 @@ final class RelationResourceRegistry extends Wire
 	/** @var array<string, Closure(): RelationResourceInterface> */
 	private array $factories = [];
 
+	/** @var array<string, string> */
+	private array $aliases = [];
+
 	private bool $defaultsBooted = false;
+
+	/**
+	 * Register a resource alias mapping `$alias` -> `$canonical`.
+	 */
+	public function registerAlias(string $alias, string $canonical): self
+	{
+		$cleanAlias = strtolower(trim($alias));
+		$cleanCanonical = strtolower(trim($canonical));
+		if ($cleanAlias !== '' && $cleanCanonical !== '') {
+			$this->aliases[$cleanAlias] = $cleanCanonical;
+		}
+
+		return $this;
+	}
 
 	/**
 	 * Register a concrete `RelationResourceInterface` adapter instance.
@@ -187,7 +204,7 @@ final class RelationResourceRegistry extends Wire
 			if ($res === '' || $val === '' || !$this->has($res)) {
 				continue;
 			}
-			if ($allowedMap !== [] && !isset($allowedMap[$res])) {
+			if ($allowedMap === [] || !isset($allowedMap[$res])) {
 				continue;
 			}
 			$grouped[$res][] = $val;
@@ -230,15 +247,18 @@ final class RelationResourceRegistry extends Wire
 			'permissions' => 'permission',
 			'languages' => 'language',
 			'modules' => 'module',
-			'entries' => 'entry',
-			'blueprints' => 'blueprint',
 			default => $clean,
 		};
 	}
 
 	private function normalizeAlias(string $name): string
 	{
-		return self::normalizeResourceAlias($name);
+		$clean = strtolower(trim($name));
+		if (isset($this->aliases[$clean])) {
+			return $this->aliases[$clean];
+		}
+
+		return self::normalizeResourceAlias($clean);
 	}
 
 	private function bootDefaults(): void

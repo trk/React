@@ -50,15 +50,15 @@ final class PageLinkMediaHostAdapter extends Wire implements MediaHostAdapterInt
 		if (!$inputfield instanceof InputfieldReactLink) {
 			return null;
 		}
-		if ($hostPage instanceof Page && method_exists($hostPage, 'getEntryUuid')) {
+		if ($hostPage instanceof Page && !$hostPage instanceof NullPage && !MediaGateway::isPhysicalPageHost($hostPage)) {
 			return null;
 		}
-		if (!$hostPage instanceof Page || $hostPage instanceof NullPage || (int) $hostPage->id <= 0) {
+		if (!MediaGateway::isPhysicalPageHost($hostPage)) {
 			$process = $this->wire()->process;
 			if ($process instanceof \ProcessWire\WirePageEditor) {
 				try {
 					$candidate = $process->getPage();
-					if ($candidate instanceof Page && $candidate->id > 0) {
+					if (MediaGateway::isPhysicalPageHost($candidate)) {
 						$hostPage = $candidate;
 					}
 				} catch (\Throwable) {
@@ -66,9 +66,10 @@ final class PageLinkMediaHostAdapter extends Wire implements MediaHostAdapterInt
 				}
 			}
 		}
-		if (!$hostPage instanceof Page || $hostPage instanceof NullPage || (int) $hostPage->id <= 0) {
+		if (!MediaGateway::isPhysicalPageHost($hostPage)) {
 			return null;
 		}
+		/** @var Page $hostPage */
 
 		$resolvedFieldName = $dataFieldName;
 		if ($resolvedFieldName === '' && $inputName !== '') {

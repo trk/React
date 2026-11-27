@@ -22,6 +22,7 @@ final class EditPresenceStore extends Wire
 	private const STALE_FILE_MAX_AGE_SECONDS = 3600;
 	private const int MAX_SESSIONS_PER_USER = 8;
 	private const int MAX_SESSIONS_PER_RESOURCE = 100;
+	public const int MAX_PRESENCE_FILES = 2000;
 
 	/**
 	 * Resolve the directory path where per-resource presence JSON files are stored.
@@ -186,6 +187,10 @@ final class EditPresenceStore extends Wire
 		}
 
 		$safeClientId = $this->sanitizeClientId($clientId);
+		$path = $this->filePath($cleanKey);
+		if ($path === '' || !is_file($path)) {
+			return $this->emptySnapshot($cleanKey, $now, $effectiveTtl);
+		}
 
 		return $this->mutateState($cleanKey, $now, $effectiveTtl, static function (array $state) use (
 			$userId,
@@ -263,6 +268,14 @@ final class EditPresenceStore extends Wire
 	/**
 	 * Remove expired presence cache files older than `$maxAgeSeconds`.
 	 */
+	public function pruneStale(?int $nowOverride = null, int $maxAgeSeconds = self::STALE_FILE_MAX_AGE_SECONDS): int
+	{
+		return $this->pruneExpiredFiles($nowOverride, $maxAgeSeconds);
+	}
+
+	/**
+	 * Remove expired presence cache files older than `$maxAgeSeconds`.
+	 */
 	public function pruneExpiredFiles(?int $nowOverride = null, int $maxAgeSeconds = self::STALE_FILE_MAX_AGE_SECONDS): int
 	{
 		$dir = $this->directoryPath();
@@ -277,11 +290,29 @@ final class EditPresenceStore extends Wire
 			if (is_link($file) || !is_file($file)) {
 				continue;
 			}
-			$mtime = @filemtime($file);
-			if ($mtime !== false && ($now - $mtime) > $maxAgeSeconds) {
-				if (@unlink($file)) {
+			$lockFile = $file . '.lock';
+			if (is_link($lockFile)) {
+				continue;
+			}
+			$lockFp = @fopen($lockFile, 'c+');
+			if (!is_resource($lockFp)) {
+				continue;
+			}
+			try {
+				if (!@flock($lockFp, LOCK_EX | LOCK_NB)) {
+					continue;
+				}
+				clearstatcache(true, $file);
+				if (!is_file($file) || is_link($file)) {
+					continue;
+				}
+				$mtime = @filemtime($file);
+				if ($mtime !== false && ($now - $mtime) > $maxAgeSeconds && @unlink($file)) {
 					$removed++;
 				}
+			} finally {
+				@flock($lockFp, LOCK_UN);
+				fclose($lockFp);
 			}
 		}
 
@@ -306,7 +337,7 @@ final class EditPresenceStore extends Wire
 			// Fallback below
 		}
 
-		foreach (glob($dir . '*.json') ?: [] as $file) {
+		foreach (glob($dir . '*.{json,lock}', GLOB_BRACE) ?: [] as $file) {
 			if (is_file($file)) {
 				@unlink($file);
 			}
@@ -348,26 +379,45 @@ final class EditPresenceStore extends Wire
 		int $currentUserId,
 	): array {
 		$dir = $this->directoryPath();
+		$dirTrimmed = rtrim($dir, '/\\');
+		if (is_link($dirTrimmed)) {
+			return $this->emptySnapshot($cleanKey, $now, $ttlSeconds);
+		}
 		if (!is_dir($dir)) {
 			$this->wire()->files->mkdir($dir, true);
 		}
 
 		$path = $this->filePath($cleanKey);
-		if ($path === '' || is_link($path) || is_link(rtrim($dir, '/\\'))) {
+		if ($path === '' || is_link($path)) {
 			return $this->emptySnapshot($cleanKey, $now, $ttlSeconds);
 		}
-		$fp = @fopen($path, 'c+');
-		if ($fp === false) {
+
+		if (!is_file($path)) {
+			$existingFiles = glob($dir . '*.json') ?: [];
+			if (count($existingFiles) >= self::MAX_PRESENCE_FILES) {
+				$this->pruneStale($now);
+				$existingFiles = glob($dir . '*.json') ?: [];
+				if (count($existingFiles) >= self::MAX_PRESENCE_FILES) {
+					return $this->emptySnapshot($cleanKey, $now, $ttlSeconds);
+				}
+			}
+		}
+
+		$lockPath = $path . '.lock';
+		if (is_link($lockPath)) {
+			return $this->emptySnapshot($cleanKey, $now, $ttlSeconds);
+		}
+		$lockFp = @fopen($lockPath, 'c+');
+		if ($lockFp === false) {
 			return $this->emptySnapshot($cleanKey, $now, $ttlSeconds);
 		}
 
 		try {
-			if (!@flock($fp, LOCK_EX)) {
+			if (!@flock($lockFp, LOCK_EX)) {
 				return $this->emptySnapshot($cleanKey, $now, $ttlSeconds);
 			}
 
-			rewind($fp);
-			$raw = stream_get_contents($fp);
+			$raw = is_file($path) ? @file_get_contents($path) : '';
 			$decoded = is_string($raw) && trim($raw) !== '' ? json_decode($raw, true, 16) : null;
 
 			$state = [
@@ -406,26 +456,41 @@ final class EditPresenceStore extends Wire
 			$state = $mutator($state);
 			$state['updatedAt'] = $now;
 
-			if ($state['sessions'] === [] && $state['lastSaved'] === null) {
-				ftruncate($fp, 0);
-				rewind($fp);
-				fwrite($fp, '{}');
-				fflush($fp);
+			$isEmptyState = $state['sessions'] === [] && $state['lastSaved'] === null;
+			try {
+				$encoded = $isEmptyState
+					? '{}'
+					: json_encode($state, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+			} catch (\Throwable) {
+				return $this->emptySnapshot($cleanKey, $now, $ttlSeconds);
+			}
+
+			$tmpPath = $dir . '.tmp.' . bin2hex(random_bytes(8));
+			if (@file_put_contents($tmpPath, $encoded) === false) {
+				if (is_file($tmpPath)) {
+					@unlink($tmpPath);
+				}
+
+				return $this->emptySnapshot($cleanKey, $now, $ttlSeconds);
+			}
+			@chmod($tmpPath, 0600);
+			if (!@rename($tmpPath, $path)) {
+				if (is_file($tmpPath)) {
+					@unlink($tmpPath);
+				}
 
 				return $this->emptySnapshot($cleanKey, $now, $ttlSeconds);
 			}
 
-			$encoded = (string) json_encode($state, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-			ftruncate($fp, 0);
-			rewind($fp);
-			fwrite($fp, $encoded);
-			fflush($fp);
+			if ($isEmptyState) {
+				return $this->emptySnapshot($cleanKey, $now, $ttlSeconds);
+			}
 
 			return $this->buildSnapshotFromState($cleanKey, $state, $currentUserId, $now, $ttlSeconds);
 		} finally {
-			if (is_resource($fp)) {
-				@flock($fp, LOCK_UN);
-				fclose($fp);
+			if (is_resource($lockFp)) {
+				@flock($lockFp, LOCK_UN);
+				fclose($lockFp);
 			}
 		}
 	}

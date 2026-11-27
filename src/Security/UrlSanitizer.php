@@ -85,9 +85,13 @@ final class UrlSanitizer
 			}
 			if (preg_match('/^data:image\/svg\+xml;(?:utf8|charset=utf-8),(.+)$/i', $trimmed, $m) === 1) {
 				$decoded = rawurldecode($m[1]);
+				$entityDecoded = html_entity_decode($decoded, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 				if (
-					stripos($decoded, '<svg') !== false
-					&& preg_match('/<\s*(?:script|foreignobject|iframe|object|embed|use)\b|\bon[a-z]+\s*=|(?:javascript|vbscript):/i', $decoded) !== 1
+					preg_match('/[\x00-\x1F\x7F]/', $decoded) !== 1
+					&& preg_match('/[\x00-\x1F\x7F]/', $entityDecoded) !== 1
+					&& stripos($decoded, '<svg') !== false
+					&& !preg_match('/&#[xX]?[0-9a-fA-F]+;?/', $decoded)
+					&& preg_match('/<\s*(?:[a-z0-9_-]+:)?(?:script|foreignobject|iframe|object|embed|use|handler|style|animate|set|animatetransform|animatemotion|meta|base|link|feimage|tref)\b|\bon[a-z0-9_]+\s*=|(?:javascript|vbscript):/i', $entityDecoded) !== 1
 				) {
 					return $trimmed;
 				}

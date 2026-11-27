@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Totoglu\React\Workspace;
 
+use ProcessWire\Field;
 use ProcessWire\NullPage;
 use ProcessWire\Page;
 use ProcessWire\Template;
@@ -303,18 +304,27 @@ final class CommandSearchRegistry extends Wire
 			$http404Id = (int) ($config->http404PageID ?: 27);
 			$adminUrl = rtrim((string) ($config->urls->admin ?: '/processwire/'), '/') . '/';
 
+			$titleField = $wire->fields->get('title');
+			$canSearchTitle = (bool) $user->isSuperuser()
+				|| !$titleField instanceof Field
+				|| !(bool) $titleField->useRoles
+				|| $titleField->viewable(null, $user);
+			$searchExpr = $canSearchTitle ? 'title|name%%=%s' : 'name%%=%s';
+			$queryLimit = max(10, min(100, $limit * 3));
 			$selector = sprintf(
-				'title|name%%=%s, has_parent!=%d, has_parent!=%d, id!=%d|%d|%d, include=unpublished, limit=10',
+				$searchExpr . ', has_parent!=%d, has_parent!=%d, id!=%d|%d|%d, include=unpublished, sort=title, sort=id, limit=%d',
 				$sanitizer->selectorValue($query),
 				$adminId,
 				$trashId,
 				$adminId,
 				$trashId,
-				$http404Id
+				$http404Id,
+				$queryLimit
 			);
 
 			$found = $pages->find($selector);
 			$items = [];
+			$isSuperuser = (bool) $user->isSuperuser();
 			foreach ($found as $p) {
 				if (!$p instanceof Page || $p instanceof NullPage || !$p->editable()) {
 					continue;
@@ -325,9 +335,10 @@ final class CommandSearchRegistry extends Wire
 					$tplLabel = trim((string) $tpl->label);
 					$tplBadge = $tplLabel !== '' ? $tplLabel : (string) $tpl->name;
 				}
-				$rawTitle = trim((string) $p->getUnformatted('title'));
+				$canViewTitle = $isSuperuser || $p->viewable('title', false);
+				$rawTitle = $canViewTitle ? trim((string) $p->getUnformatted('title')) : '';
 				if ($rawTitle === '') {
-					$rawTitle = trim((string) ($p->title ?: $p->name));
+					$rawTitle = $canViewTitle ? trim((string) ($p->title ?: $p->name)) : (string) $p->name;
 				}
 				$items[] = [
 					'id' => 'page-' . (int) $p->id,

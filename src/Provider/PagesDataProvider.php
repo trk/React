@@ -9,9 +9,11 @@ use ProcessWire\Field;
 use ProcessWire\FieldtypeCheckbox;
 use ProcessWire\FieldtypeDatetime;
 use ProcessWire\FieldtypeLanguageInterface;
+use ProcessWire\FieldtypePassword;
 use ProcessWire\Inputfield;
 use ProcessWire\InputfieldForm;
 use ProcessWire\InputfieldHidden;
+use ProcessWire\InputfieldPassword;
 use ProcessWire\InputfieldSubmit;
 use ProcessWire\InputfieldWrapper;
 use ProcessWire\Language;
@@ -21,6 +23,7 @@ use ProcessWire\Page;
 use ProcessWire\PageArray;
 use ProcessWire\Pageimage;
 use ProcessWire\Pageimages;
+use ProcessWire\Password;
 use ProcessWire\React;
 use ProcessWire\Selectors;
 use ProcessWire\Template;
@@ -396,9 +399,12 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 		}
 
 		if (!$record->isTrash() && !$record->isLocked() && !$isSystemProtected && $canEdit && (int) $record->id > 1) {
+			$toggleLabel = $record->isPublished()
+				? $this->_('Unpublish')
+				: $this->_('Publish');
 			$actions[] = [
 				'key' => ReactDataProviderInterface::OP_TOGGLE_STATUS,
-				'label' => $record->isPublished() ? $this->_('Unpublish') : $this->_('Publish'),
+				'label' => $toggleLabel,
 				'icon' => $record->isPublished() ? 'eye-off' : 'check',
 			];
 		}
@@ -434,15 +440,16 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 	}
 
 	/**
-	 * Strip top-level `limit=` and `start=` clauses from a base selector while preserving bracketed sub-selectors.
+	 * Split a ProcessWire selector string into top-level comma-separated clauses,
+	 * respecting quotes and nested `[...]` / `(...)` groups.
 	 *
-	 * @return array{0: string, 1: ?int}
+	 * @return list<string>
 	 */
-	public static function stripTopLevelPaginationClauses(string $selector): array
+	private static function splitTopLevelSelectorClauses(string $selector): array
 	{
 		$trimmed = trim($selector);
 		if ($trimmed === '') {
-			return ['', null];
+			return [];
 		}
 
 		$clauses = [];
@@ -465,23 +472,50 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 				} elseif (($ch === ']' || $ch === ')') && $depth > 0) {
 					$depth--;
 				} elseif ($ch === ',' && $depth === 0) {
-					$clauses[] = trim($buffer);
+					$clause = trim($buffer);
+					if ($clause !== '') {
+						$clauses[] = $clause;
+					}
 					$buffer = '';
 					continue;
 				}
 			}
 			$buffer .= $ch;
 		}
-		if (trim($buffer) !== '') {
-			$clauses[] = trim($buffer);
+		$tail = trim($buffer);
+		if ($tail !== '') {
+			$clauses[] = $tail;
+		}
+
+		return $clauses;
+	}
+
+	private static function hasTopLevelSortClause(string $selector): bool
+	{
+		foreach (self::splitTopLevelSelectorClauses($selector) as $clause) {
+			if (preg_match('/^sort\s*=/i', $clause) === 1) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Strip top-level `limit=` and `start=` clauses from a base selector while preserving bracketed sub-selectors.
+	 *
+	 * @return array{0: string, 1: ?int}
+	 */
+	public static function stripTopLevelPaginationClauses(string $selector): array
+	{
+		$clauses = self::splitTopLevelSelectorClauses($selector);
+		if ($clauses === []) {
+			return ['', null];
 		}
 
 		$kept = [];
 		$parsedLimit = null;
 		foreach ($clauses as $clause) {
-			if ($clause === '') {
-				continue;
-			}
 			if (preg_match('/^limit\s*=\s*(-?\d+)$/i', $clause, $m) === 1) {
 				$rawLimit = (int) $m[1];
 				if ($rawLimit > 0) {
@@ -524,6 +558,29 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 		}
 
 		return (bool) $page->viewable($field, false);
+	}
+
+	/**
+	 * Check whether `$fieldName` is viewable for the active user at the schema/field level (`$field->useRoles`).
+	 */
+	private function isFieldViewableForUser(string $fieldName): bool
+	{
+		if ($this->wire()->user->isSuperuser()) {
+			return true;
+		}
+		$cleanName = trim($fieldName);
+		if ($cleanName === '') {
+			return false;
+		}
+		$field = $this->wire()->fields->get($cleanName);
+		if (!$field instanceof Field) {
+			return true;
+		}
+		if (!(bool) $field->useRoles) {
+			return true;
+		}
+
+		return (bool) $field->viewable();
 	}
 
 	/**
@@ -660,7 +717,13 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 
 		if ($search !== '') {
 			$safeSearch = $sanitizer->selectorValue($search);
-			$parts[] = "title|name%={$safeSearch}";
+			$user = $this->wire()->user;
+			$titleField = $this->wire()->fields->get('title');
+			$canSearchTitle = (bool) $user->isSuperuser()
+				|| !$titleField instanceof Field
+				|| !(bool) $titleField->useRoles
+				|| $titleField->viewable(null, $user);
+			$parts[] = $canSearchTitle ? "title|name%={$safeSearch}" : "name%={$safeSearch}";
 		}
 
 		if ($fieldFilters !== []) {
@@ -676,18 +739,25 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 		}
 
 		$dateField = trim((string) ($this->options['dateField'] ?? ''));
-		if ($dateFrom !== '' && preg_match('/^[a-zA-Z0-9_]+$/', $dateField)) {
-			$parts[] = $dateField . '>=' . $sanitizer->selectorValue($dateFrom);
-		}
-		if ($dateTo !== '' && preg_match('/^[a-zA-Z0-9_]+$/', $dateField)) {
-			$parts[] = $dateField . '<=' . $sanitizer->selectorValue($dateTo);
+		if (($dateFrom !== '' || $dateTo !== '') && preg_match('/^[a-zA-Z0-9_]+$/', $dateField) && $this->isFieldViewableForUser($dateField)) {
+			if ($dateFrom !== '') {
+				$parts[] = $dateField . '>=' . $sanitizer->selectorValue($dateFrom);
+			}
+			if ($dateTo !== '') {
+				$parts[] = $dateField . '<=' . $sanitizer->selectorValue($dateTo);
+			}
 		}
 
+		$hasSortClause = false;
 		if ($sortBy !== '') {
 			$col = ltrim($sortBy, '-');
-			if (in_array($col, $this->sortableColumns, true)) {
+			if (in_array($col, $this->sortableColumns, true) && $this->isFieldViewableForUser($col)) {
 				$parts[] = 'sort=' . ($sortBy[0] === '-' ? '-' . $col : $col);
+				$hasSortClause = true;
 			}
+		}
+		if (!$hasSortClause && !self::hasTopLevelSortClause($this->baseSelector)) {
+			$parts[] = 'sort=id';
 		}
 
 		if ($includePagination) {
@@ -751,10 +821,13 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 						continue;
 					}
 					if (!$p->viewable() && !$p->editable()) {
+						$pages->uncache($p);
 						continue;
 					}
 					if ($total >= $sliceStart && $total < $sliceEnd) {
 						$matchedPages[] = $p;
+					} else {
+						$pages->uncache($p);
 					}
 					$total++;
 				}
@@ -797,6 +870,7 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 				$trashBaseParts = $this->buildTrashScopeClauses();
 				$trashBaseParts[] = 'include=trash';
 				$trashBaseParts[] = 'status>=' . Page::statusTrash;
+				$trashBaseParts[] = 'sort=id';
 				$trashScanOffset = 0;
 				$trashChunkSize = 250;
 				while ($trashScanOffset < 5000) {
@@ -816,6 +890,9 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 							&& ($tp->viewable() || $tp->editable())
 						) {
 							$trashCount++;
+						}
+						if ($tp instanceof Page && $tp->id > 0) {
+							$pages->uncache($tp);
 						}
 					}
 					$trashScanOffset += $trashChunkCount;
@@ -890,7 +967,8 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 			fwrite($fh, '[');
 		}
 
-		while ($exportedCount < $maxRows) {
+		$maxScan = 5000;
+		while ($exportedCount < $maxRows && ($isSuperuser || $scanOffset < $maxScan)) {
 			$chunkParts = $baseParts;
 			$chunkParts[] = "start={$scanOffset}";
 			$chunkParts[] = "limit={$chunkSize}";
@@ -905,9 +983,11 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 					continue;
 				}
 				if (!$isSuperuser && !$p->viewable() && !$p->editable()) {
+					$pages->uncache($p);
 					continue;
 				}
 				$record = $this->buildRecordFromPage($p, $adminUrl, $isSuperuser, $depthByParentId);
+				$pages->uncache($p);
 				if ($fmt === 'json') {
 					$row = ['id' => $record->id];
 					foreach ($colKeys as $colKey) {
@@ -982,6 +1062,9 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 		$formatted = [];
 		/** @var array<string, array<string, mixed>> $cells */
 		$cells = [];
+		$safeTitleAlt = $this->isFieldViewableOnPage($p, 'title', $isSuperuser)
+			? (string) ($p->title ?: $p->name)
+			: (string) $p->name;
 		foreach (array_keys($this->columns) as $colKey) {
 			if (!$this->isFieldViewableOnPage($p, (string) $colKey, $isSuperuser)) {
 				$values[$colKey] = '';
@@ -1022,7 +1105,13 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 				}
 				continue;
 			}
+			$colField = $p->getField($colKey);
 			$val = $p->get($colKey);
+			if ($val instanceof Password || ($colField instanceof Field && $colField->type instanceof FieldtypePassword)) {
+				$values[$colKey] = '';
+				$formatted[$colKey] = '';
+				continue;
+			}
 			if ($formatter !== null) {
 				$formattedOut = $formatter($p, $val);
 				if (is_array($formattedOut)) {
@@ -1043,7 +1132,7 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 			} else {
 				$unformattedMedia = $p->getUnformatted($colKey);
 				if ($unformattedMedia instanceof Pageimages || $unformattedMedia instanceof Pageimage) {
-					$thumbMeta = self::extractPageThumb($unformattedMedia, (string) ($p->title ?: $p->name));
+					$thumbMeta = self::extractPageThumb($unformattedMedia, $safeTitleAlt);
 					if ($thumbMeta !== null) {
 						$cells[$colKey] = ['thumb' => $thumbMeta];
 						$values[$colKey] = $thumbMeta['alt'];
@@ -1053,7 +1142,9 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 					continue;
 				}
 			}
-			$values[$colKey] = is_scalar($val) ? $val : (string) $val;
+			$values[$colKey] = is_scalar($val)
+				? $val
+				: ($val instanceof \Stringable ? (string) $val : '');
 		}
 
 		$recordIcon = '';
@@ -1078,7 +1169,7 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 		$recordThumb = null;
 		$thumbFieldOpt = trim((string) ($this->options['thumbField'] ?? ''));
 		if ($thumbFieldOpt !== '' && $this->isFieldViewableOnPage($p, $thumbFieldOpt, $isSuperuser)) {
-			$recordThumb = self::extractPageThumb($p->getUnformatted($thumbFieldOpt), (string) ($p->title ?: $p->name));
+			$recordThumb = self::extractPageThumb($p->getUnformatted($thumbFieldOpt), $safeTitleAlt);
 		}
 
 		$recordSubtitle = '';
@@ -1209,17 +1300,34 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 			$trashParts = $this->buildTrashScopeClauses();
 			$trashParts[] = 'include=trash';
 			$trashParts[] = 'status>=' . Page::statusTrash;
+			$trashParts[] = 'sort=id';
 			$trashParts[] = 'limit=100';
-			foreach ($pages->findMany(implode(', ', $trashParts)) as $candidate) {
-				if (
-					$candidate instanceof Page
-					&& $candidate->id > 1
-					&& $candidate->isTrash()
-					&& !$this->isProtectedSystemPage($candidate)
-					&& $candidate->deleteable()
-				) {
-					$pages->delete($candidate, true);
-					$deleted++;
+
+			$lastId = 0;
+			for ($batch = 0; $batch < 10; $batch++) {
+				$batchParts = $trashParts;
+				if ($lastId > 0) {
+					$batchParts[] = "id>{$lastId}";
+				}
+				$batchSeen = 0;
+				foreach ($pages->findMany(implode(', ', $batchParts)) as $candidate) {
+					if (!$candidate instanceof Page) {
+						continue;
+					}
+					$batchSeen++;
+					$lastId = max($lastId, (int) $candidate->id);
+					if (
+						$candidate->id > 1
+						&& $candidate->isTrash()
+						&& !$this->isProtectedSystemPage($candidate)
+						&& $candidate->deleteable()
+					) {
+						$pages->delete($candidate, true);
+						$deleted++;
+					}
+				}
+				if ($batchSeen === 0) {
+					break;
 				}
 			}
 			if ($deleted > 0) {
@@ -1233,6 +1341,8 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 			return 0;
 		}
 
+		$user = $this->wire()->user;
+		$sanitizer = $this->wire()->sanitizer;
 		$affected = 0;
 		foreach ($ids as $idx => $rawId) {
 			$pageId = (int) $rawId;
@@ -1243,10 +1353,7 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 			if (!$p instanceof Page || !$p->id || !$this->matchesBaseScope($p)) {
 				continue;
 			}
-			if (
-				$this->isProtectedSystemPage($p)
-				&& in_array($operation, ['trash', 'delete', 'draft', 'toggle_status', 'unlock'], true)
-			) {
+			if ($this->isProtectedSystemPage($p)) {
 				continue;
 			}
 			if ($p->isLocked() && $operation !== 'unlock') {
@@ -1262,119 +1369,145 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 				continue;
 			}
 
+			$prevOf = $p->of();
 			$p->of(false);
-			switch ($operation) {
-				case 'publish':
-					if (!$p->publishable()) {
-						break;
-					}
-					$p->removeStatus(Page::statusUnpublished);
-					$pages->save($p, ['quiet' => true]);
-					$affected++;
-					break;
-				case 'draft':
-					$p->addStatus(Page::statusUnpublished);
-					$pages->save($p, ['quiet' => true]);
-					$affected++;
-					break;
-				case 'toggle_status':
-					if ($p->isUnpublished()) {
+			try {
+				switch ($operation) {
+					case 'publish':
 						if (!$p->publishable()) {
 							break;
 						}
 						$p->removeStatus(Page::statusUnpublished);
-					} else {
+						$pages->save($p, ['quiet' => true]);
+						$affected++;
+						break;
+					case 'draft':
 						$p->addStatus(Page::statusUnpublished);
-					}
-					$pages->save($p, ['quiet' => true]);
-					$affected++;
-					break;
-				case 'lock':
-					$p->addStatus(Page::statusLocked);
-					$pages->save($p, ['quiet' => true]);
-					$affected++;
-					break;
-				case 'unlock':
-					$p->removeStatus(Page::statusLocked);
-					$pages->save($p, ['quiet' => true]);
-					$affected++;
-					break;
-				case 'trash':
-					$pages->trash($p);
-					$affected++;
-					break;
-				case 'restore':
-					if ($p->isTrash()) {
-						$pages->restore($p);
+						$pages->save($p, ['quiet' => true]);
 						$affected++;
-					}
-					break;
-				case 'delete':
-					if ($p->deleteable()) {
-						$pages->delete($p, true);
-						$affected++;
-					}
-					break;
-				case 'reorder':
-					$pages->sort($p, $idx);
-					$affected++;
-					break;
-				case 'update_field':
-					$field = (string) ($payload['field'] ?? '');
-					if ($field !== '' && $this->canWriteField($p, $field, true)) {
-						$rawVal = $payload['value'] ?? '';
-						$fieldObj = $p->getField($field);
-						$fieldTypeObj = $fieldObj?->type;
-						$fieldTypeClass = $fieldTypeObj !== null ? $fieldTypeObj->className() : '';
-						$langs = $this->wire()->languages;
-						if (is_array($rawVal) && $fieldTypeObj instanceof FieldtypeLanguageInterface && $langs instanceof Languages) {
-							foreach ($rawVal as $langKey => $langVal) {
-								$targetLang = is_int($langKey) || ctype_digit($langKey)
-									? $langs->get((int) $langKey)
-									: $langs->get($langKey);
-								if ($targetLang instanceof Language && $targetLang->id > 0 && $targetLang->editable() && is_scalar($langVal)) {
-									$p->setLanguageValue($targetLang, $field, (string) $langVal);
-								}
+						break;
+					case 'toggle_status':
+						if ($p->isUnpublished()) {
+							if (!$p->publishable()) {
+								break;
 							}
-							$pages->save($p, ['quiet' => true]);
-						} elseif ($fieldTypeObj instanceof FieldtypeLanguageInterface && is_scalar($rawVal) && $langs instanceof Languages) {
-							$defLang = $langs->getDefault();
-							if ($defLang instanceof Language && $defLang->id > 0 && $defLang->editable()) {
-								$p->setLanguageValue($defLang, $field, (string) $rawVal);
-								$pages->save($p, ['quiet' => true]);
-							} else {
-								$p->setAndSave($field, (string) $rawVal);
-							}
-						} elseif ($fieldTypeObj instanceof FieldtypeCheckbox || $fieldTypeClass === 'FieldtypeToggle') {
-							$boolStr = is_bool($rawVal)
-								? ($rawVal ? '1' : '0')
-								: strtolower(trim(is_scalar($rawVal) ? (string) $rawVal : ''));
-							$p->setAndSave($field, in_array($boolStr, ['1', 'true', 'yes', 'on'], true) ? 1 : 0);
-						} elseif ($fieldTypeObj instanceof FieldtypeDatetime && is_string($rawVal)) {
-							$trimmedDate = trim($rawVal);
-							if ($trimmedDate === '') {
-								$p->setAndSave($field, '');
-							} elseif (ctype_digit($trimmedDate)) {
-								$p->setAndSave($field, (int) $trimmedDate);
-							} else {
-								$parsedTs = strtotime(str_replace('T', ' ', $trimmedDate));
-								$p->setAndSave($field, $parsedTs !== false ? $parsedTs : $trimmedDate);
-							}
+							$p->removeStatus(Page::statusUnpublished);
 						} else {
-							$p->setAndSave($field, $rawVal);
+							$p->addStatus(Page::statusUnpublished);
 						}
+						$pages->save($p, ['quiet' => true]);
 						$affected++;
-					}
-					break;
-				case 'toggle_field':
-					$field = (string) ($payload['field'] ?? '');
-					if ($field !== '' && $this->canWriteField($p, $field)) {
-						$curVal = $p->getUnformatted($field);
-						$isTruthy = $curVal === true || $curVal === 1 || $curVal === '1' || $curVal === 'true';
-						$p->setAndSave($field, $isTruthy ? 0 : 1);
+						break;
+					case 'lock':
+						if (!$user->isSuperuser() && !$user->hasPermission('page-lock', $p)) {
+							break;
+						}
+						$p->addStatus(Page::statusLocked);
+						$pages->save($p, ['quiet' => true]);
 						$affected++;
-					}
-					break;
+						break;
+					case 'unlock':
+						if (!$user->isSuperuser() && !$user->hasPermission('page-lock', $p)) {
+							break;
+						}
+						$p->removeStatus(Page::statusLocked);
+						$pages->save($p, ['quiet' => true]);
+						$affected++;
+						break;
+					case 'trash':
+						$pages->trash($p);
+						$affected++;
+						break;
+					case 'restore':
+						if ($p->isTrash()) {
+							$pages->restore($p);
+							$affected++;
+						}
+						break;
+					case 'delete':
+						if ($p->deleteable()) {
+							$pages->delete($p, true);
+							$affected++;
+						}
+						break;
+					case 'reorder':
+						if (!$user->isSuperuser() && (!$p->sortable() || !$user->hasPermission('page-sort', $p->parent))) {
+							break;
+						}
+						$pages->sort($p, $idx);
+						$affected++;
+						break;
+					case 'update_field':
+						$field = is_string($payload['field'] ?? null) ? trim($payload['field']) : '';
+						if ($field !== '' && $this->canWriteField($p, $field, true)) {
+							$rawVal = $payload['value'] ?? '';
+							$fieldObj = $p->getField($field);
+							$fieldTypeObj = $fieldObj?->type;
+							$fieldTypeClass = $fieldTypeObj !== null ? $fieldTypeObj->className() : '';
+							$langs = $this->wire()->languages;
+							if (is_array($rawVal) && $fieldTypeObj instanceof FieldtypeLanguageInterface && $langs instanceof Languages) {
+								$updatedAnyLang = false;
+								foreach ($rawVal as $langKey => $langVal) {
+									$targetLang = null;
+									if (is_int($langKey) || ctype_digit($langKey)) {
+										$targetLang = $langs->get((int) $langKey);
+									} else {
+										$cleanLangName = $sanitizer->pageName($langKey);
+										if ($cleanLangName !== '' && !ctype_digit($cleanLangName)) {
+											$targetLang = $langs->get('name=' . $sanitizer->selectorValue($cleanLangName));
+										}
+									}
+									if ($targetLang instanceof Language && $targetLang->id > 0 && $langs->editable($targetLang) && is_scalar($langVal)) {
+										$p->setLanguageValue($targetLang, $field, (string) $langVal);
+										$updatedAnyLang = true;
+									}
+								}
+								if ($updatedAnyLang) {
+									$pages->save($p, ['quiet' => true]);
+									$affected++;
+								}
+							} elseif ($fieldTypeObj instanceof FieldtypeLanguageInterface && is_scalar($rawVal) && $langs instanceof Languages) {
+								$defLang = $langs->getDefault();
+								if ($defLang instanceof Language && $defLang->id > 0 && $langs->editable($defLang)) {
+									$p->setLanguageValue($defLang, $field, (string) $rawVal);
+									$pages->save($p, ['quiet' => true]);
+									$affected++;
+								}
+							} elseif ($fieldTypeObj instanceof FieldtypeCheckbox || $fieldTypeClass === 'FieldtypeToggle') {
+								$boolStr = is_bool($rawVal)
+									? ($rawVal ? '1' : '0')
+									: strtolower(trim(is_scalar($rawVal) ? (string) $rawVal : ''));
+								$p->setAndSave($field, in_array($boolStr, ['1', 'true', 'yes', 'on'], true) ? 1 : 0);
+								$affected++;
+							} elseif ($fieldTypeObj instanceof FieldtypeDatetime && is_string($rawVal)) {
+								$trimmedDate = trim($rawVal);
+								if ($trimmedDate === '') {
+									$p->setAndSave($field, '');
+								} elseif (ctype_digit($trimmedDate)) {
+									$p->setAndSave($field, (int) $trimmedDate);
+								} else {
+									$parsedTs = strtotime(str_replace('T', ' ', $trimmedDate));
+									$p->setAndSave($field, $parsedTs !== false ? $parsedTs : $trimmedDate);
+								}
+								$affected++;
+							} else {
+								$p->setAndSave($field, $rawVal);
+								$affected++;
+							}
+						}
+						break;
+					case 'toggle_field':
+						$field = (string) ($payload['field'] ?? '');
+						if ($field !== '' && $this->canWriteField($p, $field)) {
+							$curVal = $p->getUnformatted($field);
+							$isTruthy = $curVal === true || $curVal === 1 || $curVal === '1' || $curVal === 'true';
+							$p->setAndSave($field, $isTruthy ? 0 : 1);
+							$affected++;
+						}
+						break;
+				}
+			} finally {
+				$p->of($prevOf);
 			}
 		}
 
@@ -1540,7 +1673,9 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 			: "{$adminUrl}/page/edit/?id={$p->id}";
 
 		return [
-			'title' => (string) ($p->title ?: $p->name),
+			'title' => $this->isFieldViewableOnPage($p, 'title', $this->wire()->user->isSuperuser())
+				? (string) ($p->title ?: $p->name)
+				: (string) $p->name,
 			'formSchema' => $formSchema,
 			'scriptAssets' => $built['scriptAssets'],
 			'styleAssets' => $built['styleAssets'],
@@ -1782,7 +1917,9 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 			if (
 				$child instanceof InputfieldSubmit
 				|| $child instanceof InputfieldHidden
+				|| $child instanceof InputfieldPassword
 				|| strtolower($child->className()) === 'inputfieldbutton'
+				|| strtolower($child->className()) === 'inputfieldpassword'
 				|| ($name !== '' && (
 					in_array($lowerName, $blocked, true)
 					|| str_starts_with($lowerName, 'submit_')
@@ -1837,9 +1974,6 @@ final class PagesDataProvider extends Wire implements ReactDataProviderInterface
 	private function clearWireErrorNotices(): void
 	{
 		$notices = $this->wire()->notices;
-		if ($notices === null) {
-			return;
-		}
 		foreach ($notices as $notice) {
 			if ($notice instanceof NoticeError) {
 				$notices->remove($notice);

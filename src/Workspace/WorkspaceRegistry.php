@@ -389,13 +389,15 @@ final class WorkspaceRegistry extends Wire
 
 		try {
 			$database = $this->wire()->database;
+			$fieldProcessTable = $database->escapeTable('field_process');
+			$pagesTable = $database->escapeTable('pages');
 			$placeholders = implode(', ', array_fill(0, count($moduleIds), '?'));
 			$stmt = $database->prepare(
-				'SELECT fp.data AS module_id, p.id AS page_id'
-				. ' FROM field_process fp'
-				. ' INNER JOIN pages p ON p.id = fp.pages_id'
-				. ' WHERE p.templates_id = ? AND fp.data IN (' . $placeholders . ')'
-				. ' ORDER BY p.id ASC'
+				"SELECT fp.data AS module_id, p.id AS page_id"
+				. " FROM {$fieldProcessTable} fp"
+				. " INNER JOIN {$pagesTable} p ON p.id = fp.pages_id"
+				. " WHERE p.templates_id = ? AND fp.data IN ({$placeholders})"
+				. " ORDER BY p.id ASC"
 			);
 			$stmt->bindValue(1, (int) $adminTemplate->id, PDO::PARAM_INT);
 			foreach ($moduleIds as $idx => $modId) {

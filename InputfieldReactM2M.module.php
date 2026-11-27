@@ -224,67 +224,65 @@ class InputfieldReactM2M extends AbstractInputfieldReactRelation implements
 		$inputfields = parent::___getConfigInputfields();
 		$modules = $this->wire()->modules;
 
-		if ($modules !== null) {
-			/** @var InputfieldSelect|null $widgetField */
-			$widgetField = $modules->get('InputfieldSelect');
-			if ($widgetField !== null) {
-				$widgetField->attr('name', 'widget');
-				$widgetField->label = $this->_('UI Selection Widget');
-				$widgetField->addOptions([
-					'auto' => $this->_('Auto (MultiSelect <= 30 items, else MultiAutocomplete)'),
-					'multiselect' => $this->_('Sortable MultiSelect (AsmSelect style)'),
-					'checkboxes' => $this->_('MultiCheckbox Grid (Search + Select All)'),
-					'multiautocomplete' => $this->_('MultiAutocomplete Chips'),
-					'treeselect' => $this->_('Hierarchical Multi-TreeSelect (Pages)'),
-					'transfer' => $this->_('Dual-List Shuttle / Transfer'),
-					'picker' => $this->_('Drawer Table/Card Picker'),
-				]);
-				$widgetField->val((string) ($this->getSetting('widget') ?: 'auto'));
-				$widgetField->columnWidth = 33;
-				$inputfields->add($widgetField);
-			}
+		/** @var InputfieldSelect|null $widgetField */
+		$widgetField = $modules->get('InputfieldSelect');
+		if ($widgetField !== null) {
+			$widgetField->attr('name', 'widget');
+			$widgetField->label = $this->_('UI Selection Widget');
+			$widgetField->addOptions([
+				'auto' => $this->_('Auto (MultiSelect <= 30 items, else MultiAutocomplete)'),
+				'multiselect' => $this->_('Sortable MultiSelect (AsmSelect style)'),
+				'checkboxes' => $this->_('MultiCheckbox Grid (Search + Select All)'),
+				'multiautocomplete' => $this->_('MultiAutocomplete Chips'),
+				'treeselect' => $this->_('Hierarchical Multi-TreeSelect (Pages)'),
+				'transfer' => $this->_('Dual-List Shuttle / Transfer'),
+				'picker' => $this->_('Drawer Table/Card Picker'),
+			]);
+			$widgetField->val((string) ($this->getSetting('widget') ?: 'auto'));
+			$widgetField->columnWidth = 33;
+			$inputfields->add($widgetField);
+		}
 
-			$this->appendBaseRelationConfigFields($inputfields, true);
+		$this->appendBaseRelationConfigFields($inputfields, true);
 
-			/** @var InputfieldCheckbox|null $sortableField */
-			$sortableField = $modules->get('InputfieldCheckbox');
-			if ($sortableField !== null) {
-				$sortableField->attr('name', 'sortable');
-				$sortableField->label = $this->_('Allow Drag / Reorder');
-				$sortableField->attr('checked', (bool) ($this->getSetting('sortable') ?? true) ? 'checked' : '');
-				$sortableField->columnWidth = 25;
-				$inputfields->add($sortableField);
-			}
+		/** @var InputfieldCheckbox|null $sortableField */
+		$sortableField = $modules->get('InputfieldCheckbox');
+		if ($sortableField !== null) {
+			$sortableField->attr('name', 'sortable');
+			$sortableField->label = $this->_('Allow Drag / Reorder');
+			$sortableField->attr('checked', (bool) ($this->getSetting('sortable') ?? true) ? 'checked' : '');
+			$sortableField->columnWidth = 25;
+			$inputfields->add($sortableField);
+		}
 
-			/** @var InputfieldInteger|null $minField */
-			$minField = $modules->get('InputfieldInteger');
-			if ($minField !== null) {
-				$minField->attr('name', 'minItems');
-				$minField->label = $this->_('Minimum Items');
-				$minField->val((int) $this->getSetting('minItems'));
-				$minField->columnWidth = 25;
-				$inputfields->add($minField);
-			}
+		/** @var InputfieldInteger|null $minField */
+		$minField = $modules->get('InputfieldInteger');
+		if ($minField !== null) {
+			$minField->attr('name', 'minItems');
+			$minField->label = $this->_('Minimum Items');
+			$minField->val((int) $this->getSetting('minItems'));
+			$minField->columnWidth = 25;
+			$inputfields->add($minField);
+		}
 
-			/** @var InputfieldInteger|null $maxField */
-			$maxField = $modules->get('InputfieldInteger');
-			if ($maxField !== null) {
-				$maxField->attr('name', 'maxItems');
-				$maxField->label = $this->_('Maximum Items (0 = Unlimited)');
-				$maxField->val((int) $this->getSetting('maxItems'));
-				$maxField->columnWidth = 25;
-				$inputfields->add($maxField);
-			}
+		/** @var InputfieldInteger|null $maxField */
+		$maxField = $modules->get('InputfieldInteger');
+		if ($maxField !== null) {
+			$maxField->attr('name', 'maxItems');
+			$maxField->label = $this->_('Maximum Items (0 = Unlimited)');
+			$maxField->val((int) $this->getSetting('maxItems'));
+			$maxField->columnWidth = 25;
+			$inputfields->add($maxField);
+		}
 
-			/** @var InputfieldInteger|null $colsField */
-			$colsField = $modules->get('InputfieldInteger');
-			if ($colsField !== null) {
-				$colsField->attr('name', 'optionColumns');
-				$colsField->label = $this->_('Checkbox Columns (0 = Auto)');
-				$colsField->val((int) $this->getSetting('optionColumns'));
-				$colsField->columnWidth = 25;
-				$inputfields->add($colsField);
-			}
+		/** @var InputfieldInteger|null $colsField */
+		$colsField = $modules->get('InputfieldInteger');
+		if ($colsField !== null) {
+			$colsField->attr('name', 'optionColumns');
+			$colsField->label = $this->_('Checkbox Columns (0 = Auto)');
+			$colsField->val((int) $this->getSetting('optionColumns'));
+			$colsField->columnWidth = 25;
+			$inputfields->add($colsField);
 		}
 
 		return $inputfields;

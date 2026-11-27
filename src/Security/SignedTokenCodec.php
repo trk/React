@@ -37,14 +37,30 @@ final class SignedTokenCodec extends Wire
 	}
 
 	/**
+	 * Derive a domain-separated 32-byte HMAC subkey from `$config->userAuthSalt`.
+	 *
+	 * @throws WireException When `userAuthSalt` is missing or shorter than 16 characters.
+	 */
+	public function deriveDomainKey(string $domain = 'default'): string
+	{
+		$secret = $this->signingSecret();
+		$cleanDomain = trim($domain);
+		if ($cleanDomain === '') {
+			$cleanDomain = 'default';
+		}
+
+		return hash_hmac('sha256', $cleanDomain, $secret, true);
+	}
+
+	/**
 	 * Sign and base64url-encode an associative token envelope with `iat` timestamp.
 	 *
 	 * @param array<string, mixed> $envelope
 	 * @throws WireException
 	 */
-	public function encode(array $envelope): string
+	public function encode(array $envelope, string $domain = 'default'): string
 	{
-		$secret = $this->signingSecret();
+		$subkey = $this->deriveDomainKey($domain);
 		if (!isset($envelope['iat']) || !is_int($envelope['iat'])) {
 			$envelope['iat'] = time();
 		}
@@ -55,7 +71,7 @@ final class SignedTokenCodec extends Wire
 		}
 
 		$encoded = rtrim(strtr(base64_encode($json), '+/', '-_'), '=');
-		$sig = hash_hmac('sha256', $encoded, $secret);
+		$sig = hash_hmac('sha256', $encoded, $subkey);
 
 		return $encoded . '.' . $sig;
 	}
@@ -66,9 +82,9 @@ final class SignedTokenCodec extends Wire
 	 * @return array<string, mixed>|null
 	 * @throws WireException When `$config->userAuthSalt` is missing or too short.
 	 */
-	public function decode(string $token, ?int $expectedUserId = null, int $ttl = self::DEFAULT_TTL): ?array
+	public function decode(string $token, ?int $expectedUserId = null, int $ttl = self::DEFAULT_TTL, string $domain = 'default'): ?array
 	{
-		$secret = $this->signingSecret();
+		$subkey = $this->deriveDomainKey($domain);
 		$trimmed = trim($token);
 		if ($trimmed === '' || strlen($trimmed) > self::MAX_TOKEN_BYTES || !str_contains($trimmed, '.')) {
 			return null;
@@ -79,7 +95,7 @@ final class SignedTokenCodec extends Wire
 			return null;
 		}
 
-		$expectedSig = hash_hmac('sha256', $encoded, $secret);
+		$expectedSig = hash_hmac('sha256', $encoded, $subkey);
 		if (!hash_equals($expectedSig, $sig)) {
 			return null;
 		}

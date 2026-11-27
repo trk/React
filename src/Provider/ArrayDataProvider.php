@@ -160,7 +160,10 @@ final class ArrayDataProvider extends Wire implements
 			$this->items = array_values($items);
 		}
 		$this->title = $this->_('Records');
-		$this->columns = ['title' => $this->_('Title'), 'status' => $this->_('Status')];
+		$this->columns = [
+			'title' => $this->_('Title'),
+			'status' => $this->_('Status'),
+		];
 		$this->sortableColumns = array_keys($this->columns);
 		$this->statusOptions = [
 			'published' => $this->_('Published'),

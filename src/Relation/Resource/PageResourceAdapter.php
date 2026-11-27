@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Totoglu\React\Relation\Resource;
 
+use ProcessWire\Field;
+use ProcessWire\Language;
+use ProcessWire\Languages;
 use ProcessWire\NullPage;
 use ProcessWire\Page;
 use ProcessWire\PageArray;
@@ -72,10 +75,16 @@ final class PageResourceAdapter extends AbstractRelationResource
 		$q = trim((string) ($params['q'] ?? ''));
 		if ($q !== '') {
 			$safeQ = $this->sanitizeSelectorValue($q);
+			$user = $this->wire()->user;
+			$titleField = $this->wire()->fields->get('title');
+			$canSearchTitle = (bool) $user->isSuperuser()
+				|| !$titleField instanceof Field
+				|| !(bool) $titleField->useRoles
+				|| $titleField->viewable(null, $user);
 			if (ctype_digit($q) && (int) $q > 0) {
-				$clauses[] = 'id|title|name%=' . $safeQ;
+				$clauses[] = ($canSearchTitle ? 'id|title|name%=' : 'id|name%=') . $safeQ;
 			} else {
-				$clauses[] = 'title|name%=' . $safeQ;
+				$clauses[] = ($canSearchTitle ? 'title|name%=' : 'name%=') . $safeQ;
 			}
 		}
 
@@ -99,7 +108,7 @@ final class PageResourceAdapter extends AbstractRelationResource
 			}
 		}
 		if (!$hasCustomSort) {
-			$clauses[] = 'sort=title, sort=name';
+			$clauses[] = 'sort=title, sort=name, sort=id';
 		}
 
 		$clauses[] = "start={$start}";
@@ -331,12 +340,8 @@ final class PageResourceAdapter extends AbstractRelationResource
 			$matchGroups[] = 'name=' . implode('|', $safeNames);
 		}
 
-		if (count($matchGroups) === 1) {
+		if ($matchGroups !== []) {
 			$clauses[] = $matchGroups[0];
-		} else {
-			foreach ($matchGroups as $mg) {
-				$clauses[] = "_hydrate_match=({$mg})";
-			}
 		}
 
 		$clauses[] = 'limit=500';
@@ -436,7 +441,7 @@ final class PageResourceAdapter extends AbstractRelationResource
 		$ownerId = (int) ($config['ownerId'] ?? $payload['ownerId'] ?? 0);
 		if ($ownerId > 0) {
 			$ownerCandidate = $pages->get($ownerId);
-			$this->assertValidOwnerPage($ownerCandidate, $user, $config);
+			$this->assertValidOwnerPage($ownerCandidate, $user);
 		}
 
 		$configuredCreateParent = (int) ($config['createParentId'] ?? 0);
@@ -465,25 +470,29 @@ final class PageResourceAdapter extends AbstractRelationResource
 			throw new WireException($this->_('Selected parent page is outside the allowed hierarchy for this field.'));
 		}
 
-		if (!$user->isSuperuser() && !$parent->addable()) {
-			throw new WireException($this->_('You do not have permission to add pages under the selected parent.'));
-		}
-
 		$allowedTemplates = $this->resolveTemplateNames($config);
 		$cfgCreateTpl = trim((string) ($config['createTemplate'] ?? ''));
 		$payloadTpl = trim((string) ($payload['template'] ?? ''));
-		$requestedTpl = $cfgCreateTpl !== ''
+		$rawRequestedTpl = $cfgCreateTpl !== ''
 			? $cfgCreateTpl
 			: ($payloadTpl !== '' ? $payloadTpl : ($allowedTemplates[0] ?? ''));
-		if ($requestedTpl === '' && $parent->template instanceof Template && is_array($parent->template->childTemplates) && count($parent->template->childTemplates) === 1) {
+		if ($rawRequestedTpl === '' && $parent->template instanceof Template && is_array($parent->template->childTemplates) && count($parent->template->childTemplates) === 1) {
 			$onlyChildTpl = $templates->get((int) $parent->template->childTemplates[0]);
 			if ($onlyChildTpl instanceof Template) {
-				$requestedTpl = (string) $onlyChildTpl->name;
+				$rawRequestedTpl = (string) $onlyChildTpl->name;
 			}
 		}
 
-		if ($requestedTpl === '') {
+		if ($rawRequestedTpl === '') {
 			throw new WireException($this->_('A target template must be configured to quick-create pages.'));
+		}
+		if (ctype_digit($rawRequestedTpl)) {
+			throw new WireException($this->_('Numeric template IDs are not permitted for quick create.'));
+		}
+
+		$requestedTpl = $sanitizer->name($rawRequestedTpl);
+		if ($requestedTpl === '') {
+			throw new WireException($this->_('Invalid template specified for quick create.'));
 		}
 		if ($allowedTemplates !== [] && !in_array($requestedTpl, $allowedTemplates, true)) {
 			throw new WireException($this->_('Selected template is not allowed for this relation field.'));
@@ -492,6 +501,44 @@ final class PageResourceAdapter extends AbstractRelationResource
 		$tpl = $templates->get($requestedTpl);
 		if (!$tpl instanceof Template || ((int) $tpl->flags & Template::flagSystem) !== 0) {
 			throw new WireException($this->_('Invalid or system template specified for quick create.'));
+		}
+
+		if ((int) $tpl->noParents === 1 || ((int) $tpl->noParents === -1 && $pages->has('template=' . (int) $tpl->id))) {
+			throw new WireException($this->_('Selected template does not allow creating pages under a parent.'));
+		}
+		if (
+			is_array($tpl->parentTemplates)
+			&& $tpl->parentTemplates !== []
+			&& (!$parent->template instanceof Template || !in_array((int) $parent->template->id, array_map('intval', $tpl->parentTemplates), true))
+		) {
+			throw new WireException($this->_('Selected template is not permitted under the chosen parent template.'));
+		}
+		if (
+			$parent->template instanceof Template
+			&& (
+				(bool) $parent->template->noChildren
+				|| (
+					is_array($parent->template->childTemplates)
+					&& $parent->template->childTemplates !== []
+					&& !in_array((int) $tpl->id, array_map('intval', $parent->template->childTemplates), true)
+				)
+			)
+		) {
+			throw new WireException($this->_('Parent template does not allow creating pages of the selected template.'));
+		}
+
+		if (!$user->isSuperuser()) {
+			$accessTpl = $tpl->useRoles ? $tpl : ($parent->getAccessTemplate('edit') ?? $tpl);
+			if (!$parent->addable() || !$user->hasPermission('page-create', $accessTpl)) {
+				throw new WireException($this->_('You do not have permission to create pages of this template under the selected parent.'));
+			}
+			$languages = $this->wire()->languages;
+			if ($languages instanceof Languages) {
+				$defLang = $languages->getDefault();
+				if ($defLang instanceof Language && !$languages->editable($defLang)) {
+					throw new WireException($this->_('You do not have permission to edit the default language.'));
+				}
+			}
 		}
 
 		$rawName = trim((string) ($payload['name'] ?? ''));
@@ -561,7 +608,7 @@ final class PageResourceAdapter extends AbstractRelationResource
 		}
 
 		$ownerPage = $pages->get($ownerId);
-		$this->assertValidOwnerPage($ownerPage, $user, $config);
+		$this->assertValidOwnerPage($ownerPage, $user);
 
 		$targetPage = $pages->get($targetId);
 		if (!$targetPage instanceof Page || $targetPage instanceof NullPage || (int) $targetPage->id <= 0) {
@@ -592,10 +639,8 @@ final class PageResourceAdapter extends AbstractRelationResource
 
 	/**
 	 * Validate `$ownerPage` exists, is not in trash or admin root, and is editable by `$user`.
-	 *
-	 * @param array<string, mixed> $config
 	 */
-	private function assertValidOwnerPage(mixed $ownerPage, User $user, array $config = []): void
+	private function assertValidOwnerPage(mixed $ownerPage, User $user): void
 	{
 		if (!$ownerPage instanceof Page || $ownerPage instanceof NullPage || (int) $ownerPage->id <= 0) {
 			throw new WireException('Owner page does not exist.');
@@ -802,9 +847,11 @@ final class PageResourceAdapter extends AbstractRelationResource
 			default => (int) $page->id,
 		};
 
-		$title = trim((string) $page->getUnformatted('title'));
+		$isSuperuser = (bool) $this->wire()->user->isSuperuser();
+		$canViewTitle = $isSuperuser || $page->viewable('title', false);
+		$title = $canViewTitle ? trim((string) $page->getUnformatted('title')) : '';
 		if ($title === '') {
-			$title = trim((string) ($page->title ?: $page->name));
+			$title = $canViewTitle ? trim((string) ($page->title ?: $page->name)) : (string) $page->name;
 		}
 		$pageTpl = $page->template instanceof Template ? $page->template : null;
 		$tplName = $pageTpl !== null ? (string) $pageTpl->name : '';
@@ -823,6 +870,9 @@ final class PageResourceAdapter extends AbstractRelationResource
 			foreach ($pageTpl->fieldgroup as $field) {
 				$ftName = (string) ($field->type?->className() ?? '');
 				if ($ftName === 'FieldtypeImage' || str_ends_with($ftName, 'Image')) {
+					if (!$isSuperuser && !$page->viewable($field, false)) {
+						continue;
+					}
 					$imgVal = $page->getUnformatted((string) $field->name);
 					$firstImg = $imgVal instanceof Pageimages ? $imgVal->first() : ($imgVal instanceof Pageimage ? $imgVal : null);
 					if ($firstImg instanceof Pageimage) {
