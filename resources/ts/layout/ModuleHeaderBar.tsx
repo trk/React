@@ -81,7 +81,7 @@ export function ModuleHeaderBar({
 									onClick={onOpenCommandPalette}
 									data-rw-command-trigger=""
 									title={t('shell.quickSwitcherShortcut', 'Quick Switcher (Cmd/Ctrl+K)')}
-									className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-input-surface px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground shrink-0 cursor-pointer"
+									className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-input-surface px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0 cursor-pointer"
 								>
 									<DynamicIcon name="search" className="size-3.5" aria-hidden="true" />
 									<span className="sr-only">{t('shell.quickSwitcher', 'Quick Switcher')} </span>
@@ -93,7 +93,7 @@ export function ModuleHeaderBar({
 									href={openInWorkspaceHref}
 									data-rw-open-in-workspace
 									title={t('shell.openInWorkspaceTooltip', 'Switch to full-screen Workspace view')}
-									className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-input-surface px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted shrink-0"
+									className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-input-surface px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
 								>
 									<DynamicIcon name="layout-grid" className="size-3.5 text-primary" />
 									<span>{t('shell.openInWorkspace', 'Open in Workspace')}</span>

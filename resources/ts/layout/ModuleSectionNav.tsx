@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { SafeLink as Link } from '../lib/inertia-bridge';
 import { t } from '../lib/i18n';
 import { cn, DynamicIcon, sanitizeHref } from '../lib/utils';
@@ -15,6 +15,7 @@ export function ModuleSectionNav({
 	activeNav?: string;
 }): React.ReactElement | null {
 	const navRef = useRef<HTMLElement | null>(null);
+	const moreMenuId = useId();
 	const measureRef = useRef<HTMLDivElement | null>(null);
 	const moreTriggerRef = useRef<HTMLButtonElement | null>(null);
 	const moreMenuRef = useRef<HTMLDivElement | null>(null);
@@ -94,6 +95,12 @@ export function ModuleSectionNav({
 	}, [items, activeNav]);
 
 	useEffect(() => {
+		if (moreOpen && visibleCount >= items.length) {
+			setMoreOpen(false);
+		}
+	}, [moreOpen, visibleCount, items.length]);
+
+	useEffect(() => {
 		if (!moreOpen || typeof document === 'undefined' || typeof window === 'undefined') {
 			return;
 		}
@@ -127,18 +134,43 @@ export function ModuleSectionNav({
 		const onKeyDown = (e: KeyboardEvent) => {
 			if (e.key === 'Escape') {
 				e.preventDefault();
+				e.stopPropagation();
 				setMoreOpen(false);
 				moreTriggerRef.current?.focus();
+				return;
+			}
+			const menuEl = moreMenuRef.current;
+			if (!menuEl) {
+				return;
+			}
+			const menuItems = Array.from(menuEl.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])'));
+			if (menuItems.length === 0) {
+				return;
+			}
+			const curIdx = menuItems.indexOf(document.activeElement as HTMLElement);
+			let nextIdx = -1;
+			if (e.key === 'ArrowDown') {
+				nextIdx = curIdx >= 0 ? (curIdx + 1) % menuItems.length : 0;
+			} else if (e.key === 'ArrowUp') {
+				nextIdx = curIdx > 0 ? curIdx - 1 : menuItems.length - 1;
+			} else if (e.key === 'Home') {
+				nextIdx = 0;
+			} else if (e.key === 'End') {
+				nextIdx = menuItems.length - 1;
+			}
+			if (nextIdx >= 0) {
+				e.preventDefault();
+				menuItems[nextIdx]?.focus();
 			}
 		};
 		document.addEventListener('mousedown', onPointerDown);
-		document.addEventListener('keydown', onKeyDown);
+		document.addEventListener('keydown', onKeyDown, true);
 		window.addEventListener('resize', updateMenuPosition);
 		window.addEventListener('scroll', updateMenuPosition, true);
 		return () => {
 			window.cancelAnimationFrame(rafId);
 			document.removeEventListener('mousedown', onPointerDown);
-			document.removeEventListener('keydown', onKeyDown);
+			document.removeEventListener('keydown', onKeyDown, true);
 			window.removeEventListener('resize', updateMenuPosition);
 			window.removeEventListener('scroll', updateMenuPosition, true);
 		};
@@ -217,7 +249,7 @@ export function ModuleSectionNav({
 					const itemKey = String(item.key ?? item.id ?? item.label);
 					const isActive = item.active ?? itemKey === activeNav;
 					const itemClasses = cn(
-						'inline-flex min-h-8 pointer-coarse:min-h-11 shrink-0 items-center gap-2 border-b-2 px-3 py-2 text-xs font-medium transition-colors whitespace-nowrap cursor-pointer',
+						'inline-flex min-h-8 pointer-coarse:min-h-11 shrink-0 items-center gap-2 border-b-2 px-3 py-2 text-xs font-medium transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer',
 						isActive
 							? 'border-primary text-primary font-semibold'
 							: 'border-transparent text-muted-foreground hover:border-border hover:text-foreground'
@@ -278,9 +310,10 @@ export function ModuleSectionNav({
 						data-rw-module-nav-more=""
 						aria-haspopup="menu"
 						aria-expanded={moreOpen}
+						aria-controls={moreOpen ? moreMenuId : undefined}
 						onClick={() => setMoreOpen((prev) => !prev)}
 						className={cn(
-							'ml-auto inline-flex min-h-8 pointer-coarse:min-h-11 shrink-0 items-center gap-1.5 border-b-2 px-2.5 py-2 text-xs font-medium transition-colors whitespace-nowrap cursor-pointer',
+							'ml-auto inline-flex min-h-8 pointer-coarse:min-h-11 shrink-0 items-center gap-1.5 border-b-2 px-2.5 py-2 text-xs font-medium transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer',
 							activeOverflowItem
 								? 'border-primary text-primary font-semibold'
 								: moreOpen
@@ -315,6 +348,7 @@ export function ModuleSectionNav({
 				<PortalRoot anchor={moreTriggerRef.current} ssrFallback={false}>
 					<div
 						ref={moreMenuRef}
+						id={moreMenuId}
 						role="menu"
 						aria-label={`${title} ${t('shell.more', 'More')}`}
 						data-rw-module-nav-menu=""
@@ -327,7 +361,7 @@ export function ModuleSectionNav({
 							const isActive = item.active ?? itemKey === activeNav;
 							const safeSubHref = item.href ? sanitizeHref(item.href) : '';
 							const menuRowClass = cn(
-								'flex w-full items-center justify-between gap-2.5 rounded-md px-2.5 py-1.5 text-left text-xs font-medium transition-colors cursor-pointer',
+								'flex w-full items-center justify-between gap-2.5 rounded-md px-2.5 py-1.5 text-left text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer',
 								isActive
 									? 'bg-primary/12 text-primary-ink font-semibold'
 									: 'text-popover-foreground hover:bg-muted'
@@ -350,6 +384,7 @@ export function ModuleSectionNav({
 										key={itemKey}
 										type="button"
 										role="menuitem"
+										aria-current={isActive ? 'page' : undefined}
 										onClick={() => {
 											setMoreOpen(false);
 											item.onClick?.();
@@ -366,6 +401,7 @@ export function ModuleSectionNav({
 										key={itemKey}
 										href={safeSubHref}
 										role="menuitem"
+										aria-current={isActive ? 'page' : undefined}
 										onClick={() => setMoreOpen(false)}
 										className={menuRowClass}
 									>

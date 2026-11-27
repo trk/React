@@ -6,6 +6,7 @@ import type {
 } from '../types';
 import type {
 	RegisteredBlockFieldSpec,
+	RegisteredBlockItemSpec,
 	RegisteredFragmentSpec,
 	SchemaValidationResult,
 } from '../validation';
@@ -43,6 +44,9 @@ export interface SchemaFormContextValue {
 	setFieldError: (name: string, message: string | null) => void;
 	registerFragment: (spec: RegisteredFragmentSpec) => () => void;
 	registerBlockField: (spec: RegisteredBlockFieldSpec) => () => void;
+	blocksVersion?: number;
+	getRegisteredBlocks?: (fieldKey: string) => ReadonlyArray<RegisteredBlockItemSpec>;
+	notifyBlocksChanged?: (fieldKey: string) => void;
 	validateAll: () => SchemaValidationResult;
 	validateStep: (stepIndex: number) => SchemaValidationResult;
 }

@@ -241,7 +241,7 @@ export function ViewportToolbar({
 										<button
 											type="button"
 											onClick={() => onRequestDeleteView({ key: fullKey, label: sDef.label })}
-											className="inline-flex min-h-6 min-w-6 pointer-coarse:min-h-9 pointer-coarse:min-w-9 items-center justify-center rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive cursor-pointer"
+											className="inline-flex min-h-6 min-w-6 pointer-coarse:min-h-9 pointer-coarse:min-w-9 items-center justify-center rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
 											aria-label={t('viewport.deleteSavedView', 'Delete saved view')}
 											title={t('viewport.deleteSavedView', 'Delete saved view')}
 										>
@@ -357,7 +357,7 @@ export function ViewportToolbar({
 									type="button"
 									aria-label={t('common.clear', 'Clear')}
 									onClick={() => onSubmitSearch('')}
-									className="absolute right-2 top-2 text-muted-foreground hover:text-foreground cursor-pointer"
+									className="absolute right-2 top-2 rounded text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
 								>
 									<DynamicIcon name="x" className="size-3.5" />
 								</button>
@@ -365,7 +365,11 @@ export function ViewportToolbar({
 						</form>
 
 						{state.allowedViewModes && state.allowedViewModes.length > 1 && (
-							<div className="inline-flex shrink-0 items-center rounded-md border border-border bg-card p-0.5">
+							<div
+								role="group"
+								aria-label={t('viewport.viewMode', 'View mode')}
+								className="inline-flex shrink-0 items-center rounded-md border border-border bg-card p-0.5"
+							>
 								{state.allowedViewModes.map((mode) => {
 									const isActive = state.viewMode === mode;
 									const meta = state.viewModeMeta?.[mode];
@@ -394,11 +398,12 @@ export function ViewportToolbar({
 										<button
 											key={mode}
 											type="button"
+											aria-pressed={isActive}
 											onClick={() => dispatch('switch_view_mode', { mode })}
 											onMouseEnter={preloadMode}
 											onFocus={preloadMode}
 											className={cn(
-												'inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium capitalize transition-colors cursor-pointer',
+												'inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer',
 												isActive
 													? 'bg-primary text-primary-foreground'
 													: 'text-muted-foreground hover:text-foreground'
@@ -432,7 +437,7 @@ export function ViewportToolbar({
 											<button
 												type="button"
 												onClick={() => dispatch('reset_columns')}
-												className="text-primary hover:underline cursor-pointer"
+												className="rounded text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
 											>
 												{t('common.reset', 'Reset')}
 											</button>

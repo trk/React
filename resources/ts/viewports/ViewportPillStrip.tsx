@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { t } from '../lib/i18n';
 import { cn, DynamicIcon } from '../lib/utils';
 import { Input, PortalRoot, Select } from '../ui';
@@ -131,22 +131,63 @@ export const ViewportPillStrip: React.FC<ViewportPillStripProps> = ({
 		};
 		const onKeyDown = (event: KeyboardEvent) => {
 			if (event.key === 'Escape') {
+				event.preventDefault();
 				event.stopPropagation();
 				setMenuOpen(false);
 				triggerRef.current?.focus();
+				return;
+			}
+			const targetEl = event.target as HTMLElement | null;
+			const isTypingInput = targetEl instanceof HTMLInputElement || targetEl instanceof HTMLTextAreaElement;
+			if (isTypingInput && (event.key === 'Home' || event.key === 'End')) {
+				return;
+			}
+			const menuEl = menuRef.current;
+			if (!menuEl) {
+				return;
+			}
+			const items = Array.from(menuEl.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]:not([disabled])'));
+			if (items.length === 0) {
+				return;
+			}
+			const curIdx = items.indexOf(document.activeElement as HTMLButtonElement);
+			let nextIdx = -1;
+			if (event.key === 'ArrowDown') {
+				nextIdx = curIdx >= 0 ? (curIdx + 1) % items.length : 0;
+			} else if (event.key === 'ArrowUp') {
+				nextIdx = curIdx > 0 ? curIdx - 1 : items.length - 1;
+			} else if (event.key === 'Home') {
+				nextIdx = 0;
+			} else if (event.key === 'End') {
+				nextIdx = items.length - 1;
+			}
+			if (nextIdx >= 0) {
+				event.preventDefault();
+				items[nextIdx]?.focus();
 			}
 		};
+		let focusRaf: number | null = null;
+		if (overflowItems.length < 5 && typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+			focusRaf = window.requestAnimationFrame(() => {
+				menuRef.current?.querySelector<HTMLButtonElement>('[role="menuitemradio"]:not([disabled])')?.focus();
+			});
+		}
 		document.addEventListener('mousedown', onMouseDown);
-		window.addEventListener('keydown', onKeyDown);
+		window.addEventListener('keydown', onKeyDown, true);
 		window.addEventListener('resize', updateMenuPosition);
 		window.addEventListener('scroll', updateMenuPosition, true);
 		return () => {
+			if (focusRaf !== null) {
+				window.cancelAnimationFrame(focusRaf);
+			}
 			document.removeEventListener('mousedown', onMouseDown);
-			window.removeEventListener('keydown', onKeyDown);
+			window.removeEventListener('keydown', onKeyDown, true);
 			window.removeEventListener('resize', updateMenuPosition);
 			window.removeEventListener('scroll', updateMenuPosition, true);
 		};
-	}, [menuOpen, updateMenuPosition]);
+	}, [menuOpen, overflowItems.length, updateMenuPosition]);
+
+	const overflowMenuId = useId();
 
 	if (items.length === 0) {
 		return null;
@@ -224,6 +265,7 @@ export const ViewportPillStrip: React.FC<ViewportPillStripProps> = ({
 						type="button"
 						aria-haspopup="menu"
 						aria-expanded={menuOpen}
+						aria-controls={menuOpen ? overflowMenuId : undefined}
 						data-rw-viewport-pill-overflow=""
 						onClick={() => {
 							setMenuSearch('');
@@ -302,7 +344,6 @@ export const ViewportPillStrip: React.FC<ViewportPillStripProps> = ({
 				<PortalRoot anchor={triggerRef.current} ssrFallback={false}>
 					<div
 						ref={menuRef}
-						role="menu"
 						data-rw-viewport-pill-menu=""
 						data-rw-portal-overlay=""
 						style={{ position: 'fixed', top: `${menuPos.top}px`, left: `${menuPos.left}px` }}
@@ -320,7 +361,12 @@ export const ViewportPillStrip: React.FC<ViewportPillStripProps> = ({
 								/>
 							</div>
 						)}
-						<div className="max-h-64 space-y-0.5 overflow-y-auto">
+						<div
+							id={overflowMenuId}
+							role="menu"
+							aria-label={ariaLabel}
+							className="max-h-64 space-y-0.5 overflow-y-auto"
+						>
 							{filteredOverflow.map((item) => {
 								const isActive = item.key === activeKey;
 								return (
@@ -338,7 +384,7 @@ export const ViewportPillStrip: React.FC<ViewportPillStripProps> = ({
 											setMenuOpen(false);
 										}}
 										className={cn(
-											'flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-xs font-medium transition-colors cursor-pointer',
+											'flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer',
 											isActive
 												? 'bg-primary/12 text-primary-ink font-semibold'
 												: 'text-popover-foreground hover:bg-muted'

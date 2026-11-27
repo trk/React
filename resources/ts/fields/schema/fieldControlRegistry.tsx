@@ -105,6 +105,7 @@ export function prefetchSchemaControls(schema: SchemaFormPayload): void {
 				ensureRelationFieldLoaded?: () => Promise<void>;
 				ensureTabLoaded?: () => Promise<void>;
 				ensureCalendarLoaded?: () => Promise<void>;
+				ensureConditionFieldLoaded?: () => Promise<void>;
 				ensureExtraFieldsLoaded?: () => Promise<void>;
 		  }
 		| undefined;
@@ -135,6 +136,7 @@ export function prefetchSchemaControls(schema: SchemaFormPayload): void {
 				if (islandComp === 'InputfieldReactLink') needed.add('link');
 				if (islandComp === 'InputfieldReactFile') needed.add('file');
 				if (islandComp === 'InputfieldReactImage') needed.add('image');
+				if (islandComp === 'InputfieldReactCondition') needed.add('condition');
 				if (islandComp.startsWith('InputfieldReactM2') || islandComp === 'InputfieldReactO2M') needed.add('relation');
 			}
 			if (rawType === 'keyvalue' || rawType === 'kv' || rawType === 'inputfieldreactkeyvalue') {
@@ -239,12 +241,16 @@ export function prefetchSchemaControls(schema: SchemaFormPayload): void {
 				rawType === 'md' ||
 				rawType === 'markdown_editor' ||
 				rawType === 'markdown-editor' ||
-				(rawType.includes('textarea') && String(f.editorMode || '').toLowerCase() === 'markdown') ||
-				rawType === 'condition_builder' ||
-				rawType === 'condition-builder' ||
-				rawType === 'conditionbuilder'
+				(rawType.includes('textarea') && String(f.editorMode || '').toLowerCase() === 'markdown')
 			) {
 				needed.add('extra');
+			} else if (
+				rawType === 'condition_builder' ||
+				rawType === 'condition-builder' ||
+				rawType === 'conditionbuilder' ||
+				rawType === 'inputfieldreactcondition'
+			) {
+				needed.add('condition');
 			}
 			visitFieldList(f.fields);
 			visitFieldList(f.children);
@@ -267,6 +273,7 @@ export function prefetchSchemaControls(schema: SchemaFormPayload): void {
 	if (needed.has('file')) void rt.ensureFileFieldLoaded?.();
 	if (needed.has('tab')) void rt.ensureTabLoaded?.();
 	if (needed.has('calendar')) void rt.ensureCalendarLoaded?.();
+	if (needed.has('condition')) void rt.ensureConditionFieldLoaded?.();
 	if (needed.has('extra')) void rt.ensureExtraFieldsLoaded?.();
 }
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Combobox as BaseCombobox } from '@base-ui/react/combobox';
 import { t } from '../../lib/i18n';
 import { cn, DynamicIcon } from '../../lib/utils';
@@ -20,6 +20,7 @@ export interface ComboboxProps {
 	placeholder?: string;
 	emptyText?: string;
 	clearable?: boolean;
+	allowCustom?: boolean;
 	disabled?: boolean;
 	readOnly?: boolean;
 	id?: string;
@@ -39,6 +40,7 @@ export function Combobox({
 	placeholder,
 	emptyText,
 	clearable = false,
+	allowCustom = false,
 	disabled = false,
 	readOnly = false,
 	id,
@@ -51,18 +53,48 @@ export function Combobox({
 	popupClassName,
 }: ComboboxProps): React.ReactElement {
 	const [anchorEl, setAnchorEl] = useState<HTMLDivElement | null>(null);
+	const [inputQuery, setInputQuery] = useState<string>('');
 	const { contains } = BaseCombobox.useFilter();
-	const selectedOption = options.find((opt) => opt.value === value) ?? null;
+	const effectiveOptions = useMemo(() => {
+		const next = [...options];
+		const seen = new Set(next.map((opt) => opt.value));
+		const currentVal = typeof value === 'string' ? value.trim() : '';
+		if (allowCustom && currentVal && !seen.has(currentVal)) {
+			next.push({
+				value: currentVal,
+				label: currentVal,
+			});
+			seen.add(currentVal);
+		}
+		const trimmed = inputQuery.trim();
+		if (allowCustom && trimmed && !seen.has(trimmed)) {
+			const hasExact = next.some(
+				(opt) => opt.value === trimmed || opt.label.toLowerCase() === trimmed.toLowerCase(),
+			);
+			if (!hasExact) {
+				next.push({
+					value: trimmed,
+					label: trimmed,
+					description: t('combobox.customValueHint', 'Use custom value'),
+				});
+			}
+		}
+		return next;
+	}, [allowCustom, inputQuery, options, value]);
+	const selectedOption = effectiveOptions.find((opt) => opt.value === value) ?? null;
 
 	return (
 		<BaseCombobox.Root<ComboboxOption>
-			items={options}
+			items={effectiveOptions}
 			value={selectedOption}
 			disabled={disabled || readOnly}
 			name={name}
 			isItemEqualToValue={(item, current) => item.value === current.value}
 			itemToStringLabel={(item) => item.label}
 			itemToStringValue={(item) => item.value}
+			onInputValueChange={(nextInput) => {
+				setInputQuery(nextInput);
+			}}
 			filter={(item, query) => {
 				const q = query.trim();
 				if (!q) {
@@ -98,17 +130,17 @@ export function Combobox({
 					)}
 				/>
 				<div className="absolute right-1.5 flex items-center gap-0.5">
-					{clearable && selectedOption && !disabled ? (
+					{clearable && selectedOption && !disabled && !readOnly ? (
 						<BaseCombobox.Clear
 							aria-label={t('common.clear', 'Clear')}
-							className="inline-flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+							className="inline-flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
 						>
 							<DynamicIcon name="x" className="size-3.5" aria-hidden="true" />
 						</BaseCombobox.Clear>
 					) : null}
 					<BaseCombobox.Trigger
 						aria-label={t('common.toggleOptions', 'Toggle options')}
-						className="inline-flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+						className="inline-flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
 					>
 						<DynamicIcon name="chevron-down" className="size-3.5" aria-hidden="true" />
 					</BaseCombobox.Trigger>

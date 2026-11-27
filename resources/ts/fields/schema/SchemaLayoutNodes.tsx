@@ -211,8 +211,9 @@ export async function copyMarkupText(text: string): Promise<boolean> {
 	if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
 		return false;
 	}
+	let textarea: HTMLTextAreaElement | null = null;
 	try {
-		const textarea = document.createElement('textarea');
+		textarea = document.createElement('textarea');
 		textarea.value = text;
 		textarea.setAttribute('readonly', '');
 		textarea.style.position = 'fixed';
@@ -221,10 +222,11 @@ export async function copyMarkupText(text: string): Promise<boolean> {
 		document.body?.appendChild(textarea);
 		textarea.select?.();
 		const copied = typeof document.execCommand === 'function' ? document.execCommand('copy') : false;
-		textarea.remove?.();
 		return Boolean(copied);
 	} catch {
 		return false;
+	} finally {
+		textarea?.remove?.();
 	}
 }
 
@@ -447,6 +449,14 @@ export function SchemaMarkupNode({
 		}
 		void copyMarkupText(copyVal).then((copied) => {
 			if (!copied) {
+				setCopyAnnouncement(t('common.unavailable', 'Copy unavailable'));
+				if (announceTimerRef.current !== null) {
+					clearTimeout(announceTimerRef.current);
+				}
+				announceTimerRef.current = setTimeout(() => {
+					setCopyAnnouncement('');
+					announceTimerRef.current = null;
+				}, 1500);
 				return;
 			}
 			const copiedLabel = copyTrigger.getAttribute('data-rw-copied-label') || t('common.copied', 'Copied');
@@ -480,7 +490,7 @@ export function SchemaMarkupNode({
 		if (safeAsyncUrl && asyncState.status === 'loading') {
 			return (
 				<div className="flex items-center gap-2 py-2 text-xs text-muted-foreground" role="status">
-					<DynamicIcon name="loader-2" className="size-3.5 animate-spin shrink-0" aria-hidden="true" />
+					<DynamicIcon name="loader-2" className="size-3.5 motion-safe:animate-spin shrink-0" aria-hidden="true" />
 					<span>{t('common.loading', 'Loading...')}</span>
 				</div>
 			);

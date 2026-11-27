@@ -1,4 +1,4 @@
-@layer theme, base, components, utilities;
+@layer properties, theme, base, components, utilities;
 @import "tailwindcss/theme.css" reference;
 @import "./theme-inline.css";
 

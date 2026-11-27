@@ -447,7 +447,7 @@ export function CommandPaletteContent({
 						data-rw-command-searching=""
 						className="inline-flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground"
 					>
-						<DynamicIcon name="loader-2" className="size-3.5 animate-spin" aria-hidden="true" />
+						<DynamicIcon name="loader-2" className="size-3.5 motion-safe:animate-spin" aria-hidden="true" />
 						<span className="sr-only sm:not-sr-only">
 							{t('shell.searchingRecords', 'Searching records...')}
 						</span>
@@ -457,7 +457,7 @@ export function CommandPaletteContent({
 					type="button"
 					onClick={() => onOpenChange(false)}
 					aria-label={t('common.close', 'Close')}
-					className="inline-flex min-h-6 shrink-0 items-center rounded border border-border px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground hover:bg-muted cursor-pointer"
+					className="inline-flex min-h-6 shrink-0 items-center rounded border border-border px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
 				>
 					ESC
 				</button>
@@ -492,7 +492,7 @@ export function CommandPaletteContent({
 									const isSelected = flatIndex === clampedActiveIndex;
 									const optionId = `${commandListId}-opt-${item.id}`;
 									const itemCls = cn(
-										'flex w-full items-center gap-3 rounded-md px-2.5 py-2 transition-colors cursor-pointer',
+										'flex w-full items-center gap-3 rounded-md px-2.5 py-2 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
 										isSelected ? 'bg-muted text-foreground' : 'hover:bg-muted/60'
 									);
 									const bindOptionRef = (el: HTMLElement | null): void => {
@@ -538,6 +538,7 @@ export function CommandPaletteContent({
 												ref={bindOptionRef}
 												id={optionId}
 												role="option"
+												tabIndex={-1}
 												aria-selected={isSelected}
 												type="button"
 												onMouseEnter={() => onActiveIndexChange(flatIndex)}
@@ -560,6 +561,7 @@ export function CommandPaletteContent({
 												ref={bindOptionRef}
 												id={optionId}
 												role="option"
+												tabIndex={-1}
 												aria-selected={isSelected}
 												href={safeItemHref}
 												onMouseEnter={() => onActiveIndexChange(flatIndex)}
@@ -577,6 +579,7 @@ export function CommandPaletteContent({
 											ref={bindOptionRef}
 											id={optionId}
 											role="option"
+											tabIndex={-1}
 											aria-selected={isSelected}
 											href={safeItemHref || '#'}
 											onMouseEnter={() => onActiveIndexChange(flatIndex)}

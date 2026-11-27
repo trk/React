@@ -22,7 +22,8 @@ export interface WorkspaceLauncherPageProps {
 }
 
 const runtime = getReactWorkspaceRuntime();
-const { React, Inertia, UI, Hooks, Layout, Utils, cn, DynamicIcon, registerPages, useTranslations } = runtime;
+const { React, Inertia, UI, Hooks, Layout, Utils, registerPages, useTranslations } = runtime;
+const { cn, DynamicIcon } = Utils;
 const { sanitizeHref, withWorkspaceShellUrl } = Utils;
 const { fetchGatewayJson } = Hooks;
 const { useEffect, useMemo, useRef, useState } = React;

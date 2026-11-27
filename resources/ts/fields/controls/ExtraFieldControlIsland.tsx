@@ -9,7 +9,6 @@ import {
 import type { ReactInputfieldProps, SchemaFieldDefinition } from '../types';
 import { ColorFieldControl } from './ColorField';
 import { ComboboxFieldControl } from './ComboboxField';
-import { ConditionBuilderFieldControl } from './ConditionBuilderField';
 import { MarkdownFieldControl } from './MarkdownField';
 import { OtpFieldControl } from './OtpField';
 import { PasswordFieldControl } from './PasswordField';
@@ -48,8 +47,13 @@ function renderExtraControl(
 			return <PasswordFieldControl {...controlProps} />;
 		case 'markdown':
 			return <MarkdownFieldControl {...controlProps} />;
-		case 'condition_builder':
-			return <ConditionBuilderFieldControl {...controlProps} />;
+		case 'condition_builder': {
+			const RuntimeCondition =
+				typeof window !== 'undefined'
+					? window.ReactWorkspaceRuntime?.Fields?.ConditionBuilderFieldControl
+					: undefined;
+			return RuntimeCondition ? <RuntimeCondition {...controlProps} /> : null;
+		}
 		default:
 			return null;
 	}

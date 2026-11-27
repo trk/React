@@ -112,7 +112,8 @@ const SCROLL_ALLOWLIST_SELECTOR =
 	'.overflow-x-auto, .overflow-x-scroll, [data-rw-viewport-table], [data-rw-scroll], pre, code';
 
 const runtime = getReactWorkspaceRuntime();
-const { React, UI, Layout, cn, DynamicIcon, sanitizeHref, registerPages } = runtime;
+const { React, UI, Layout, Utils, registerPages } = runtime;
+const { cn, DynamicIcon, sanitizeHref } = Utils;
 const { useCallback, useEffect, useMemo, useRef, useState } = React;
 const { Badge, Button, buttonVariants, Card, CardContent } = UI;
 const { AppShell } = Layout;

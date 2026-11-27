@@ -158,7 +158,7 @@ export const DataTableCanvas: React.FC<ViewportCanvasProps> = ({
 											type="button"
 											onClick={() => dispatch('sort', { field: colKey })}
 											className={cn(
-												'inline-flex items-center gap-1 uppercase tracking-wider hover:text-foreground cursor-pointer',
+												'inline-flex items-center gap-1 rounded uppercase tracking-wider hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer',
 												colDef.align === 'right' && 'ml-auto'
 											)}
 										>

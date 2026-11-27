@@ -30,6 +30,7 @@ export interface EditPresenceSnapshot {
 
 export interface UseEditPresenceOptions {
 	resourceKey?: string | null;
+	presenceToken?: string | null;
 	endpoint?: string | null;
 	enabled?: boolean;
 	pollIntervalMs?: number;
@@ -66,11 +67,13 @@ function resolveDefaultPresenceEndpoint(explicitEndpoint?: string | null): strin
 
 export function useEditPresence({
 	resourceKey,
+	presenceToken,
 	endpoint,
 	enabled = true,
 	pollIntervalMs,
 }: UseEditPresenceOptions): UseEditPresenceResult {
 	const normalizedKey = (resourceKey ?? '').trim();
+	const normalizedToken = (presenceToken ?? '').trim();
 	const isActive = Boolean(enabled && normalizedKey !== '' && typeof window !== 'undefined');
 
 	let sharedUserId = 0;
@@ -109,15 +112,19 @@ export function useEditPresence({
 			if (!isActive) {
 				return null;
 			}
+			const payload: Record<string, string> = {
+				action,
+				resourceKey: normalizedKey,
+				clientId: clientIdRef.current,
+			};
+			if (normalizedToken !== '') {
+				payload.presenceToken = normalizedToken;
+			}
 			const result = await fetchGatewayJson<{ ok?: boolean; presence?: EditPresenceSnapshot }>(
 				resolvedEndpoint,
 				{
 					method: 'POST',
-					payload: {
-						action,
-						resourceKey: normalizedKey,
-						clientId: clientIdRef.current,
-					},
+					payload,
 				}
 			);
 			if (!result.ok || !result.data?.presence) {
@@ -125,7 +132,7 @@ export function useEditPresence({
 			}
 			return result.data.presence;
 		},
-		[isActive, normalizedKey, resolvedEndpoint]
+		[isActive, normalizedKey, normalizedToken, resolvedEndpoint]
 	);
 
 	const applySnapshot = useCallback((snapshot: EditPresenceSnapshot | null) => {

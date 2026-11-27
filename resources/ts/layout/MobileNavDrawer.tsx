@@ -62,7 +62,7 @@ export function MobileNavDrawer({
 						type="button"
 						onClick={() => onOpenChange(false)}
 						aria-label={t('shell.closeNavigationMenu', 'Close navigation menu')}
-						className="inline-flex size-8 pointer-coarse:size-11 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+						className="inline-flex size-8 pointer-coarse:size-11 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
 					>
 						<DynamicIcon name="x" className="size-4" />
 					</button>
@@ -73,7 +73,7 @@ export function MobileNavDrawer({
 						<a
 							href={sanitizeHref(workspace?.adminUrl) || '/processwire/'}
 							data-rw-admin-return=""
-							className="inline-flex min-h-8 pointer-coarse:min-h-11 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-muted"
+							className="inline-flex min-h-8 pointer-coarse:min-h-11 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 						>
 							<DynamicIcon name="arrow-left" className="size-3.5" />
 							<span>{returnLabel}</span>
@@ -82,7 +82,7 @@ export function MobileNavDrawer({
 							<Link
 								href={sanitizeHref(workspace?.launcherUrl)}
 								onClick={() => onOpenChange(false)}
-								className="inline-flex min-h-8 pointer-coarse:min-h-11 items-center justify-center gap-1.5 rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-medium text-primary-ink hover:bg-primary/15"
+								className="inline-flex min-h-8 pointer-coarse:min-h-11 items-center justify-center gap-1.5 rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-medium text-primary-ink hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 							>
 								<DynamicIcon name="layout-grid" className="size-3.5" />
 								<span>{t('shell.workspace', 'Workspace')}</span>
@@ -99,7 +99,7 @@ export function MobileNavDrawer({
 								const itemKey = String(item.key ?? item.id ?? item.label);
 								const isActive = item.active ?? itemKey === resolvedActiveNav;
 								const cls = cn(
-									'flex w-full min-h-8 pointer-coarse:min-h-11 items-center justify-between rounded-md px-2.5 py-2 text-xs font-medium transition-colors',
+									'flex w-full min-h-8 pointer-coarse:min-h-11 items-center justify-between rounded-md px-2.5 py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
 									isActive
 										? 'bg-primary/12 text-primary-ink font-semibold'
 										: 'text-foreground hover:bg-muted'
@@ -109,6 +109,7 @@ export function MobileNavDrawer({
 										<button
 											key={itemKey}
 											type="button"
+											aria-current={isActive ? 'page' : undefined}
 											onClick={() => {
 												item.onClick?.();
 												onOpenChange(false);
@@ -133,6 +134,7 @@ export function MobileNavDrawer({
 										<Link
 											key={itemKey}
 											href={safeMobileHref}
+											aria-current={isActive ? 'page' : undefined}
 											onClick={() => onOpenChange(false)}
 											className={cls}
 										>
@@ -167,9 +169,10 @@ export function MobileNavDrawer({
 										{ws.component ? (
 											<Link
 												href={safeMobileWsUrl}
+												aria-current={isCurrent ? 'page' : undefined}
 												onClick={() => onOpenChange(false)}
 												className={cn(
-													'flex flex-1 min-h-8 pointer-coarse:min-h-11 items-center gap-2.5 rounded-md px-2.5 py-2 text-xs font-medium transition-colors min-w-0',
+													'flex flex-1 min-h-8 pointer-coarse:min-h-11 items-center gap-2.5 rounded-md px-2.5 py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-w-0',
 													isCurrent
 														? 'bg-primary/12 text-primary-ink font-semibold'
 														: 'text-foreground hover:bg-muted'
@@ -181,7 +184,8 @@ export function MobileNavDrawer({
 										) : (
 											<a
 												href={safeMobileWsUrl}
-												className="flex flex-1 min-h-8 pointer-coarse:min-h-11 items-center gap-2.5 rounded-md px-2.5 py-2 text-xs font-medium text-foreground hover:bg-muted min-w-0"
+												aria-current={isCurrent ? 'page' : undefined}
+												className="flex flex-1 min-h-8 pointer-coarse:min-h-11 items-center gap-2.5 rounded-md px-2.5 py-2 text-xs font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-w-0"
 											>
 												<DynamicIcon name={ws.icon} className="size-4 shrink-0 text-primary" />
 												<span className="truncate">{ws.title}</span>
@@ -196,7 +200,7 @@ export function MobileNavDrawer({
 													: t('launcher.pinWorkspace', { title: ws.title }, `Pin ${ws.title}`)
 											}
 											className={cn(
-												'inline-flex size-8 pointer-coarse:size-11 items-center justify-center rounded-md transition-colors cursor-pointer shrink-0',
+												'inline-flex size-8 pointer-coarse:size-11 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer shrink-0',
 												isFav ? 'text-warning' : 'text-muted-foreground/50 hover:text-foreground'
 											)}
 										>

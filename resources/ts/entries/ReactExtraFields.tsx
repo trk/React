@@ -1,6 +1,5 @@
 import { ColorFieldControl } from '../fields/controls/ColorField';
 import { ComboboxFieldControl } from '../fields/controls/ComboboxField';
-import { ConditionBuilderFieldControl } from '../fields/controls/ConditionBuilderField';
 import { ExtraFieldControlIsland } from '../fields/controls/ExtraFieldControlIsland';
 import { MarkdownFieldControl } from '../fields/controls/MarkdownField';
 import { OtpFieldControl } from '../fields/controls/OtpField';
@@ -24,7 +23,6 @@ runtime?.__provideFields?.({
 	OtpFieldControl,
 	PasswordFieldControl,
 	MarkdownFieldControl,
-	ConditionBuilderFieldControl,
 	ExtraFieldControlIsland,
 });
 
@@ -43,5 +41,4 @@ export {
 	OtpFieldControl,
 	PasswordFieldControl,
 	MarkdownFieldControl,
-	ConditionBuilderFieldControl,
 };

@@ -57,6 +57,11 @@ export {
 export { extractSchemaInitialValues };
 export { SchemaField };
 export { FieldControlIsland };
+export type {
+	ConditionCustomOperatorFn,
+	EvaluateConditionOptions,
+	FormatConditionSummaryLabels,
+} from './conditionEngine';
 
 export const SchemaForm: React.FC<SchemaFormProps> = (props) => {
 	const {
@@ -294,6 +299,9 @@ export const SchemaForm: React.FC<SchemaFormProps> = (props) => {
 			: undefined;
 	const resolvedPresenceKey = !schema.isFragment
 		? (props.presenceKey ?? schema.presenceKey ?? null)
+		: null;
+	const resolvedPresenceToken = !schema.isFragment
+		? (props.presenceToken ?? schema.presenceToken ?? null)
 		: null;
 	const resolvedPresenceEndpoint = !schema.isFragment
 		? (props.presenceEndpoint ?? schema.presenceEndpoint ?? null)
@@ -553,6 +561,7 @@ export const SchemaForm: React.FC<SchemaFormProps> = (props) => {
 			{resolvedPresenceKey && RuntimeEditPresenceBanner ? (
 				<RuntimeEditPresenceBanner
 					resourceKey={resolvedPresenceKey}
+					presenceToken={resolvedPresenceToken}
 					endpoint={resolvedPresenceEndpoint}
 					dirty={Boolean(isDirty)}
 				/>

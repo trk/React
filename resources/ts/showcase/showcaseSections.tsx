@@ -2,7 +2,8 @@ import { getReactWorkspaceRuntime } from '../runtime';
 import type { ShowcaseFixtures } from './showcaseFixtures';
 
 const runtime = getReactWorkspaceRuntime();
-const { React, UI, Fields, Viewports, cn, DynamicIcon } = runtime;
+const { React, UI, Fields, Viewports, Utils } = runtime;
+const { cn, DynamicIcon } = Utils;
 const { useState } = React;
 const {
 	Alert,
@@ -305,7 +306,7 @@ export function LinksShowcaseSection({ fixtures }: { fixtures: ShowcaseFixtures 
 				id="rw-sec-links"
 				icon="link-2"
 				title="LinkField Matrix (All Types · Empty & Populated)"
-				subtitle="URL, Page, Entry, Image, Video, File, Email, Phone, Anchor, Polymorphic switcher, read-only badges, and inline option chips."
+				subtitle="URL, Page, Record, Image, Video, File, Email, Phone, Anchor, Polymorphic switcher, read-only badges, and inline option chips."
 			/>
 
 			<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -323,11 +324,11 @@ export function LinksShowcaseSection({ fixtures }: { fixtures: ShowcaseFixtures 
 					<SchemaForm schema={s.pagePopulated} />
 				</CaseCard>
 
-				<CaseCard caseId="link-entry-empty" title="Entry Link · Empty" badge="type=entry · empty">
-					<SchemaForm schema={s.entryEmpty} />
+				<CaseCard caseId="link-record-empty" title="Custom Record Link · Empty" badge="type=record · empty">
+					<SchemaForm schema={s.recordEmpty} />
 				</CaseCard>
-				<CaseCard caseId="link-entry-populated" title="Entry Link · Populated" badge="type=entry · full">
-					<SchemaForm schema={s.entryPopulated} />
+				<CaseCard caseId="link-record-populated" title="Custom Record Link · Populated" badge="type=record · full">
+					<SchemaForm schema={s.recordPopulated} />
 				</CaseCard>
 
 				<CaseCard caseId="link-image-empty" title="Media Link: Image · Empty" badge="type=image · empty">

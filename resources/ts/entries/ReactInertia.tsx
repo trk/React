@@ -44,11 +44,22 @@ import * as UI from '../ui';
 import * as Portal from '../portal/PortalRoot';
 import * as Hooks from '../hooks';
 import type * as LayoutType from '../layout/AppShell';
+import type * as ShellRegistryType from '../layout/shellRegistry';
+import type { ShellLayoutId } from '../layout/types';
+import type { ModuleSwitcher as ModuleSwitcherType } from '../layout/ModuleSwitcher';
+import type { SidebarShellLayout as SidebarShellLayoutType } from '../layout/SidebarShellLayout';
+import type { TopbarShellLayout as TopbarShellLayoutType } from '../layout/TopbarShellLayout';
+import type { UserAccountMenu as UserAccountMenuType } from '../layout/UserAccountMenu';
+import type { useShellLayout as useShellLayoutType } from '../layout/useShellLayout';
 import type * as ViewportsType from '../viewports/DataViewport';
 import type { DataTableCanvas as DataTableCanvasType } from '../viewports/DataTableCanvas';
 import type { DataCardsCanvas as DataCardsCanvasType } from '../viewports/DataCardsCanvas';
 import type * as FieldsType from '../fields/SchemaForm';
-import { evaluateShowIfCondition, navigateTablistByKey } from '../fields/schemaRuntimeHelpers';
+import {
+	evaluateShowIfCondition,
+	navigateTablistByKey,
+	resolveScopedFieldValue,
+} from '../fields/schemaRuntimeHelpers';
 import type * as MediaUtilsType from '../fields/mediaUtils';
 import type { FileFieldControl as FileFieldControlType } from '../fields/controls/FileField';
 import type { IconFieldControl as IconFieldControlType } from '../fields/controls/IconField';
@@ -124,23 +135,45 @@ const InertiaReact = {
 		requestOptions?: Parameters<typeof InertiaReactModule.usePoll>[1],
 		options?: Parameters<typeof InertiaReactModule.usePoll>[2]
 	) => {
-		const adapter = getInertiaAdapter();
-		if (adapter?.usePoll) {
-			return adapter.usePoll(interval, requestOptions, options);
+		const initialHookRef = React.useRef(getInertiaAdapter()?.usePoll ?? null);
+		React.useEffect(() => {
+			if (!initialHookRef.current && !getInertiaAdapter()) {
+				void ensureLayoutLoaded();
+			}
+		}, []);
+		if (initialHookRef.current) {
+			return initialHookRef.current(interval, requestOptions, options);
 		}
 		return { start: () => {}, stop: () => {} };
 	}) as typeof InertiaReactModule.usePoll,
 	usePrefetch: ((options?: Parameters<typeof InertiaReactModule.usePrefetch>[0]) => {
-		const adapter = getInertiaAdapter();
-		if (adapter?.usePrefetch) {
-			return adapter.usePrefetch(options);
+		const initialHookRef = React.useRef(getInertiaAdapter()?.usePrefetch ?? null);
+		React.useEffect(() => {
+			if (!initialHookRef.current && !getInertiaAdapter()) {
+				void ensureLayoutLoaded();
+			}
+		}, []);
+		if (initialHookRef.current) {
+			return initialHookRef.current(options);
 		}
-		return { lastUpdatedAt: null, isPrefetching: false, isPrefetched: false, flush: () => {} };
+		return {
+			lastUpdatedAt: null,
+			isPrefetching: false,
+			isPrefetched: false,
+			flush: () => {
+				void ensureLayoutLoaded();
+			},
+		};
 	}) as typeof InertiaReactModule.usePrefetch,
 	useRemember: (<State,>(initialState: State, key?: string) => {
-		const adapter = getInertiaAdapter();
-		if (adapter?.useRemember) {
-			return adapter.useRemember(initialState, key);
+		const initialHookRef = React.useRef(getInertiaAdapter()?.useRemember ?? null);
+		React.useEffect(() => {
+			if (!initialHookRef.current && !getInertiaAdapter()) {
+				void ensureLayoutLoaded();
+			}
+		}, []);
+		if (initialHookRef.current) {
+			return initialHookRef.current(initialState, key);
 		}
 		return React.useState<State>(initialState);
 	}) as typeof InertiaReactModule.useRemember,
@@ -226,25 +259,93 @@ function loadRuntimeScriptOnce(src: string): Promise<void> {
 	const existingScript = Array.from(document.querySelectorAll<HTMLScriptElement>('script[src]')).find(
 		(el) => ((el.getAttribute('src') || '').split('?')[0] || '') === cleanSrc
 	);
-	if (existingScript && injectedAssetUrls.has(cleanSrc)) {
+	if (
+		existingScript &&
+		existingScript.dataset?.rwFailed !== '1' &&
+		(existingScript.dataset?.rwLoaded === '1' ||
+			injectedAssetUrls.has(cleanSrc) ||
+			document.readyState === 'complete')
+	) {
+		if (existingScript.dataset) {
+			existingScript.dataset.rwLoaded = '1';
+		}
+		injectedAssetUrls.add(cleanSrc);
 		return Promise.resolve();
 	}
 
 	const promise = new Promise<void>((resolve) => {
-		if (existingScript) {
-			injectedAssetUrls.add(cleanSrc);
-			existingScript.addEventListener('load', () => resolve(), { once: true });
-			existingScript.addEventListener('error', () => resolve(), { once: true });
-			window.setTimeout(() => resolve(), 50);
-			return;
+		const reuseExisting = Boolean(existingScript && existingScript.dataset?.rwFailed !== '1');
+		const targetScript =
+			reuseExisting && existingScript ? existingScript : document.createElement('script');
+		if (existingScript && existingScript.dataset?.rwFailed === '1') {
+			existingScript.remove?.();
 		}
+		let settled = false;
+		let safetyTimer: ReturnType<typeof setTimeout> | null = null;
+		const cleanupListeners = () => {
+			if (safetyTimer !== null) {
+				clearTimeout(safetyTimer);
+				safetyTimer = null;
+			}
+			targetScript.removeEventListener?.('load', handleLoad);
+			targetScript.removeEventListener?.('error', handleError);
+		};
+		const handleLoad = () => {
+			if (settled) {
+				return;
+			}
+			settled = true;
+			cleanupListeners();
+			if (targetScript.dataset) {
+				targetScript.dataset.rwLoaded = '1';
+				delete targetScript.dataset.rwFailed;
+			}
+			resolve();
+		};
+		const handleError = () => {
+			if (settled) {
+				return;
+			}
+			settled = true;
+			cleanupListeners();
+			runtimeScriptPromises.delete(cleanSrc);
+			injectedAssetUrls.delete(cleanSrc);
+			if (reuseExisting) {
+				if (targetScript.dataset) {
+					targetScript.dataset.rwFailed = '1';
+				}
+			} else {
+				targetScript.remove?.();
+			}
+			resolve();
+		};
+
 		injectedAssetUrls.add(cleanSrc);
-		const script = document.createElement('script');
-		script.type = 'module';
-		script.src = safeSrc;
-		script.addEventListener('load', () => resolve(), { once: true });
-		script.addEventListener('error', () => resolve(), { once: true });
-		document.head.appendChild(script);
+		if (typeof targetScript.addEventListener === 'function') {
+			targetScript.addEventListener('load', handleLoad, { once: true });
+			targetScript.addEventListener('error', handleError, { once: true });
+		}
+
+		if (reuseExisting) {
+			safetyTimer = setTimeout(() => {
+				if (settled) {
+					return;
+				}
+				settled = true;
+				cleanupListeners();
+				if (targetScript.dataset?.rwFailed === '1') {
+					runtimeScriptPromises.delete(cleanSrc);
+					injectedAssetUrls.delete(cleanSrc);
+				} else if (targetScript.dataset) {
+					targetScript.dataset.rwLoaded = '1';
+				}
+				resolve();
+			}, 4000);
+		} else {
+			targetScript.type = 'module';
+			targetScript.src = safeSrc;
+			document.head?.appendChild?.(targetScript);
+		}
 	});
 	runtimeScriptPromises.set(cleanSrc, promise);
 	return promise;
@@ -256,20 +357,57 @@ function loadRuntimeStyleOnce(src: string): void {
 		return;
 	}
 	const cleanSrc = safeSrc.split('?')[0] || safeSrc;
+	const existingLink = Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')).find(
+		(el) => ((el.getAttribute('href') || '').split('?')[0] || '') === cleanSrc
+	);
 	if (
-		injectedAssetUrls.has(cleanSrc) ||
-		Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')).some(
-			(el) => ((el.getAttribute('href') || '').split('?')[0] || '') === cleanSrc
-		)
+		existingLink &&
+		existingLink.dataset?.rwFailed !== '1' &&
+		(existingLink.dataset?.rwLoaded === '1' ||
+			injectedAssetUrls.has(cleanSrc) ||
+			document.readyState === 'complete')
 	) {
+		if (existingLink.dataset) {
+			existingLink.dataset.rwLoaded = '1';
+		}
 		injectedAssetUrls.add(cleanSrc);
 		return;
 	}
+	if (existingLink && existingLink.dataset?.rwFailed === '1') {
+		existingLink.remove?.();
+	} else if (!existingLink && injectedAssetUrls.has(cleanSrc)) {
+		return;
+	}
+
+	const reuseExisting = Boolean(existingLink && existingLink.dataset?.rwFailed !== '1');
+	const targetLink = reuseExisting && existingLink ? existingLink : document.createElement('link');
+	const handleLoad = () => {
+		if (targetLink.dataset) {
+			targetLink.dataset.rwLoaded = '1';
+			delete targetLink.dataset.rwFailed;
+		}
+	};
+	const handleError = () => {
+		injectedAssetUrls.delete(cleanSrc);
+		if (reuseExisting) {
+			if (targetLink.dataset) {
+				targetLink.dataset.rwFailed = '1';
+			}
+		} else {
+			targetLink.remove?.();
+		}
+	};
+
 	injectedAssetUrls.add(cleanSrc);
-	const link = document.createElement('link');
-	link.rel = 'stylesheet';
-	link.href = safeSrc;
-	document.head.appendChild(link);
+	if (typeof targetLink.addEventListener === 'function') {
+		targetLink.addEventListener('load', handleLoad, { once: true });
+		targetLink.addEventListener('error', handleError, { once: true });
+	}
+	if (!reuseExisting) {
+		targetLink.rel = 'stylesheet';
+		targetLink.href = safeSrc;
+		document.head?.appendChild?.(targetLink);
+	}
 }
 
 function preloadRuntimeScript(src: string): void {
@@ -293,7 +431,7 @@ function preloadRuntimeScript(src: string): void {
 	link.rel = 'preload';
 	link.as = 'script';
 	link.href = safeSrc;
-	document.head.appendChild(link);
+	document.head?.appendChild?.(link);
 }
 
 function resolveRuntimeAssetTarget(fileNameOrUrl: string): string {
@@ -326,82 +464,135 @@ export function preloadRuntimeScriptAsset(fileNameOrUrl: string): void {
  * Lazy On-Demand Layout Subsystem (`dist/ReactLayout.js`)
  * ========================================================================== */
 
-let loadedLayoutModule: Partial<typeof LayoutType> | null = null;
-const layoutLoadListeners = new Set<() => void>();
+type ExtendedLayoutModule = typeof LayoutType & {
+	registerShellLayout: typeof ShellRegistryType.registerShellLayout;
+	getShellLayout: typeof ShellRegistryType.getShellLayout;
+	listShellLayouts: typeof ShellRegistryType.listShellLayouts;
+	resolveShellLayoutDefinition: typeof ShellRegistryType.resolveShellLayoutDefinition;
+	useShellLayout: typeof useShellLayoutType;
+	ModuleSwitcher: typeof ModuleSwitcherType;
+	UserAccountMenu: typeof UserAccountMenuType;
+	TopbarShellLayout: typeof TopbarShellLayoutType;
+	SidebarShellLayout: typeof SidebarShellLayoutType;
+};
 
-export function ensureLayoutLoaded(): Promise<void> {
-	if (loadedLayoutModule) {
-		return Promise.resolve();
-	}
-	return loadRuntimeScriptOnce(resolveSiblingRuntimeAssetUrl('ReactLayout.js'));
+function ensureSiblingScript(isLoaded: unknown, file: string): Promise<void> {
+	return isLoaded
+		? Promise.resolve()
+		: loadRuntimeScriptOnce(resolveSiblingRuntimeAssetUrl(file));
 }
 
-function provideLayout(mod: typeof LayoutType): void {
-	loadedLayoutModule = mod;
-	Object.assign(LayoutProxy, {
-		AppShell: mod.AppShell,
-		EditPresenceBanner: mod.EditPresenceBanner,
-		RecordHeader: mod.RecordHeader,
-		postWorkspacePreferenceAction: mod.postWorkspacePreferenceAction,
-		renderNoticeMarkup: mod.renderNoticeMarkup,
-	});
-	layoutLoadListeners.forEach((fn) => fn());
-}
-
-function createLazyLayoutComponent<K extends 'AppShell' | 'EditPresenceBanner' | 'RecordHeader'>(
-	exportName: K,
-	fallbackMode: 'shell' | 'none'
-): (typeof LayoutType)[K] {
-	const LazyLayoutWrapper: React.FC<LazyFallbackWrapperProps> = (props) => {
+function createLazyRuntimeComponent<P extends Record<string, unknown>>(
+	getResolved: () => React.ComponentType<P> | undefined,
+	listeners: Set<() => void>,
+	load: () => void,
+	displayName: string,
+	chunkAttr: string,
+	fallback: 'none' | 'shell' | string
+): React.FC<P> {
+	const LazyRuntimeWrapper: React.FC<P> = (props) => {
 		const [, setTick] = React.useState(0);
-		const Resolved = loadedLayoutModule?.[exportName] as
-			| React.ComponentType<LazyFallbackWrapperProps>
-			| undefined;
+		const Resolved = getResolved();
 
 		React.useEffect(() => {
-			if (loadedLayoutModule?.[exportName]) {
+			if (getResolved()) {
 				if (!Resolved) {
 					setTick((t) => t + 1);
 				}
 				return;
 			}
 			const onReady = () => {
-				if (!loadedLayoutModule?.[exportName]) {
+				if (!getResolved()) {
 					return;
 				}
-				layoutLoadListeners.delete(onReady);
+				listeners.delete(onReady);
 				setTick((t) => t + 1);
 			};
-			layoutLoadListeners.add(onReady);
-			void ensureLayoutLoaded();
+			listeners.add(onReady);
+			load();
 			return () => {
-				layoutLoadListeners.delete(onReady);
+				listeners.delete(onReady);
 			};
 		}, []);
 
 		if (Resolved) {
 			return React.createElement(Resolved, props);
 		}
-		if (fallbackMode === 'none') {
+		if (fallback === 'none') {
 			return null;
 		}
-		return React.createElement(
-			'div',
-			{
-				className: 'min-h-screen bg-background text-foreground',
-				'data-rw-lazy-chunk': `Layout.${exportName}`,
-			},
-			props?.children ?? null
-		);
+		if (fallback === 'shell') {
+			return React.createElement(
+				'div',
+				{
+					className: 'min-h-screen bg-background text-foreground',
+					'data-rw-lazy-chunk': chunkAttr,
+				},
+				(props as LazyFallbackWrapperProps)?.children ?? null
+			);
+		}
+		return React.createElement('div', {
+			className: fallback,
+			'data-rw-lazy-chunk': chunkAttr,
+		});
 	};
-	LazyLayoutWrapper.displayName = `LazyLayout(${exportName})`;
-	return LazyLayoutWrapper as unknown as (typeof LayoutType)[K];
+	LazyRuntimeWrapper.displayName = displayName;
+	return LazyRuntimeWrapper;
 }
 
-const LayoutProxy: typeof LayoutType = {
+let loadedLayoutModule: Partial<ExtendedLayoutModule> | null = null;
+const layoutLoadListeners = new Set<() => void>();
+const pendingShellLayouts: ShellRegistryType.ShellLayoutDefinition[] = [];
+
+export function ensureLayoutLoaded(): Promise<void> {
+	return ensureSiblingScript(loadedLayoutModule, 'ReactLayout.js');
+}
+
+function provideLayout(mod: Partial<ExtendedLayoutModule>): void {
+	loadedLayoutModule = { ...(loadedLayoutModule || {}), ...mod };
+	if (typeof mod.registerShellLayout === 'function' && pendingShellLayouts.length > 0) {
+		const queued = pendingShellLayouts.splice(0, pendingShellLayouts.length);
+		for (const def of queued) {
+			mod.registerShellLayout(def);
+		}
+	}
+	Object.assign(LayoutProxy, loadedLayoutModule);
+	layoutLoadListeners.forEach((fn) => fn());
+}
+
+function createLazyLayoutComponent<
+	K extends
+		| 'AppShell'
+		| 'EditPresenceBanner'
+		| 'RecordHeader'
+		| 'ModuleSwitcher'
+		| 'UserAccountMenu'
+		| 'TopbarShellLayout'
+		| 'SidebarShellLayout'
+>(
+	exportName: K,
+	fallbackMode: 'shell' | 'none'
+): ExtendedLayoutModule[K] {
+	return createLazyRuntimeComponent(
+		() => loadedLayoutModule?.[exportName] as React.ComponentType<LazyFallbackWrapperProps> | undefined,
+		layoutLoadListeners,
+		() => {
+			void ensureLayoutLoaded();
+		},
+		`LazyLayout(${exportName})`,
+		`Layout.${exportName}`,
+		fallbackMode
+	) as unknown as ExtendedLayoutModule[K];
+}
+
+const LayoutProxy: ExtendedLayoutModule = {
 	AppShell: createLazyLayoutComponent('AppShell', 'shell'),
 	EditPresenceBanner: createLazyLayoutComponent('EditPresenceBanner', 'none'),
 	RecordHeader: createLazyLayoutComponent('RecordHeader', 'none'),
+	ModuleSwitcher: createLazyLayoutComponent('ModuleSwitcher', 'none'),
+	UserAccountMenu: createLazyLayoutComponent('UserAccountMenu', 'none'),
+	TopbarShellLayout: createLazyLayoutComponent('TopbarShellLayout', 'shell'),
+	SidebarShellLayout: createLazyLayoutComponent('SidebarShellLayout', 'shell'),
 	postWorkspacePreferenceAction: async (endpoint: string, payload: Record<string, unknown>) => {
 		await ensureLayoutLoaded();
 		if (loadedLayoutModule?.postWorkspacePreferenceAction) {
@@ -417,6 +608,124 @@ const LayoutProxy: typeof LayoutType = {
 		return raw;
 	},
 	useEditPresence: Hooks.useEditPresence,
+	registerShellLayout: (definition: ShellRegistryType.ShellLayoutDefinition) => {
+		if (loadedLayoutModule?.registerShellLayout) {
+			loadedLayoutModule.registerShellLayout(definition);
+			return;
+		}
+		pendingShellLayouts.push(definition);
+		void ensureLayoutLoaded();
+	},
+	getShellLayout: (id?: string | null) => loadedLayoutModule?.getShellLayout?.(id),
+	listShellLayouts: () => loadedLayoutModule?.listShellLayouts?.() ?? [],
+	resolveShellLayoutDefinition: (preferredId?: string | null, fallbackId?: string) =>
+		loadedLayoutModule?.resolveShellLayoutDefinition?.(preferredId, fallbackId),
+	useShellLayout: ((options?: Parameters<typeof useShellLayoutType>[0]) => {
+		const initialHookRef = React.useRef(loadedLayoutModule?.useShellLayout ?? null);
+		const readDomLayout = (): ShellLayoutId => {
+			const attr =
+				typeof document !== 'undefined'
+					? document.documentElement.dataset.rwShellLayout ||
+						document.querySelector('[data-rw-shell-layout]')?.getAttribute('data-rw-shell-layout') ||
+						''
+					: '';
+			return attr === 'sidebar' ? 'sidebar' : 'topbar';
+		};
+		const [fallbackState, setFallbackState] = React.useState<{
+			shellLayout: ShellLayoutId;
+			userShellLayout: ShellLayoutId | '';
+			siteDefaultShellLayout: ShellLayoutId;
+			sidebarCollapsed: boolean;
+			layoutPending: boolean;
+		}>(() => {
+			const siteDefault: ShellLayoutId =
+				options?.siteDefaultLayout === 'sidebar' ? 'sidebar' : 'topbar';
+			const initial: ShellLayoutId =
+				options?.initialLayout === 'sidebar' || options?.initialLayout === 'topbar'
+					? options.initialLayout
+					: readDomLayout() || siteDefault;
+			const userPref: ShellLayoutId | '' =
+				options?.initialUserLayout === 'sidebar' || options?.initialUserLayout === 'topbar'
+					? options.initialUserLayout
+					: '';
+			return {
+				shellLayout: initial,
+				userShellLayout: userPref,
+				siteDefaultShellLayout: siteDefault,
+				sidebarCollapsed: Boolean(options?.initialSidebarCollapsed),
+				layoutPending: false,
+			};
+		});
+
+		React.useEffect(() => {
+			if (initialHookRef.current) {
+				return;
+			}
+			if (!loadedLayoutModule) {
+				void ensureLayoutLoaded();
+			}
+			const syncFromWindow = () => {
+				setFallbackState((prev) => ({
+					...prev,
+					shellLayout: readDomLayout(),
+				}));
+			};
+			if (typeof window !== 'undefined') {
+				window.addEventListener('rw:shell-layout-changed', syncFromWindow);
+			}
+			return () => {
+				if (typeof window !== 'undefined') {
+					window.removeEventListener('rw:shell-layout-changed', syncFromWindow);
+				}
+			};
+		}, []);
+
+		if (initialHookRef.current) {
+			return initialHookRef.current(options);
+		}
+
+		const persistAction = async (payload: Record<string, unknown>): Promise<boolean> => {
+			setFallbackState((prev) => ({ ...prev, layoutPending: true }));
+			try {
+				await ensureLayoutLoaded();
+				if (loadedLayoutModule?.postWorkspacePreferenceAction && options?.syncToServer !== false) {
+					const res = await loadedLayoutModule.postWorkspacePreferenceAction(
+						options?.prefsEndpoint || '/_react/workspace-prefs',
+						payload
+					);
+					return Boolean(res);
+				}
+				return true;
+			} finally {
+				setFallbackState((prev) => ({ ...prev, layoutPending: false }));
+			}
+		};
+
+		return {
+			...fallbackState,
+			setShellLayout: async (next: ShellLayoutId | '' | 'default') => {
+				const resolvedNext = next === 'default' || next === '' ? fallbackState.siteDefaultShellLayout : next;
+				setFallbackState((prev) => ({
+					...prev,
+					shellLayout: resolvedNext,
+					userShellLayout: next === 'default' || next === '' ? '' : resolvedNext,
+				}));
+				return persistAction({
+					action: 'set_shell_layout',
+					shellLayout: next === 'default' ? '' : next,
+				});
+			},
+			setSidebarCollapsed: async (collapsed: boolean) => {
+				setFallbackState((prev) => ({ ...prev, sidebarCollapsed: collapsed }));
+				return persistAction({ action: 'set_sidebar_collapsed', sidebarCollapsed: collapsed });
+			},
+			toggleSidebarCollapsed: async () => {
+				const next = !fallbackState.sidebarCollapsed;
+				setFallbackState((prev) => ({ ...prev, sidebarCollapsed: next }));
+				return persistAction({ action: 'set_sidebar_collapsed', sidebarCollapsed: next });
+			},
+		};
+	}) as typeof useShellLayoutType,
 };
 
 /* ============================================================================
@@ -437,10 +746,7 @@ const VIEWPORT_MODE_SCRIPTS: Record<string, string> = {
 };
 
 export function ensureViewportsLoaded(): Promise<void> {
-	if (loadedViewportsModule?.DataViewport) {
-		return Promise.resolve();
-	}
-	return loadRuntimeScriptOnce(resolveSiblingRuntimeAssetUrl('ReactViewports.js'));
+	return ensureSiblingScript(loadedViewportsModule?.DataViewport, 'ReactViewports.js');
 }
 
 export function ensureViewportModeLoaded(mode: string): Promise<void> {
@@ -481,55 +787,23 @@ function provideViewportCanvas(
 function createLazyViewportComponent<
 	K extends 'DataViewport' | 'DataTable' | 'DataCards' | 'DataTableCanvas' | 'DataCardsCanvas'
 >(exportName: K): ExtendedViewportsModule[K] {
-	const LazyViewportWrapper: React.FC<Record<string, unknown>> = (props) => {
-		const [, setTick] = React.useState(0);
-		const Resolved = loadedViewportsModule?.[exportName] as
-			| React.ComponentType<Record<string, unknown>>
-			| undefined;
-
-		React.useEffect(() => {
-			if (loadedViewportsModule?.[exportName]) {
-				if (!Resolved) {
-					setTick((t) => t + 1);
-				}
-				return;
-			}
-			const onReady = () => {
-				if (!loadedViewportsModule?.[exportName]) {
-					return;
-				}
-				viewportsLoadListeners.delete(onReady);
-				setTick((t) => t + 1);
-			};
-			viewportsLoadListeners.add(onReady);
-			if (exportName === 'DataTable') {
-				void ensureViewportsLoaded();
-				void ensureViewportModeLoaded('table');
-			} else if (exportName === 'DataCards') {
-				void ensureViewportsLoaded();
-				void ensureViewportModeLoaded('cards');
-			} else if (exportName === 'DataTableCanvas') {
-				void ensureViewportModeLoaded('table');
-			} else if (exportName === 'DataCardsCanvas') {
-				void ensureViewportModeLoaded('cards');
-			} else {
+	return createLazyRuntimeComponent(
+		() => loadedViewportsModule?.[exportName] as React.ComponentType<Record<string, unknown>> | undefined,
+		viewportsLoadListeners,
+		() => {
+			if (exportName === 'DataTable' || exportName === 'DataCards' || exportName === 'DataViewport') {
 				void ensureViewportsLoaded();
 			}
-			return () => {
-				viewportsLoadListeners.delete(onReady);
-			};
-		}, []);
-
-		if (Resolved) {
-			return React.createElement(Resolved, props);
-		}
-		return React.createElement('div', {
-			className: 'h-32 w-full motion-safe:animate-pulse rounded-lg border border-border bg-muted/20',
-			'data-rw-lazy-chunk': `Viewports.${String(exportName)}`,
-		});
-	};
-	LazyViewportWrapper.displayName = `LazyViewport(${String(exportName)})`;
-	return LazyViewportWrapper as unknown as ExtendedViewportsModule[K];
+			if (exportName === 'DataTable' || exportName === 'DataTableCanvas') {
+				void ensureViewportModeLoaded('table');
+			} else if (exportName === 'DataCards' || exportName === 'DataCardsCanvas') {
+				void ensureViewportModeLoaded('cards');
+			}
+		},
+		`LazyViewport(${String(exportName)})`,
+		`Viewports.${String(exportName)}`,
+		'h-32 w-full motion-safe:animate-pulse rounded-lg border border-border bg-muted/20'
+	) as unknown as ExtendedViewportsModule[K];
 }
 
 const ViewportsProxy: ExtendedViewportsModule = {
@@ -565,6 +839,7 @@ type ExtendedFieldsModule = typeof FieldsType & {
 	PasswordFieldControl: typeof PasswordFieldControlType;
 	MarkdownFieldControl: typeof MarkdownFieldControlType;
 	ConditionBuilderFieldControl: typeof ConditionBuilderFieldControlType;
+	ConditionBuilder: typeof ConditionBuilderFieldControlType;
 	ExtraFieldControlIsland: typeof ExtraFieldControlIslandType;
 	FieldControlIsland: typeof FieldControlIslandType;
 	SchemaTabContainer: React.ComponentType<Record<string, unknown>>;
@@ -646,39 +921,27 @@ function getMediaCustomFieldRenderer(): MediaUtilsType.MediaCustomFieldRenderer 
 }
 
 export function ensureFieldsLoaded(): Promise<void> {
-	if (loadedFieldsModule?.SchemaForm) {
-		return Promise.resolve();
-	}
-	return loadRuntimeScriptOnce(resolveSiblingRuntimeAssetUrl('SchemaForm.js'));
+	return ensureSiblingScript(loadedFieldsModule?.SchemaForm, 'SchemaForm.js');
 }
 
 export function ensureTabLoaded(): Promise<void> {
-	if (loadedFieldsModule?.SchemaTabContainer) {
-		return Promise.resolve();
-	}
-	return loadRuntimeScriptOnce(resolveSiblingRuntimeAssetUrl('MarkupReactTab.js'));
+	return ensureSiblingScript(loadedFieldsModule?.SchemaTabContainer, 'MarkupReactTab.js');
 }
 
 export function ensureKeyValueLoaded(): Promise<void> {
-	if (loadedFieldsModule?.KeyValueFieldControl) {
-		return Promise.resolve();
-	}
-	return loadRuntimeScriptOnce(resolveSiblingRuntimeAssetUrl('InputfieldReactKeyValue.js'));
+	return ensureSiblingScript(loadedFieldsModule?.KeyValueFieldControl, 'InputfieldReactKeyValue.js');
 }
 
 export function ensureIconFieldLoaded(): Promise<void> {
 	const tasks: Array<Promise<void>> = [ensureIconsLoaded()];
 	if (!loadedFieldsModule?.IconFieldControl) {
-		tasks.push(loadRuntimeScriptOnce(resolveSiblingRuntimeAssetUrl('InputfieldReactIcon.js')));
+		tasks.push(ensureSiblingScript(false, 'InputfieldReactIcon.js'));
 	}
 	return Promise.all(tasks).then(() => undefined);
 }
 
 export function ensureLinkFieldLoaded(): Promise<void> {
-	if (loadedFieldsModule?.LinkFieldControl) {
-		return Promise.resolve();
-	}
-	return loadRuntimeScriptOnce(resolveSiblingRuntimeAssetUrl('InputfieldReactLink.js'));
+	return ensureSiblingScript(loadedFieldsModule?.LinkFieldControl, 'InputfieldReactLink.js');
 }
 
 export async function ensureFileFieldLoaded(): Promise<void> {
@@ -686,7 +949,7 @@ export async function ensureFileFieldLoaded(): Promise<void> {
 		return;
 	}
 	await ensureMediaLoaded();
-	await loadRuntimeScriptOnce(resolveSiblingRuntimeAssetUrl('InputfieldReactFile.js'));
+	await ensureSiblingScript(false, 'InputfieldReactFile.js');
 }
 
 export async function ensureImageFieldLoaded(): Promise<void> {
@@ -694,21 +957,19 @@ export async function ensureImageFieldLoaded(): Promise<void> {
 		return;
 	}
 	await ensureMediaLoaded();
-	await loadRuntimeScriptOnce(resolveSiblingRuntimeAssetUrl('InputfieldReactImage.js'));
+	await ensureSiblingScript(false, 'InputfieldReactImage.js');
 }
 
 export function ensureRelationFieldLoaded(): Promise<void> {
-	if (loadedFieldsModule?.RelationFieldControl) {
-		return Promise.resolve();
-	}
-	return loadRuntimeScriptOnce(resolveSiblingRuntimeAssetUrl('InputfieldReactRelation.js'));
+	return ensureSiblingScript(loadedFieldsModule?.RelationFieldControl, 'InputfieldReactRelation.js');
+}
+
+export function ensureConditionFieldLoaded(): Promise<void> {
+	return ensureSiblingScript(loadedFieldsModule?.ConditionBuilderFieldControl, 'InputfieldReactCondition.js');
 }
 
 export function ensureExtraFieldsLoaded(): Promise<void> {
-	if (loadedFieldsModule?.ColorFieldControl && loadedFieldsModule?.ConditionBuilderFieldControl) {
-		return Promise.resolve();
-	}
-	return loadRuntimeScriptOnce(resolveSiblingRuntimeAssetUrl('ReactExtraFields.js'));
+	return ensureSiblingScript(loadedFieldsModule?.ColorFieldControl, 'ReactExtraFields.js');
 }
 
 function provideFields(mod: Partial<ExtendedFieldsModule>): void {
@@ -758,40 +1019,16 @@ function createLazyFieldComponent<
 	loader: () => Promise<void>,
 	skeletonHeightClass: 'h-9' | 'h-24' | 'h-32'
 ): ExtendedFieldsModule[K] {
-	const LazyFieldWrapper: React.FC<Record<string, unknown>> = (props) => {
-		const [, setTick] = React.useState(0);
-		const Resolved = loadedFieldsModule?.[exportName] as
-			| React.ComponentType<Record<string, unknown>>
-			| undefined;
-
-		React.useEffect(() => {
-			if (loadedFieldsModule?.[exportName]) {
-				return;
-			}
-			const onReady = () => {
-				if (!loadedFieldsModule?.[exportName]) {
-					return;
-				}
-				fieldsLoadListeners.delete(onReady);
-				setTick((t) => t + 1);
-			};
-			fieldsLoadListeners.add(onReady);
+	return createLazyRuntimeComponent(
+		() => loadedFieldsModule?.[exportName] as React.ComponentType<Record<string, unknown>> | undefined,
+		fieldsLoadListeners,
+		() => {
 			void loader();
-			return () => {
-				fieldsLoadListeners.delete(onReady);
-			};
-		}, []);
-
-		if (Resolved) {
-			return React.createElement(Resolved, props);
-		}
-		return React.createElement('div', {
-			className: `${skeletonHeightClass} w-full motion-safe:animate-pulse rounded-md border border-border bg-muted/20`,
-			'data-rw-lazy-chunk': `Fields.${String(exportName)}`,
-		});
-	};
-	LazyFieldWrapper.displayName = `LazyField(${String(exportName)})`;
-	return LazyFieldWrapper as unknown as ExtendedFieldsModule[K];
+		},
+		`LazyField(${String(exportName)})`,
+		`Fields.${String(exportName)}`,
+		`${skeletonHeightClass} w-full motion-safe:animate-pulse rounded-md border border-border bg-muted/20`
+	) as unknown as ExtendedFieldsModule[K];
 }
 
 const FieldsProxy = {
@@ -801,6 +1038,52 @@ const FieldsProxy = {
 	useSchemaFormContext,
 	evaluateShowIfCondition,
 	navigateTablistByKey,
+	resolveScopedFieldValue,
+	evaluateSafeMathFormula: ((
+		formula: string,
+		values: Record<string, unknown>,
+		precision = 2,
+		scopePrefix?: string
+	): string => {
+		if (loadedFieldsModule?.evaluateSafeMathFormula) {
+			return loadedFieldsModule.evaluateSafeMathFormula(formula, values, precision, scopePrefix);
+		}
+		void ensureFieldsLoaded();
+		return '';
+	}) as ExtendedFieldsModule['evaluateSafeMathFormula'],
+	countNestedErrors: ((
+		fields: FieldsType.SchemaFieldDefinition[],
+		errors: Record<string, string>
+	): number => {
+		if (loadedFieldsModule?.countNestedErrors) {
+			return loadedFieldsModule.countNestedErrors(fields, errors);
+		}
+		void ensureFieldsLoaded();
+		return 0;
+	}) as ExtendedFieldsModule['countNestedErrors'],
+	validateFieldWithValibot: ((
+		field: FieldsType.SchemaFieldDefinition,
+		rawVal: unknown,
+		allValues: Record<string, unknown>,
+		scopePrefix?: string
+	): string | null => {
+		if (loadedFieldsModule?.validateFieldWithValibot) {
+			return loadedFieldsModule.validateFieldWithValibot(field, rawVal, allValues, scopePrefix);
+		}
+		void ensureFieldsLoaded();
+		return null;
+	}) as ExtendedFieldsModule['validateFieldWithValibot'],
+	validateSchemaTree: ((
+		schema: FieldsType.SchemaFormPayload,
+		values: Record<string, unknown>,
+		options?: Parameters<ExtendedFieldsModule['validateSchemaTree']>[2]
+	): FieldsType.SchemaValidationResult => {
+		if (loadedFieldsModule?.validateSchemaTree) {
+			return loadedFieldsModule.validateSchemaTree(schema, values, options);
+		}
+		void ensureFieldsLoaded();
+		return { valid: true, errors: {}, failedTabIds: [], failedBlockIds: [], firstErrorField: null };
+	}) as ExtendedFieldsModule['validateSchemaTree'],
 	FileFieldControl: createLazyFieldComponent('FileFieldControl', ensureFileFieldLoaded, 'h-24'),
 	IconFieldControl: createLazyFieldComponent('IconFieldControl', ensureIconFieldLoaded, 'h-9'),
 	ImageFieldControl: createLazyFieldComponent('ImageFieldControl', ensureImageFieldLoaded, 'h-24'),
@@ -817,7 +1100,8 @@ const FieldsProxy = {
 	OtpFieldControl: createLazyFieldComponent('OtpFieldControl', ensureExtraFieldsLoaded, 'h-9'),
 	PasswordFieldControl: createLazyFieldComponent('PasswordFieldControl', ensureExtraFieldsLoaded, 'h-24'),
 	MarkdownFieldControl: createLazyFieldComponent('MarkdownFieldControl', ensureExtraFieldsLoaded, 'h-32'),
-	ConditionBuilderFieldControl: createLazyFieldComponent('ConditionBuilderFieldControl', ensureExtraFieldsLoaded, 'h-32'),
+	ConditionBuilderFieldControl: createLazyFieldComponent('ConditionBuilderFieldControl', ensureConditionFieldLoaded, 'h-32'),
+	ConditionBuilder: createLazyFieldComponent('ConditionBuilderFieldControl', ensureConditionFieldLoaded, 'h-32'),
 	ExtraFieldControlIsland: createLazyFieldComponent('ExtraFieldControlIsland', ensureExtraFieldsLoaded, 'h-9'),
 	FieldControlIsland: createLazyFieldComponent('FieldControlIsland', ensureFieldsLoaded, 'h-9'),
 	SchemaTabContainer: createLazyFieldComponent('SchemaTabContainer', ensureTabLoaded, 'h-32'),
@@ -849,10 +1133,7 @@ let loadedGridModule: GridEngineType.GridEngineModule | null = null;
 const gridLoadListeners = new Set<() => void>();
 
 export function ensureGridLoaded(): Promise<void> {
-	if (loadedGridModule) {
-		return Promise.resolve();
-	}
-	return loadRuntimeScriptOnce(resolveSiblingRuntimeAssetUrl('ReactGrid.js'));
+	return ensureSiblingScript(loadedGridModule, 'ReactGrid.js');
 }
 
 function subscribeGrid(listener: () => void): () => void {
@@ -875,34 +1156,16 @@ function provideGrid(mod: GridEngineType.GridEngineModule): void {
 function createLazyGridComponent<K extends 'DataGrid'>(
 	exportName: K
 ): GridEngineType.GridEngineModule[K] {
-	const LazyGridWrapper: React.FC<Record<string, unknown>> = (props) => {
-		const [, setTick] = React.useState(0);
-		const Resolved = loadedGridModule?.[exportName] as unknown as
-			| React.ComponentType<Record<string, unknown>>
-			| undefined;
-
-		React.useEffect(() => {
-			if (loadedGridModule?.[exportName]) {
-				return;
-			}
-			const onReady = () => setTick((t) => t + 1);
-			gridLoadListeners.add(onReady);
+	return createLazyRuntimeComponent(
+		() => loadedGridModule?.[exportName] as unknown as React.ComponentType<Record<string, unknown>> | undefined,
+		gridLoadListeners,
+		() => {
 			void ensureGridLoaded();
-			return () => {
-				gridLoadListeners.delete(onReady);
-			};
-		}, []);
-
-		if (Resolved) {
-			return React.createElement(Resolved, props);
-		}
-		return React.createElement('div', {
-			className: 'h-48 w-full motion-safe:animate-pulse rounded-md border border-border bg-muted/20',
-			'data-rw-lazy-chunk': `Grid.${exportName}`,
-		});
-	};
-	LazyGridWrapper.displayName = `LazyGrid(${exportName})`;
-	return LazyGridWrapper as unknown as GridEngineType.GridEngineModule[K];
+		},
+		`LazyGrid(${exportName})`,
+		`Grid.${exportName}`,
+		'h-48 w-full motion-safe:animate-pulse rounded-md border border-border bg-muted/20'
+	) as unknown as GridEngineType.GridEngineModule[K];
 }
 
 export type GridRuntimeProxy = GridEngineType.GridEngineModule & {
@@ -928,10 +1191,7 @@ let loadedDndModule: DndEngineType.DndEngineModule | null = null;
 const dndLoadListeners = new Set<() => void>();
 
 export function ensureDndLoaded(): Promise<void> {
-	if (loadedDndModule) {
-		return Promise.resolve();
-	}
-	return loadRuntimeScriptOnce(resolveSiblingRuntimeAssetUrl('ReactDnd.js'));
+	return ensureSiblingScript(loadedDndModule, 'ReactDnd.js');
 }
 
 function subscribeDnd(listener: () => void): () => void {
@@ -954,34 +1214,16 @@ function provideDnd(mod: DndEngineType.DndEngineModule): void {
 function createLazyDndComponent<
 	K extends 'SortableListCanvas' | 'SortableTreeCanvas',
 >(exportName: K): DndEngineType.DndEngineModule[K] {
-	const LazyDndWrapper: React.FC<Record<string, unknown>> = (props) => {
-		const [, setTick] = React.useState(0);
-		const Resolved = loadedDndModule?.[exportName] as unknown as
-			| React.ComponentType<Record<string, unknown>>
-			| undefined;
-
-		React.useEffect(() => {
-			if (loadedDndModule?.[exportName]) {
-				return;
-			}
-			const onReady = () => setTick((t) => t + 1);
-			dndLoadListeners.add(onReady);
+	return createLazyRuntimeComponent(
+		() => loadedDndModule?.[exportName] as unknown as React.ComponentType<Record<string, unknown>> | undefined,
+		dndLoadListeners,
+		() => {
 			void ensureDndLoaded();
-			return () => {
-				dndLoadListeners.delete(onReady);
-			};
-		}, []);
-
-		if (Resolved) {
-			return React.createElement(Resolved, props);
-		}
-		return React.createElement('div', {
-			className: 'h-32 w-full motion-safe:animate-pulse rounded-md border border-border bg-muted/20',
-			'data-rw-lazy-chunk': `Dnd.${exportName}`,
-		});
-	};
-	LazyDndWrapper.displayName = `LazyDnd(${exportName})`;
-	return LazyDndWrapper as unknown as DndEngineType.DndEngineModule[K];
+		},
+		`LazyDnd(${exportName})`,
+		`Dnd.${exportName}`,
+		'h-32 w-full motion-safe:animate-pulse rounded-md border border-border bg-muted/20'
+	) as unknown as DndEngineType.DndEngineModule[K];
 }
 
 export type DndRuntimeProxy = DndEngineType.DndEngineModule & {
@@ -1013,10 +1255,7 @@ export function ensureCalendarStyleLoaded(): void {
 
 export function ensureCalendarLoaded(): Promise<void> {
 	ensureCalendarStyleLoaded();
-	if (loadedCalendarModule) {
-		return Promise.resolve();
-	}
-	return loadRuntimeScriptOnce(resolveSiblingRuntimeAssetUrl('ReactCalendar.js'));
+	return ensureSiblingScript(loadedCalendarModule, 'ReactCalendar.js');
 }
 
 function subscribeCalendar(listener: () => void): () => void {
@@ -1050,40 +1289,16 @@ function createLazyCalendarComponent<
 	exportName: K,
 	skeletonHeightClass: 'h-9' | 'h-48' | 'h-64'
 ): CalendarEngineType.CalendarEngineModule[K] {
-	const LazyCalendarWrapper: React.FC<Record<string, unknown>> = (props) => {
-		const [, setTick] = React.useState(0);
-		const Resolved = loadedCalendarModule?.[exportName] as
-			| React.ComponentType<Record<string, unknown>>
-			| undefined;
-
-		React.useEffect(() => {
-			if (loadedCalendarModule?.[exportName]) {
-				return;
-			}
-			const onReady = () => {
-				if (!loadedCalendarModule?.[exportName]) {
-					return;
-				}
-				calendarLoadListeners.delete(onReady);
-				setTick((t) => t + 1);
-			};
-			calendarLoadListeners.add(onReady);
+	return createLazyRuntimeComponent(
+		() => loadedCalendarModule?.[exportName] as React.ComponentType<Record<string, unknown>> | undefined,
+		calendarLoadListeners,
+		() => {
 			void ensureCalendarLoaded();
-			return () => {
-				calendarLoadListeners.delete(onReady);
-			};
-		}, []);
-
-		if (Resolved) {
-			return React.createElement(Resolved, props);
-		}
-		return React.createElement('div', {
-			className: `${skeletonHeightClass} w-full motion-safe:animate-pulse rounded-md border border-border bg-muted/20`,
-			'data-rw-lazy-chunk': `Calendar.${exportName}`,
-		});
-	};
-	LazyCalendarWrapper.displayName = `LazyCalendar(${exportName})`;
-	return LazyCalendarWrapper as unknown as CalendarEngineType.CalendarEngineModule[K];
+		},
+		`LazyCalendar(${exportName})`,
+		`Calendar.${exportName}`,
+		`${skeletonHeightClass} w-full motion-safe:animate-pulse rounded-md border border-border bg-muted/20`
+	) as unknown as CalendarEngineType.CalendarEngineModule[K];
 }
 
 export type CalendarRuntimeProxy = CalendarEngineType.CalendarEngineModule & {
@@ -1197,6 +1412,7 @@ islandRegistry.set('InputfieldReactKeyValue', FieldsProxy.KeyValueFieldControl a
 islandRegistry.set('InputfieldReactLink', FieldsProxy.LinkFieldControl as unknown as PageComponent);
 islandRegistry.set('InputfieldReactIcon', FieldsProxy.IconFieldControl as unknown as PageComponent);
 islandRegistry.set('ReactWorkspace/Icon', FieldsProxy.IconFieldControl as unknown as PageComponent);
+islandRegistry.set('InputfieldReactCondition', FieldsProxy.ConditionBuilderFieldControl as unknown as PageComponent);
 islandRegistry.set('InputfieldReactM2O', FieldsProxy.RelationFieldControl as unknown as PageComponent);
 islandRegistry.set('InputfieldReactM2M', FieldsProxy.RelationFieldControl as unknown as PageComponent);
 islandRegistry.set('InputfieldReactO2M', FieldsProxy.RelationFieldControl as unknown as PageComponent);
@@ -1296,6 +1512,7 @@ export function mountIslands(root: ParentNode = document): void {
 			? ''
 			: node.getAttribute('data-input-id') || parsedProps.id || '';
 		const isKeyValueIsland = name === 'InputfieldReactKeyValue';
+		const isConditionIsland = name === 'InputfieldReactCondition';
 		const syncHiddenInput = (nextValue: unknown) => {
 			if (!inputId || typeof document === 'undefined') {
 				return;
@@ -1312,6 +1529,13 @@ export function mountIslands(root: ParentNode = document): void {
 					isKeyValueIsland &&
 					!Array.isArray(nextValue) &&
 					Object.keys(nextValue as Record<string, unknown>).length === 0
+				) {
+					serialized = '';
+				} else if (
+					isConditionIsland &&
+					!Array.isArray(nextValue) &&
+					Array.isArray((nextValue as Record<string, unknown>).groups) &&
+					((nextValue as Record<string, unknown>).groups as unknown[]).length === 0
 				) {
 					serialized = '';
 				} else {
@@ -1420,7 +1644,7 @@ function ensureWorkspaceAssetsLoaded(componentName: string): void {
 					const link = document.createElement('link');
 					link.rel = 'stylesheet';
 					link.href = safeHref;
-					document.head.appendChild(link);
+					document.head?.appendChild?.(link);
 				}
 			}
 			for (const src of ws.scripts || []) {
@@ -1504,7 +1728,7 @@ export interface ReactWorkspaceRuntimeGlobal {
 	UI: typeof UI;
 	Portal: typeof Portal;
 	Hooks: typeof Hooks;
-	Layout: typeof LayoutType;
+	Layout: ExtendedLayoutModule;
 	Viewports: ExtendedViewportsModule;
 	Fields: ExtendedFieldsModule;
 	Grid: GridRuntimeProxy;
@@ -1532,10 +1756,7 @@ export interface ReactWorkspaceRuntimeGlobal {
 		hasTranslation: typeof hasTranslation;
 		getLocale: typeof getLocale;
 	};
-	cn: typeof cn;
 	getCsrfToken: typeof getCsrfToken;
-	DynamicIcon: typeof DynamicIcon;
-	sanitizeHref: typeof sanitizeHref;
 	t: typeof t;
 	translate: typeof translate;
 	useTranslations: typeof useTranslations;
@@ -1562,6 +1783,7 @@ export interface ReactWorkspaceRuntimeGlobal {
 	ensureImageFieldLoaded: typeof ensureImageFieldLoaded;
 	ensureLinkFieldLoaded: typeof ensureLinkFieldLoaded;
 	ensureRelationFieldLoaded: typeof ensureRelationFieldLoaded;
+	ensureConditionFieldLoaded: typeof ensureConditionFieldLoaded;
 	ensureExtraFieldsLoaded: typeof ensureExtraFieldsLoaded;
 	ensureTiptapLoaded: typeof ensureTiptapLoaded;
 	ensureIconsLoaded: typeof ensureIconsLoaded;
@@ -1596,6 +1818,18 @@ declare global {
 }
 
 if (typeof window !== 'undefined') {
+	if (typeof document !== 'undefined') {
+		document.addEventListener(
+			'error',
+			(event: Event) => {
+				const target = event.target;
+				if (target instanceof HTMLScriptElement || target instanceof HTMLLinkElement) {
+					target.dataset.rwFailed = '1';
+				}
+			},
+			true
+		);
+	}
 	const runtimeGlobal: ReactWorkspaceRuntimeGlobal = {
 		React,
 		ReactDOM,
@@ -1633,10 +1867,7 @@ if (typeof window !== 'undefined') {
 			hasTranslation,
 			getLocale,
 		},
-		cn,
 		getCsrfToken,
-		DynamicIcon,
-		sanitizeHref,
 		t,
 		translate,
 		useTranslations,
@@ -1663,6 +1894,7 @@ if (typeof window !== 'undefined') {
 		ensureImageFieldLoaded,
 		ensureLinkFieldLoaded,
 		ensureRelationFieldLoaded,
+		ensureConditionFieldLoaded,
 		ensureExtraFieldsLoaded,
 		ensureTiptapLoaded,
 		ensureIconsLoaded,

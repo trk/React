@@ -86,6 +86,23 @@ export function WorkspaceTopbar({
 	setShellLayout,
 }: WorkspaceTopbarProps): React.ReactElement {
 	const shortcutsEnabled = workspace?.enableKeyboardShortcuts !== false;
+	const moreMenuId = React.useId();
+	const moreTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+
+	React.useEffect(() => {
+		if (!moreMenuOpen) {
+			return;
+		}
+		const onKeyDown = (e: KeyboardEvent) => {
+			if (e.key === 'Escape') {
+				e.stopPropagation();
+				setMoreMenuOpen(false);
+				moreTriggerRef.current?.focus();
+			}
+		};
+		window.addEventListener('keydown', onKeyDown, true);
+		return () => window.removeEventListener('keydown', onKeyDown, true);
+	}, [moreMenuOpen, setMoreMenuOpen]);
 
 	return (
 		<header
@@ -100,7 +117,7 @@ export function WorkspaceTopbar({
 						onClick={onOpenMobileDrawer}
 						aria-label={t('shell.openNavigationMenu', 'Open workspace navigation menu')}
 						data-rw-mobile-menu-trigger
-						className="inline-flex size-8 pointer-coarse:size-10 items-center justify-center rounded-md border border-masthead-border bg-input-surface text-masthead-foreground transition-colors hover:bg-muted hover:text-masthead-active lg:hidden cursor-pointer"
+						className="inline-flex size-8 pointer-coarse:size-10 items-center justify-center rounded-md border border-masthead-border bg-input-surface text-masthead-foreground transition-colors hover:bg-muted hover:text-masthead-active focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden cursor-pointer"
 					>
 						<DynamicIcon name="menu" className="size-4" />
 					</button>
@@ -108,7 +125,7 @@ export function WorkspaceTopbar({
 					<a
 						href={sanitizeHref(workspace?.adminUrl) || '/processwire/'}
 						data-rw-admin-return
-						className="hidden lg:inline-flex h-8 items-center gap-1.5 rounded-md border border-masthead-border bg-input-surface px-2.5 text-xs font-medium text-masthead-foreground transition-colors hover:bg-muted hover:text-masthead-active shrink-0"
+						className="hidden lg:inline-flex h-8 items-center gap-1.5 rounded-md border border-masthead-border bg-input-surface px-2.5 text-xs font-medium text-masthead-foreground transition-colors hover:bg-muted hover:text-masthead-active focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
 						title={t('shell.returnToTarget', { target: returnLabel }, 'Return to {target}')}
 					>
 						<DynamicIcon name="arrow-left" className="size-3.5" />
@@ -119,7 +136,7 @@ export function WorkspaceTopbar({
 						<Link
 							href={sanitizeHref(workspace?.launcherUrl)}
 							className={cn(
-								'inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors shrink-0',
+								'inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0',
 								!activeWorkspace
 									? 'bg-primary/12 text-primary-ink font-semibold'
 									: 'text-masthead-foreground hover:bg-muted hover:text-masthead-active'
@@ -143,7 +160,7 @@ export function WorkspaceTopbar({
 									const isFav = favorites.includes(ws.id.toLowerCase());
 									const safeWsUrl = sanitizeHref(withWorkspaceShellUrl(ws.url, true)) || '#';
 									const linkClassName = cn(
-										'inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors whitespace-nowrap',
+										'inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
 										isCurrent
 											? 'bg-primary/12 text-primary-ink font-semibold'
 											: 'text-masthead-foreground hover:bg-muted hover:text-masthead-active'
@@ -161,11 +178,21 @@ export function WorkspaceTopbar({
 										</>
 									);
 									return ws.component ? (
-										<Link key={ws.id} href={safeWsUrl} className={linkClassName}>
+										<Link
+											key={ws.id}
+											href={safeWsUrl}
+											aria-current={isCurrent ? 'page' : undefined}
+											className={linkClassName}
+										>
 											{content}
 										</Link>
 									) : (
-										<a key={ws.id} href={safeWsUrl} className={linkClassName}>
+										<a
+											key={ws.id}
+											href={safeWsUrl}
+											aria-current={isCurrent ? 'page' : undefined}
+											className={linkClassName}
+										>
 											{content}
 										</a>
 									);
@@ -174,15 +201,17 @@ export function WorkspaceTopbar({
 								{overflowWorkspaces.length > 0 ? (
 									<div className="relative" ref={moreMenuRef}>
 										<button
+											ref={moreTriggerRef}
 											type="button"
 											onClick={() => {
 												setMoreMenuOpen((prev) => !prev);
 												setMoreFilter('');
 											}}
 											aria-expanded={moreMenuOpen}
+											aria-controls={moreMenuOpen ? moreMenuId : undefined}
 											data-rw-more-workspaces-trigger
 											className={cn(
-												'inline-flex h-8 items-center gap-1 rounded-md border px-2.5 text-xs font-medium transition-colors cursor-pointer',
+												'inline-flex h-8 items-center gap-1 rounded-md border px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer',
 												moreMenuOpen
 													? 'border-masthead-border bg-muted text-masthead-active'
 													: 'border-transparent bg-transparent text-masthead-foreground hover:border-masthead-border hover:bg-input-surface hover:text-masthead-active'
@@ -197,6 +226,7 @@ export function WorkspaceTopbar({
 
 										{moreMenuOpen ? (
 											<div
+												id={moreMenuId}
 												data-rw-more-workspaces-menu
 												className="absolute left-0 top-full mt-1.5 w-72 rounded-lg border border-border bg-popover p-2 text-popover-foreground shadow-lg z-50 space-y-2"
 											>
@@ -232,9 +262,10 @@ export function WorkspaceTopbar({
 																	{ws.component ? (
 																		<Link
 																			href={safeOverflowWsUrl}
+																			aria-current={isCurrent ? 'page' : undefined}
 																			onClick={() => setMoreMenuOpen(false)}
 																			className={cn(
-																				'flex flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors min-w-0',
+																				'flex flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-w-0',
 																				isCurrent
 																					? 'bg-primary/12 text-primary-ink font-semibold'
 																					: 'hover:bg-muted text-foreground'
@@ -253,7 +284,8 @@ export function WorkspaceTopbar({
 																	) : (
 																		<a
 																			href={safeOverflowWsUrl}
-																			className="flex flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-muted text-foreground min-w-0"
+																			aria-current={isCurrent ? 'page' : undefined}
+																			className="flex flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-muted text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-w-0"
 																		>
 																			<DynamicIcon name={ws.icon} className="size-3.5 shrink-0 text-primary" />
 																			<span className="truncate font-medium">{ws.title}</span>
@@ -273,7 +305,7 @@ export function WorkspaceTopbar({
 																				: t('launcher.pinToTopBar', 'Pin to top bar')
 																		}
 																		className={cn(
-																			'inline-flex size-7 items-center justify-center rounded-md transition-colors cursor-pointer shrink-0',
+																			'inline-flex size-7 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer shrink-0',
 																			isFav
 																				? 'text-warning hover:bg-muted'
 																				: 'text-muted-foreground/50 hover:bg-muted hover:text-foreground'
@@ -304,7 +336,7 @@ export function WorkspaceTopbar({
 							type="button"
 							onClick={onOpenCommandPalette}
 							data-rw-command-trigger
-							className="inline-flex h-8 items-center gap-2 rounded-md border border-masthead-border bg-input-surface px-2.5 text-xs text-masthead-foreground transition-colors hover:bg-muted hover:text-masthead-active cursor-pointer"
+							className="inline-flex h-8 items-center gap-2 rounded-md border border-masthead-border bg-input-surface px-2.5 text-xs text-masthead-foreground transition-colors hover:bg-muted hover:text-masthead-active focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
 							title={t('shell.quickSwitcherShortcut', 'Quick Switcher (Cmd/Ctrl+K)')}
 						>
 							<DynamicIcon name="search" className="size-3.5" aria-hidden="true" />

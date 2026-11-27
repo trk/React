@@ -19,12 +19,17 @@ export function useModalDialogController(
 	handleClose: () => void;
 } {
 	const pressedOutsideRef = useRef(false);
+	const previousFocusRef = useRef<HTMLElement | null>(null);
 
 	useLayoutEffect(() => {
 		const dialog = dialogRef.current;
 		if (!dialog || !open) {
 			return;
 		}
+		previousFocusRef.current =
+			typeof document !== 'undefined' && document.activeElement instanceof HTMLElement
+				? document.activeElement
+				: null;
 		if (!dialog.open && typeof dialog.showModal === 'function') {
 			try {
 				dialog.showModal();
@@ -39,6 +44,11 @@ export function useModalDialogController(
 				} catch {
 					dialog.removeAttribute('open');
 				}
+			}
+			const prev = previousFocusRef.current;
+			previousFocusRef.current = null;
+			if (prev && prev.isConnected && typeof prev.focus === 'function') {
+				prev.focus();
 			}
 		};
 	}, [dialogRef, open]);

@@ -33,6 +33,7 @@ function formatPresenceAge(secondsAgo: number, t: Translator['t']): string {
 
 export interface EditPresenceBannerProps {
 	resourceKey?: string | null;
+	presenceToken?: string | null;
 	endpoint?: string | null;
 	enabled?: boolean;
 	pollIntervalMs?: number;
@@ -42,6 +43,7 @@ export interface EditPresenceBannerProps {
 
 export const EditPresenceBanner: React.FC<EditPresenceBannerProps> = ({
 	resourceKey,
+	presenceToken,
 	endpoint,
 	enabled = true,
 	pollIntervalMs,
@@ -52,6 +54,7 @@ export const EditPresenceBanner: React.FC<EditPresenceBannerProps> = ({
 	const [confirmReloadOpen, setConfirmReloadOpen] = useState(false);
 	const { coEditors, remoteSave, notifySaved, dismissRemoteSave, reloadLatest } = useEditPresence({
 		resourceKey,
+		presenceToken,
 		endpoint,
 		enabled,
 		pollIntervalMs,

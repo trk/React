@@ -307,9 +307,9 @@ export function buildShowcaseFixtures(sampleBaseUrl: string): ShowcaseFixtures {
 		thumb: sampleUrls.square,
 	};
 
-	const entryTarget: RelationItemData = {
-		key: 'entry:rec_01a9f2',
-		resource: 'entry',
+	const recordTarget: RelationItemData = {
+		key: 'record:rec_01a9f2',
+		resource: 'record',
 		resourceLabel: 'Catalog',
 		value: 'rec_01a9f2',
 		id: 'rec_01a9f2',
@@ -415,13 +415,13 @@ export function buildShowcaseFixtures(sampleBaseUrl: string): ShowcaseFixtures {
 				target: '_self',
 			},
 		}),
-		entryEmpty: makeLinkForm('sc_link_entry_empty', {
-			name: 'link_entry_empty',
+		recordEmpty: makeLinkForm('sc_link_record_empty', {
+			name: 'link_record_empty',
 			type: 'link',
-			label: 'Entry Link (Empty Search)',
+			label: 'Custom Record Link (Empty Search)',
 			linkConfig: {
-				types: ['entry'],
-				defaultType: 'entry',
+				types: ['record'],
+				defaultType: 'record',
 				enableLabel: true,
 				enableAriaLabel: false,
 				enableTarget: false,
@@ -429,17 +429,17 @@ export function buildShowcaseFixtures(sampleBaseUrl: string): ShowcaseFixtures {
 				enableAnchor: false,
 				enableQuery: false,
 				relationEndpoint: '',
-				relationTokens: { entry: 'showcase' },
+				relationTokens: { record: 'showcase' },
 			},
-			value: { type: 'entry', entryId: '' },
+			value: { type: 'record', resourceId: '' },
 		}),
-		entryPopulated: makeLinkForm('sc_link_entry_pop', {
-			name: 'link_entry_pop',
+		recordPopulated: makeLinkForm('sc_link_record_pop', {
+			name: 'link_record_pop',
 			type: 'link',
-			label: 'Entry Link (Populated Record)',
+			label: 'Custom Record Link (Populated Record)',
 			linkConfig: {
-				types: ['entry'],
-				defaultType: 'entry',
+				types: ['record'],
+				defaultType: 'record',
 				enableLabel: true,
 				enableAriaLabel: false,
 				enableTarget: true,
@@ -447,13 +447,13 @@ export function buildShowcaseFixtures(sampleBaseUrl: string): ShowcaseFixtures {
 				enableAnchor: false,
 				enableQuery: false,
 				relationEndpoint: '',
-				relationTokens: { entry: 'showcase' },
-				selectedTarget: entryTarget,
+				relationTokens: { record: 'showcase' },
+				selectedTarget: recordTarget,
 			},
 			value: {
-				type: 'entry',
-				entryType: 'catalog',
-				entryId: 'rec_01a9f2',
+				type: 'record',
+				resourceType: 'catalog',
+				resourceId: 'rec_01a9f2',
 				label: 'View Collection',
 			},
 		}),
@@ -821,9 +821,9 @@ export function buildShowcaseFixtures(sampleBaseUrl: string): ShowcaseFixtures {
 			name: 'link_poly_all',
 			type: 'link',
 			label: 'Polymorphic All-Types Switcher',
-			description: 'Switch interactively across Page, Entry, URL, Image, Video, File, Email, and Phone.',
+			description: 'Switch interactively across Page, Record, URL, Image, Video, File, Email, and Phone.',
 			linkConfig: {
-				types: ['page', 'entry', 'url', 'image', 'video', 'file', 'email', 'tel'],
+				types: ['page', 'record', 'url', 'image', 'video', 'file', 'email', 'tel'],
 				defaultType: 'url',
 				enableLabel: true,
 				enableAriaLabel: true,
@@ -832,7 +832,7 @@ export function buildShowcaseFixtures(sampleBaseUrl: string): ShowcaseFixtures {
 				enableAnchor: true,
 				enableQuery: true,
 				relationEndpoint: '',
-				relationTokens: { page: 'showcase', entry: 'showcase' },
+				relationTokens: { page: 'showcase', record: 'showcase' },
 				languages: linkLanguages,
 				mediaProfiles: {
 					image: {
@@ -1974,7 +1974,7 @@ export function buildShowcaseFixtures(sampleBaseUrl: string): ShowcaseFixtures {
 				value: 'landing',
 				options: [
 					{ value: 'article', label: 'Editorial Article', icon: 'file-text', description: 'Rich typography and byline' },
-					{ value: 'landing', label: 'Campaign Landing Page', icon: 'sparkles', description: 'Hero blocks and CTA strip' },
+					{ value: 'landing', label: 'Primary Landing Page', icon: 'sparkles', description: 'Hero blocks and CTA strip' },
 					{ value: 'gallery', label: 'Media Showcase', icon: 'layout-grid', description: 'Masonry and card gallery' },
 					{ value: 'docs', label: 'Technical Reference', icon: 'code', description: 'Code snippets and callouts' },
 				],
@@ -2038,7 +2038,7 @@ export function buildShowcaseFixtures(sampleBaseUrl: string): ShowcaseFixtures {
 			{
 				name: 'unit_price',
 				type: 'currency',
-				label: 'Charter Base Rate (Currency)',
+				label: 'Service Base Rate (Currency)',
 				currency: 'EUR',
 				locale: 'en-US',
 				precision: 2,
@@ -2215,7 +2215,7 @@ export function buildShowcaseFixtures(sampleBaseUrl: string): ShowcaseFixtures {
 			{
 				name: 'range_price',
 				type: 'range_slider',
-				label: 'Charter Daily Budget (Dual Range)',
+				label: 'Daily Budget (Dual Range)',
 				colSpan: 6,
 				min: 0,
 				max: 1000,
@@ -2309,7 +2309,7 @@ export function buildShowcaseFixtures(sampleBaseUrl: string): ShowcaseFixtures {
 			{
 				name: 'pw_create',
 				type: 'password',
-				label: 'Account Password (Strength + Generator)',
+				label: 'Password (Strength + Generator)',
 				colSpan: 6,
 				allowGenerate: true,
 				showStrength: true,
@@ -2503,7 +2503,7 @@ export function buildShowcaseFixtures(sampleBaseUrl: string): ShowcaseFixtures {
 			{
 				name: 'dt_range_empty',
 				type: 'daterange',
-				label: 'Campaign Window (With Presets)',
+				label: 'Date Window (With Presets)',
 				presets: true,
 				colSpan: 4,
 				value: '',

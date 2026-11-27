@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { t } from '../../lib/i18n';
 import { cn, DynamicIcon } from '../../lib/utils';
 import { Badge, Combobox, type ComboboxOption } from '../../ui';
+import { useSchemaFormContext } from '../schema/SchemaFormContext';
+import { resolveDynamicBlockFields } from '../shared';
 import type { InputfieldOptionItem, ReactInputfieldProps } from '../types';
 
 function flattenComboboxOptions(options: InputfieldOptionItem[] | undefined): ComboboxOption[] {
@@ -59,7 +61,39 @@ function coerceMultiValues(raw: unknown): string[] {
 
 export function ComboboxField(props: ReactInputfieldProps): React.ReactElement {
 	const isMultiple = Boolean(props.multiple);
-	const flatOptions = useMemo(() => flattenComboboxOptions(props.options), [props.options]);
+	const schemaCtx = useSchemaFormContext();
+	const blocksVersion = schemaCtx?.blocksVersion ?? 0;
+	const schemaValues = schemaCtx?.values;
+	const dynamicFields = useMemo(
+		() =>
+			resolveDynamicBlockFields(
+				props.dynamicOptionsFromBlocks,
+				schemaCtx,
+				props.formValues,
+				props.scopePrefix,
+			),
+		[props.dynamicOptionsFromBlocks, schemaCtx, props.formValues, props.scopePrefix, blocksVersion, schemaValues],
+	);
+	const flatOptions = useMemo(() => {
+		const staticFlat = flattenComboboxOptions(props.options);
+		if (dynamicFields.length === 0) {
+			return staticFlat;
+		}
+		const seen = new Set(staticFlat.map((opt) => opt.value));
+		const merged = [...staticFlat];
+		for (const df of dynamicFields) {
+			if (seen.has(df.key)) {
+				continue;
+			}
+			seen.add(df.key);
+			merged.push({
+				value: df.key,
+				label: df.label,
+				description: df.key,
+			});
+		}
+		return merged;
+	}, [props.options, dynamicFields]);
 	const optionByValue = useMemo(
 		() => new Map<string, ComboboxOption>(flatOptions.map((item) => [item.value, item])),
 		[flatOptions],
@@ -139,7 +173,7 @@ export function ComboboxField(props: ReactInputfieldProps): React.ReactElement {
 											type="button"
 											aria-label={t('common.remove', 'Remove')}
 											onClick={() => commitMulti(multiValues.filter((item) => item !== val))}
-											className="ml-0.5 inline-flex size-4 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+											className="ml-0.5 inline-flex size-4 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
 										>
 											<DynamicIcon name="x" aria-hidden="true" className="size-3" />
 										</button>
@@ -159,11 +193,12 @@ export function ComboboxField(props: ReactInputfieldProps): React.ReactElement {
 						id={props.id}
 						options={availableOptions}
 						value={pickerDraft}
-						disabled={props.disabled || atCapacity || availableOptions.length === 0}
+						disabled={props.disabled || atCapacity || (!props.allowCustom && availableOptions.length === 0)}
+						allowCustom={Boolean(props.allowCustom)}
 						placeholder={
 							atCapacity
 								? t('tags.limitReached', 'Maximum items reached')
-								: availableOptions.length === 0
+								: availableOptions.length === 0 && !props.allowCustom
 									? t('combobox.allSelected', 'All options selected')
 									: props.placeholder || t('combobox.addOption', 'Search and add option...')
 						}
@@ -217,6 +252,7 @@ export function ComboboxField(props: ReactInputfieldProps): React.ReactElement {
 					placeholder={props.placeholder || t('common.selectOption', 'Select option...')}
 					emptyText={props.emptyText}
 					clearable={clearable}
+					allowCustom={Boolean(props.allowCustom)}
 					aria-label={props.label || t('common.selectOption', 'Select option')}
 					aria-invalid={hasError}
 					aria-describedby={props.describedBy}

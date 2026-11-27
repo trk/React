@@ -106,6 +106,17 @@ export const DataViewport: React.FC<ViewportState | Record<string, unknown>> = (
 	const [editingCell, setEditingCell] = useState<{ id: string; field: string; value: string } | null>(null);
 	const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const dispatchSeqRef = useRef(0);
+	const dispatchAbortRef = useRef<AbortController | null>(null);
+	const isUnmountedRef = useRef(false);
+
+	useEffect(() => {
+		isUnmountedRef.current = false;
+		return () => {
+			isUnmountedRef.current = true;
+			dispatchAbortRef.current?.abort();
+			dispatchAbortRef.current = null;
+		};
+	}, []);
 
 	const subscribeViewportStore = useCallback((onStoreChange: () => void) => {
 		const unsubLocal = subscribeViewportRegistry(onStoreChange);
@@ -185,6 +196,9 @@ export const DataViewport: React.FC<ViewportState | Record<string, unknown>> = (
 				searchDebounceRef.current = null;
 			}
 			const seq = ++dispatchSeqRef.current;
+			dispatchAbortRef.current?.abort();
+			const controller = new AbortController();
+			dispatchAbortRef.current = controller;
 			const sentSearchQuery =
 				action === 'search'
 					? String(payload.query ?? '')
@@ -202,6 +216,7 @@ export const DataViewport: React.FC<ViewportState | Record<string, unknown>> = (
 				}>(safeEndpoint, {
 					method: 'POST',
 					csrfSource: resolvedCsrfSource,
+					signal: controller.signal,
 					payload: {
 						stateToken: state.stateToken,
 						action,
@@ -223,7 +238,7 @@ export const DataViewport: React.FC<ViewportState | Record<string, unknown>> = (
 					},
 				});
 
-				if (seq !== dispatchSeqRef.current) {
+				if (controller.signal.aborted || isUnmountedRef.current || seq !== dispatchSeqRef.current) {
 					return;
 				}
 				const json = res.data;
@@ -267,7 +282,10 @@ export const DataViewport: React.FC<ViewportState | Record<string, unknown>> = (
 					}));
 				}
 			} finally {
-				if (seq === dispatchSeqRef.current) {
+				if (dispatchAbortRef.current === controller) {
+					dispatchAbortRef.current = null;
+				}
+				if (!isUnmountedRef.current && seq === dispatchSeqRef.current) {
 					setBusy(false);
 				}
 			}
@@ -384,6 +402,9 @@ export const DataViewport: React.FC<ViewportState | Record<string, unknown>> = (
 	const bulkEntries = Object.entries(state.bulkActions || {});
 	const selectedCount = (state.selectedIds || []).length;
 
+	const dispatchRef = useRef(dispatch);
+	dispatchRef.current = dispatch;
+
 	useEffect(() => {
 		const committedQuery = state.searchQuery || '';
 		if (searchInput === committedQuery) {
@@ -391,7 +412,7 @@ export const DataViewport: React.FC<ViewportState | Record<string, unknown>> = (
 		}
 		searchDebounceRef.current = setTimeout(() => {
 			searchDebounceRef.current = null;
-			void dispatch('search', { query: searchInput });
+			void dispatchRef.current('search', { query: searchInput });
 		}, 240);
 		return () => {
 			if (searchDebounceRef.current) {
@@ -399,7 +420,7 @@ export const DataViewport: React.FC<ViewportState | Record<string, unknown>> = (
 				searchDebounceRef.current = null;
 			}
 		};
-	}, [searchInput, state.searchQuery, dispatch]);
+	}, [searchInput, state.searchQuery]);
 
 	const createHref = React.useMemo(() => {
 		if (state.showCreateButton === false) {
@@ -500,7 +521,7 @@ export const DataViewport: React.FC<ViewportState | Record<string, unknown>> = (
 						type="button"
 						onClick={() => setState((prev) => ({ ...prev, notice: undefined }))}
 						aria-label={t('common.dismiss', 'Dismiss')}
-						className="inline-flex size-6 pointer-coarse:size-9 shrink-0 items-center justify-center rounded hover:bg-foreground/10 cursor-pointer"
+						className="inline-flex size-6 pointer-coarse:size-9 shrink-0 items-center justify-center rounded hover:bg-foreground/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
 					>
 						<DynamicIcon name="x" className="size-3.5" />
 					</button>
@@ -596,7 +617,7 @@ export const DataViewport: React.FC<ViewportState | Record<string, unknown>> = (
 						<button
 							type="button"
 							onClick={() => dispatch('clear_selection')}
-							className="text-muted-foreground hover:text-foreground underline cursor-pointer"
+							className="rounded text-muted-foreground hover:text-foreground underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
 						>
 							{t('media.clearSelection', 'Clear selection')}
 						</button>

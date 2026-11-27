@@ -277,6 +277,10 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 	const canSelectFilled = !flags.allowCustomization || flags.allowVariant;
 
 	const [current, setCurrent] = useState<NormalizedIconValue>(() => normalizeIconValue(props.value));
+	const currentRef = useRef<NormalizedIconValue>(current);
+	currentRef.current = current;
+	const categoriesLoadedRef = useRef<boolean>(false);
+	const loadMoreAbortRef = useRef<AbortController | null>(null);
 	const [isOpen, setIsOpen] = useState<boolean>(false);
 	const [activeTab, setActiveTab] = useState<'icons' | 'appearance'>('icons');
 	const [searchQuery, setSearchQuery] = useState<string>('');
@@ -302,8 +306,17 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 
 	useEffect(() => {
 		const next = normalizeIconValue(props.value);
-		setCurrent((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next));
+		if (JSON.stringify(currentRef.current) !== JSON.stringify(next)) {
+			currentRef.current = next;
+			setCurrent(next);
+		}
 	}, [props.value]);
+
+	useEffect(() => {
+		return () => {
+			loadMoreAbortRef.current?.abort();
+		};
+	}, []);
 
 	useEffect(() => {
 		const unsub = subscribeIconCatalog(() => setCatalogTick((n) => n + 1));
@@ -366,7 +379,7 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 				style: effectiveStyle,
 				offset: 0,
 				limit: QUERY_PAGE_SIZE,
-				includeMeta: categories.length === 0,
+				includeMeta: !categoriesLoadedRef.current,
 				endpoint,
 				signal: controller.signal,
 			})
@@ -375,6 +388,7 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 					return;
 				}
 				if (Array.isArray(res.categories) && res.categories.length > 0) {
+					categoriesLoadedRef.current = true;
 					setCategories(res.categories);
 				}
 				if (Array.isArray(res.popular)) {
@@ -393,6 +407,7 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 
 		return () => {
 			controller.abort();
+			loadMoreAbortRef.current?.abort();
 		};
 	}, [
 		isOpen,
@@ -403,13 +418,15 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 		styleFilter,
 		canSelectFilled,
 		endpoint,
-		categories.length,
 	]);
 
 	const loadNextPage = useCallback(() => {
 		if (!catalog || !hasMore || isLoading || isLoadingMore || !serverItems) {
 			return;
 		}
+		loadMoreAbortRef.current?.abort();
+		const controller = new AbortController();
+		loadMoreAbortRef.current = controller;
 		setIsLoadingMore(true);
 		const effectiveStyle = canSelectFilled ? styleFilter : 'outline';
 		void catalog
@@ -420,8 +437,12 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 				offset: serverItems.length,
 				limit: QUERY_PAGE_SIZE,
 				endpoint,
+				signal: controller.signal,
 			})
 			.then((res) => {
+				if (controller.signal.aborted) {
+					return;
+				}
 				setServerItems((prev) => {
 					const existing = new Set((prev ?? []).map((i) => i.name));
 					const appended = res.items.filter((i) => !existing.has(i.name));
@@ -434,7 +455,12 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 				// Ignore transient pagination error
 			})
 			.finally(() => {
-				setIsLoadingMore(false);
+				if (loadMoreAbortRef.current === controller) {
+					loadMoreAbortRef.current = null;
+				}
+				if (!controller.signal.aborted) {
+					setIsLoadingMore(false);
+				}
 			});
 	}, [
 		catalog,
@@ -454,27 +480,27 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 			if (isDisabled) {
 				return;
 			}
-			setCurrent((prev) => {
-				const next: NormalizedIconValue = {
-					...prev,
-					...patch,
-				};
-				next.variant = sanitizeIconVariant(next.variant, 'outline');
-				next.size = clampIconSize(next.size, 24);
-				next.strokeWidth = clampIconStrokeWidth(next.strokeWidth, 2);
-				next.color = sanitizeIconColor(next.color);
-				next.background = sanitizeIconColor(next.background);
-				next.radius = sanitizeIconRadius(next.radius, 'md');
+			const next: NormalizedIconValue = {
+				...currentRef.current,
+				...patch,
+			};
+			next.variant = sanitizeIconVariant(next.variant, 'outline');
+			next.size = clampIconSize(next.size, 24);
+			next.strokeWidth = clampIconStrokeWidth(next.strokeWidth, 2);
+			next.color = sanitizeIconColor(next.color);
+			next.background = sanitizeIconColor(next.background);
+			next.radius = sanitizeIconRadius(next.radius, 'md');
 
-				const serialized = serializeIconValueForInput(next, flags, prefixMode);
-				const emittedValue = flags.allowCustomization ? (next.name ? next : '') : serialized;
-				props.onValueChange?.(props.name, emittedValue);
+			currentRef.current = next;
+			setCurrent(next);
 
-				if (typeof window !== 'undefined' && hiddenInputRef.current) {
-					window.requestAnimationFrame(() => dispatchDomChange(hiddenInputRef.current));
-				}
-				return next;
-			});
+			const serialized = serializeIconValueForInput(next, flags, prefixMode);
+			const emittedValue = flags.allowCustomization ? (next.name ? next : '') : serialized;
+			props.onValueChange?.(props.name, emittedValue);
+
+			if (typeof window !== 'undefined' && hiddenInputRef.current) {
+				window.requestAnimationFrame(() => dispatchDomChange(hiddenInputRef.current));
+			}
 		},
 		[flags, isDisabled, prefixMode, props]
 	);
@@ -614,7 +640,7 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 				key={`${keyPrefix}_${entry.name}`}
 				type="button"
 				title={entry.label || formatIconLabel(entry.name)}
-				aria-label={entry.name}
+				aria-label={entry.label || formatIconLabel(entry.name)}
 				aria-pressed={isSelected}
 				onClick={() => handleSelectEntry(entry, false)}
 				onDoubleClick={() => handleSelectEntry(entry, true)}

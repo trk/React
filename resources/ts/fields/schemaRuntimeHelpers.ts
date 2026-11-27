@@ -31,11 +31,11 @@ export function lookupScopedFieldValue(
 		if (targetKey in values && values[targetKey] !== undefined) {
 			return { found: true, value: values[targetKey] };
 		}
-		if (/^(?:weblock|rwblock|entriesblock)_/.test(targetKey)) {
+		if (/^[a-z]{2,12}block_/.test(targetKey)) {
 			return { found: false, value: undefined };
 		}
 		for (const [k, v] of Object.entries(values)) {
-			if (!/^(?:weblock|rwblock|entriesblock)_/.test(k) && k.endsWith(`_${targetKey}`) && v !== undefined) {
+			if (!/^[a-z]{2,12}block_/.test(k) && k.endsWith(`_${targetKey}`) && v !== undefined) {
 				return { found: true, value: v };
 			}
 		}
@@ -101,7 +101,7 @@ export function isLinkValueObject(val: unknown): val is Record<string, unknown> 
 	const rec = val as Record<string, unknown>;
 	return (
 		typeof rec.type === 'string' &&
-		('pageId' in rec || 'url' in rec || 'entryId' in rec || 'file' in rec || 'anchor' in rec)
+		('pageId' in rec || 'url' in rec || 'resourceId' in rec || 'file' in rec || 'anchor' in rec)
 	);
 }
 
@@ -133,8 +133,8 @@ export function isLinkFieldValueEmpty(val: unknown): boolean {
 	if (type === 'page') {
 		return !(Number(val.pageId) > 0);
 	}
-	if (type === 'entry') {
-		return String(val.entryId ?? '').trim() === '';
+	if (String(val.resourceType ?? '').trim() !== '') {
+		return String(val.resourceId ?? '').trim() === '';
 	}
 	if (type === 'anchor') {
 		return String(val.anchor ?? val.url ?? '').replace(/^#+/, '').trim() === '';
@@ -151,7 +151,7 @@ export function isLinkFieldValueEmpty(val: unknown): boolean {
 	return (
 		String(val.file ?? '').trim() === '' &&
 		String(val.url ?? '').trim() === '' &&
-		String(val.entryId ?? '').trim() === '' &&
+		String(val.resourceId ?? '').trim() === '' &&
 		!(Number(val.pageId) > 0)
 	);
 }

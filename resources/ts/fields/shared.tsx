@@ -2,6 +2,10 @@ import React from 'react';
 import { t } from '../lib/i18n';
 import { cn, DynamicIcon, sanitizeHref } from '../lib/utils';
 import type {
+	ConditionFieldOption,
+	ConditionFieldSpec,
+	ConditionFieldType,
+	DynamicBlockOptionsSource,
 	InputfieldLanguageItem,
 	InputfieldMediaItem,
 	InputfieldOptionItem,
@@ -12,6 +16,7 @@ import type {
 	SchemaFieldOption,
 	SchemaFieldValidationRules,
 } from './types';
+import type { SchemaFormContextValue } from './schema/SchemaFormContext';
 import {
 	evaluateCondition,
 	evaluateShowIfCondition,
@@ -194,8 +199,8 @@ export function createEmptyLinkValue(defaultType = 'url'): LinkFieldValue {
 	return {
 		type: defaultType === 'anchor' ? 'url' : defaultType,
 		pageId: 0,
-		entryType: '',
-		entryId: '',
+		resourceType: '',
+		resourceId: '',
 		url: '',
 		file: '',
 		query: '',
@@ -301,13 +306,13 @@ export function normalizeLinkFieldValue(raw: unknown, defaultType = 'url'): Link
 		pageId: Number.isFinite(Number(rec.pageId))
 			? Math.max(0, Math.trunc(Number(rec.pageId)))
 			: 0,
-		entryType:
-			typeof rec.entryType === 'string'
-				? rec.entryType.trim()
+		resourceType:
+			typeof rec.resourceType === 'string'
+				? rec.resourceType.trim()
 				: '',
-		entryId:
-			rec.entryId !== undefined && rec.entryId !== null
-				? String(rec.entryId).trim()
+		resourceId:
+			rec.resourceId !== undefined && rec.resourceId !== null
+				? String(rec.resourceId).trim()
 				: '',
 		url: urlVal,
 		file: rec.file !== undefined && rec.file !== null ? String(rec.file).trim() : '',
@@ -474,9 +479,13 @@ export function buildLinkInlineSettingFields(
 	const isHashOnlyUrl = normLink.type === 'url' && normLink.url.trim().startsWith('#');
 	const canHaveAnchor =
 		normLink.type !== 'tel' && normLink.type !== 'email' && !isHashOnlyUrl;
+	const isRelationType =
+		Boolean(linkConfig?.relationTokens?.[normLink.type]) ||
+		Boolean(normLink.resourceId) ||
+		Boolean(normLink.resourceType);
 	const canHaveQuery =
 		normLink.type === 'page' ||
-		normLink.type === 'entry' ||
+		(isRelationType && normLink.type !== 'tel' && normLink.type !== 'email') ||
 		(normLink.type === 'url' && !isHashOnlyUrl);
 
 	const fields: SchemaFieldDefinition[] = [];
@@ -858,17 +867,10 @@ export function countNestedErrors(
 		}
 		if (f.name) {
 			const repeaterPrefix = `${f.name}[`;
-			const entriesBlockPrefix = `entriesblock_${f.name}_`;
-			const weBlockPrefix = `weblock_${f.name}_`;
-			const rwBlockPrefix = `rwblock_${f.name}_`;
+			const escapedName = f.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+			const scopedBlockRe = new RegExp(`^[a-z]{2,12}block_${escapedName}_`);
 			for (const errKey of errorKeys) {
-				if (
-					errKey !== f.name &&
-					(errKey.startsWith(repeaterPrefix) ||
-						errKey.startsWith(entriesBlockPrefix) ||
-						errKey.startsWith(weBlockPrefix) ||
-						errKey.startsWith(rwBlockPrefix))
-				) {
+				if (errKey !== f.name && (errKey.startsWith(repeaterPrefix) || scopedBlockRe.test(errKey))) {
 					count++;
 				}
 			}
@@ -1505,4 +1507,199 @@ export function MediaItemFilename({ item, isDeleted }: { item: ManagedMediaItem;
 	) : (
 		<span className={cls}>{item.basename || item.name}</span>
 	);
+}
+
+function mapRawTypeToConditionFieldType(rawType: string): ConditionFieldType {
+	const t = rawType.trim().toLowerCase();
+	if (
+		t === 'number' ||
+		t === 'integer' ||
+		t === 'float' ||
+		t === 'decimal' ||
+		t === 'range' ||
+		t === 'range_slider' ||
+		t === 'unit_number' ||
+		t === 'rating' ||
+		t === 'calculation' ||
+		t === 'opinion_scale'
+	) {
+		return 'number';
+	}
+	if (t === 'date' || t === 'datetime') {
+		return 'date';
+	}
+	if (t === 'boolean' || t === 'toggle' || t === 'checkbox' || t === 'consent') {
+		return 'boolean';
+	}
+	if (
+		t === 'select' ||
+		t === 'combobox' ||
+		t === 'segmented' ||
+		t === 'radios' ||
+		t === 'checkboxes' ||
+		t === 'multiselect' ||
+		t === 'cards'
+	) {
+		return 'select';
+	}
+	if (t === 'currency') {
+		return 'currency';
+	}
+	if (t === 'country') {
+		return 'country';
+	}
+	return 'text';
+}
+
+function parseBlockScalar(raw: unknown): string {
+	if (typeof raw === 'string') {
+		return raw.trim();
+	}
+	if (typeof raw === 'number' || typeof raw === 'boolean') {
+		return String(raw);
+	}
+	if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+		const rec = raw as Record<string, unknown>;
+		if (typeof rec.default === 'string' && rec.default.trim() !== '') {
+			return rec.default.trim();
+		}
+		for (const v of Object.values(rec)) {
+			if (typeof v === 'string' && v.trim() !== '') {
+				return v.trim();
+			}
+		}
+	}
+	return '';
+}
+
+function parseBlockOptions(raw: unknown): ConditionFieldOption[] | undefined {
+	if (typeof raw === 'string' && raw.trim() !== '') {
+		const items: ConditionFieldOption[] = [];
+		for (const line of raw.split(/\r?\n/)) {
+			const clean = line.trim();
+			if (!clean) {
+				continue;
+			}
+			const sepIdx = clean.indexOf('=');
+			if (sepIdx > 0) {
+				const val = clean.slice(0, sepIdx).trim();
+				const lbl = clean.slice(sepIdx + 1).trim() || val;
+				if (val !== '') {
+					items.push({ value: val, label: lbl });
+				}
+			} else {
+				items.push({ value: clean, label: clean });
+			}
+		}
+		return items.length > 0 ? items : undefined;
+	}
+	if (Array.isArray(raw)) {
+		const items: ConditionFieldOption[] = [];
+		for (const entry of raw) {
+			if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+				const rec = entry as Record<string, unknown>;
+				const val = parseBlockScalar(rec.value ?? rec.key);
+				const lbl = parseBlockScalar(rec.label) || val;
+				if (val !== '') {
+					items.push({ value: val, label: lbl });
+				}
+			}
+		}
+		return items.length > 0 ? items : undefined;
+	}
+	return undefined;
+}
+
+/**
+ * Resolve field metadata dynamically from registered blocks in the enclosing `SchemaForm`.
+ */
+export function resolveDynamicBlockFields(
+	source: DynamicBlockOptionsSource | undefined,
+	schemaCtx: SchemaFormContextValue | null | undefined,
+	formValues?: Record<string, unknown>,
+	scopePrefix?: string,
+): ConditionFieldSpec[] {
+	if (!source?.blockField || !schemaCtx?.getRegisteredBlocks) {
+		return [];
+	}
+
+	const blocks = schemaCtx.getRegisteredBlocks(source.blockField);
+	if (!blocks || blocks.length === 0) {
+		return [];
+	}
+
+	const liveValues = schemaCtx.values ?? formValues ?? {};
+	const cleanSelfPrefix = scopePrefix ? scopePrefix.replace(/_+$/, '') : '';
+	const seen = new Set<string>();
+	const result: ConditionFieldSpec[] = [];
+
+	for (const blk of blocks) {
+		if (Array.isArray(source.blockTypes) && source.blockTypes.length > 0 && !source.blockTypes.includes(blk.type)) {
+			continue;
+		}
+		const cleanBlkPrefix = blk.prefix ? blk.prefix.replace(/_+$/, '') : '';
+		if (source.excludeSelf && cleanSelfPrefix && cleanBlkPrefix === cleanSelfPrefix) {
+			continue;
+		}
+
+		const readAttr = (attrKey: string): unknown => {
+			if (cleanBlkPrefix) {
+				const scopedKey = `${cleanBlkPrefix}_${attrKey}`;
+				if (scopedKey in liveValues && liveValues[scopedKey] !== undefined) {
+					return liveValues[scopedKey];
+				}
+			}
+			return blk.values?.[attrKey];
+		};
+
+		const rawValueKey = parseBlockScalar(readAttr(source.valueKey));
+		if (!rawValueKey || seen.has(rawValueKey)) {
+			continue;
+		}
+
+		const rawTypeStr = source.typeKey ? parseBlockScalar(readAttr(source.typeKey)) : 'text';
+		if (
+			Array.isArray(source.excludeTypes) &&
+			source.excludeTypes.length > 0 &&
+			rawTypeStr !== '' &&
+			source.excludeTypes.includes(rawTypeStr.toLowerCase())
+		) {
+			continue;
+		}
+
+		seen.add(rawValueKey);
+		const rawLabel = source.labelKey ? parseBlockScalar(readAttr(source.labelKey)) : '';
+		const options = parseBlockOptions(readAttr(source.optionsKey ?? 'options'));
+		const normalizedTypeKey = rawTypeStr.trim().toLowerCase();
+		let mappedType =
+			(normalizedTypeKey !== '' && source.typeMap?.[normalizedTypeKey]) ||
+			mapRawTypeToConditionFieldType(rawTypeStr);
+		if (
+			mappedType === 'select' &&
+			source.fallbackToTextWhenNoOptions &&
+			(!options || options.length === 0)
+		) {
+			mappedType = 'text';
+		}
+
+		let allowCustomValue = false;
+		if (source.allowCustomKey) {
+			const rawCustom = readAttr(source.allowCustomKey);
+			allowCustomValue =
+				rawCustom === true ||
+				rawCustom === 1 ||
+				rawCustom === '1' ||
+				(typeof rawCustom === 'string' && rawCustom.trim().toLowerCase() === 'true');
+		}
+
+		result.push({
+			key: rawValueKey,
+			label: rawLabel !== '' && rawLabel !== rawValueKey ? `${rawLabel} (${rawValueKey})` : rawValueKey,
+			type: mappedType,
+			...(options ? { options } : {}),
+			...(allowCustomValue ? { allowCustomValue: true } : {}),
+		});
+	}
+
+	return result;
 }

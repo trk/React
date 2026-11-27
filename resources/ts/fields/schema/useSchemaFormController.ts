@@ -12,6 +12,7 @@ import {
 	validateFieldWithValibot,
 	validateSchemaTree,
 	type RegisteredBlockFieldSpec,
+	type RegisteredBlockItemSpec,
 	type RegisteredFragmentSpec,
 	type SchemaValidationResult,
 } from '../validation';
@@ -60,6 +61,7 @@ export function useSchemaFormController(props: SchemaFormProps) {
 			surface: props.surface ?? null,
 			tabsLayout: props.tabsLayout ?? null,
 			presenceKey: props.presenceKey ?? null,
+			presenceToken: props.presenceToken ?? null,
 			presenceEndpoint: props.presenceEndpoint ?? null,
 			csrf: props.csrf ?? null,
 			hiddenInputs: props.hiddenInputs ?? [],
@@ -102,6 +104,7 @@ export function useSchemaFormController(props: SchemaFormProps) {
 
 	const registeredFragmentsRef = useRef<Map<string, RegisteredFragmentSpec>>(new Map());
 	const registeredBlocksRef = useRef<Map<string, RegisteredBlockFieldSpec>>(new Map());
+	const [blocksVersion, setBlocksVersion] = useState(0);
 
 	const registerParentFragment = parentCtx?.registerFragment;
 
@@ -198,12 +201,12 @@ export function useSchemaFormController(props: SchemaFormProps) {
 			}
 			if (typeof v === 'object') {
 				const vObj = v as Record<string, unknown>;
-				if ('url' in vObj || 'href' in vObj || 'pageId' in vObj || 'entryId' in vObj || 'file' in vObj) {
+				if ('url' in vObj || 'href' in vObj || 'pageId' in vObj || 'resourceId' in vObj || 'file' in vObj) {
 					return (
 						!String(vObj.url || '').trim() &&
 						!String(vObj.href || '').trim() &&
 						!Number(vObj.pageId || 0) &&
-						!String(vObj.entryId || '').trim() &&
+						!String(vObj.resourceId || '').trim() &&
 						!String(vObj.file || '').trim()
 					);
 				}
@@ -765,28 +768,62 @@ export function useSchemaFormController(props: SchemaFormProps) {
 
 	const registerFragment = useCallback(
 		(spec: RegisteredFragmentSpec) => {
-			if (isAttachedFragment && parentCtx) {
-				return parentCtx.registerFragment(spec);
+			const activeParent = parentCtxRef.current;
+			if (isAttachedFragment && activeParent) {
+				return activeParent.registerFragment(spec);
 			}
 			registeredFragmentsRef.current.set(spec.fragmentId, spec);
 			return () => {
 				registeredFragmentsRef.current.delete(spec.fragmentId);
 			};
 		},
-		[isAttachedFragment, parentCtx]
+		[isAttachedFragment]
 	);
 
 	const registerBlockField = useCallback(
 		(spec: RegisteredBlockFieldSpec) => {
-			if (isAttachedFragment && parentCtx) {
-				return parentCtx.registerBlockField(spec);
+			const activeParent = parentCtxRef.current;
+			if (isAttachedFragment && activeParent) {
+				return activeParent.registerBlockField(spec);
 			}
 			registeredBlocksRef.current.set(spec.fieldKey, spec);
+			setBlocksVersion((v) => v + 1);
 			return () => {
 				registeredBlocksRef.current.delete(spec.fieldKey);
+				setBlocksVersion((v) => v + 1);
 			};
 		},
-		[isAttachedFragment, parentCtx]
+		[isAttachedFragment]
+	);
+
+	const getRegisteredBlocks = useCallback(
+		(fieldKey: string): ReadonlyArray<RegisteredBlockItemSpec> => {
+			if (isAttachedFragment && parentCtxRef.current?.getRegisteredBlocks) {
+				return parentCtxRef.current.getRegisteredBlocks(fieldKey);
+			}
+			const direct = registeredBlocksRef.current.get(fieldKey);
+			if (direct) {
+				return direct.getBlocks();
+			}
+			for (const spec of registeredBlocksRef.current.values()) {
+				if (spec.fieldName === fieldKey) {
+					return spec.getBlocks();
+				}
+			}
+			return [];
+		},
+		[isAttachedFragment]
+	);
+
+	const notifyBlocksChanged = useCallback(
+		(fieldKey: string): void => {
+			if (isAttachedFragment && parentCtxRef.current?.notifyBlocksChanged) {
+				parentCtxRef.current.notifyBlocksChanged(fieldKey);
+				return;
+			}
+			setBlocksVersion((v) => v + 1);
+		},
+		[isAttachedFragment]
 	);
 
 	const contextValue = useMemo<SchemaFormContextValue>(() => {
@@ -808,6 +845,9 @@ export function useSchemaFormController(props: SchemaFormProps) {
 			setFieldError,
 			registerFragment,
 			registerBlockField,
+			blocksVersion,
+			getRegisteredBlocks,
+			notifyBlocksChanged,
 			validateAll,
 			validateStep,
 		};
@@ -824,6 +864,9 @@ export function useSchemaFormController(props: SchemaFormProps) {
 		setFieldError,
 		registerFragment,
 		registerBlockField,
+		blocksVersion,
+		getRegisteredBlocks,
+		notifyBlocksChanged,
 		validateAll,
 		validateStep,
 	]);

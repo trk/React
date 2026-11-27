@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { t } from '../../lib/i18n';
 import { cn, DynamicIcon } from '../../lib/utils';
 import { Badge } from '../../ui';
@@ -184,7 +184,25 @@ export function TagsField(props: ReactInputfieldProps): React.ReactElement {
 		commitTags(next);
 	};
 
+	const listboxId = useId();
 	const showSuggestions = focused && !locked && filteredSuggestions.length > 0;
+
+	useEffect(() => {
+		if (!showSuggestions || typeof window === 'undefined') {
+			return;
+		}
+		const onEscape = (e: KeyboardEvent) => {
+			if (e.key !== 'Escape') {
+				return;
+			}
+			e.preventDefault();
+			e.stopPropagation();
+			setFocused(false);
+			setActiveIndex(-1);
+		};
+		window.addEventListener('keydown', onEscape, true);
+		return () => window.removeEventListener('keydown', onEscape, true);
+	}, [showSuggestions]);
 
 	return (
 		<div className="relative space-y-1 min-w-0 max-w-full" data-rw-control="tags">
@@ -230,7 +248,7 @@ export function TagsField(props: ReactInputfieldProps): React.ReactElement {
 									e.stopPropagation();
 									removeTagAt(idx);
 								}}
-								className="ml-0.5 inline-flex size-4 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+								className="ml-0.5 inline-flex size-4 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
 							>
 								<DynamicIcon name="x" aria-hidden="true" className="size-3" />
 							</button>
@@ -243,6 +261,13 @@ export function TagsField(props: ReactInputfieldProps): React.ReactElement {
 						ref={inputRef}
 						id={props.id}
 						type="text"
+						role="combobox"
+						aria-autocomplete="list"
+						aria-expanded={showSuggestions}
+						aria-controls={showSuggestions ? listboxId : undefined}
+						aria-activedescendant={
+							showSuggestions && activeIndex >= 0 ? `${listboxId}-opt-${activeIndex}` : undefined
+						}
 						data-rw-bare-input=""
 						disabled={props.disabled || atCapacity}
 						value={draft}
@@ -269,6 +294,7 @@ export function TagsField(props: ReactInputfieldProps): React.ReactElement {
 						}}
 						onChange={(e) => {
 							const val = e.target.value;
+							setFocused(true);
 							if (val.includes(',') || val.includes('\n')) {
 								tryAddFromString(val);
 							} else {
@@ -329,6 +355,7 @@ export function TagsField(props: ReactInputfieldProps): React.ReactElement {
 
 			{showSuggestions ? (
 				<div
+					id={listboxId}
 					role="listbox"
 					aria-label={t('tags.suggestions', 'Suggested tags')}
 					className="absolute left-0 right-0 z-40 mt-1 max-h-48 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg"
@@ -336,8 +363,10 @@ export function TagsField(props: ReactInputfieldProps): React.ReactElement {
 					{filteredSuggestions.map((suggestion, idx) => (
 						<button
 							key={suggestion}
+							id={`${listboxId}-opt-${idx}`}
 							type="button"
 							role="option"
+							tabIndex={-1}
 							aria-selected={idx === activeIndex}
 							onMouseDown={(e) => {
 								e.preventDefault();

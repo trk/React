@@ -20,7 +20,7 @@ export function sanitizeHref(url?: string | null): string {
 		return '';
 	}
 	const trimmed = url.trim();
-	if (trimmed === '' || /[\x00-\x1F\x7F]/.test(trimmed)) {
+	if (trimmed === '' || /[\x00-\x20\x7F]/.test(trimmed)) {
 		return '';
 	}
 	if (trimmed.startsWith('//') || trimmed.startsWith('/\\') || trimmed.startsWith('\\')) {
@@ -56,10 +56,44 @@ export function sanitizeImageSrc(url?: string | null): string {
 		if (svgMatch?.[1]) {
 			try {
 				const decoded = decodeURIComponent(svgMatch[1]);
+				const namedEntityDecoded = decoded.replace(
+					/&(tab|newline|colon|semi|lpar|rpar|lt|gt|quot|apos|amp);/gi,
+					(_, name: string) => {
+						switch (name.toLowerCase()) {
+							case 'tab':
+								return '\t';
+							case 'newline':
+								return '\n';
+							case 'colon':
+								return ':';
+							case 'semi':
+								return ';';
+							case 'lpar':
+								return '(';
+							case 'rpar':
+								return ')';
+							case 'lt':
+								return '<';
+							case 'gt':
+								return '>';
+							case 'quot':
+								return '"';
+							case 'apos':
+								return "'";
+							case 'amp':
+								return '&';
+							default:
+								return _;
+						}
+					}
+				);
 				if (
+					!/[\x00-\x1F\x7F]/.test(decoded) &&
+					!/[\x00-\x1F\x7F]/.test(namedEntityDecoded) &&
+					!/&#[xX]?[0-9a-fA-F]+;?/.test(decoded) &&
 					/<svg\b/i.test(decoded) &&
-					!/<\s*(?:script|foreignobject|iframe|object|embed|use)\b|\bon[a-z]+\s*=|(?:javascript|vbscript):/i.test(
-						decoded
+					!/<\s*(?:[a-z0-9_-]+:)?(?:script|foreignobject|iframe|object|embed|use|handler|style|animate|set|animatetransform|animatemotion|meta|base|link|feimage|tref)\b|\bon[a-z0-9_]+\s*=|(?:javascript|vbscript):/i.test(
+						namedEntityDecoded
 					)
 				) {
 					return trimmed;

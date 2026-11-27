@@ -46,7 +46,6 @@ import type {
 
 const DEFAULT_TYPE_LABELS: Record<string, string> = {
 	page: 'Page',
-	entry: 'Entry',
 	url: 'URL',
 	file: 'File',
 	image: 'Image',
@@ -57,7 +56,6 @@ const DEFAULT_TYPE_LABELS: Record<string, string> = {
 
 const TYPE_ICONS: Record<string, string> = {
 	page: 'file-text',
-	entry: 'database',
 	url: 'globe',
 	file: 'paperclip',
 	image: 'image',
@@ -68,7 +66,6 @@ const TYPE_ICONS: Record<string, string> = {
 
 const TYPE_PLACEHOLDERS: Record<string, string> = {
 	page: 'Search pages by title or path...',
-	entry: 'Search entries...',
 	url: 'https://example.com, /path/, or #section',
 	email: 'hello@example.com',
 	tel: '+905551234567',
@@ -186,7 +183,7 @@ export function LinkFieldControl(rawProps: LinkFieldStandaloneProps): React.Reac
 			norm.label.trim() ||
 			norm.file.trim() ||
 			norm.url.trim() ||
-			(norm.pageId > 0 ? `Page #${norm.pageId}` : norm.entryId ? `Entry ${norm.entryId.slice(0, 8)}` : '—');
+			(norm.pageId > 0 ? `Page #${norm.pageId}` : norm.resourceId ? `${norm.type} ${norm.resourceId.slice(0, 8)}` : '—');
 		return (
 			<Badge variant="secondary" className="max-w-full min-w-0 overflow-hidden gap-1.5 text-xs font-normal" data-rw-control="link">
 				<span className="shrink-0 font-mono font-semibold uppercase text-foreground">{norm.type}:</span>
@@ -246,7 +243,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 		const rawTypes =
 			Array.isArray(raw?.types) && raw.types.length > 0
 				? raw.types
-				: ['page', 'entry', 'url', 'tel', 'email', 'file'];
+				: ['page', 'url', 'tel', 'email', 'file'];
 		const types: string[] = [];
 		for (const item of rawTypes) {
 			const clean = String(item || '').trim().toLowerCase();
@@ -378,7 +375,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 			? current.pageId > 0
 				? String(current.pageId)
 				: ''
-			: current.entryId;
+			: current.resourceId;
 
 	const selectedItem: RelationItemData | null = useMemo(() => {
 		if (!isRelationType || !activeRelationId) {
@@ -623,14 +620,14 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 			if (current.type === 'page') {
 				commit({
 					pageId: Math.max(0, Number(idStr) || 0),
-					entryId: '',
-					entryType: '',
+					resourceId: '',
+					resourceType: '',
 				});
 			} else {
-				const inferredEntryType = String(item.meta?.type || item.badge || '');
+				const inferredResourceType = String(item.meta?.type || item.badge || '');
 				commit({
-					entryId: idStr,
-					entryType: inferredEntryType,
+					resourceId: idStr,
+					resourceType: inferredResourceType,
 					pageId: 0,
 				});
 			}
@@ -1329,7 +1326,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 										className="flex min-w-0 flex-1 items-center gap-2 text-left cursor-pointer disabled:cursor-default"
 									>
 										<DynamicIcon
-											name={selectedItem?.icon || TYPE_ICONS[current.type] || 'link-2'}
+											name={selectedItem?.icon || TYPE_ICONS[current.type] || (isRelationType ? 'database' : 'link-2')}
 											className="size-3.5 shrink-0 text-muted-foreground"
 											aria-hidden="true"
 										/>
@@ -1349,7 +1346,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 												commit(
 													current.type === 'page'
 														? { pageId: 0 }
-														: { entryId: '', entryType: '' }
+														: { resourceId: '', resourceType: '' }
 												)
 											}
 											aria-label={t('link.clearTarget', 'Clear selected target')}
@@ -1368,7 +1365,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 									)}
 								>
 									<DynamicIcon
-										name={searchLoading ? 'loader-2' : TYPE_ICONS[current.type] || 'search'}
+										name={searchLoading ? 'loader-2' : TYPE_ICONS[current.type] || 'database'}
 										className={cn(
 											'size-3.5 shrink-0 text-muted-foreground',
 											searchLoading && 'motion-safe:animate-spin'
@@ -1382,12 +1379,17 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 										data-rw-bare-input=""
 										role="combobox"
 										aria-label={
-											current.type === 'entry'
-												? t('link.searchEntries', 'Search entries')
-												: t('link.searchPages', 'Search pages')
+											current.type === 'page'
+												? t('link.searchPages', 'Search pages')
+												: t('link.searchTarget', 'Search target')
 										}
 										aria-expanded={searchOpen}
-										aria-controls={listboxId}
+										aria-controls={searchOpen ? listboxId : undefined}
+										aria-activedescendant={
+											searchOpen && highlightedIdx >= 0 && searchResults[highlightedIdx]
+												? `${listboxId}-opt-${highlightedIdx}`
+												: undefined
+										}
 										aria-autocomplete="list"
 										aria-invalid={inlineError ? 'true' : 'false'}
 										aria-describedby={inlineError ? errorId : undefined}
@@ -1396,7 +1398,11 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 										spellCheck={false}
 										disabled={isDisabled}
 										value={searchQuery}
-										placeholder={props.placeholder || TYPE_PLACEHOLDERS[current.type] || 'Search...'}
+										placeholder={
+											props.placeholder ||
+											TYPE_PLACEHOLDERS[current.type] ||
+											`${t('link.searchTarget', 'Search target')}...`
+										}
 										className="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none disabled:cursor-not-allowed"
 										onFocus={() => {
 											if (!isDisabled) {
@@ -1773,6 +1779,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 									return (
 										<div
 											key={`${item.resource}:${String(item.value)}`}
+											id={`${listboxId}-opt-${idx}`}
 											role="option"
 											aria-selected={String(item.value) === activeRelationId}
 											onMouseEnter={() => setHighlightedIdx(idx)}
@@ -1787,7 +1794,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 										>
 											<div className="flex min-w-0 items-center gap-2">
 												<DynamicIcon
-													name={item.icon || TYPE_ICONS[current.type] || 'file-text'}
+													name={item.icon || TYPE_ICONS[current.type] || (isRelationType ? 'database' : 'file-text')}
 													className="size-3.5 shrink-0 text-muted-foreground"
 												/>
 												<div className="min-w-0">
