@@ -83,6 +83,45 @@ final class RelationResourceRegistry extends Wire
 	}
 
 	/**
+	 * Remove a registered resource alias.
+	 */
+	public function unregisterAlias(string $alias): self
+	{
+		$cleanAlias = strtolower(trim($alias));
+		if ($cleanAlias !== '') {
+			unset($this->aliases[$cleanAlias]);
+		}
+
+		return $this;
+	}
+
+	/**
+	 * Remove a registered resource adapter instance or factory under `$name`.
+	 */
+	public function unregister(string $name): self
+	{
+		$key = strtolower(trim($name));
+		if ($key !== '') {
+			unset($this->instances[$key], $this->factories[$key]);
+		}
+
+		return $this;
+	}
+
+	/**
+	 * Remove a registered lazy factory (and any memoized instance built from it) under `$name`.
+	 */
+	public function unregisterFactory(string $name): self
+	{
+		$key = strtolower(trim($name));
+		if ($key !== '') {
+			unset($this->factories[$key], $this->instances[$key]);
+		}
+
+		return $this;
+	}
+
+	/**
 	 * Determine whether a resource adapter is registered under `$name`.
 	 */
 	public function has(string $name): bool

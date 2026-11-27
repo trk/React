@@ -56,6 +56,35 @@ final class ProviderRegistry extends Wire
 	}
 
 	/**
+	 * Remove a registered concrete provider instance by descriptor ID.
+	 */
+	public function unregister(string $id): self
+	{
+		$key = trim($id);
+		if ($key !== '') {
+			unset($this->instances[$key]);
+		}
+
+		return $this;
+	}
+
+	/**
+	 * Remove a registered provider factory by descriptor ID or scheme prefix.
+	 */
+	public function unregisterFactory(string $prefixOrId): self
+	{
+		$key = trim($prefixOrId);
+		if ($key !== '') {
+			unset($this->factories[$key]);
+			if (!str_contains($key, ':')) {
+				unset($this->factories[strtolower($key)]);
+			}
+		}
+
+		return $this;
+	}
+
+	/**
 	 * Check whether a descriptor is registered or matches a built-in adapter scheme (`pages:`, `array:`).
 	 */
 	public function has(string $descriptor): bool

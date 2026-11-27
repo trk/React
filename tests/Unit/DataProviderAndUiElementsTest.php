@@ -13,6 +13,8 @@ use Totoglu\React\Inertia\ProcessReact;
 use Totoglu\React\Provider\ArrayDataProvider;
 use Totoglu\React\Provider\PagesDataProvider;
 use Totoglu\React\Provider\ProviderRegistry;
+use Totoglu\React\Relation\RelationResourceRegistry;
+use Totoglu\React\Relation\Resource\PageResourceAdapter;
 use function ProcessWire\bootReactForTesting;
 use function ProcessWire\wire;
 
@@ -160,8 +162,43 @@ test('ProviderRegistry resolves built-in pages and array adapters, supports cust
 		->and(fn () => $registry->resolve('unregistered:target'))->toThrow(WireException::class);
 
 	$registry->registerFactory('custom', fn (string $target, array $options) => new ArrayDataProvider('custom:' . $target, [], $options));
+	$registry->registerFactory('custom:exact', fn (string $target, array $options) => new ArrayDataProvider($target, [], $options));
+	$registry->register('concrete:item', new ArrayDataProvider('concrete:item', []));
 	expect($registry->has('custom:items'))->toBeTrue()
+		->and($registry->has('custom:exact'))->toBeTrue()
+		->and($registry->has('concrete:item'))->toBeTrue()
 		->and($registry->resolve('custom:items', ['title' => 'Custom Set'])->title())->toBe('Custom Set');
+
+	$registry->unregister('concrete:item');
+	expect($registry->has('concrete:item'))->toBeFalse()
+		->and($registry->has('custom:items'))->toBeTrue();
+
+	$registry->unregisterFactory('Custom');
+	$registry->unregisterFactory('custom:exact');
+	expect($registry->has('custom:items'))->toBeFalse()
+		->and($registry->has('custom:exact'))->toBeFalse()
+		->and(fn () => $registry->resolve('custom:items'))->toThrow(WireException::class)
+		->and(fn () => $registry->resolve('custom:exact'))->toThrow(WireException::class);
+
+	$relRegistry = new RelationResourceRegistry();
+	wire($relRegistry);
+	$relRegistry->registerFactory('custom_resource', static fn () => new PageResourceAdapter());
+	$relRegistry->register(new PageResourceAdapter(), 'custom_instance');
+	$relRegistry->registerAlias('custom_alias', 'page');
+
+	expect($relRegistry->has('custom_resource'))->toBeTrue()
+		->and($relRegistry->get('custom_resource'))->toBeInstanceOf(PageResourceAdapter::class)
+		->and($relRegistry->has('custom_instance'))->toBeTrue()
+		->and($relRegistry->has('custom_alias'))->toBeTrue();
+
+	$relRegistry->unregisterFactory('custom_resource');
+	$relRegistry->unregister('custom_instance');
+	$relRegistry->unregisterAlias('custom_alias');
+
+	expect($relRegistry->has('custom_resource'))->toBeFalse()
+		->and($relRegistry->has('custom_instance'))->toBeFalse()
+		->and($relRegistry->has('custom_alias'))->toBeFalse()
+		->and(fn () => $relRegistry->get('custom_resource'))->toThrow(WireException::class);
 
 	$workspace = React::instance();
 	$pagesProvider = $workspace->provider('pages:id=1');
