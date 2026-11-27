@@ -6,7 +6,7 @@ namespace ProcessWire;
 
 return [
 	'title' => __('React Condition Builder', __FILE__),
-	'version' => 32,
+	'version' => 33,
 	'summary' => __('Visual rule and condition builder with AND/OR groups, categorized field sources, value-or-field comparisons, and live summaries.', __FILE__),
 	'author' => 'Iskender TOTOGLU @trk @ukyo',
 	'icon' => 'code-fork',

@@ -6,7 +6,7 @@ namespace ProcessWire;
 
 return [
 	'title' => __('React Table Viewport', __FILE__),
-	'version' => 32,
+	'version' => 33,
 	'summary' => __('Interactive data table with search, filters, inline editing, bulk actions, and pagination.', __FILE__),
 	'author' => 'Iskender TOTOGLU @trk @ukyo',
 	'icon' => 'table',

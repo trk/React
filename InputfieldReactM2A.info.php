@@ -6,7 +6,7 @@ namespace ProcessWire;
 
 return [
 	'title' => __('React Relation (M2A — Multi-Type)', __FILE__),
-	'version' => 30,
+	'version' => 33,
 	'summary' => __('Select and organize related items across multiple resource types (such as pages, users, or custom resources) in one field.', __FILE__),
 	'author' => 'Iskender TOTOGLU @trk @ukyo',
 	'icon' => 'random',

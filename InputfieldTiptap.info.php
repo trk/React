@@ -6,7 +6,7 @@ namespace ProcessWire;
 
 return [
 	'title' => __('Tiptap', __FILE__),
-	'version' => 32,
+	'version' => 33,
 	'summary' => __('Rich text editor with customizable toolbars, content blocks, HTML cleanup, and multi-language support.', __FILE__),
 	'author' => 'Iskender TOTOGLU @trk @ukyo',
 	'icon' => 'align-left',

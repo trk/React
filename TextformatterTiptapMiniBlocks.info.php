@@ -6,7 +6,7 @@ namespace ProcessWire;
 
 return [
 	'title' => __('Tiptap Mini-Blocks Renderer', __FILE__),
-	'version' => 30,
+	'version' => 33,
 	'summary' => __('Renders inline content blocks from the Tiptap rich text editor using templates in ./site/templates/tiptap/.', __FILE__),
 	'author' => 'Iskender TOTOGLU @trk @ukyo',
 	'icon' => 'cubes',
