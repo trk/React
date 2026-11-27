@@ -198,7 +198,7 @@ function canFireEntry(entry: InternalBindingEntry, editable: boolean, dialogOpen
 }
 
 function handleGlobalKeyDown(event: KeyboardEvent): void {
-	if (!globalEnabled || event.isComposing || event.defaultPrevented) {
+	if (!globalEnabled || event.isComposing || event.keyCode === 229 || event.defaultPrevented) {
 		return;
 	}
 	const rawKey = String(event.key || '');

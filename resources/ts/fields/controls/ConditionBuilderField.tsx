@@ -1,6 +1,6 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { t } from '../../lib/i18n';
-import { cn, DynamicIcon } from '../../lib/utils';
+import { cn, DynamicIcon, shouldIgnoreEscapeEvent } from '../../lib/utils';
 import { Badge, Button, Input, PortalRoot, Select } from '../../ui';
 import {
 	DEFAULT_OPERATORS_BY_TYPE,
@@ -208,6 +208,7 @@ const ConditionFieldPicker: React.FC<ConditionFieldPickerProps> = ({
 }) => {
 	const pickerId = useId();
 	const listboxId = `${pickerId}-listbox`;
+	const dialogId = `${pickerId}-dialog`;
 	const [isOpen, setIsOpen] = useState(false);
 	const [search, setSearch] = useState('');
 	const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
@@ -291,12 +292,13 @@ const ConditionFieldPicker: React.FC<ConditionFieldPickerProps> = ({
 			setIsOpen(false);
 		};
 		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.key === 'Escape') {
-				e.preventDefault();
-				e.stopPropagation();
-				setIsOpen(false);
-				triggerRef.current?.focus();
+			if (shouldIgnoreEscapeEvent(e, popoverRef.current)) {
+				return;
 			}
+			e.preventDefault();
+			e.stopPropagation();
+			setIsOpen(false);
+			triggerRef.current?.focus();
 		};
 		document.addEventListener('mousedown', handlePointerDown);
 		document.addEventListener('keydown', handleKeyDown, true);
@@ -338,6 +340,9 @@ const ConditionFieldPicker: React.FC<ConditionFieldPickerProps> = ({
 	};
 
 	const handlePickerKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+		if (e.nativeEvent.isComposing || e.keyCode === 229) {
+			return;
+		}
 		if (flatFields.length === 0) {
 			return;
 		}
@@ -385,10 +390,9 @@ const ConditionFieldPicker: React.FC<ConditionFieldPickerProps> = ({
 				id={id}
 				type="button"
 				disabled={disabled}
-				aria-label={ariaLabel}
 				aria-haspopup="dialog"
 				aria-expanded={isOpen}
-				aria-controls={isOpen && groupedFields.length > 0 ? listboxId : undefined}
+				aria-controls={isOpen ? dialogId : undefined}
 				onClick={toggleOpen}
 				className={cn(
 					'flex h-8 w-full min-w-0 items-center justify-between gap-2 rounded-md border border-input bg-background px-2.5 text-left text-xs transition-colors',
@@ -396,6 +400,7 @@ const ConditionFieldPicker: React.FC<ConditionFieldPickerProps> = ({
 					disabled && 'cursor-not-allowed opacity-50',
 				)}
 			>
+				{ariaLabel ? <span className="sr-only">{ariaLabel}: </span> : null}
 				<span className="flex min-w-0 items-center gap-1.5 truncate">
 					{selectedSpec?.icon ? (
 						<DynamicIcon name={selectedSpec.icon} className="size-3.5 shrink-0 text-muted-foreground" />
@@ -417,6 +422,7 @@ const ConditionFieldPicker: React.FC<ConditionFieldPickerProps> = ({
 			{isOpen && coords ? (
 				<PortalRoot anchor={triggerRef.current} ssrFallback={false}>
 					<div
+						id={dialogId}
 						ref={popoverRef}
 						role="dialog"
 						aria-label={ariaLabel}
@@ -436,7 +442,7 @@ const ConditionFieldPicker: React.FC<ConditionFieldPickerProps> = ({
 								type="search"
 								role="combobox"
 								aria-autocomplete="list"
-								aria-expanded={true}
+								aria-expanded={groupedFields.length > 0}
 								value={search}
 								placeholder={t('conditionBuilder.searchFieldPlaceholder', 'Search fields...')}
 								aria-label={t('conditionBuilder.searchFieldPlaceholder', 'Search fields...')}
@@ -592,6 +598,9 @@ const CommaListValueInput: React.FC<CommaListValueInputProps> = ({
 			onChange={(e) => setDraft(e.target.value)}
 			onBlur={() => commitDraft(draft)}
 			onKeyDown={(e) => {
+				if (e.nativeEvent.isComposing || e.keyCode === 229) {
+					return;
+				}
 				if (e.key === 'Enter') {
 					e.preventDefault();
 					commitDraft(draft);
@@ -616,7 +625,7 @@ const ConditionValueEditor: React.FC<ConditionValueEditorProps> = ({
 	allFields,
 	allowFieldComparison,
 	disabled,
-	onChange,
+	onChange: onRuleValueChange,
 }) => {
 	const fieldType: ConditionFieldType = spec?.type ?? 'text';
 	const isUnary = UNARY_OPERATORS.has(rule.operator);
@@ -625,9 +634,16 @@ const ConditionValueEditor: React.FC<ConditionValueEditorProps> = ({
 		[allFields, rule.field, spec],
 	);
 	const canCompareWithField =
-		allowFieldComparison && !isUnary && rule.operator !== 'between' && targetFields.length > 0;
+		allowFieldComparison &&
+		!isUnary &&
+		rule.operator !== 'between' &&
+		rule.operator !== 'in' &&
+		rule.operator !== 'not_in' &&
+		targetFields.length > 0;
 	const valueSource: 'manual' | 'field' =
 		rule.valueSource === 'field' && canCompareWithField ? 'field' : 'manual';
+	const onChange = (nextVal: unknown, nextSource?: 'manual' | 'field') =>
+		onRuleValueChange(nextVal, canCompareWithField ? (nextSource ?? 'manual') : 'manual');
 	const fieldLabel = spec?.label ?? (rule.field || t('conditionBuilder.valueLabel', 'Value'));
 
 	const intlOptions = useMemo<ConditionFieldOption[]>(
@@ -827,6 +843,9 @@ const ConditionValueEditor: React.FC<ConditionValueEditorProps> = ({
 								className="h-8 flex-1 text-xs"
 								onChange={(e) => setCustomChipDraft(e.target.value)}
 								onKeyDown={(e) => {
+									if (e.nativeEvent.isComposing || e.keyCode === 229) {
+										return;
+									}
 									if (e.key === 'Enter') {
 										e.preventDefault();
 										const nextTok = customChipDraft.trim();
@@ -1325,16 +1344,18 @@ export function ConditionBuilderField(rawProps: ConditionBuilderFieldProps): Rea
 					? g
 					: {
 							...g,
-							rules: g.rules.map((r) =>
-								r.id === ruleId
-									? {
-											...r,
-											field: nextFieldKey,
-											operator: nextOperator,
-											value: nextVal,
-										}
-									: r,
-							),
+							rules: g.rules.map((r) => {
+								if (r.id !== ruleId) {
+									return r;
+								}
+								const { valueSource: _omit, ...rest } = r;
+								return {
+									...rest,
+									field: nextFieldKey,
+									operator: nextOperator,
+									value: nextVal,
+								};
+							}),
 						},
 			),
 		});
@@ -1374,6 +1395,16 @@ export function ConditionBuilderField(rawProps: ConditionBuilderFieldProps): Rea
 									r.operator === 'not_in'
 								) {
 									nextValue = defaultRuleValueForOperator(nextOperator, fieldType);
+								}
+
+								if (
+									UNARY_OPERATORS.has(nextOperator) ||
+									nextOperator === 'between' ||
+									nextOperator === 'in' ||
+									nextOperator === 'not_in'
+								) {
+									const { valueSource: _omit, ...rest } = r;
+									return { ...rest, operator: nextOperator, value: nextValue };
 								}
 
 								return { ...r, operator: nextOperator, value: nextValue };
@@ -1593,6 +1624,9 @@ export function ConditionBuilderField(rawProps: ConditionBuilderFieldProps): Rea
 							if (expressionError) setExpressionError(null);
 						}}
 						onKeyDown={(e) => {
+							if (e.nativeEvent.isComposing || e.keyCode === 229) {
+								return;
+							}
 							if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
 								e.preventDefault();
 								handleApplyExpression();
@@ -1691,11 +1725,6 @@ export function ConditionBuilderField(rawProps: ConditionBuilderFieldProps): Rea
 													type="button"
 													disabled={isLocked}
 													aria-pressed={Boolean(group.negate)}
-													aria-label={t(
-														'conditionBuilder.negateGroupAria',
-														{ index: groupIndex + 1 },
-														'Negate group {index}',
-													)}
 													onClick={() => handleGroupNegateToggle(group.id)}
 													className={cn(
 														'rounded-md border px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
@@ -1704,6 +1733,13 @@ export function ConditionBuilderField(rawProps: ConditionBuilderFieldProps): Rea
 															: 'border-border bg-background text-muted-foreground hover:text-foreground',
 													)}
 												>
+													<span className="sr-only">
+														{t(
+															'conditionBuilder.negateGroupAria',
+															{ index: groupIndex + 1 },
+															'Negate group {index}',
+														)}{' '}
+													</span>
 													{t('conditionBuilder.notBadge', 'NOT')}
 												</button>
 											) : null}

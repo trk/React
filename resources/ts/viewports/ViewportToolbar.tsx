@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { t } from '../lib/i18n';
-import { cn, DynamicIcon, sanitizeHref } from '../lib/utils';
+import { cn, DynamicIcon, sanitizeHref, shouldIgnoreEscapeEvent } from '../lib/utils';
 import { Badge, Button, Input, Select } from '../ui';
 import type { ViewportFilter, ViewportPillOption, ViewportState } from './types';
 import { ViewportPillStrip } from './ViewportPillStrip';
@@ -47,6 +47,8 @@ export function ViewportToolbar({
 	const [newViewLabel, setNewViewLabel] = useState('');
 	const [showSaveViewInput, setShowSaveViewInput] = useState(false);
 	const columnPickerRef = useRef<HTMLDivElement | null>(null);
+	const columnPickerTriggerRef = useRef<HTMLButtonElement | null>(null);
+	const columnPickerId = useId();
 
 	useEffect(() => {
 		if (!showColumnPicker || typeof document === 'undefined') {
@@ -58,16 +60,19 @@ export function ViewportToolbar({
 			}
 		};
 		const onKeyDown = (e: KeyboardEvent) => {
-			if (e.key === 'Escape') {
-				e.stopPropagation();
-				setShowColumnPicker(false);
+			if (shouldIgnoreEscapeEvent(e, columnPickerRef.current)) {
+				return;
 			}
+			e.preventDefault();
+			e.stopPropagation();
+			setShowColumnPicker(false);
+			columnPickerTriggerRef.current?.focus();
 		};
 		document.addEventListener('mousedown', onMouseDown);
-		window.addEventListener('keydown', onKeyDown);
+		window.addEventListener('keydown', onKeyDown, true);
 		return () => {
 			document.removeEventListener('mousedown', onMouseDown);
-			window.removeEventListener('keydown', onKeyDown);
+			window.removeEventListener('keydown', onKeyDown, true);
 		};
 	}, [showColumnPicker]);
 
@@ -422,16 +427,21 @@ export function ViewportToolbar({
 							Object.keys(state.columns || {}).length > 1 && (
 							<div ref={columnPickerRef} className="relative shrink-0">
 								<Button
+									ref={columnPickerTriggerRef}
 									variant="outline"
 									size="sm"
 									icon="sliders-horizontal"
 									aria-expanded={showColumnPicker}
+									aria-controls={showColumnPicker ? columnPickerId : undefined}
 									onClick={() => setShowColumnPicker((v) => !v)}
 								>
 									{t('viewport.columns', 'Columns')}
 								</Button>
 								{showColumnPicker && (
-									<div className="absolute right-0 z-30 mt-1.5 w-52 rounded-lg border border-border bg-popover p-2 shadow-lg">
+									<div
+										id={columnPickerId}
+										className="absolute right-0 z-30 mt-1.5 w-52 rounded-lg border border-border bg-popover p-2 shadow-lg"
+									>
 										<div className="mb-1.5 flex items-center justify-between px-1 text-[11px] font-semibold uppercase text-muted-foreground">
 											<span>{t('viewport.toggleColumns', 'Toggle Columns')}</span>
 											<button

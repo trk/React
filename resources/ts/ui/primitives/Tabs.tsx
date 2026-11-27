@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useId } from 'react';
+import React, { createContext, useContext, useId, useRef } from 'react';
 import { Tabs as BaseTabs } from '@base-ui/react/tabs';
 import { cn, DynamicIcon } from '../../lib/utils';
 import { Badge } from './Badge';
@@ -8,9 +8,14 @@ export type TabsVariant = 'segmented' | 'line' | 'vertical' | 'pw-lang';
 interface TabsStyleContextValue {
 	baseId: string;
 	variant: TabsVariant;
+	ids: Record<string, string>;
 }
 
-const TabsStyleContext = createContext<TabsStyleContextValue>({ baseId: 'tabs', variant: 'segmented' });
+const TabsStyleContext = createContext<TabsStyleContextValue>({
+	baseId: 'tabs',
+	variant: 'segmented',
+	ids: {},
+});
 
 function sanitizeTabToken(raw: string): string {
 	return raw.replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -33,9 +38,10 @@ export function Tabs({
 	...props
 }: TabsProps): React.ReactElement {
 	const baseId = useId().replace(/[^a-zA-Z0-9_-]/g, '');
+	const idsRef = useRef<Record<string, string>>({});
 
 	return (
-		<TabsStyleContext.Provider value={{ baseId, variant }}>
+		<TabsStyleContext.Provider value={{ baseId, variant, ids: idsRef.current }}>
 			<BaseTabs.Root
 				value={value}
 				defaultValue={defaultValue}
@@ -68,8 +74,7 @@ export function TabsList({
 }: TabsListProps): React.ReactElement {
 	const ctx = useContext(TabsStyleContext);
 	const resolvedVariant = variant ?? ctx.variant;
-
-	return (
+	const list = (
 		<BaseTabs.List
 			data-rw-tablist=""
 			data-variant={resolvedVariant}
@@ -84,6 +89,12 @@ export function TabsList({
 			)}
 			{...(props as Record<string, unknown>)}
 		/>
+	);
+
+	return variant ? (
+		<TabsStyleContext.Provider value={{ ...ctx, variant }}>{list}</TabsStyleContext.Provider>
+	) : (
+		list
 	);
 }
 
@@ -104,16 +115,14 @@ export function TabsTrigger({
 	...props
 }: TabsTriggerProps): React.ReactElement {
 	const ctx = useContext(TabsStyleContext);
-	const safeToken = sanitizeTabToken(value);
-	const resolvedId = id ?? `rw-ui-tab-${ctx.baseId}-${safeToken}`;
-	const resolvedControls = props['aria-controls'] ?? `rw-ui-panel-${ctx.baseId}-${safeToken}`;
+	const resolvedId = id ?? `rw-ui-tab-${ctx.baseId}-${sanitizeTabToken(value)}`;
+	ctx.ids[value] = resolvedId;
 
 	return (
 		<BaseTabs.Tab
 			id={resolvedId}
 			value={value}
 			disabled={disabled}
-			aria-controls={resolvedControls}
 			className={cn(
 				'group inline-flex items-center justify-center gap-1.5 whitespace-nowrap text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer select-none',
 				ctx.variant === 'segmented' &&
@@ -156,13 +165,14 @@ export function TabsContent({
 	...props
 }: TabsContentProps): React.ReactElement {
 	const ctx = useContext(TabsStyleContext);
-	const safeToken = sanitizeTabToken(value);
-	const resolvedId = id ?? `rw-ui-panel-${ctx.baseId}-${safeToken}`;
-	const resolvedLabelledBy = props['aria-labelledby'] ?? `rw-ui-tab-${ctx.baseId}-${safeToken}`;
+	const resolvedLabelledBy =
+		props['aria-labelledby'] ??
+		ctx.ids[value] ??
+		`rw-ui-tab-${ctx.baseId}-${sanitizeTabToken(value)}`;
 
 	return (
 		<BaseTabs.Panel
-			id={resolvedId}
+			{...(id ? { id } : {})}
 			aria-labelledby={resolvedLabelledBy}
 			value={value}
 			keepMounted={Boolean(keepMounted ?? forceMount)}

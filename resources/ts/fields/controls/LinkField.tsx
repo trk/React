@@ -44,7 +44,7 @@ import type {
 	RelationItemData,
 } from '../types';
 
-const DEFAULT_TYPE_LABELS: Record<string, string> = {
+const DEFAULT_TYPE_LABEL_FALLBACKS: Record<string, string> = {
 	page: 'Page',
 	url: 'URL',
 	file: 'File',
@@ -64,12 +64,29 @@ const TYPE_ICONS: Record<string, string> = {
 	tel: 'phone',
 };
 
-const TYPE_PLACEHOLDERS: Record<string, string> = {
+const TYPE_PLACEHOLDER_FALLBACKS: Record<string, string> = {
 	page: 'Search pages by title or path...',
 	url: 'https://example.com, /path/, or #section',
 	email: 'hello@example.com',
-	tel: '+905551234567',
+	tel: '+1 555 010 2030',
 };
+
+function resolveLinkTypeLabel(
+	type: string,
+	translateFn: (key: string, fallback?: string) => string
+): string {
+	const fallback =
+		DEFAULT_TYPE_LABEL_FALLBACKS[type] ?? (type.charAt(0).toUpperCase() + type.slice(1));
+	return translateFn(`link.type.${type}`, fallback);
+}
+
+function resolveLinkTypePlaceholder(
+	type: string,
+	translateFn: (key: string, fallback?: string) => string
+): string {
+	const fallback = TYPE_PLACEHOLDER_FALLBACKS[type] ?? '';
+	return translateFn(`link.placeholder.${type}`, fallback);
+}
 
 const DEFAULT_MEDIA_PROFILES: Record<string, Omit<LinkMediaProfile, 'mediaToken'>> = {
 	image: {
@@ -165,6 +182,7 @@ export function LinkFieldControl(rawProps: LinkFieldStandaloneProps): React.Reac
 		return base;
 	}, [rawProps]);
 
+	const { t } = useTranslations();
 	const inputName = String(unwrapped.name || '');
 	const inputId = String(unwrapped.id || (inputName ? `Inputfield_${inputName}` : 'pw_link'));
 	const isReadOnly = Boolean(rawProps.readOnly || unwrapped.readOnly);
@@ -183,7 +201,7 @@ export function LinkFieldControl(rawProps: LinkFieldStandaloneProps): React.Reac
 			norm.label.trim() ||
 			norm.file.trim() ||
 			norm.url.trim() ||
-			(norm.pageId > 0 ? `Page #${norm.pageId}` : norm.resourceId ? `${norm.type} ${norm.resourceId.slice(0, 8)}` : '—');
+			(norm.pageId > 0 ? t('link.pageNumber', { id: norm.pageId }, 'Page #{id}') : norm.resourceId ? `${norm.type} ${norm.resourceId.slice(0, 8)}` : '—');
 		return (
 			<Badge variant="secondary" className="max-w-full min-w-0 overflow-hidden gap-1.5 text-xs font-normal" data-rw-control="link">
 				<span className="shrink-0 font-mono font-semibold uppercase text-foreground">{norm.type}:</span>
@@ -687,6 +705,8 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 
 	const effectiveError = inlineError || (props.error && props.error.trim() !== '' ? props.error : null);
 	const effectiveErrorId = props.errorId || errorId;
+	const targetDescribedBy =
+		[props.describedBy, effectiveError ? effectiveErrorId : undefined].filter(Boolean).join(' ') || undefined;
 
 	const validateScalarOnBlur = useCallback(
 		(type: string, rawVal: string): string | null => {
@@ -1025,14 +1045,19 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 								setSearchOpen(false);
 								setSearchQuery('');
 								setInlineError(null);
-								commit({ type: nextType });
+								commit({
+									type: nextType,
+									pageId: 0,
+									resourceId: '',
+									resourceType: '',
+									url: '',
+									file: '',
+								});
 							}}
 						>
 							{cfg.types.map((tp) => (
 								<option key={tp} value={tp}>
-									{cfg.typeLabels?.[tp] ||
-										DEFAULT_TYPE_LABELS[tp] ||
-										tp.charAt(0).toUpperCase() + tp.slice(1)}
+									{cfg.typeLabels?.[tp] || resolveLinkTypeLabel(tp, t)}
 								</option>
 							))}
 						</Select>
@@ -1092,7 +1117,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 										? 'border border-input bg-input-surface shadow-2xs'
 										: 'border border-dashed border-input bg-input-surface hover:border-primary/50 hover:bg-muted/30',
 									isDragOver && 'border-primary bg-primary/5 ring-2 ring-ring/30',
-									inlineError && 'border-destructive',
+									effectiveError && 'border-destructive',
 									isDisabled && 'cursor-not-allowed opacity-55'
 								)}
 							>
@@ -1154,7 +1179,11 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 											}}
 											title={
 												current.alt
-													? `${activeMediaMeta.name} — Alt: ${current.alt}`
+													? t(
+															'link.mediaAltSummary',
+															{ name: activeMediaMeta.name, alt: current.alt },
+															'{name} — Alt: {alt}'
+														)
 													: t('link.editMediaDetails', 'Edit media details, alt text & focal point')
 											}
 											className="flex min-w-0 flex-1 items-center gap-2 rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
@@ -1207,7 +1236,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 													{ name: activeMediaMeta.name },
 													`Edit media details & alt text for ${activeMediaMeta.name}`
 												)}
-												title={t('link.editMediaDetails', 'Edit media (alt text, focal point & crop)')}
+												title={t('link.editMediaDetails', 'Edit media details, alt text & focal point')}
 												className={cn(
 													'relative inline-flex size-6 items-center justify-center rounded transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
 													hasMediaMetadata
@@ -1287,9 +1316,9 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 												fileInputRef.current?.click();
 											}
 										}}
-										aria-invalid={inlineError ? 'true' : 'false'}
-										aria-describedby={inlineError ? errorId : undefined}
-										className="flex h-full w-full min-w-0 items-center justify-between gap-2 text-left cursor-pointer focus-visible:outline-none disabled:cursor-not-allowed"
+										aria-invalid={effectiveError ? 'true' : undefined}
+										aria-describedby={targetDescribedBy}
+										className="flex h-full w-full min-w-0 items-center justify-between gap-2 text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:cursor-not-allowed"
 									>
 										<span className="inline-flex shrink-0 items-center gap-1.5 rounded-[var(--radius-button)] bg-[var(--button-bg)] px-2.5 py-1 text-[11px] font-medium text-[var(--button-fg)] transition-colors hover:bg-[var(--button-hover-bg)] hover:text-[var(--button-hover-fg)]">
 											<DynamicIcon
@@ -1313,7 +1342,12 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 							</div>
 						) : isRelationType ? (
 							activeRelationId && !searchOpen ? (
-								<div className="flex h-9 items-center justify-between gap-2 rounded-md border border-input bg-input-surface px-2.5 text-xs shadow-2xs">
+								<div
+									className={cn(
+										'flex h-9 items-center justify-between gap-2 rounded-md border border-input bg-input-surface px-2.5 text-xs shadow-2xs',
+										effectiveError && 'border-destructive'
+									)}
+								>
 									<button
 										type="button"
 										disabled={isDisabled}
@@ -1360,7 +1394,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 								<div
 									className={cn(
 										'flex h-9 items-center gap-2 rounded-md border border-input bg-input-surface px-2.5 shadow-2xs transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30',
-										inlineError && 'border-destructive',
+										effectiveError && 'border-destructive',
 										isDisabled && 'cursor-not-allowed opacity-55'
 									)}
 								>
@@ -1384,15 +1418,15 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 												: t('link.searchTarget', 'Search target')
 										}
 										aria-expanded={searchOpen}
-										aria-controls={searchOpen ? listboxId : undefined}
+										aria-controls={searchOpen && searchResults.length > 0 ? listboxId : undefined}
 										aria-activedescendant={
 											searchOpen && highlightedIdx >= 0 && searchResults[highlightedIdx]
 												? `${listboxId}-opt-${highlightedIdx}`
 												: undefined
 										}
 										aria-autocomplete="list"
-										aria-invalid={inlineError ? 'true' : 'false'}
-										aria-describedby={inlineError ? errorId : undefined}
+										aria-invalid={effectiveError ? 'true' : undefined}
+										aria-describedby={targetDescribedBy}
 										autoCorrect="off"
 										autoCapitalize="none"
 										spellCheck={false}
@@ -1400,7 +1434,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 										value={searchQuery}
 										placeholder={
 											props.placeholder ||
-											TYPE_PLACEHOLDERS[current.type] ||
+											resolveLinkTypePlaceholder(current.type, t) ||
 											`${t('link.searchTarget', 'Search target')}...`
 										}
 										className="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none disabled:cursor-not-allowed"
@@ -1416,7 +1450,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 											}
 										}}
 										onKeyDown={(e) => {
-											if (e.nativeEvent.isComposing) {
+											if (e.nativeEvent.isComposing || e.keyCode === 229) {
 												return;
 											}
 											if (e.key === 'ArrowDown') {
@@ -1455,7 +1489,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 							<div
 								className={cn(
 									'flex h-9 items-center gap-2 rounded-md border border-input bg-input-surface px-2.5 shadow-2xs transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30',
-									inlineError && 'border-destructive',
+									effectiveError && 'border-destructive',
 									isDisabled && 'cursor-not-allowed opacity-55'
 								)}
 							>
@@ -1499,8 +1533,8 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 												? t('link.phoneTarget', 'Phone number')
 												: t('link.urlTarget', 'Link URL or #anchor')
 									}
-									aria-invalid={inlineError ? 'true' : 'false'}
-									aria-describedby={inlineError ? errorId : undefined}
+									aria-invalid={effectiveError ? 'true' : undefined}
+									aria-describedby={targetDescribedBy}
 									autoCorrect="off"
 									autoCapitalize="none"
 									spellCheck={false}
@@ -1508,7 +1542,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 									value={current.url}
 									placeholder={
 										props.placeholder ||
-										TYPE_PLACEHOLDERS[current.type] ||
+										resolveLinkTypePlaceholder(current.type, t) ||
 										'https://...'
 									}
 									className="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none disabled:cursor-not-allowed"
@@ -1557,7 +1591,7 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 				{/* Standalone inline settings trigger + unified popover when rendered outside SchemaForm */}
 				{hasSecondaryOptions ? (
 					<SettingsPopoverShell
-						ownerLabel={props.label || props.name || 'Link'}
+						ownerLabel={props.label || props.name || t('link.defaultOwnerLabel', 'Link')}
 						summaryChips={optionSummaryChips}
 						overflowChipCount={optionOverflowCount}
 						modifiedCount={modifiedOptionCount}
@@ -1752,29 +1786,32 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 				<PortalRoot anchor={searchWrapRef.current} ssrFallback={false}>
 					<div
 						ref={searchPanelRef}
-						id={listboxId}
-							role="listbox"
-							data-rw-portal-overlay=""
-							style={{
-								position: 'fixed',
-								top: searchPos.top,
-								left: searchPos.left,
-								width: searchPos.width,
-								transform: searchPos.placement === 'top' ? 'translateY(-100%)' : undefined,
-								zIndex: 9999,
-							}}
-							className="max-h-64 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg"
-						>
-							{searchLoading && searchResults.length === 0 ? (
-								<div className="px-3 py-2.5 text-xs text-muted-foreground">
-									{t('link.searching', 'Searching...')}
-								</div>
-							) : searchResults.length === 0 ? (
-								<div className="px-3 py-2.5 text-xs text-muted-foreground">
-									{t('link.noResults', 'No matching items found.')}
-								</div>
-							) : (
-								searchResults.map((item, idx) => {
+						data-rw-portal-overlay=""
+						style={{
+							position: 'fixed',
+							top: searchPos.top,
+							left: searchPos.left,
+							width: searchPos.width,
+							transform: searchPos.placement === 'top' ? 'translateY(-100%)' : undefined,
+							zIndex: 9999,
+						}}
+						className="max-h-64 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg"
+					>
+						{searchLoading && searchResults.length === 0 ? (
+							<div role="status" className="px-3 py-2.5 text-xs text-muted-foreground">
+								{t('link.searching', 'Searching...')}
+							</div>
+						) : searchResults.length === 0 ? (
+							<div role="status" className="px-3 py-2.5 text-xs text-muted-foreground">
+								{t('link.noResults', 'No matching items found.')}
+							</div>
+						) : (
+							<div
+								id={listboxId}
+								role="listbox"
+								aria-label={t('link.searchPages', 'Search pages')}
+							>
+								{searchResults.map((item, idx) => {
 									const isHighlighted = idx === highlightedIdx;
 									return (
 										<div
@@ -1813,9 +1850,10 @@ export function LinkField(props: ReactInputfieldProps & { __isIslandHost?: boole
 											) : null}
 										</div>
 									);
-								})
-							)}
+								})}
 							</div>
+						)}
+					</div>
 				</PortalRoot>
 			) : null}
 

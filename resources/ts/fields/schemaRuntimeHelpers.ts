@@ -133,9 +133,6 @@ export function isLinkFieldValueEmpty(val: unknown): boolean {
 	if (type === 'page') {
 		return !(Number(val.pageId) > 0);
 	}
-	if (String(val.resourceType ?? '').trim() !== '') {
-		return String(val.resourceId ?? '').trim() === '';
-	}
 	if (type === 'anchor') {
 		return String(val.anchor ?? val.url ?? '').replace(/^#+/, '').trim() === '';
 	}
@@ -147,6 +144,12 @@ export function isLinkFieldValueEmpty(val: unknown): boolean {
 	}
 	if (type === 'url') {
 		return String(val.url ?? '').trim() === '' && String(val.anchor ?? '').trim() === '';
+	}
+	if (type === 'file' || type === 'image' || type === 'video') {
+		return String(val.file ?? '').trim() === '' && String(val.url ?? '').trim() === '';
+	}
+	if (String(val.resourceType ?? '').trim() !== '') {
+		return String(val.resourceId ?? '').trim() === '';
 	}
 	return (
 		String(val.file ?? '').trim() === '' &&

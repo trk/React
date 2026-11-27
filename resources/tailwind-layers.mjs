@@ -33,12 +33,19 @@ export const TAILWIND_UTILITY_SUBLAYERS = [
 	'xxl-axis',
 	'xxl-longhand',
 	'xxl-state',
+	'container-3xs',
+	'container-2xs',
 	'container-xs',
 	'container-sm',
 	'container-md',
 	'container-lg',
 	'container-xl',
 	'container-2xl',
+	'container-3xl',
+	'container-4xl',
+	'container-5xl',
+	'container-6xl',
+	'container-7xl',
 	'container',
 	'media',
 ];
@@ -121,6 +128,10 @@ const BREAKPOINT_MAP = new Map([
 ]);
 
 const CONTAINER_BREAKPOINT_MAP = new Map([
+	['(width>=16rem)', 'container-3xs'],
+	['(min-width:16rem)', 'container-3xs'],
+	['(width>=18rem)', 'container-2xs'],
+	['(min-width:18rem)', 'container-2xs'],
 	['(width>=20rem)', 'container-xs'],
 	['(min-width:20rem)', 'container-xs'],
 	['(width>=24rem)', 'container-sm'],
@@ -133,7 +144,19 @@ const CONTAINER_BREAKPOINT_MAP = new Map([
 	['(min-width:36rem)', 'container-xl'],
 	['(width>=42rem)', 'container-2xl'],
 	['(min-width:42rem)', 'container-2xl'],
+	['(width>=48rem)', 'container-3xl'],
+	['(min-width:48rem)', 'container-3xl'],
+	['(width>=56rem)', 'container-4xl'],
+	['(min-width:56rem)', 'container-4xl'],
+	['(width>=64rem)', 'container-5xl'],
+	['(min-width:64rem)', 'container-5xl'],
+	['(width>=72rem)', 'container-6xl'],
+	['(min-width:72rem)', 'container-6xl'],
+	['(width>=80rem)', 'container-7xl'],
+	['(min-width:80rem)', 'container-7xl'],
 ]);
+
+const TIER_RANK = { shorthand: 0, axis: 1, longhand: 2, state: 3 };
 
 const STATE_SELECTOR_PATTERNS = [
 	':hover',
@@ -195,7 +218,52 @@ function matchBreakpoint(params) {
 }
 
 function matchContainerBucket(params) {
-	return CONTAINER_BREAKPOINT_MAP.get(normalizeCondition(params)) || 'container';
+	const condition = normalizeCondition(params).replace(/^[a-z0-9_-]+\s+(?=\()/, '');
+	return CONTAINER_BREAKPOINT_MAP.get(condition) || 'container';
+}
+
+function parseContainerMinWidthPx(params) {
+	const condition = normalizeCondition(params).replace(/^[a-z0-9_-]+\s+(?=\()/, '');
+	const match = /\((?:width>=?|min-width:)(\d+(?:\.\d+)?)(px|r?em)\)/.exec(condition);
+	if (!match) {
+		return Number.POSITIVE_INFINITY;
+	}
+	const value = Number.parseFloat(match[1]);
+	if (!Number.isFinite(value)) {
+		return Number.POSITIVE_INFINITY;
+	}
+	return match[2] === 'rem' || match[2] === 'em' ? value * 16 : value;
+}
+
+function isStateBucketNode(node) {
+	if (!node) {
+		return false;
+	}
+	if (node.type === 'rule') {
+		return isStateSelector(node.selector);
+	}
+	if (node.type === 'atrule') {
+		if (node.name === 'media' && isStateMediaParams(node.params)) {
+			return true;
+		}
+		const child = firstNonCommentChild(node.nodes);
+		return child ? isStateBucketNode(child) : false;
+	}
+	return false;
+}
+
+function extractContainerWidthPx(node) {
+	if (!node || node.type !== 'atrule') {
+		return Number.POSITIVE_INFINITY;
+	}
+	if (node.name === 'container') {
+		return parseContainerMinWidthPx(node.params);
+	}
+	if (node.name === 'supports') {
+		const child = firstNonCommentChild(node.nodes);
+		return child ? extractContainerWidthPx(child) : Number.POSITIVE_INFINITY;
+	}
+	return Number.POSITIVE_INFINITY;
 }
 
 function isStateMediaParams(params) {
@@ -410,7 +478,20 @@ function classifyUtilityNodes(utilityLayer) {
 				continue;
 			}
 			if (node.name === 'container') {
-				pushTo(matchContainerBucket(node.params), node);
+				const bucketName = matchContainerBucket(node.params);
+				const splitParts = splitAtRuleChildren(node, (child) =>
+					resolveTierWithinBreakpoint(child) === 'state' ? 'state' : 'base'
+				);
+				for (const [tier, wrapped] of splitParts) {
+					if (tier === 'base' && Array.isArray(wrapped.nodes) && wrapped.nodes.length > 1) {
+						wrapped.nodes.sort(
+							(a, b) =>
+								(TIER_RANK[resolveTierWithinBreakpoint(a)] ?? 2) -
+								(TIER_RANK[resolveTierWithinBreakpoint(b)] ?? 2)
+						);
+					}
+					pushTo(bucketName, wrapped);
+				}
 				continue;
 			}
 			if (node.name === 'supports') {
@@ -421,6 +502,26 @@ function classifyUtilityNodes(utilityLayer) {
 			}
 		}
 		pushTo('longhand', node);
+	}
+
+	for (const bucketName of TAILWIND_UTILITY_SUBLAYERS) {
+		if (!bucketName.startsWith('container')) {
+			continue;
+		}
+		const list = buckets.get(bucketName);
+		if (!list || list.length <= 1) {
+			continue;
+		}
+		list.sort((a, b) => {
+			if (bucketName === 'container') {
+				const widthA = extractContainerWidthPx(a);
+				const widthB = extractContainerWidthPx(b);
+				if (widthA !== widthB) {
+					return widthA - widthB;
+				}
+			}
+			return Number(isStateBucketNode(a)) - Number(isStateBucketNode(b));
+		});
 	}
 
 	return buckets;

@@ -9,6 +9,8 @@ interface CommandCtxValue {
 	activeId: string;
 	setActiveId: React.Dispatch<React.SetStateAction<string>>;
 	listRef: React.RefObject<HTMLDivElement | null>;
+	hasListbox: boolean;
+	setHasListbox: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const CommandCtx = createContext<CommandCtxValue | null>(null);
@@ -32,6 +34,7 @@ export function CommandDialog({
 	const listRef = useRef<HTMLDivElement | null>(null);
 	const listId = useId();
 	const [activeId, setActiveId] = useState('');
+	const [hasListbox, setHasListbox] = useState(true);
 	const { handlePointerDown, handlePointerUp, handleClose } = useModalDialogController(
 		dialogRef,
 		open,
@@ -56,7 +59,7 @@ export function CommandDialog({
 				onClose={handleClose}
 				className={cn('text-popover-foreground', className)}
 			>
-				<CommandCtx.Provider value={{ listId, activeId, setActiveId, listRef }}>
+				<CommandCtx.Provider value={{ listId, activeId, setActiveId, listRef, hasListbox, setHasListbox }}>
 					{children}
 				</CommandCtx.Provider>
 			</dialog>
@@ -77,6 +80,7 @@ export function CommandInput({
 }: CommandInputProps): React.ReactElement {
 	const ctx = useContext(CommandCtx);
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+		if (e.nativeEvent.isComposing || e.keyCode === 229) return;
 		onKeyDown?.(e);
 		if (e.defaultPrevented || !ctx?.listRef.current) {
 			return;
@@ -118,8 +122,8 @@ export function CommandInput({
 			<input
 				type="search"
 				role="combobox"
-				aria-expanded={true}
-				aria-controls={props['aria-controls'] ?? ctx?.listId}
+				aria-expanded={ctx ? ctx.hasListbox : true}
+				aria-controls={props['aria-controls'] ?? (ctx?.hasListbox ? ctx.listId : undefined)}
 				aria-activedescendant={props['aria-activedescendant'] ?? (ctx?.activeId || undefined)}
 				onKeyDown={handleKeyDown}
 				onChange={(e) => {
@@ -136,10 +140,9 @@ export function CommandInput({
 				<button
 					type="button"
 					onClick={onClose}
-					aria-label={t('common.close', 'Close')}
 					className="inline-flex min-h-6 items-center rounded border border-border px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
 				>
-					ESC
+					<span className="sr-only">{t('common.close', 'Close')} </span>ESC
 				</button>
 			) : null}
 		</div>
@@ -149,17 +152,47 @@ export function CommandInput({
 export function CommandList({
 	id,
 	className,
+	children,
 	...props
 }: React.HTMLAttributes<HTMLDivElement>): React.ReactElement {
 	const ctx = useContext(CommandCtx);
+	const setHasListbox = ctx?.setHasListbox;
+	const childArray = React.Children.toArray(children);
+	const emptyNodes: React.ReactNode[] = [];
+	const listNodes: React.ReactNode[] = [];
+	for (const child of childArray) {
+		if (React.isValidElement(child) && child.type === CommandEmpty) {
+			emptyNodes.push(child);
+		} else if (React.isValidElement(child) && child.type === 'hr') {
+			listNodes.push(
+				React.cloneElement(child as React.ReactElement<{ role?: string }>, { role: 'presentation' })
+			);
+		} else {
+			listNodes.push(child);
+		}
+	}
+	const hasListItems = listNodes.length > 0;
+
+	useEffect(() => {
+		setHasListbox?.(hasListItems);
+	}, [setHasListbox, hasListItems]);
+
 	return (
-		<div
-			ref={ctx?.listRef}
-			id={id ?? ctx?.listId}
-			role="listbox"
-			className={cn('max-h-80 overflow-y-auto p-2 divide-y divide-border/40', className)}
-			{...props}
-		/>
+		<>
+			{hasListItems ? (
+				<div
+					ref={ctx?.listRef}
+					id={id ?? ctx?.listId}
+					role="listbox"
+					className={cn('max-h-80 overflow-y-auto p-2 divide-y divide-border/40', className)}
+					{...props}
+					aria-label={props['aria-label'] ?? 'Commands'}
+				>
+					{listNodes}
+				</div>
+			) : null}
+			{emptyNodes}
+		</>
 	);
 }
 
@@ -168,7 +201,7 @@ export function CommandEmpty({
 	children,
 }: React.HTMLAttributes<HTMLDivElement>): React.ReactElement {
 	return (
-		<div className={cn('py-6 text-center text-xs text-muted-foreground', className)}>
+		<div role="status" className={cn('py-6 text-center text-xs text-muted-foreground', className)}>
 			{children ?? t('common.noResults', 'No matching results found.')}
 		</div>
 	);

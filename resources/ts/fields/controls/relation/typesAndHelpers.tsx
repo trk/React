@@ -1,4 +1,5 @@
-import { cn, DynamicIcon, sanitizeHref } from '../../../lib/utils';
+import { t } from '../../../lib/i18n';
+import { cn, DynamicIcon, sanitizeHref, sanitizeImageSrc } from '../../../lib/utils';
 import type { RelationItemData, RelationResourceDescriptor } from '../../types';
 
 export interface RelationFieldProps {
@@ -160,10 +161,11 @@ export function RelationItemVisual({
 	const boxSize = size === 'xs' ? 'size-4' : size === 'md' ? 'size-7' : 'size-5';
 	const iconSize = size === 'xs' ? 'size-3' : size === 'md' ? 'size-4' : 'size-3.5';
 
-	if (item?.thumb) {
+	const safeThumb = sanitizeImageSrc(item?.thumb);
+	if (safeThumb) {
 		return (
 			<img
-				src={item.thumb}
+				src={safeThumb}
 				alt=""
 				className={cn(boxSize, 'shrink-0 rounded object-cover border border-border/60 bg-muted')}
 			/>
@@ -192,8 +194,8 @@ export function QuickEditButton({ item, enabled }: { item?: RelationItemData; en
 			target="_blank"
 			rel="noopener noreferrer"
 			onClick={(e) => e.stopPropagation()}
-			title={`Open ${item?.label ?? ''}`}
-			aria-label={`Open ${item?.label ?? ''}`}
+			title={t('relation.openNamed', { label: item?.label ?? '' }, 'Open {label}')}
+			aria-label={t('relation.openNamed', { label: item?.label ?? '' }, 'Open {label}')}
 			className="inline-flex items-center justify-center rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 		>
 			<DynamicIcon name="external-link" className="size-3.5" />

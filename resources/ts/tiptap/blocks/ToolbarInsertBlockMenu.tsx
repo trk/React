@@ -7,9 +7,9 @@ import type { TiptapMiniBlockDefinition, TiptapTranslateFn } from '../core/tipta
 import { insertMiniBlock, MiniBlockIcon } from './MiniBlockExtensions';
 
 const runtime = getReactWorkspaceRuntime();
-const { React, Portal } = runtime;
+const { React, Portal, Utils } = runtime;
 const { PortalRoot } = Portal;
-const { useEffect, useMemo, useRef, useState } = React;
+const { useEffect, useId, useMemo, useRef, useState } = React;
 
 /* ============================================================================
  * Accessible Toolbar `+ Block` Dropdown Menu (`role="menu"` + `<hr>`)
@@ -31,6 +31,7 @@ export function ToolbarInsertBlockMenu({
 	onAnnounce?: (msg: string) => void;
 }) {
 	const [open, setOpen] = useState(false);
+	const menuId = useId();
 	const triggerRef = useRef<HTMLButtonElement | null>(null);
 	const menuRef = useRef<HTMLDivElement | null>(null);
 	const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({
@@ -99,12 +100,24 @@ export function ToolbarInsertBlockMenu({
 			}
 		};
 
+		const onKeyDown = (e: KeyboardEvent) => {
+			if (Utils.shouldIgnoreEscapeEvent(e, menuRef.current)) {
+				return;
+			}
+			e.preventDefault();
+			e.stopPropagation();
+			setOpen(false);
+			triggerRef.current?.focus();
+		};
+
 		window.addEventListener('mousedown', onPointerDown);
+		window.addEventListener('keydown', onKeyDown, true);
 		window.addEventListener('resize', updatePos);
 		window.addEventListener('scroll', updatePos, true);
 		return () => {
 			window.cancelAnimationFrame(focusFirst);
 			window.removeEventListener('mousedown', onPointerDown);
+			window.removeEventListener('keydown', onKeyDown, true);
 			window.removeEventListener('resize', updatePos);
 			window.removeEventListener('scroll', updatePos, true);
 		};
@@ -126,8 +139,15 @@ export function ToolbarInsertBlockMenu({
 		}
 		const currentIdx = items.indexOf(document.activeElement as HTMLElement);
 
+		if (e.nativeEvent.isComposing || e.keyCode === 229) {
+			return;
+		}
 		if (e.key === 'Escape') {
+			if (Utils.shouldIgnoreEscapeEvent(e.nativeEvent, menuRef.current)) {
+				return;
+			}
 			e.preventDefault();
+			e.stopPropagation();
 			setOpen(false);
 			triggerRef.current?.focus();
 		} else if (e.key === 'ArrowDown') {
@@ -169,6 +189,7 @@ export function ToolbarInsertBlockMenu({
 	const insertLabel = t('tools.insertblock', 'Insert block');
 	const dropdownNode = open ? (
 		<div
+			id={menuId}
 			ref={menuRef}
 			role="menu"
 			aria-label={insertLabel}
@@ -180,7 +201,7 @@ export function ToolbarInsertBlockMenu({
 		>
 			{builtIns.map(renderMenuItem)}
 			{builtIns.length > 0 && customs.length > 0 ? (
-				<hr className="my-1 border-border/70" />
+				<hr role="presentation" className="my-1 border-border/70" />
 			) : null}
 			{customs.map(renderMenuItem)}
 		</div>
@@ -194,6 +215,7 @@ export function ToolbarInsertBlockMenu({
 				aria-label={insertLabel}
 				aria-haspopup="menu"
 				aria-expanded={open}
+				aria-controls={open ? menuId : undefined}
 				aria-disabled={disabled ? 'true' : undefined}
 				title={insertLabel}
 				data-rw-tiptap-tool="insertblock"

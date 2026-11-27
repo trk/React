@@ -1,7 +1,7 @@
 import React from 'react';
 import { SafeLink as Link, withWorkspaceShellUrl } from '../lib/inertia-bridge';
 import { t } from '../lib/i18n';
-import { cn, DynamicIcon, sanitizeHref } from '../lib/utils';
+import { cn, DynamicIcon, sanitizeHref, shouldIgnoreEscapeEvent } from '../lib/utils';
 import type { ThemeMode, ThemePresetId, ThemePresetMeta } from '../hooks';
 import { Badge, Input } from '../ui';
 import type {
@@ -94,15 +94,17 @@ export function WorkspaceTopbar({
 			return;
 		}
 		const onKeyDown = (e: KeyboardEvent) => {
-			if (e.key === 'Escape') {
-				e.stopPropagation();
-				setMoreMenuOpen(false);
-				moreTriggerRef.current?.focus();
+			if (shouldIgnoreEscapeEvent(e, moreMenuRef.current)) {
+				return;
 			}
+			e.preventDefault();
+			e.stopPropagation();
+			setMoreMenuOpen(false);
+			moreTriggerRef.current?.focus();
 		};
 		window.addEventListener('keydown', onKeyDown, true);
 		return () => window.removeEventListener('keydown', onKeyDown, true);
-	}, [moreMenuOpen, setMoreMenuOpen]);
+	}, [moreMenuOpen, moreMenuRef, setMoreMenuOpen]);
 
 	return (
 		<header

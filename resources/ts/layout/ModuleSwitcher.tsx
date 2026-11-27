@@ -46,7 +46,8 @@ export function ModuleSwitcher({
 	const [activeIndex, setActiveIndex] = useState(0);
 	const triggerRef = useRef<HTMLButtonElement | null>(null);
 	const searchInputRef = useRef<HTMLInputElement | null>(null);
-	const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+	const rowRefs = useRef<Map<string, HTMLLIElement>>(new Map());
+	const menuRef = useRef<HTMLDivElement | null>(null);
 
 	const useSpaNavigation = shellMode === 'workspace';
 	const activeTitle = activeWorkspace?.title || title || t('shell.workspace', 'Workspace');
@@ -98,7 +99,29 @@ export function ModuleSwitcher({
 		const frameId = window.requestAnimationFrame(() => {
 			searchInputRef.current?.focus();
 		});
-		return () => window.cancelAnimationFrame(frameId);
+		const onKeyDown = (e: KeyboardEvent) => {
+			if (e.key !== 'Escape' || e.isComposing || e.keyCode === 229 || e.defaultPrevented) {
+				return;
+			}
+			const target = e.target instanceof Element ? e.target : null;
+			const topDialog = target?.closest('dialog[open], [role="dialog"], [role="alertdialog"]') ?? null;
+			const menuEl = menuRef.current?.closest('[data-rw-module-switcher-menu]') ?? menuRef.current;
+			if (topDialog && topDialog !== menuEl && (!menuEl || !topDialog.contains(menuEl))) {
+				return;
+			}
+			if (menuEl?.querySelector('dialog[open], [role="dialog"], [role="alertdialog"]')) {
+				return;
+			}
+			e.preventDefault();
+			e.stopPropagation();
+			setOpen(false);
+			window.requestAnimationFrame(() => triggerRef.current?.focus());
+		};
+		document.addEventListener('keydown', onKeyDown);
+		return () => {
+			window.cancelAnimationFrame(frameId);
+			document.removeEventListener('keydown', onKeyDown);
+		};
 	}, [open]);
 
 	useEffect(() => {
@@ -137,6 +160,9 @@ export function ModuleSwitcher({
 	};
 
 	const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+		if (e.nativeEvent.isComposing || e.keyCode === 229) {
+			return;
+		}
 		const count = flatItems.length;
 		if (e.key === 'ArrowDown' && count > 0) {
 			e.preventDefault();
@@ -158,6 +184,7 @@ export function ModuleSwitcher({
 			}
 		} else if (e.key === 'Escape') {
 			e.preventDefault();
+			e.stopPropagation();
 			setOpen(false);
 			if (typeof window !== 'undefined') {
 				window.requestAnimationFrame(() => triggerRef.current?.focus());
@@ -218,7 +245,7 @@ export function ModuleSwitcher({
 		);
 
 		return (
-			<div
+			<li
 				key={ws.id}
 				ref={(node) => {
 					if (node) {
@@ -283,7 +310,7 @@ export function ModuleSwitcher({
 						aria-hidden="true"
 					/>
 				</button>
-			</div>
+			</li>
 		);
 	};
 
@@ -342,60 +369,82 @@ export function ModuleSwitcher({
 				sideOffset={8}
 				className="w-80 max-w-[calc(100vw-1rem)] overflow-hidden p-0"
 			>
-				<div className="border-b border-border p-2">
-					<div className="relative">
-						<DynamicIcon
-							name="search"
-							className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground"
-							aria-hidden="true"
-						/>
-						<Input
-							ref={searchInputRef}
-							type="search"
-							data-rw-module-switcher-search=""
-							aria-label={t('shell.searchWorkspacesLabel', 'Search workspaces')}
-							value={query}
-							onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
-							onKeyDown={handleSearchKeyDown}
-							placeholder={t('shell.findWorkspace', 'Find workspace...')}
-							className="h-8 pl-8 pr-2 text-xs"
-						/>
+				<div ref={menuRef}>
+					<div className="border-b border-border p-2">
+						<div className="relative">
+							<DynamicIcon
+								name="search"
+								className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground"
+								aria-hidden="true"
+							/>
+							<Input
+								ref={searchInputRef}
+								type="search"
+								data-rw-module-switcher-search=""
+								aria-label={t('shell.searchWorkspacesLabel', 'Search workspaces')}
+								value={query}
+								onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
+								onKeyDown={handleSearchKeyDown}
+								placeholder={t('shell.findWorkspace', 'Find workspace...')}
+								className="h-8 pl-8 pr-2 text-xs"
+							/>
+						</div>
 					</div>
-				</div>
 
-				<div className="max-h-72 overflow-y-auto p-1.5 space-y-2">
 					{flatItems.length === 0 ? (
-						<p className="py-5 text-center text-xs text-muted-foreground">
+						<p role="status" className="py-5 text-center text-xs text-muted-foreground">
 							{t('shell.noMatchingWorkspaces', 'No matching workspaces')}
 						</p>
-					) : isSearching ? (
-						<div className="space-y-0.5">
-							{filteredWorkspaces.map((ws, idx) => renderWorkspaceRow(ws, idx))}
-						</div>
 					) : (
-						<>
-							{pinnedWorkspaces.length > 0 ? (
-								<div className="space-y-0.5">
-									<div className="px-2 pt-1 pb-0.5 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-										{t('launcher.pinned', 'Pinned')}
-									</div>
-									{pinnedWorkspaces.map((ws, idx) => renderWorkspaceRow(ws, idx))}
-								</div>
-							) : null}
+						<nav
+							aria-label={t('shell.workspaces', 'Workspaces')}
+							className="max-h-72 overflow-y-auto p-1.5 space-y-2"
+						>
+							{isSearching ? (
+								<ul className="space-y-0.5">
+									{filteredWorkspaces.map((ws, idx) => renderWorkspaceRow(ws, idx))}
+								</ul>
+							) : (
+								<>
+									{pinnedWorkspaces.length > 0 ? (
+										<section
+											aria-label={t('launcher.pinned', 'Pinned')}
+											className="space-y-0.5"
+										>
+											<div
+												aria-hidden="true"
+												className="px-2 pt-1 pb-0.5 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase"
+											>
+												{t('launcher.pinned', 'Pinned')}
+											</div>
+											<ul className="space-y-0.5">
+												{pinnedWorkspaces.map((ws, idx) => renderWorkspaceRow(ws, idx))}
+											</ul>
+										</section>
+									) : null}
 
-							{unpinnedWorkspaces.length > 0 ? (
-								<div className="space-y-0.5">
-									<div className="px-2 pt-1 pb-0.5 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-										{t('shell.allModules', 'All Modules')}
-									</div>
-									{unpinnedWorkspaces.map((ws, idx) =>
-										renderWorkspaceRow(ws, pinnedWorkspaces.length + idx)
-									)}
-								</div>
-							) : null}
-						</>
+									{unpinnedWorkspaces.length > 0 ? (
+										<section
+											aria-label={t('shell.allModules', 'All Modules')}
+											className="space-y-0.5"
+										>
+											<div
+												aria-hidden="true"
+												className="px-2 pt-1 pb-0.5 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase"
+											>
+												{t('shell.allModules', 'All Modules')}
+											</div>
+											<ul className="space-y-0.5">
+												{unpinnedWorkspaces.map((ws, idx) =>
+													renderWorkspaceRow(ws, pinnedWorkspaces.length + idx)
+												)}
+											</ul>
+										</section>
+									) : null}
+								</>
+							)}
+						</nav>
 					)}
-				</div>
 
 				{safeLauncherHref || safeAdminHref ? (
 					<div className="flex items-center justify-between gap-2 border-t border-border bg-muted/35 px-2.5 py-2">
@@ -455,6 +504,7 @@ export function ModuleSwitcher({
 						) : null}
 					</div>
 				) : null}
+				</div>
 			</PopoverContent>
 		</Popover>
 	);

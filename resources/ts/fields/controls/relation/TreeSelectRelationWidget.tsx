@@ -96,7 +96,11 @@ export function TreeSelectRelationWidget({
 					}
 				})
 				.catch(() => {})
-				.finally(() => setSearching(false));
+				.finally(() => {
+					if (!ctrl.signal.aborted) {
+						setSearching(false);
+					}
+				});
 		}, 200);
 		return () => {
 			window.clearTimeout(timer);
@@ -163,8 +167,9 @@ export function TreeSelectRelationWidget({
 								<button
 									type="button"
 									onClick={() => toggleExpand(node)}
+									aria-expanded={isExp}
 									className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
-									aria-label={isExp ? 'Collapse' : 'Expand'}
+									aria-label={isExp ? t('common.collapse', 'Collapse') : t('common.expand', 'Expand')}
 								>
 									<DynamicIcon
 										name={isExp ? 'chevron-down' : 'chevron-right'}
@@ -178,6 +183,7 @@ export function TreeSelectRelationWidget({
 							<button
 								type="button"
 								disabled={disabled || node.disabled}
+								aria-pressed={isSelected}
 								onClick={() => toggleSelect(node)}
 								className="flex items-center gap-1.5 min-w-0 text-left disabled:opacity-50 cursor-pointer"
 							>
@@ -252,9 +258,15 @@ export function TreeSelectRelationWidget({
 							variant="outline"
 							size="xs"
 							icon="folder"
+							aria-expanded={open}
 							onClick={() => setOpen((o) => !o)}
 						>
-							{open ? 'Hide Page Tree' : placeholder || (selectedSingle || multiValues.length > 0 ? 'Browse Tree...' : 'Select from Page Tree...')}
+							{open
+								? t('relation.hidePageTree', 'Hide Page Tree')
+								: placeholder ||
+									(selectedSingle || multiValues.length > 0
+										? t('relation.browseTree', 'Browse Tree...')
+										: t('relation.selectFromPageTree', 'Select from Page Tree...'))}
 						</Button>
 						{creatable ? (
 							<Button type="button" variant="outline" size="xs" icon="plus" onClick={() => onOpenQuickCreate()}>
@@ -266,7 +278,7 @@ export function TreeSelectRelationWidget({
 
 				{open && !disabled ? (
 					<div className="overflow-hidden rounded-md border border-border">
-						<div className="flex items-center gap-2 border-b border-border bg-muted/20 px-2.5 py-1.5">
+						<div className="flex items-center gap-2 border-b border-border bg-muted/20 px-2.5 py-1.5 focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring">
 							<DynamicIcon name="search" className="size-3.5 shrink-0 text-muted-foreground" />
 							<input
 								type="search"
@@ -292,6 +304,7 @@ export function TreeSelectRelationWidget({
 													key={item.key || tok}
 													type="button"
 													disabled={item.disabled}
+													aria-pressed={isSelected}
 													onClick={() => toggleSelect(item)}
 													className={cn(
 														'flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-xs hover:bg-muted cursor-pointer',

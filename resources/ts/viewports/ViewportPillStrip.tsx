@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { t } from '../lib/i18n';
-import { cn, DynamicIcon } from '../lib/utils';
+import { cn, DynamicIcon, shouldIgnoreEscapeEvent } from '../lib/utils';
 import { Input, PortalRoot, Select } from '../ui';
 import type { ViewportPillOption } from './types';
 
@@ -131,6 +131,9 @@ export const ViewportPillStrip: React.FC<ViewportPillStripProps> = ({
 		};
 		const onKeyDown = (event: KeyboardEvent) => {
 			if (event.key === 'Escape') {
+				if (shouldIgnoreEscapeEvent(event, menuRef.current)) {
+					return;
+				}
 				event.preventDefault();
 				event.stopPropagation();
 				setMenuOpen(false);
@@ -265,7 +268,7 @@ export const ViewportPillStrip: React.FC<ViewportPillStripProps> = ({
 						type="button"
 						aria-haspopup="menu"
 						aria-expanded={menuOpen}
-						aria-controls={menuOpen ? overflowMenuId : undefined}
+						aria-controls={menuOpen && filteredOverflow.length > 0 ? overflowMenuId : undefined}
 						data-rw-viewport-pill-overflow=""
 						onClick={() => {
 							setMenuSearch('');
@@ -361,55 +364,56 @@ export const ViewportPillStrip: React.FC<ViewportPillStripProps> = ({
 								/>
 							</div>
 						)}
-						<div
-							id={overflowMenuId}
-							role="menu"
-							aria-label={ariaLabel}
-							className="max-h-64 space-y-0.5 overflow-y-auto"
-						>
-							{filteredOverflow.map((item) => {
-								const isActive = item.key === activeKey;
-								return (
-									<button
-										key={item.key || '__all__'}
-										type="button"
-										role="menuitemradio"
-										aria-checked={isActive}
-										onClick={() => {
-											onSelect(
-												isActive && item.key !== '' && items[0]?.key === ''
-													? ''
-													: item.key
-											);
-											setMenuOpen(false);
-										}}
-										className={cn(
-											'flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer',
-											isActive
-												? 'bg-primary/12 text-primary-ink font-semibold'
-												: 'text-popover-foreground hover:bg-muted'
-										)}
-									>
-										<span className="inline-flex min-w-0 items-center gap-2 truncate">
-											{item.icon ? (
-												<DynamicIcon name={item.icon} className="size-3.5 shrink-0" aria-hidden="true" />
-											) : null}
-											<span className="truncate">{item.label}</span>
-										</span>
-										{item.count !== undefined ? (
-											<span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground tabular-nums">
-												{item.count}
+						{filteredOverflow.length === 0 ? (
+							<div role="status" className="px-2.5 py-2 text-center text-xs text-muted-foreground">
+								{t('common.noMatches', 'No matching options')}
+							</div>
+						) : (
+							<div
+								id={overflowMenuId}
+								role="menu"
+								aria-label={ariaLabel}
+								className="max-h-64 space-y-0.5 overflow-y-auto"
+							>
+								{filteredOverflow.map((item) => {
+									const isActive = item.key === activeKey;
+									return (
+										<button
+											key={item.key || '__all__'}
+											type="button"
+											role="menuitemradio"
+											aria-checked={isActive}
+											onClick={() => {
+												onSelect(
+													isActive && item.key !== '' && items[0]?.key === ''
+														? ''
+														: item.key
+												);
+												setMenuOpen(false);
+											}}
+											className={cn(
+												'flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer',
+												isActive
+													? 'bg-primary/12 text-primary-ink font-semibold'
+													: 'text-popover-foreground hover:bg-muted'
+											)}
+										>
+											<span className="inline-flex min-w-0 items-center gap-2 truncate">
+												{item.icon ? (
+													<DynamicIcon name={item.icon} className="size-3.5 shrink-0" aria-hidden="true" />
+												) : null}
+												<span className="truncate">{item.label}</span>
 											</span>
-										) : null}
-									</button>
-								);
-							})}
-							{filteredOverflow.length === 0 && (
-								<div className="px-2.5 py-2 text-center text-xs text-muted-foreground">
-									{t('common.noMatches', 'No matching options')}
-								</div>
-							)}
-						</div>
+											{item.count !== undefined ? (
+												<span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground tabular-nums">
+													{item.count}
+												</span>
+											) : null}
+										</button>
+									);
+								})}
+							</div>
+						)}
 					</div>
 				</PortalRoot>
 			) : null}

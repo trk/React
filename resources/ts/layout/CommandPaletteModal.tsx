@@ -414,13 +414,16 @@ export function CommandPaletteContent({
 				<input
 					type="search"
 					role="combobox"
-					aria-expanded={true}
-					aria-controls={commandListId}
+					aria-expanded={orderedItems.length > 0}
+					aria-controls={orderedItems.length > 0 ? commandListId : undefined}
 					aria-activedescendant={activeItem ? `${commandListId}-opt-${activeItem.id}` : undefined}
 					autoFocus
 					value={query}
 					onChange={(e) => onQueryChange(e.target.value)}
 					onKeyDown={(e) => {
+						if (e.nativeEvent.isComposing || e.keyCode === 229) {
+							return;
+						}
 						const action = resolveCommandPaletteKeyAction(
 							e.key,
 							clampedActiveIndex,
@@ -456,24 +459,23 @@ export function CommandPaletteContent({
 				<button
 					type="button"
 					onClick={() => onOpenChange(false)}
-					aria-label={t('common.close', 'Close')}
 					className="inline-flex min-h-6 shrink-0 items-center rounded border border-border px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
 				>
-					ESC
+					<span className="sr-only">{t('common.close', 'Close')} </span>ESC
 				</button>
 			</div>
-			<div
-				id={commandListId}
-				role="listbox"
-				aria-label={t('shell.quickSwitcher', 'Quick Switcher')}
-				className="max-h-80 overflow-y-auto p-2 divide-y divide-border/40"
-			>
-				{orderedItems.length === 0 ? (
-					<div className="py-6 text-center text-xs text-muted-foreground">
-						{t('shell.noMatchingDestinations', 'No matching destinations found.')}
-					</div>
-				) : (
-					groups.map((grp) => (
+			{orderedItems.length === 0 ? (
+				<div role="status" className="py-6 text-center text-xs text-muted-foreground">
+					{t('shell.noMatchingDestinations', 'No matching destinations found.')}
+				</div>
+			) : (
+				<div
+					id={commandListId}
+					role="listbox"
+					aria-label={t('shell.quickSwitcher', 'Quick Switcher')}
+					className="max-h-80 overflow-y-auto p-2 divide-y divide-border/40"
+				>
+					{groups.map((grp) => (
 						<div
 							key={grp.label}
 							role="group"
@@ -592,9 +594,9 @@ export function CommandPaletteContent({
 								})}
 							</div>
 						</div>
-					))
-				)}
-			</div>
+					))}
+				</div>
+			)}
 		</>
 	);
 }

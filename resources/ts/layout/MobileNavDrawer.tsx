@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { SafeLink as Link, withWorkspaceShellUrl } from '../lib/inertia-bridge';
 import { t } from '../lib/i18n';
 import { cn, DynamicIcon, sanitizeHref } from '../lib/utils';
@@ -34,6 +34,24 @@ export function MobileNavDrawer({
 }: MobileNavDrawerProps): React.ReactElement | null {
 	const mobileDrawerRef = useRef<HTMLDialogElement | null>(null);
 	const mobileDrawerCtrl = useModalDialogController(mobileDrawerRef, open, onOpenChange);
+
+	useEffect(() => {
+		if (!open || typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+			return;
+		}
+		const mql = window.matchMedia('(min-width: 1024px)');
+		if (mql.matches) {
+			onOpenChange(false);
+			return;
+		}
+		const onChange = (e: MediaQueryListEvent) => {
+			if (e.matches) {
+				onOpenChange(false);
+			}
+		};
+		mql.addEventListener('change', onChange);
+		return () => mql.removeEventListener('change', onChange);
+	}, [open, onOpenChange]);
 
 	if (!open) {
 		return null;

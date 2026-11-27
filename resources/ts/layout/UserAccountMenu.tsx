@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { ThemeMode, ThemePresetId, ThemePresetMeta } from '../hooks';
 import { t } from '../lib/i18n';
 import { cn, DynamicIcon, sanitizeHref, sanitizeImageSrc } from '../lib/utils';
-import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from '../ui';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui';
 import type { ShellLayoutDescriptorDto, ShellLayoutId, WorkspaceSharedContext } from './types';
 
 export interface UserAccountMenuProps {
@@ -64,6 +64,7 @@ export function UserAccountMenu({
 	layoutPending = false,
 	setShellLayout,
 }: UserAccountMenuProps): React.ReactElement | null {
+	const [open, setOpen] = useState(false);
 	const user = workspace?.user;
 	if (!user) {
 		return null;
@@ -107,7 +108,7 @@ export function UserAccountMenu({
 	const renderTrigger = () => {
 		if (variant === 'sidebar-collapsed') {
 			return (
-				<MenuTrigger
+				<PopoverTrigger
 					data-rw-user-menu-trigger=""
 					title={`${displayName} — ${t('shell.userMenu', 'User account menu')}`}
 					className="mx-auto flex size-9 items-center justify-center rounded-lg border border-transparent text-sidebar-foreground transition-colors hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring cursor-pointer"
@@ -126,13 +127,13 @@ export function UserAccountMenu({
 					<span className="sr-only">
 						{`${displayName} — ${t('shell.userMenu', 'User account menu')}`}
 					</span>
-				</MenuTrigger>
+				</PopoverTrigger>
 			);
 		}
 
 		if (variant === 'sidebar') {
 			return (
-				<MenuTrigger
+				<PopoverTrigger
 					data-rw-user-menu-trigger=""
 					className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring cursor-pointer"
 				>
@@ -165,12 +166,12 @@ export function UserAccountMenu({
 					</span>
 					<DynamicIcon name="selector" className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
 					<span className="sr-only">{` — ${t('shell.userMenu', 'User account menu')}`}</span>
-				</MenuTrigger>
+				</PopoverTrigger>
 			);
 		}
 
 		return (
-			<MenuTrigger
+			<PopoverTrigger
 				data-rw-user-menu-trigger=""
 				className="inline-flex h-8 items-center gap-2 rounded-md border border-masthead-border bg-input-surface px-2 text-xs font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
 			>
@@ -202,15 +203,16 @@ export function UserAccountMenu({
 				) : null}
 				<DynamicIcon name="chevron-down" className="size-3 text-muted-foreground" aria-hidden="true" />
 				<span className="sr-only">{` — ${t('shell.userMenu', 'User account menu')}`}</span>
-			</MenuTrigger>
+			</PopoverTrigger>
 		);
 	};
 
 	return (
-		<Menu modal={false}>
+		<Popover open={open} onOpenChange={setOpen} modal={false}>
 			{renderTrigger()}
 
-			<MenuContent
+			<PopoverContent
+				aria-label={t('shell.userMenu', 'User account menu')}
 				data-rw-user-menu=""
 				side={menuSide}
 				align={menuAlign}
@@ -245,7 +247,7 @@ export function UserAccountMenu({
 					</div>
 				</div>
 
-				<MenuSeparator />
+				<div role="separator" className="my-1 h-px bg-border" />
 
 				{/* Unified Theme Section (Light / Dark / System + Color Schemes) */}
 				<div data-rw-theme-section="" className="space-y-2.5 px-2 py-2">
@@ -352,7 +354,7 @@ export function UserAccountMenu({
 				{/* Pluggable Panel Layout Selector */}
 				{showLayoutSection ? (
 					<>
-						<MenuSeparator />
+						<div role="separator" className="my-1 h-px bg-border" />
 						<div data-rw-layout-section="" className="space-y-2 px-2 py-2">
 							<div className="flex items-center justify-between gap-2">
 								<span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
@@ -426,14 +428,16 @@ export function UserAccountMenu({
 
 				{shortcutsEnabled && onOpenShortcuts ? (
 					<>
-						<MenuSeparator />
-						<MenuItem
+						<div role="separator" className="my-1 h-px bg-border" />
+						<button
+							type="button"
 							data-rw-shortcuts-trigger=""
-							label={t('shell.keyboardShortcuts', 'Keyboard shortcuts')}
 							onClick={() => {
+								setOpen(false);
 								onNavigate?.();
 								onOpenShortcuts();
 							}}
+							className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-xs font-medium text-popover-foreground transition-colors outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring cursor-pointer select-none"
 						>
 							<DynamicIcon
 								name="keyboard"
@@ -446,24 +450,22 @@ export function UserAccountMenu({
 							<kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[10px] leading-none text-muted-foreground">
 								?
 							</kbd>
-						</MenuItem>
+						</button>
 					</>
 				) : null}
 
-				<MenuSeparator />
+				<div role="separator" className="my-1 h-px bg-border" />
 
 				{inSidebar && adminHref ? (
-					<MenuItem
+					<a
+						href={adminHref}
+						target="_top"
 						data-rw-admin-return=""
-						label={t('shell.returnToTarget', { target: resolvedReturnLabel }, 'Return to {target}')}
-						render={
-							<a
-								href={adminHref}
-								target="_top"
-								className="no-underline"
-								onClick={() => onNavigate?.()}
-							/>
-						}
+						onClick={() => {
+							setOpen(false);
+							onNavigate?.();
+						}}
+						className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-xs font-medium text-popover-foreground no-underline transition-colors outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring cursor-pointer select-none"
 					>
 						<DynamicIcon
 							name="arrow-left"
@@ -473,62 +475,55 @@ export function UserAccountMenu({
 						<span className="flex-1 truncate">
 							{t('shell.returnToTarget', { target: resolvedReturnLabel }, 'Return to {target}')}
 						</span>
-					</MenuItem>
+					</a>
 				) : null}
 
 				{/* ProcessWire Account Navigation Items (View site / Profile / Logout) */}
-				<MenuItem
+				<a
+					href={viewSiteHref}
+					target="_top"
 					data-rw-user-view-site=""
-					label={t('shell.viewSite', 'View site')}
-					render={
-						<a
-							href={viewSiteHref}
-							target="_top"
-							className="no-underline"
-							onClick={() => onNavigate?.()}
-						/>
-					}
+					onClick={() => {
+						setOpen(false);
+						onNavigate?.();
+					}}
+					className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-xs font-medium text-popover-foreground no-underline transition-colors outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring cursor-pointer select-none"
 				>
 					<DynamicIcon name="eye" className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
 					<span className="flex-1 truncate">{t('shell.viewSite', 'View site')}</span>
-				</MenuItem>
+				</a>
 
 				{profileHref ? (
-					<MenuItem
+					<a
+						href={profileHref}
 						data-rw-user-profile=""
-						label={t('shell.profile', 'Profile')}
-						render={
-							<a
-								href={profileHref}
-								className="no-underline"
-								onClick={() => onNavigate?.()}
-							/>
-						}
+						onClick={() => {
+							setOpen(false);
+							onNavigate?.();
+						}}
+						className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-xs font-medium text-popover-foreground no-underline transition-colors outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring cursor-pointer select-none"
 					>
 						<DynamicIcon name="user" className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
 						<span className="flex-1 truncate">{t('shell.profile', 'Profile')}</span>
-					</MenuItem>
+					</a>
 				) : null}
 
 				{logoutHref ? (
-					<MenuItem
+					<a
+						href={logoutHref}
+						target="_top"
 						data-rw-user-logout=""
-						variant="danger"
-						label={t('shell.logout', 'Logout')}
-						render={
-							<a
-								href={logoutHref}
-								target="_top"
-								className="no-underline"
-								onClick={() => onNavigate?.()}
-							/>
-						}
+						onClick={() => {
+							setOpen(false);
+							onNavigate?.();
+						}}
+						className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-xs font-medium text-destructive no-underline transition-colors outline-none hover:bg-destructive/10 focus-visible:ring-2 focus-visible:ring-ring cursor-pointer select-none"
 					>
 						<DynamicIcon name="logout" className="size-3.5 shrink-0" aria-hidden="true" />
 						<span className="flex-1 truncate">{t('shell.logout', 'Logout')}</span>
-					</MenuItem>
+					</a>
 				) : null}
-			</MenuContent>
-		</Menu>
+			</PopoverContent>
+		</Popover>
 	);
 }

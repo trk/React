@@ -675,7 +675,7 @@ export const KeyValueFieldControl: React.FC<KeyValueFieldProps> = (rawProps) => 
 										spellCheck={false}
 										onPaste={(e) => handleBulkPaste(e, idx)}
 										onKeyDown={(e) => {
-											if (e.nativeEvent.isComposing) {
+											if (e.nativeEvent.isComposing || e.keyCode === 229) {
 												return;
 											}
 											if (e.altKey && e.key === 'ArrowUp' && idx > 0) {
@@ -723,7 +723,7 @@ export const KeyValueFieldControl: React.FC<KeyValueFieldProps> = (rawProps) => 
 											}
 										}}
 										onKeyDown={(e) => {
-											if (e.nativeEvent.isComposing) {
+											if (e.nativeEvent.isComposing || e.keyCode === 229) {
 												return;
 											}
 											if (e.altKey && e.key === 'ArrowUp' && idx > 0) {

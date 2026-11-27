@@ -61,7 +61,7 @@ export function TransferRelationWidget({
 			<div className="grid grid-cols-1 divide-y divide-border overflow-hidden rounded-md border border-border @lg/rw-rel:grid-cols-2 @lg/rw-rel:divide-x @lg/rw-rel:divide-y-0">
 			<div className="flex flex-col">
 				<div className="flex items-center justify-between border-b border-border/70 bg-muted/25 px-2.5 py-1.5 text-xs font-semibold text-foreground">
-					<span>Available ({available.length})</span>
+					<span>{t('relation.availableCount', { count: available.length }, 'Available ({count})')}</span>
 					{!disabled && available.length > 0 && maxItems === 0 ? (
 						<button
 							type="button"
@@ -73,11 +73,11 @@ export function TransferRelationWidget({
 							}
 							className="text-[11px] font-medium text-primary hover:underline cursor-pointer"
 						>
-							Add all &rarr;
+							{t('relation.addAll', 'Add all')} &rarr;
 						</button>
 					) : null}
 				</div>
-				<div className="flex items-center gap-1.5 border-b border-border/60 bg-background/60 px-2.5 py-1">
+				<div className="flex items-center gap-1.5 border-b border-border/60 bg-background/60 px-2.5 py-1 focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring">
 					<DynamicIcon name="search" className="size-3.5 shrink-0 text-muted-foreground" />
 					<input
 						type="search"
@@ -117,18 +117,18 @@ export function TransferRelationWidget({
 
 			<div className="flex flex-col">
 				<div className="flex items-center justify-between border-b border-border/70 bg-muted/25 px-2.5 py-1.5 text-xs font-semibold text-foreground">
-					<span>Selected ({selectedValues.length})</span>
+					<span>{t('relation.selectedCount', { count: selectedValues.length }, 'Selected ({count})')}</span>
 					{!disabled && selectedValues.length > 0 ? (
 						<button
 							type="button"
 							onClick={() => onChange([])}
 							className="text-[11px] font-medium text-destructive hover:underline cursor-pointer"
 						>
-							Clear all
+							{t('common.clearAll', 'Clear all')}
 						</button>
 					) : null}
 				</div>
-				<div className="flex items-center gap-1.5 border-b border-border/60 bg-background/60 px-2.5 py-1">
+				<div className="flex items-center gap-1.5 border-b border-border/60 bg-background/60 px-2.5 py-1 focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring">
 					<DynamicIcon name="search" className="size-3.5 shrink-0 text-muted-foreground" />
 					<input
 						type="search"
@@ -181,7 +181,7 @@ export function TransferRelationWidget({
 											type="button"
 											onClick={() => onChange(selectedValues.filter((v) => v !== tok))}
 											className="rounded p-0.5 text-muted-foreground hover:text-destructive cursor-pointer"
-											aria-label={`Remove ${item.label}`}
+											aria-label={t('relation.removeNamed', { label: item.label }, 'Remove {label}')}
 										>
 											<DynamicIcon name="x" className="size-3.5" />
 										</button>

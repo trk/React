@@ -70,7 +70,7 @@ export function renderViewportCellValue({
 			return (
 				<Switch
 					checked={checked}
-					aria-label={colDef.label}
+					aria-label={colDef.label || colKey}
 					onCheckedChange={() => onToggleField(recordId, colKey)}
 				/>
 			);
@@ -152,7 +152,7 @@ export function renderViewportCellValue({
 		if (colDef.options && Object.keys(colDef.options).length > 0) {
 			return (
 				<Select
-					aria-label={colDef.label}
+					aria-label={colDef.label || colKey}
 					value={editingCell.value}
 					onChange={(e) => {
 						const nextVal = e.target.value;
@@ -174,7 +174,7 @@ export function renderViewportCellValue({
 
 		return (
 			<Input
-				aria-label={colDef.label}
+				aria-label={colDef.label || colKey}
 				value={editingCell.value}
 				onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
 				onBlur={() => {
@@ -185,6 +185,9 @@ export function renderViewportCellValue({
 					}
 				}}
 				onKeyDown={(e) => {
+					if (e.nativeEvent.isComposing || e.keyCode === 229) {
+						return;
+					}
 					if (e.key === 'Enter') {
 						const nextVal = editingCell.value;
 						setEditingCell(null);
@@ -496,7 +499,7 @@ export function renderViewportCellValue({
 						<div className={cn('flex flex-wrap items-center gap-1.5 min-w-0', justifyCls)}>
 							{hideEmptyDashForBadges ? null : primaryNode}
 							{locked ? (
-								<span title="Locked" className="inline-flex shrink-0 text-muted-foreground">
+								<span title={t('viewport.locked', 'Locked')} className="inline-flex shrink-0 text-muted-foreground">
 									<DynamicIcon name="lock" className="size-3.5" />
 								</span>
 							) : null}

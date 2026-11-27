@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Combobox as BaseCombobox } from '@base-ui/react/combobox';
 import { t } from '../../lib/i18n';
 import { cn, DynamicIcon } from '../../lib/utils';
@@ -54,6 +54,13 @@ export function Combobox({
 }: ComboboxProps): React.ReactElement {
 	const [anchorEl, setAnchorEl] = useState<HTMLDivElement | null>(null);
 	const [inputQuery, setInputQuery] = useState<string>('');
+	const [openState, setOpenState] = useState(false);
+
+	useEffect(() => {
+		if (readOnly) {
+			setOpenState(false);
+		}
+	}, [readOnly]);
 	const { contains } = BaseCombobox.useFilter();
 	const effectiveOptions = useMemo(() => {
 		const next = [...options];
@@ -87,7 +94,12 @@ export function Combobox({
 		<BaseCombobox.Root<ComboboxOption>
 			items={effectiveOptions}
 			value={selectedOption}
-			disabled={disabled || readOnly}
+			disabled={disabled}
+			readOnly={readOnly}
+			open={readOnly ? false : openState}
+			onOpenChange={(nextOpen) => {
+				setOpenState(readOnly ? false : nextOpen);
+			}}
 			name={name}
 			isItemEqualToValue={(item, current) => item.value === current.value}
 			itemToStringLabel={(item) => item.label}
@@ -122,6 +134,7 @@ export function Combobox({
 					aria-invalid={ariaInvalid || undefined}
 					aria-describedby={ariaDescribedBy}
 					aria-readonly={readOnly || undefined}
+					readOnly={readOnly}
 					placeholder={placeholder ?? t('common.selectOption', 'Select option...')}
 					className={cn(
 						'flex h-9 w-full min-w-0 rounded-md border border-input bg-input-surface pl-3 pr-14 text-sm text-foreground shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
@@ -139,6 +152,7 @@ export function Combobox({
 						</BaseCombobox.Clear>
 					) : null}
 					<BaseCombobox.Trigger
+						disabled={disabled || readOnly}
 						aria-label={t('common.toggleOptions', 'Toggle options')}
 						className="inline-flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
 					>

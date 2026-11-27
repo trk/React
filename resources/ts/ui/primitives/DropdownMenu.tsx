@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useState } from 'react';
 import { Menu as BaseMenu } from '@base-ui/react/menu';
 import { visitSameModuleHref, withWorkspaceShellUrl } from '../../lib/inertia-bridge';
+import { t } from '../../lib/i18n';
 import { cn, DynamicIcon, sanitizeHref } from '../../lib/utils';
 import { getPortalContainer } from '../../portal/PortalRoot';
 
@@ -215,7 +216,7 @@ export function DropdownMenu({
 	trigger,
 	triggerIcon = 'more-horizontal',
 	triggerLabel,
-	triggerAriaLabel = 'Actions',
+	triggerAriaLabel,
 	triggerClassName,
 	triggerDataAttr,
 	align = 'end',
@@ -229,6 +230,7 @@ export function DropdownMenu({
 		return null;
 	}
 
+	const resolvedAriaLabel = triggerAriaLabel ?? (!trigger && !triggerLabel ? t('common.actions', 'Actions') : undefined);
 	const hasAnyIcon = visibleItems.some((item) => Boolean(item.icon));
 	let seenDanger = false;
 
@@ -236,7 +238,7 @@ export function DropdownMenu({
 		<Menu open={open} onOpenChange={setOpen} modal={false}>
 			<MenuTrigger
 				disabled={disabled}
-				aria-label={triggerAriaLabel}
+				aria-label={resolvedAriaLabel}
 				data-rw-row-actions-trigger={triggerDataAttr}
 				onClick={(event) => event.stopPropagation()}
 				className={cn(

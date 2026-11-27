@@ -933,6 +933,7 @@ export const BlockHandleOverlay: TiptapCanvasCapability['BlockHandleOverlay'] = 
 			>
 				<div
 					ref={menuListRef}
+					role="menu"
 					aria-labelledby={triggerId}
 					{...({ focusgroup: 'menu nomemory' } as Record<string, string>)}
 				>
@@ -942,6 +943,7 @@ export const BlockHandleOverlay: TiptapCanvasCapability['BlockHandleOverlay'] = 
 						</div>
 						<button
 							type="button"
+							role="menuitem"
 							data-rw-tiptap-block-action="turn-paragraph"
 							onClick={() => runMenuAction((b) => turnTopLevelBlockInto(editor, b, 'paragraph'))}
 						>
@@ -951,6 +953,7 @@ export const BlockHandleOverlay: TiptapCanvasCapability['BlockHandleOverlay'] = 
 							<button
 								key={lvl}
 								type="button"
+								role="menuitem"
 								data-rw-tiptap-block-action={`turn-h${lvl}`}
 								onClick={() =>
 									runMenuAction((b) => turnTopLevelBlockInto(editor, b, { heading: lvl }))
@@ -961,6 +964,7 @@ export const BlockHandleOverlay: TiptapCanvasCapability['BlockHandleOverlay'] = 
 						))}
 						<button
 							type="button"
+							role="menuitem"
 							data-rw-tiptap-block-action="turn-bulletList"
 							onClick={() => runMenuAction((b) => turnTopLevelBlockInto(editor, b, 'bulletList'))}
 						>
@@ -968,6 +972,7 @@ export const BlockHandleOverlay: TiptapCanvasCapability['BlockHandleOverlay'] = 
 						</button>
 						<button
 							type="button"
+							role="menuitem"
 							data-rw-tiptap-block-action="turn-orderedList"
 							onClick={() => runMenuAction((b) => turnTopLevelBlockInto(editor, b, 'orderedList'))}
 						>
@@ -976,6 +981,7 @@ export const BlockHandleOverlay: TiptapCanvasCapability['BlockHandleOverlay'] = 
 						{hasTaskList ? (
 							<button
 								type="button"
+								role="menuitem"
 								data-rw-tiptap-block-action="turn-taskList"
 								onClick={() => runMenuAction((b) => turnTopLevelBlockInto(editor, b, 'taskList'))}
 							>
@@ -984,6 +990,7 @@ export const BlockHandleOverlay: TiptapCanvasCapability['BlockHandleOverlay'] = 
 						) : null}
 						<button
 							type="button"
+							role="menuitem"
 							data-rw-tiptap-block-action="turn-blockquote"
 							onClick={() => runMenuAction((b) => turnTopLevelBlockInto(editor, b, 'blockquote'))}
 						>
@@ -991,6 +998,7 @@ export const BlockHandleOverlay: TiptapCanvasCapability['BlockHandleOverlay'] = 
 						</button>
 						<button
 							type="button"
+							role="menuitem"
 							data-rw-tiptap-block-action="turn-codeBlock"
 							onClick={() => runMenuAction((b) => turnTopLevelBlockInto(editor, b, 'codeBlock'))}
 						>
@@ -1002,6 +1010,7 @@ export const BlockHandleOverlay: TiptapCanvasCapability['BlockHandleOverlay'] = 
 
 					<button
 						type="button"
+						role="menuitem"
 						disabled={!canMoveUp}
 						data-rw-tiptap-block-action="move-up"
 						onClick={() =>
@@ -1013,6 +1022,7 @@ export const BlockHandleOverlay: TiptapCanvasCapability['BlockHandleOverlay'] = 
 					</button>
 					<button
 						type="button"
+						role="menuitem"
 						disabled={!canMoveDown}
 						data-rw-tiptap-block-action="move-down"
 						onClick={() =>
@@ -1024,6 +1034,7 @@ export const BlockHandleOverlay: TiptapCanvasCapability['BlockHandleOverlay'] = 
 					</button>
 					<button
 						type="button"
+						role="menuitem"
 						data-rw-tiptap-block-action="duplicate"
 						onClick={() => runMenuAction(handleDuplicate)}
 					>
@@ -1031,6 +1042,7 @@ export const BlockHandleOverlay: TiptapCanvasCapability['BlockHandleOverlay'] = 
 					</button>
 					<button
 						type="button"
+						role="menuitem"
 						data-danger="1"
 						data-rw-tiptap-block-action="delete"
 						onClick={() => runMenuAction(handleDelete)}

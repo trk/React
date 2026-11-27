@@ -94,6 +94,7 @@ function NativeModalDialog({
 	const titleId = useId();
 	const onCloseRef = useRef(onClose);
 	onCloseRef.current = onClose;
+	const returnFocusRef = useRef<HTMLElement | null>(null);
 
 	useEffect(() => {
 		const dialog = dialogRef.current;
@@ -101,9 +102,18 @@ function NativeModalDialog({
 			return;
 		}
 
+		const restoreFocus = () => {
+			const target = returnFocusRef.current;
+			returnFocusRef.current = null;
+			if (target && target.isConnected && typeof target.focus === 'function') {
+				window.requestAnimationFrame(() => target.focus());
+			}
+		};
+
 		const handleNativeClose = () => {
 			dialog.returnValue = '';
 			onCloseRef.current();
+			restoreFocus();
 		};
 		dialog.addEventListener('close', handleNativeClose);
 
@@ -139,6 +149,10 @@ function NativeModalDialog({
 		return () => {
 			dialog.removeEventListener('close', handleNativeClose);
 			cleanupLightDismiss?.();
+			if (dialog.open) {
+				dialog.close();
+			}
+			restoreFocus();
 		};
 	}, [open]);
 
@@ -149,6 +163,10 @@ function NativeModalDialog({
 		}
 		if (open) {
 			if (!dialog.open && typeof dialog.showModal === 'function') {
+				returnFocusRef.current =
+					typeof document !== 'undefined' && document.activeElement instanceof HTMLElement
+						? document.activeElement
+						: null;
 				dialog.showModal();
 				// `showModal()` focuses the first focusable node (the close button); move focus to the primary field
 				dialog.querySelector<HTMLElement>('[data-rw-autofocus]')?.focus();
@@ -427,7 +445,7 @@ function LinkBrowseDisclosure({
 				<button
 					type="button"
 					aria-expanded={isOpen}
-					aria-controls={panelId}
+					aria-controls={isOpen ? panelId : undefined}
 					onClick={onToggle}
 					className={cn(
 						'flex w-full items-center gap-2.5 px-3.5 py-2.5 text-start text-xs font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
@@ -696,6 +714,9 @@ export function TiptapLinkDialog({
 	};
 
 	const handleHrefKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+		if (e.nativeEvent.isComposing || e.keyCode === 229) {
+			return;
+		}
 		if (searchResults.length === 0) {
 			return;
 		}
@@ -848,7 +869,7 @@ export function TiptapLinkDialog({
 									role={hasServerToken ? 'combobox' : undefined}
 									aria-autocomplete={hasServerToken ? 'list' : undefined}
 									aria-expanded={hasServerToken ? showResults : undefined}
-									aria-controls={hasServerToken && showResults ? listboxId : undefined}
+									aria-controls={hasServerToken && showResults && searchResults.length > 0 ? listboxId : undefined}
 									aria-activedescendant={
 										activeResultIdx >= 0 ? `${listboxId}-opt-${activeResultIdx}` : undefined
 									}
@@ -885,19 +906,23 @@ export function TiptapLinkDialog({
 							</div>
 
 							{showResults ? (
-								<ul
-									id={listboxId}
-									role="listbox"
-									aria-label={t('link.searchResultsLabel', 'Matching pages')}
-									className="max-h-48 overflow-y-auto overscroll-contain rounded-md border border-border bg-popover p-1 shadow-md"
-									data-rw-pw-link-autocomplete=""
-								>
-									{searchResults.length === 0 ? (
-										<li className="px-2.5 py-2 text-xs text-muted-foreground" role="presentation">
-											{t('link.noMatchingPages', 'No matching pages found.')}
-										</li>
-									) : (
-										searchResults.map((p, idx) => (
+								searchResults.length === 0 ? (
+									<p
+										role="status"
+										className="rounded-md border border-border bg-popover px-2.5 py-2 text-xs text-muted-foreground shadow-md"
+										data-rw-pw-link-autocomplete=""
+									>
+										{t('link.noMatchingPages', 'No matching pages found.')}
+									</p>
+								) : (
+									<ul
+										id={listboxId}
+										role="listbox"
+										aria-label={t('link.searchResultsLabel', 'Matching pages')}
+										className="max-h-48 overflow-y-auto overscroll-contain rounded-md border border-border bg-popover p-1 shadow-md"
+										data-rw-pw-link-autocomplete=""
+									>
+										{searchResults.map((p, idx) => (
 											<li
 												key={p.id}
 												id={`${listboxId}-opt-${idx}`}
@@ -915,9 +940,9 @@ export function TiptapLinkDialog({
 												<span className="truncate font-medium">{p.title}</span>
 												<span className="truncate font-mono text-[11px] text-muted-foreground">{p.url}</span>
 											</li>
-										))
-									)}
-								</ul>
+										))}
+									</ul>
+								)
 							) : null}
 
 							{error ? (
@@ -1375,10 +1400,20 @@ export function TiptapImageDialog({
 
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 	const previewImgRef = useRef<HTMLImageElement | null>(null);
+	const cropDragCleanupRef = useRef<(() => void) | null>(null);
+	const inspectSeqRef = useRef<number>(0);
 	const formId = useId();
+
+	useEffect(() => {
+		return () => {
+			cropDragCleanupRef.current?.();
+			inspectSeqRef.current += 1;
+		};
+	}, []);
 
 	const openInspectorForPickerItem = useCallback(
 		(item: PwImagePickerItem) => {
+			inspectSeqRef.current += 1;
 			setActiveSrc(item.url);
 			setOriginalUrl(item.url);
 			setBasename(item.basename);
@@ -1421,6 +1456,8 @@ export function TiptapImageDialog({
 	// Initialize dialog when opened
 	useEffect(() => {
 		if (!open) {
+			cropDragCleanupRef.current?.();
+			inspectSeqRef.current += 1;
 			return;
 		}
 		setError('');
@@ -1475,6 +1512,7 @@ export function TiptapImageDialog({
 			setView('edit');
 
 			if (hasServerToken) {
+				const seq = ++inspectSeqRef.current;
 				void fetchTiptapGet<{
 					ok: boolean;
 					found?: boolean;
@@ -1491,6 +1529,9 @@ export function TiptapImageDialog({
 					pageId: inferredPid > 0 ? inferredPid : undefined,
 					mediaToken: initialAttrs.mediaToken || hostImageFields[0]?.mediaToken || undefined,
 				}).then((res) => {
+					if (seq !== inspectSeqRef.current) {
+						return;
+					}
 					if (res?.ok && res.found && res.originalUrl) {
 						setOriginalUrl(res.originalUrl);
 						if (res.basename) setBasename(res.basename);
@@ -1503,6 +1544,7 @@ export function TiptapImageDialog({
 				});
 			}
 		} else {
+			inspectSeqRef.current += 1;
 			setExternalUrl('');
 			setExternalAlt('');
 			setView('library');
@@ -1708,14 +1750,19 @@ export function TiptapImageDialog({
 				setHeightInput(String(nh));
 			}
 		};
-		const onUp = () => {
+		const cleanupDrag = () => {
 			window.removeEventListener('pointermove', onMove);
-			window.removeEventListener('pointerup', onUp);
-			window.removeEventListener('pointercancel', onUp);
+			window.removeEventListener('pointerup', cleanupDrag);
+			window.removeEventListener('pointercancel', cleanupDrag);
+			if (cropDragCleanupRef.current === cleanupDrag) {
+				cropDragCleanupRef.current = null;
+			}
 		};
+		cropDragCleanupRef.current?.();
+		cropDragCleanupRef.current = cleanupDrag;
 		window.addEventListener('pointermove', onMove);
-		window.addEventListener('pointerup', onUp);
-		window.addEventListener('pointercancel', onUp);
+		window.addEventListener('pointerup', cleanupDrag);
+		window.addEventListener('pointercancel', cleanupDrag);
 	};
 
 	const handleInsertExternal = (e: React.FormEvent) => {
@@ -1725,6 +1772,7 @@ export function TiptapImageDialog({
 			setError(t('image.invalidUrl', 'Enter a valid https://, http://, or site-relative image URL.'));
 			return;
 		}
+		inspectSeqRef.current += 1;
 		setActiveSrc(trimmed);
 		setOriginalUrl(trimmed);
 		setBasename(trimmed.split('/').pop()?.split('?')[0] || '');
@@ -2193,7 +2241,7 @@ export function TiptapImageDialog({
 										title={t('image.rotateLeftBtn', 'Rotate 90° counter-clockwise')}
 										onClick={() => setRotate((r) => ((r - 90) % 360))}
 									>
-										-90&deg;
+										<DynamicIcon name="rotate-ccw" className="size-3.5" aria-hidden="true" />
 									</Button>
 									<Button
 										type="button"
@@ -2203,7 +2251,7 @@ export function TiptapImageDialog({
 										title={t('image.rotateRightBtn', 'Rotate 90° clockwise')}
 										onClick={() => setRotate((r) => ((r + 90) % 360))}
 									>
-										+90&deg;
+										<DynamicIcon name="rotate-cw" className="size-3.5" aria-hidden="true" />
 									</Button>
 									<Button
 										type="button"
@@ -2216,7 +2264,7 @@ export function TiptapImageDialog({
 											if (!flipH) setFlipV(false);
 										}}
 									>
-										&harr;
+										<DynamicIcon name="flip-horizontal" className="size-3.5" aria-hidden="true" />
 									</Button>
 									<Button
 										type="button"
@@ -2229,7 +2277,7 @@ export function TiptapImageDialog({
 											if (!flipV) setFlipH(false);
 										}}
 									>
-										&varr;
+										<DynamicIcon name="flip-vertical" className="size-3.5" aria-hidden="true" />
 									</Button>
 								</div>
 							</div>

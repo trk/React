@@ -243,6 +243,7 @@ export function useSortableList<T>(options: UseSortableListOptions<T>) {
 	const suppressBlurRef = useRef(false);
 	const prevRectsRef = useRef<Map<string, DOMRect> | null>(null);
 	const statusTimerRef = useRef<number | null>(null);
+	const activeDragCleanupRef = useRef<(() => void) | null>(null);
 
 	const announce = useCallback((text: string) => {
 		if (typeof window === 'undefined') {
@@ -260,6 +261,8 @@ export function useSortableList<T>(options: UseSortableListOptions<T>) {
 
 	useEffect(() => {
 		return () => {
+			activeDragCleanupRef.current?.();
+			activeDragCleanupRef.current = null;
 			if (statusTimerRef.current !== null && typeof window !== 'undefined') {
 				window.clearTimeout(statusTimerRef.current);
 			}
@@ -706,6 +709,7 @@ export function useSortableList<T>(options: UseSortableListOptions<T>) {
 			};
 
 			const cleanup = () => {
+				activeDragCleanupRef.current = null;
 				if (rafId !== null) {
 					window.cancelAnimationFrame(rafId);
 					rafId = null;
@@ -857,6 +861,7 @@ export function useSortableList<T>(options: UseSortableListOptions<T>) {
 			document.addEventListener('pointercancel', onCancel);
 			document.addEventListener('keydown', onKeyDown, true);
 			handleEl.addEventListener('lostpointercapture', onLostCapture);
+			activeDragCleanupRef.current = cleanup;
 		},
 		[announce, focusHandleForId, snapshotItemRects]
 	);

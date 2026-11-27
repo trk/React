@@ -576,7 +576,7 @@ function optimizeReactWorkspaceDepsPlugin(
 			if (id.startsWith(rwUtilsPrefix)) {
 				return [
 					'const U = window.ReactWorkspaceRuntime.Utils;',
-					'export const { cn, CORE_UI_ICON_NODES, DynamicIcon, getCsrfToken, normalizeIconName, notifyIconCatalogLoaded, resolveCanonicalIconName, sanitizeAssetUrl, sanitizeHref, sanitizeImageSrc, sanitizeSameOriginUrl, isWorkspaceShellActive, withWorkspaceShellUrl, subscribeIconCatalog, t, translate, useTranslations, registerTranslations, hasTranslation, getLocale } = U;',
+					'export const { cn, CORE_UI_ICON_NODES, DynamicIcon, getCsrfToken, normalizeIconName, notifyIconCatalogLoaded, resolveCanonicalIconName, sanitizeAssetUrl, sanitizeHref, sanitizeImageSrc, sanitizeSameOriginUrl, shouldIgnoreEscapeEvent, isWorkspaceShellActive, withWorkspaceShellUrl, subscribeIconCatalog, t, translate, useTranslations, registerTranslations, hasTranslation, getLocale } = U;',
 				].join('\n');
 			}
 			if (id.startsWith(rwI18nPrefix)) {

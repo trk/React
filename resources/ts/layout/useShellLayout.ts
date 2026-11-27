@@ -214,6 +214,32 @@ export function useShellLayout(options: UseShellLayoutOptions = {}): UseShellLay
 		syncShellLayoutDom(shellLayout, sidebarCollapsed, false);
 	}, [shellLayout, sidebarCollapsed, syncToServer]);
 
+	useEffect(() => {
+		if (typeof window === 'undefined') {
+			return;
+		}
+		const onShellLayoutChange = (event: Event) => {
+			const detail = (event as CustomEvent<{ shellLayout?: unknown; sidebarCollapsed?: unknown }>).detail;
+			if (!detail || typeof detail !== 'object') {
+				return;
+			}
+			const nextLayout = normalizeShellLayoutValue(detail.shellLayout);
+			if (nextLayout && nextLayout !== latestLayoutRef.current) {
+				latestLayoutRef.current = nextLayout;
+				setShellLayoutState(nextLayout);
+			}
+			const nextCollapsed = parseCollapsedAttr(detail.sidebarCollapsed);
+			if (nextCollapsed !== null && nextCollapsed !== latestCollapsedRef.current) {
+				latestCollapsedRef.current = nextCollapsed;
+				setSidebarCollapsedState(nextCollapsed);
+			}
+		};
+		window.addEventListener('pw:react-shell-layout-change', onShellLayoutChange);
+		return () => {
+			window.removeEventListener('pw:react-shell-layout-change', onShellLayoutChange);
+		};
+	}, []);
+
 	const refreshInertiaWorkspace = useCallback(() => {
 		if (isInertiaAppActive()) {
 			router.reload({ only: ['workspace'] });

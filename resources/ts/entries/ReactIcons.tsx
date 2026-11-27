@@ -1,5 +1,6 @@
 import { fetchGatewayJson } from '../hooks';
 import {
+	ALLOWED_SVG_NODE_TAGS,
 	clampIconSize,
 	clampIconStrokeWidth,
 	cleanIconIdentifier,
@@ -14,17 +15,8 @@ import {
 	type NormalizedIconValue,
 	sanitizeIconColor,
 	sanitizeIconVariant,
+	sanitizeSvgNodeAttrs,
 } from '../icons/iconTypes';
-
-const ALLOWED_SVG_TAGS = new Set([
-	'path',
-	'rect',
-	'circle',
-	'ellipse',
-	'line',
-	'polyline',
-	'polygon',
-]);
 
 const iconEntryCache = new Map<string, IconCatalogEntry>();
 const failedNames = new Set<string>();
@@ -125,6 +117,10 @@ function flushHydrationBatch(): void {
 	const names = Array.from(pendingHydrationNames).slice(0, 80);
 	for (const n of names) {
 		pendingHydrationNames.delete(n);
+	}
+	if (pendingHydrationNames.size > 0) {
+		hydrationFlushScheduled = true;
+		queueMicrotask(flushHydrationBatch);
 	}
 
 	const endpoint = resolveIconsEndpoint();
@@ -259,15 +255,12 @@ export function renderSvgString(
 	for (const tuple of nodes) {
 		const tag = tuple[0];
 		const attrs = tuple[1];
-		if (!tag || !ALLOWED_SVG_TAGS.has(tag) || !attrs) {
+		if (!tag || !ALLOWED_SVG_NODE_TAGS.has(tag) || !attrs) {
 			continue;
 		}
 		let attrStr = '';
-		for (const [k, v] of Object.entries(attrs)) {
-			if (k === 'key' || !/^[a-zA-Z][a-zA-Z0-9-]*$/.test(k)) {
-				continue;
-			}
-			attrStr += ` ${k}="${escapeXmlAttr(String(v))}"`;
+		for (const [k, v] of Object.entries(sanitizeSvgNodeAttrs(attrs, true))) {
+			attrStr += ` ${k}="${escapeXmlAttr(v)}"`;
 		}
 		inner += `<${tag}${attrStr}/>`;
 	}

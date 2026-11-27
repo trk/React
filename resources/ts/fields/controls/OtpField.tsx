@@ -118,7 +118,7 @@ export function OtpField(props: ReactInputfieldProps): React.ReactElement {
 	};
 
 	const handleSlotKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-		if (locked) {
+		if (locked || e.nativeEvent.isComposing || e.keyCode === 229) {
 			return;
 		}
 		if (e.key === 'Backspace') {

@@ -578,7 +578,7 @@ export function CopyValueButton({
 			window.clearTimeout(timerRef.current);
 		}
 		setStatus(ok ? 'copied' : 'failed');
-		let msg = ok ? t('common.copied', 'Copied') : t('common.error', 'Copy failed');
+		let msg = ok ? t('common.copied', 'Copied') : t('common.copyFailed', 'Copy failed');
 		if (msg === lastCopyAnnouncement) {
 			msg += '\u00A0';
 		}

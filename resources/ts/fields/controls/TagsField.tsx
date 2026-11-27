@@ -1,6 +1,6 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { t } from '../../lib/i18n';
-import { cn, DynamicIcon } from '../../lib/utils';
+import { cn, DynamicIcon, shouldIgnoreEscapeEvent } from '../../lib/utils';
 import { Badge } from '../../ui';
 import type { ReactInputfieldProps } from '../types';
 
@@ -92,6 +92,16 @@ export function TagsField(props: ReactInputfieldProps): React.ReactElement {
 	const [focused, setFocused] = useState<boolean>(false);
 	const [activeIndex, setActiveIndex] = useState<number>(-1);
 	const inputRef = useRef<HTMLInputElement | null>(null);
+	const blurTimerRef = useRef<number | null>(null);
+
+	const clearBlurTimer = () => {
+		if (blurTimerRef.current !== null) {
+			window.clearTimeout(blurTimerRef.current);
+			blurTimerRef.current = null;
+		}
+	};
+
+	useEffect(() => () => clearBlurTimer(), []);
 
 	if (incomingSig !== prevSig) {
 		setPrevSig(incomingSig);
@@ -184,6 +194,7 @@ export function TagsField(props: ReactInputfieldProps): React.ReactElement {
 		commitTags(next);
 	};
 
+	const rootRef = useRef<HTMLDivElement | null>(null);
 	const listboxId = useId();
 	const showSuggestions = focused && !locked && filteredSuggestions.length > 0;
 
@@ -192,7 +203,7 @@ export function TagsField(props: ReactInputfieldProps): React.ReactElement {
 			return;
 		}
 		const onEscape = (e: KeyboardEvent) => {
-			if (e.key !== 'Escape') {
+			if (shouldIgnoreEscapeEvent(e, rootRef.current)) {
 				return;
 			}
 			e.preventDefault();
@@ -205,7 +216,7 @@ export function TagsField(props: ReactInputfieldProps): React.ReactElement {
 	}, [showSuggestions]);
 
 	return (
-		<div className="relative space-y-1 min-w-0 max-w-full" data-rw-control="tags">
+		<div ref={rootRef} className="relative space-y-1 min-w-0 max-w-full" data-rw-control="tags">
 			{props.name && !props.inlinePortal && !props.disabled ? (
 				<input type="hidden" name={`${props.name}_present`} value="1" />
 			) : null}
@@ -283,9 +294,14 @@ export function TagsField(props: ReactInputfieldProps): React.ReactElement {
 											: t('tags.addPlaceholder', 'Type tag and press Enter...'))
 									: ''
 						}
-						onFocus={() => setFocused(true)}
+						onFocus={() => {
+							clearBlurTimer();
+							setFocused(true);
+						}}
 						onBlur={() => {
-							window.setTimeout(() => {
+							clearBlurTimer();
+							blurTimerRef.current = window.setTimeout(() => {
+								blurTimerRef.current = null;
 								setFocused(false);
 								if (draft.trim() !== '') {
 									tryAddFromString(draft);
@@ -310,6 +326,9 @@ export function TagsField(props: ReactInputfieldProps): React.ReactElement {
 							}
 						}}
 						onKeyDown={(e) => {
+							if (e.nativeEvent.isComposing || e.keyCode === 229) {
+								return;
+							}
 							if (showSuggestions && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
 								e.preventDefault();
 								setActiveIndex((prev) =>
@@ -369,6 +388,7 @@ export function TagsField(props: ReactInputfieldProps): React.ReactElement {
 							tabIndex={-1}
 							aria-selected={idx === activeIndex}
 							onMouseDown={(e) => {
+								clearBlurTimer();
 								e.preventDefault();
 								tryAddFromString(suggestion);
 								inputRef.current?.focus();

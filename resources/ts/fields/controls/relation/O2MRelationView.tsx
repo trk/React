@@ -131,7 +131,7 @@ export function O2MRelationView({
 	if (!hasOwner) {
 		return (
 			<div className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-3 text-xs text-muted-foreground">
-				Save this record first to manage incoming <strong>{resourceLabel}</strong> relations.
+				{t('relation.saveBeforeO2m', 'Save this record first before adding or linking related records.')}
 			</div>
 		);
 	}
@@ -143,16 +143,19 @@ export function O2MRelationView({
 			<div className="flex flex-wrap items-center justify-between gap-2">
 				<div className="flex items-center gap-2 min-w-0">
 					<Input
-						aria-label={`Filter incoming ${resourceLabel.toLowerCase()}...`}
+						aria-label={t('relation.filterIncoming', { resource: resourceLabel }, 'Filter incoming {resource}...')}
 						value={query}
 						onChange={(e) => setQuery(e.target.value)}
 						onKeyDown={(e) => {
+							if (e.nativeEvent.isComposing || e.keyCode === 229) {
+								return;
+							}
 							if (e.key === 'Enter') {
 								e.preventDefault();
 								fetchO2mList(query);
 							}
 						}}
-						placeholder={`Filter incoming ${resourceLabel.toLowerCase()}...`}
+						placeholder={t('relation.filterIncoming', { resource: resourceLabel }, 'Filter incoming {resource}...')}
 						className="h-8 w-full max-w-52 @sm/rw-rel:w-52 text-xs"
 					/>
 					<Badge variant="secondary" className="text-[11px] tabular-nums">
@@ -168,7 +171,7 @@ export function O2MRelationView({
 						onClick={() => fetchO2mList(query)}
 						disabled={loading}
 					>
-						Refresh
+						{t('common.refresh', 'Refresh')}
 					</Button>
 					{allowLink ? (
 						<Button
@@ -178,12 +181,12 @@ export function O2MRelationView({
 							icon="link-2"
 							onClick={() => setLinkDrawerOpen(true)}
 						>
-							Link Existing
+							{t('relation.linkExisting', 'Link Existing')}
 						</Button>
 					) : null}
 					{creatable ? (
 						<Button type="button" variant="outline" size="xs" icon="plus" onClick={onOpenQuickCreate}>
-							Create New
+							{t('relation.createNew', 'Create New')}
 						</Button>
 					) : null}
 				</div>
@@ -193,7 +196,7 @@ export function O2MRelationView({
 
 			{items.length === 0 ? (
 				<div className="rounded-md border border-dashed border-border/70 bg-muted/15 px-3 py-3 text-center text-xs text-muted-foreground">
-					{loading ? 'Loading related records...' : `No related ${resourceLabel.toLowerCase()} records linked yet.`}
+					{loading ? t('relation.loadingRecords', 'Loading related records...') : t('relation.noResults', 'No matching items found.')}
 				</div>
 			) : widget === 'cards' ? (
 				<div className="grid grid-cols-1 gap-2 @md/rw-rel:grid-cols-2">
@@ -310,8 +313,8 @@ export function O2MRelationView({
 													type="button"
 													disabled={busyTarget === String(item.value)}
 													onClick={() => void handleUnlinkItem(item)}
-													title="Unlink"
-													aria-label={`Unlink ${item.label}`}
+													title={t('relation.unlink', 'Unlink')}
+													aria-label={t('relation.unlinkNamed', { label: item.label }, 'Unlink {label}')}
 													className="rounded p-1 text-muted-foreground hover:text-destructive cursor-pointer"
 												>
 													<DynamicIcon name="unlink" className="size-3.5" />
@@ -329,15 +332,15 @@ export function O2MRelationView({
 			<Sheet
 				open={linkDrawerOpen}
 				onOpenChange={setLinkDrawerOpen}
-				title={`Link Existing ${resourceLabel}`}
-				subtitle={`Attach existing ${resourceLabel.toLowerCase()} records via "${foreignField}"`}
+				title={t('relation.linkExistingTitle', { resource: resourceLabel }, 'Link Existing {resource}')}
+				subtitle={t('relation.linkExistingDescription', { resource: resourceLabel }, 'Attach existing {resource} records to this owner.')}
 			>
 				<div className="space-y-3">
 					<Input
-						aria-label={`Search ${resourceLabel.toLowerCase()}...`}
+						aria-label={t('relation.searchResourcePlaceholder', { resource: resourceLabel }, 'Search {resource}...')}
 						value={linkSearch}
 						onChange={(e) => setLinkSearch(e.target.value)}
-						placeholder={`Search ${resourceLabel.toLowerCase()}...`}
+						placeholder={t('relation.searchResourcePlaceholder', { resource: resourceLabel }, 'Search {resource}...')}
 						autoFocus
 					/>
 					<div className="divide-y divide-border rounded-lg border border-border">
@@ -361,7 +364,7 @@ export function O2MRelationView({
 									</div>
 									{isLinked ? (
 										<Badge variant="secondary" className="text-[10px]">
-											Linked
+											{t('relation.linked', 'Linked')}
 										</Badge>
 									) : (
 										<Button
@@ -371,7 +374,7 @@ export function O2MRelationView({
 											disabled={busyTarget === String(cand.value)}
 											onClick={() => void handleLinkItem(cand)}
 										>
-											Link
+											{t('relation.link', 'Link')}
 										</Button>
 									)}
 								</div>

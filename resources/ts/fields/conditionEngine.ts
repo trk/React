@@ -299,15 +299,21 @@ export function normalizeConditionBuilderValue(
 			);
 			const rawOp = typeof ruleObj.operator === 'string' ? ruleObj.operator.trim() : '';
 			const operator = rawOp !== '' ? rawOp : (allowedOps[0] ?? 'eq');
+			const normalizedValue = ruleObj.value === undefined ? null : ruleObj.value;
 			const isFieldSource =
 				typeof ruleObj.valueSource === 'string' &&
-				ruleObj.valueSource.trim().toLowerCase() === 'field';
+				ruleObj.valueSource.trim().toLowerCase() === 'field' &&
+				!UNARY_OPERATORS.has(operator) &&
+				operator !== 'between' &&
+				operator !== 'in' &&
+				operator !== 'not_in' &&
+				typeof normalizedValue === 'string';
 
 			rules.push({
 				id: ruleId,
 				field: fieldKey,
 				operator,
-				value: ruleObj.value === undefined ? null : ruleObj.value,
+				value: normalizedValue,
 				...(isFieldSource ? { valueSource: 'field' as const } : {}),
 			});
 		});

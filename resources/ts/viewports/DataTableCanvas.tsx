@@ -45,7 +45,7 @@ export const DataTableCanvas: React.FC<ViewportCanvasProps> = ({
 	const tableSortable = useSortableList<Record<string, unknown>>({
 		items: records,
 		getId: (r) => String(r.id ?? ''),
-		getLabel: (r, idx) => String(r.title || r.label || r.name || r.id || `Row ${idx + 1}`),
+		getLabel: (r, idx) => String(r.title || r.label || r.name || r.id || t('viewport.rowNumber', { number: idx + 1 }, 'Row {number}')),
 		axis: 'vertical',
 		disabled: !canReorder || busy,
 		onReorder: (nextRecords) => {
@@ -81,7 +81,7 @@ export const DataTableCanvas: React.FC<ViewportCanvasProps> = ({
 	const auxValignClass = tableRowValign === 'top' ? 'align-top pt-2.5' : 'align-middle';
 	const auxDataValign = tableRowValign === 'top' ? 'top' : 'middle';
 	const primaryColKey = resolvePrimaryColumnKey(cols);
-	const regionLabel = (state.title || state.componentId || 'Table').trim();
+	const regionLabel = (state.title || state.componentId || t('viewport.defaultTableLabel', 'Table')).trim();
 
 	return (
 		<div
@@ -234,7 +234,7 @@ export const DataTableCanvas: React.FC<ViewportCanvasProps> = ({
 											className="size-4 rounded border-border accent-primary cursor-pointer align-middle"
 											checked={isSelected}
 											onChange={() => dispatch('select_row', { id: recordId })}
-											aria-label={`Select ${rowLabel}`}
+											aria-label={t('viewport.selectRow', { label: rowLabel }, 'Select {label}')}
 										/>
 									</td>
 								)}
@@ -288,7 +288,7 @@ export const DataTableCanvas: React.FC<ViewportCanvasProps> = ({
 									>
 										<DropdownMenu
 											items={menuItems}
-											triggerAriaLabel={`Actions for ${rowLabel}`}
+											triggerAriaLabel={t('viewport.actionsForRow', { label: rowLabel }, 'Actions for {label}')}
 											triggerDataAttr={recordId}
 											disabled={busy}
 										/>

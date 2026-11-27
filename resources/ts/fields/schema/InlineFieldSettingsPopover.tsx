@@ -137,15 +137,31 @@ export const SettingsPopoverShell: React.FC<SettingsPopoverShellProps> = ({
 			setOpen(false);
 		};
 		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.key !== 'Escape' || e.defaultPrevented) {
+			if (e.key !== 'Escape' || e.isComposing || e.keyCode === 229 || e.defaultPrevented) {
 				return;
 			}
-			const target = e.target as Element | null;
-			const targetOverlay = target?.closest?.('[data-rw-portal-overlay]');
+			const target = e.target instanceof Element ? e.target : null;
+			const targetOverlay = target?.closest('[data-rw-portal-overlay]') ?? null;
 			const panelOverlay = panelRef.current;
-			if (targetOverlay && panelOverlay && targetOverlay !== panelOverlay && !panelOverlay.contains(targetOverlay)) {
+			if (targetOverlay && panelOverlay && targetOverlay !== panelOverlay) {
 				return;
 			}
+			const overlays = document.querySelectorAll('[data-rw-portal-overlay]');
+			if (panelOverlay && overlays.length > 0 && overlays[overlays.length - 1] !== panelOverlay) {
+				return;
+			}
+			const targetDialog = target?.closest('dialog[open], [role="dialog"], [role="alertdialog"]') ?? null;
+			if (
+				targetDialog &&
+				targetDialog !== panelOverlay &&
+				(!panelOverlay || panelOverlay.contains(targetDialog) || !targetDialog.contains(panelOverlay))
+			) {
+				return;
+			}
+			if (panelOverlay?.querySelector('dialog[open], [role="listbox"], [role="menu"]')) {
+				return;
+			}
+			e.preventDefault();
 			e.stopPropagation();
 			setOpen(false);
 			triggerRef.current?.focus();
@@ -186,7 +202,6 @@ export const SettingsPopoverShell: React.FC<SettingsPopoverShellProps> = ({
 				aria-expanded={open}
 				aria-controls={open ? panelId : undefined}
 				aria-haspopup="dialog"
-				aria-label={t('form.openFieldSettings', { field: ownerLabel }, '{field} settings')}
 				data-rw-inline-settings-trigger=""
 				onClick={() => setOpen((prev) => !prev)}
 				className={cn(
@@ -199,6 +214,9 @@ export const SettingsPopoverShell: React.FC<SettingsPopoverShellProps> = ({
 					triggerClassName
 				)}
 			>
+				<span className="sr-only">
+					{t('form.openFieldSettings', { field: ownerLabel }, '{field} settings')}{' '}
+				</span>
 				{hasBoundError ? <span className="size-1.5 rounded-full bg-destructive shrink-0" /> : null}
 				{summaryChips.length > 0 ? (
 					<span className={cn('font-mono text-[10px] leading-none tracking-tight text-foreground', triggerChipClassName)}>

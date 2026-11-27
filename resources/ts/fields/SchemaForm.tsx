@@ -345,6 +345,7 @@ export const SchemaForm: React.FC<SchemaFormProps> = (props) => {
 		visibleTopTabs.map((tab) => ({
 			id: tab.id,
 			btnId: `rw-toptab-${sanitizedInstanceId}-${tab.id}`,
+			controlsId: tab.id,
 			label: tab.label,
 			icon: tab.icon,
 			badge: tab.badge,

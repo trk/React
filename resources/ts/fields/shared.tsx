@@ -479,10 +479,17 @@ export function buildLinkInlineSettingFields(
 	const isHashOnlyUrl = normLink.type === 'url' && normLink.url.trim().startsWith('#');
 	const canHaveAnchor =
 		normLink.type !== 'tel' && normLink.type !== 'email' && !isHashOnlyUrl;
+	const isBuiltInScalarOrMedia =
+		normLink.type === 'page' ||
+		normLink.type === 'anchor' ||
+		normLink.type === 'tel' ||
+		normLink.type === 'email' ||
+		normLink.type === 'url' ||
+		normLink.type === 'file' ||
+		normLink.type === 'image' ||
+		normLink.type === 'video';
 	const isRelationType =
-		Boolean(linkConfig?.relationTokens?.[normLink.type]) ||
-		Boolean(normLink.resourceId) ||
-		Boolean(normLink.resourceType);
+		!isBuiltInScalarOrMedia && Boolean(linkConfig?.relationTokens?.[normLink.type]);
 	const canHaveQuery =
 		normLink.type === 'page' ||
 		(isRelationType && normLink.type !== 'tel' && normLink.type !== 'email') ||

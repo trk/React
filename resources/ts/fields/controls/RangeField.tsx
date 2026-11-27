@@ -250,115 +250,94 @@ function DualRangeSlider({
 	);
 }
 
-export function RangeField(props: ReactInputfieldProps): React.ReactElement {
-	const isDisabled = Boolean(props.disabled || props.readOnly);
-
-	if (props.controlType === 'colspan') {
-		const isPercentMode = props.valueMode === 'percent';
-		const strictPercentToSpan = (raw: unknown, fallback: number): number => {
-			const parsed = typeof raw === 'number' ? raw : Number(String(raw ?? '').trim());
-			if (!Number.isFinite(parsed) || parsed <= 0) {
-				return fallback;
-			}
-			const clampedPct = Math.max(8, Math.min(100, parsed));
-			return Math.max(1, Math.min(12, Math.round((clampedPct / 100) * 12)));
-		};
-		const minCols =
-			props.min !== undefined && props.min !== null && props.min !== ''
-				? isPercentMode
-					? strictPercentToSpan(props.min, 1)
-					: clampColSpan(props.min, 1)
-				: 1;
-		const maxCols =
-			props.max !== undefined && props.max !== null && props.max !== ''
-				? isPercentMode
-					? strictPercentToSpan(props.max, 12)
-					: clampColSpan(props.max, 12)
-				: 12;
-
-		const resolveSpan = (raw: unknown): number =>
-			isPercentMode
-				? clampColSpan(strictPercentToSpan(raw, maxCols), maxCols, minCols, maxCols)
-				: clampColSpan(raw, maxCols, minCols, maxCols);
-
-		const incomingSpan = resolveSpan(props.value);
-		const [prevPropSpan, setPrevPropSpan] = useState<number>(incomingSpan);
-		const [span, setSpan] = useState<number>(incomingSpan);
-
-		if (incomingSpan !== prevPropSpan) {
-			setPrevPropSpan(incomingSpan);
-			if (span !== incomingSpan) {
-				setSpan(incomingSpan);
-			}
+function ColSpanRangeSlider({
+	props,
+	isDisabled,
+}: {
+	props: ReactInputfieldProps;
+	isDisabled: boolean;
+}): React.ReactElement {
+	const isPercentMode = props.valueMode === 'percent';
+	const strictPercentToSpan = (raw: unknown, fallback: number): number => {
+		const parsed = typeof raw === 'number' ? raw : Number(String(raw ?? '').trim());
+		if (!Number.isFinite(parsed) || parsed <= 0) {
+			return fallback;
 		}
-
-		const handleSpanChange = (nextSpan: number) => {
-			if (isDisabled) {
-				return;
-			}
-			setSpan(nextSpan);
-			const nextOut = isPercentMode ? colSpanToPercent(nextSpan) : nextSpan;
-			props.onValueChange?.(props.name, nextOut);
-		};
-
-		return (
-			<div data-rw-control="colspan" data-rw-value-mode={isPercentMode ? 'percent' : 'columns'}>
-				{isPercentMode && !props.inlinePortal ? (
-					<input type="hidden" name={props.name} value={String(colSpanToPercent(span))} />
-				) : null}
-				<ColumnSpanSlider
-					id={props.id}
-					name={isPercentMode ? undefined : props.name}
-					value={span}
-					min={minCols}
-					max={maxCols}
-					disabled={isDisabled}
-					ariaLabel={props.label || 'Column span (out of 12 columns)'}
-					showPresets
-					showTrackPreview
-					onChange={handleSpanChange}
-				/>
-			</div>
-		);
-	}
-
-	const minNum =
-		props.min !== undefined && props.min !== null && props.min !== '' && Number.isFinite(Number(props.min))
-			? Number(props.min)
-			: 0;
-	const maxNum =
-		props.max !== undefined && props.max !== null && props.max !== '' && Number.isFinite(Number(props.max))
-			? Number(props.max)
-			: 100;
-	const stepNum =
-		props.step !== undefined &&
-		props.step !== null &&
-		props.step !== '' &&
-		props.step !== 'any' &&
-		Number.isFinite(Number(props.step)) &&
-		Number(props.step) > 0
-			? Number(props.step)
+		const clampedPct = Math.max(8, Math.min(100, parsed));
+		return Math.max(1, Math.min(12, Math.round((clampedPct / 100) * 12)));
+	};
+	const minCols =
+		props.min !== undefined && props.min !== null && props.min !== ''
+			? isPercentMode
+				? strictPercentToSpan(props.min, 1)
+				: clampColSpan(props.min, 1)
 			: 1;
+	const maxCols =
+		props.max !== undefined && props.max !== null && props.max !== ''
+			? isPercentMode
+				? strictPercentToSpan(props.max, 12)
+				: clampColSpan(props.max, 12)
+			: 12;
 
-	const isDualMode =
-		props.controlType === 'range_slider' ||
-		props.rangeMode === 'dual' ||
-		props.dual === true ||
-		Array.isArray(props.value) ||
-		(typeof props.value === 'object' && props.value !== null && ('min' in props.value || 'max' in props.value));
+	const resolveSpan = (raw: unknown): number =>
+		isPercentMode
+			? clampColSpan(strictPercentToSpan(raw, maxCols), maxCols, minCols, maxCols)
+			: clampColSpan(raw, maxCols, minCols, maxCols);
 
-	if (isDualMode) {
-		return (
-			<DualRangeSlider
-				props={props}
-				minNum={minNum}
-				maxNum={maxNum}
-				stepNum={stepNum}
-				isDisabled={isDisabled}
-			/>
-		);
+	const incomingSpan = resolveSpan(props.value);
+	const [prevPropSpan, setPrevPropSpan] = useState<number>(incomingSpan);
+	const [span, setSpan] = useState<number>(incomingSpan);
+
+	if (incomingSpan !== prevPropSpan) {
+		setPrevPropSpan(incomingSpan);
+		if (span !== incomingSpan) {
+			setSpan(incomingSpan);
+		}
 	}
 
+	const handleSpanChange = (nextSpan: number) => {
+		if (isDisabled) {
+			return;
+		}
+		setSpan(nextSpan);
+		const nextOut = isPercentMode ? colSpanToPercent(nextSpan) : nextSpan;
+		props.onValueChange?.(props.name, nextOut);
+	};
+
+	return (
+		<div data-rw-control="colspan" data-rw-value-mode={isPercentMode ? 'percent' : 'columns'}>
+			{isPercentMode && !props.inlinePortal ? (
+				<input type="hidden" name={props.name} value={String(colSpanToPercent(span))} />
+			) : null}
+			<ColumnSpanSlider
+				id={props.id}
+				name={isPercentMode ? undefined : props.name}
+				value={span}
+				min={minCols}
+				max={maxCols}
+				disabled={isDisabled}
+				ariaLabel={props.label || 'Column span (out of 12 columns)'}
+				showPresets
+				showTrackPreview
+				onChange={handleSpanChange}
+			/>
+		</div>
+	);
+}
+
+function SingleRangeSlider({
+	props,
+	minNum,
+	maxNum,
+	stepNum,
+	isDisabled,
+}: {
+	props: ReactInputfieldProps;
+	minNum: number;
+	maxNum: number;
+	stepNum: number;
+	isDisabled: boolean;
+}): React.ReactElement {
 	const clampRange = (raw: unknown): number => {
 		const parsed = typeof raw === 'number' ? raw : Number(String(raw ?? '').trim());
 		if (!Number.isFinite(parsed)) {
@@ -428,5 +407,60 @@ export function RangeField(props: ReactInputfieldProps): React.ReactElement {
 				}}
 			/>
 		</div>
+	);
+}
+
+export function RangeField(props: ReactInputfieldProps): React.ReactElement {
+	const isDisabled = Boolean(props.disabled || props.readOnly);
+
+	if (props.controlType === 'colspan') {
+		return <ColSpanRangeSlider props={props} isDisabled={isDisabled} />;
+	}
+
+	const minNum =
+		props.min !== undefined && props.min !== null && props.min !== '' && Number.isFinite(Number(props.min))
+			? Number(props.min)
+			: 0;
+	const maxNum =
+		props.max !== undefined && props.max !== null && props.max !== '' && Number.isFinite(Number(props.max))
+			? Number(props.max)
+			: 100;
+	const stepNum =
+		props.step !== undefined &&
+		props.step !== null &&
+		props.step !== '' &&
+		props.step !== 'any' &&
+		Number.isFinite(Number(props.step)) &&
+		Number(props.step) > 0
+			? Number(props.step)
+			: 1;
+
+	const isDualMode =
+		props.controlType === 'range_slider' ||
+		props.rangeMode === 'dual' ||
+		props.dual === true ||
+		Array.isArray(props.value) ||
+		(typeof props.value === 'object' && props.value !== null && ('min' in props.value || 'max' in props.value));
+
+	if (isDualMode) {
+		return (
+			<DualRangeSlider
+				props={props}
+				minNum={minNum}
+				maxNum={maxNum}
+				stepNum={stepNum}
+				isDisabled={isDisabled}
+			/>
+		);
+	}
+
+	return (
+		<SingleRangeSlider
+			props={props}
+			minNum={minNum}
+			maxNum={maxNum}
+			stepNum={stepNum}
+			isDisabled={isDisabled}
+		/>
 	);
 }

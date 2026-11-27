@@ -3,7 +3,11 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { CORE_UI_ICON_NODES } from '../icons/coreUiIcons';
 import { ICON_ALIASES } from '../icons/faAliases';
-import { cleanIconIdentifier } from '../icons/iconTypes';
+import {
+	ALLOWED_SVG_NODE_TAGS,
+	cleanIconIdentifier,
+	sanitizeSvgNodeAttrs,
+} from '../icons/iconTypes';
 
 export { CORE_UI_ICON_NODES };
 
@@ -305,32 +309,6 @@ export function resolveCanonicalIconName(rawName?: string): string {
 }
 
 const SAFE_ICON_COLOR_RE = /^(?:#[0-9a-fA-F]{3,8}|currentColor|var\(--[a-zA-Z0-9_-]+\))$/;
-const ALLOWED_SVG_NODE_TAGS = new Set([
-	'path',
-	'circle',
-	'rect',
-	'line',
-	'polyline',
-	'polygon',
-	'ellipse',
-]);
-const SAFE_SVG_ATTR_KEY_RE = /^[a-zA-Z][a-zA-Z0-9-]*$/;
-
-function sanitizeSvgNodeAttrs(rawAttrs?: Record<string, string> | null): Record<string, string> {
-	const safe: Record<string, string> = {};
-	if (!rawAttrs || typeof rawAttrs !== 'object') {
-		return safe;
-	}
-	for (const [k, v] of Object.entries(rawAttrs)) {
-		if (k === 'key' || /^on/i.test(k) || !SAFE_SVG_ATTR_KEY_RE.test(k)) {
-			continue;
-		}
-		if (typeof v === 'string' || typeof v === 'number') {
-			safe[k] = String(v);
-		}
-	}
-	return safe;
-}
 
 function parseInlineIconPayload(raw: unknown): {
 	name: string;
@@ -568,4 +546,22 @@ export function DynamicIcon({
 	}
 
 	return iconEl;
+}
+
+const ESCAPE_TOP_LAYER_SELECTOR = 'dialog[open], [role="dialog"], [role="alertdialog"]';
+
+export function shouldIgnoreEscapeEvent(e: KeyboardEvent, ownContainer?: Element | null): boolean {
+	if (e.key !== 'Escape' || e.isComposing || e.keyCode === 229 || e.defaultPrevented) {
+		return true;
+	}
+	const t = e.target instanceof Element ? e.target : null;
+	const dlg = t?.closest(ESCAPE_TOP_LAYER_SELECTOR);
+	if (dlg && dlg !== ownContainer && (!ownContainer || !dlg.contains(ownContainer))) {
+		return true;
+	}
+	const ov = t?.closest('[data-rw-portal-overlay]');
+	return Boolean(
+		(ov && ov !== ownContainer && (!ownContainer || (!ov.contains(ownContainer) && !ownContainer.contains(ov))))
+		|| ownContainer?.querySelector(`${ESCAPE_TOP_LAYER_SELECTOR}, [data-rw-portal-overlay]`)
+	);
 }

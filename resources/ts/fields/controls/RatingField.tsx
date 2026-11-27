@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { cn, DynamicIcon } from '../../lib/utils';
 import { Badge } from '../../ui';
 import type { ReactInputfieldProps } from '../types';
@@ -9,6 +9,7 @@ export function RatingField(props: ReactInputfieldProps): React.ReactElement {
 	const [prevPropRating, setPrevPropRating] = useState<number>(incomingRating);
 	const [rating, setRating] = useState<number>(incomingRating);
 	const [hoverRating, setHoverRating] = useState<number>(0);
+	const starBtnRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
 	if (incomingRating !== prevPropRating) {
 		setPrevPropRating(incomingRating);
@@ -17,8 +18,10 @@ export function RatingField(props: ReactInputfieldProps): React.ReactElement {
 		}
 	}
 
+	const isLocked = Boolean(props.readOnly || props.disabled);
+
 	const selectStar = (star: number) => {
-		if (props.readOnly || props.disabled) {
+		if (isLocked) {
 			return;
 		}
 		const next = rating === star ? 0 : star;
@@ -26,7 +29,17 @@ export function RatingField(props: ReactInputfieldProps): React.ReactElement {
 		props.onValueChange?.(props.name, next);
 	};
 
+	const moveToStar = (targetStar: number) => {
+		if (isLocked) {
+			return;
+		}
+		setRating(targetStar);
+		props.onValueChange?.(props.name, targetStar);
+		starBtnRefs.current[targetStar - 1]?.focus();
+	};
+
 	const activeDisplay = hoverRating || rating;
+	const rovingStar = rating > 0 ? Math.min(maxStars, rating) : 1;
 
 	return (
 		<div className="flex items-center gap-2" data-rw-control="rating">
@@ -42,15 +55,37 @@ export function RatingField(props: ReactInputfieldProps): React.ReactElement {
 					return (
 						<button
 							key={star}
+							ref={(el) => {
+								starBtnRefs.current[star - 1] = el;
+							}}
 							type="button"
 							role="radio"
+							tabIndex={star === rovingStar ? 0 : -1}
 							aria-checked={rating === star}
-							disabled={props.disabled || props.readOnly}
-							onMouseEnter={() => !props.readOnly && !props.disabled && setHoverRating(star)}
+							disabled={isLocked}
+							onMouseEnter={() => !isLocked && setHoverRating(star)}
 							onClick={() => selectStar(star)}
+							onKeyDown={(e) => {
+								if (isLocked) {
+									return;
+								}
+								if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+									e.preventDefault();
+									moveToStar(star >= maxStars ? 1 : star + 1);
+								} else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+									e.preventDefault();
+									moveToStar(star <= 1 ? maxStars : star - 1);
+								} else if (e.key === 'Home') {
+									e.preventDefault();
+									moveToStar(1);
+								} else if (e.key === 'End') {
+									e.preventDefault();
+									moveToStar(maxStars);
+								}
+							}}
 							aria-label={`Rate ${star} out of ${maxStars}`}
 							className={cn(
-								'rounded p-0.5 transition-transform hover:scale-110 cursor-pointer disabled:cursor-not-allowed',
+								'rounded p-0.5 transition-transform hover:scale-110 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed',
 								isFilled ? 'text-warning' : 'text-muted-foreground/35 hover:text-warning/80'
 							)}
 						>

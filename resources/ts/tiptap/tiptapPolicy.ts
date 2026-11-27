@@ -149,11 +149,17 @@ export function sanitizeExtraCss(css?: string | null): string {
 		clean = clean.replace(/<\/|<style|<script/gi, '');
 	} while (clean !== prev);
 	clean = clean.replace(/</g, '');
+	let prevCss = '';
+	do {
+		prevCss = clean;
+		clean = clean.replace(/\/\*[\s\S]*?\*\//g, '');
+		clean = clean.replace(/\/\*[\s\S]*$/g, '');
+	} while (clean !== prevCss);
 	clean = clean.replace(/@import\b[^;]*(?:;|$)/gi, '');
 	clean = clean.replace(/expression\s*\([^;{}]*\)/gi, 'none');
 	clean = clean.replace(/expression\s*\(/gi, 'blocked(');
 	clean = clean.replace(
-		/url\s*\(\s*['"]?\s*(?:javascript|vbscript|data\s*:\s*text\/html)\s*:/gi,
+		/url\s*\(\s*['"]?\s*(?:(?:javascript|vbscript)\s*:|data\s*:\s*(?:text\/html|image\/svg\+xml|application\/xhtml))/gi,
 		'url(about:blank#'
 	);
 	clean = clean.replace(/(?:-moz-binding|behavior)\s*:[^;{}]*(?:;|$)/gi, '');

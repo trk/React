@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
+	ALLOWED_SVG_NODE_TAGS,
 	badgeRadiusCssValue,
 	clampIconSize,
 	clampIconStrokeWidth,
@@ -21,13 +22,14 @@ import {
 	sanitizeIconColor,
 	sanitizeIconRadius,
 	sanitizeIconVariant,
+	sanitizeSvgNodeAttrs,
 	serializeIconValueForInput,
 	type SvgNodeTuple,
 } from '../../icons/iconTypes';
 import { useTranslations } from '../../lib/i18n';
 import { cn, CORE_UI_ICON_NODES, DynamicIcon, subscribeIconCatalog } from '../../lib/utils';
 import { Badge, Button, Input, PortalRoot } from '../../ui';
-import { dispatchDomChange } from '../shared';
+import { dispatchDomChange, navigateTablistByKey } from '../shared';
 import type { IconFieldConfig, ReactInputfieldProps } from '../types';
 
 const QUERY_PAGE_SIZE = 96;
@@ -88,17 +90,12 @@ function triggerRuntimeIconsLoad(): void {
 	}
 }
 
-function renderTupleNodes(tuples: SvgNodeTuple[]): React.ReactNode {
-	return tuples.map((tuple, idx) => {
-		const [tag, attrs] = tuple;
-		const cleanAttrs: Record<string, string> = {};
-		for (const [k, v] of Object.entries(attrs)) {
-			if (k !== 'key') {
-				cleanAttrs[k] = v;
-			}
-		}
-		return React.createElement(tag, { key: idx, ...cleanAttrs });
-	});
+export function renderTupleNodes(tuples: SvgNodeTuple[]): React.ReactNode {
+	return tuples
+		.filter((tuple) => Boolean(tuple[0] && ALLOWED_SVG_NODE_TAGS.has(tuple[0])))
+		.map((tuple, idx) =>
+			React.createElement(tuple[0], { ...sanitizeSvgNodeAttrs(tuple[1]), key: idx })
+		);
 }
 
 function CatalogGlyph({
@@ -545,11 +542,39 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 			setIsOpen(false);
 		};
 		const onKeyDown = (ev: KeyboardEvent) => {
-			if (ev.key === 'Escape') {
-				ev.stopPropagation();
-				setIsOpen(false);
-				triggerBtnRef.current?.focus();
+			if (ev.key !== 'Escape' || ev.isComposing || ev.keyCode === 229 || ev.defaultPrevented) {
+				return;
 			}
+			const target = ev.target instanceof Element ? ev.target : null;
+			const popoverEl = popoverRef.current;
+			const rootEl = rootRef.current;
+			const targetOverlay = target?.closest('[data-rw-portal-overlay]') ?? null;
+			if (targetOverlay && popoverEl && targetOverlay !== popoverEl && (!rootEl || !targetOverlay.contains(rootEl))) {
+				return;
+			}
+			const overlays = document.querySelectorAll('[data-rw-portal-overlay]');
+			if (popoverEl && overlays.length > 0 && overlays[overlays.length - 1] !== popoverEl) {
+				return;
+			}
+			const dialog = target?.closest('dialog[open], [role="dialog"], [role="alertdialog"]') ?? null;
+			if (
+				dialog &&
+				dialog !== popoverEl &&
+				(!rootEl || !dialog.contains(rootEl)) &&
+				(!popoverEl || !dialog.contains(popoverEl))
+			) {
+				return;
+			}
+			if (
+				popoverEl?.querySelector('dialog[open], [role="dialog"], [role="alertdialog"], [role="listbox"], [role="menu"]') ||
+				rootEl?.querySelector('dialog[open], [role="dialog"], [role="alertdialog"]')
+			) {
+				return;
+			}
+			ev.preventDefault();
+			ev.stopPropagation();
+			setIsOpen(false);
+			triggerBtnRef.current?.focus();
 		};
 		document.addEventListener('mousedown', onPointerDown);
 		document.addEventListener('keydown', onKeyDown);
@@ -597,7 +622,11 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 	const serializedHidden = serializeIconValueForInput(current, flags, prefixMode);
 	const dialogId = `${uid}_icon_picker`;
 	const studioId = `${uid}_icon_studio`;
+	const iconsPanelId = `${uid}_panel_icons`;
+	const iconsTabId = `${uid}_tab_icons`;
+	const appearanceTabId = `${uid}_tab_appearance`;
 	const displayLabel = resolvedCanonicalName ? formatIconLabel(resolvedCanonicalName) : '';
+	const emptyLabel = props.placeholder || t('icon.selectPlaceholder', 'Select an icon...');
 	const searchCountNumber = totalMatched > 0 ? totalMatched : configuredTotalIcons;
 	const searchPlaceholderText =
 		searchCountNumber > 0
@@ -645,7 +674,7 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 				onClick={() => handleSelectEntry(entry, false)}
 				onDoubleClick={() => handleSelectEntry(entry, true)}
 				className={cn(
-					'flex aspect-square items-center justify-center rounded-md border transition-colors',
+					'flex aspect-square items-center justify-center rounded-md border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
 					isSelected
 						? 'border-foreground bg-muted text-foreground ring-1 ring-foreground'
 						: 'border-transparent text-foreground/90 hover:border-border hover:bg-muted/70 hover:text-foreground'
@@ -689,7 +718,7 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 					aria-label={
 						displayLabel
 							? `${t('icon.selected', 'Selected icon')}: ${displayLabel}`
-							: t('icon.selectPlaceholder', 'Select an icon...')
+							: undefined
 					}
 					onClick={() => {
 						if (!isDisabled) {
@@ -729,9 +758,9 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 							</>
 						) : (
 							<>
-								<DynamicIcon name="shapes" className="size-4 shrink-0 text-muted-foreground" />
+								<DynamicIcon name="shapes" className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
 								<span className="truncate text-sm text-muted-foreground">
-									{props.placeholder || t('icon.selectPlaceholder', 'Select an icon...')}
+									{emptyLabel}
 								</span>
 							</>
 						)}
@@ -760,7 +789,7 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 								}
 							}}
 							className={cn(
-								'relative inline-flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
+								'relative inline-flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
 								isOpen && activeTab === 'appearance' && 'bg-muted text-foreground'
 							)}
 						>
@@ -784,7 +813,7 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 								commit({ name: '', variant: 'outline' });
 								setActiveTab('icons');
 							}}
-							className="inline-flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
+							className="inline-flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 						>
 							<DynamicIcon name="x" className="size-3.5" />
 						</button>
@@ -825,13 +854,23 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 
 								<div className="flex items-center gap-1.5">
 									{flags.allowCustomization ? (
-										<div className="inline-flex items-center rounded-md border border-border bg-muted/40 p-0.5">
+										<div
+											role="tablist"
+											aria-label={t('icon.pickerTitle', 'Icons')}
+											onKeyDown={(e) => navigateTablistByKey(e, 'horizontal')}
+											className="inline-flex items-center rounded-md border border-border bg-muted/40 p-0.5"
+										>
 											<button
+												id={iconsTabId}
 												type="button"
+												role="tab"
+												tabIndex={activeTab === 'icons' ? 0 : -1}
+												aria-selected={activeTab === 'icons'}
+												aria-controls={activeTab === 'icons' ? iconsPanelId : undefined}
 												data-rw-icon-tab="icons"
 												onClick={() => setActiveTab('icons')}
 												className={cn(
-													'rounded px-2 py-0.5 text-[11px] font-medium',
+													'rounded px-2 py-0.5 text-[11px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
 													activeTab === 'icons'
 														? 'bg-foreground text-background'
 														: 'text-muted-foreground hover:text-foreground'
@@ -840,7 +879,12 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 												{t('icon.tabIcons', 'Icons')}
 											</button>
 											<button
+												id={appearanceTabId}
 												type="button"
+												role="tab"
+												tabIndex={activeTab === 'appearance' ? 0 : -1}
+												aria-selected={activeTab === 'appearance'}
+												aria-controls={activeTab === 'appearance' ? studioId : undefined}
 												data-rw-icon-tab="appearance"
 												disabled={!resolvedCanonicalName}
 												onClick={() => {
@@ -849,7 +893,7 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 													}
 												}}
 												className={cn(
-													'inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium',
+													'inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
 													activeTab === 'appearance'
 														? 'bg-foreground text-background'
 														: 'text-muted-foreground hover:text-foreground',
@@ -877,7 +921,7 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 											setIsOpen(false);
 											triggerBtnRef.current?.focus();
 										}}
-										className="inline-flex size-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+										className="inline-flex size-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 									>
 										<DynamicIcon name="x" className="size-4" />
 									</button>
@@ -885,9 +929,13 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 							</div>
 
 							{activeTab === 'icons' ? (
-								<>
+								<div
+									id={flags.allowCustomization ? iconsPanelId : undefined}
+									role={flags.allowCustomization ? 'tabpanel' : undefined}
+									aria-labelledby={flags.allowCustomization ? iconsTabId : undefined}
+								>
 									{/* Row 2: Full-bleed Search Row */}
-									<div className="flex items-center gap-2.5 border-b border-border px-3.5 py-2">
+									<div className="flex items-center gap-2.5 border-b border-border px-3.5 py-2 focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring">
 										<DynamicIcon
 											name="search"
 											className="size-4 shrink-0 text-muted-foreground"
@@ -1010,7 +1058,7 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 												<button
 													type="button"
 													onClick={() => setActiveTab('appearance')}
-													className="rounded border border-border bg-background px-2 py-1 text-[11px] font-medium text-foreground transition-colors hover:bg-muted"
+													className="rounded border border-border bg-background px-2 py-1 text-[11px] font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 												>
 													{t('icon.customize', 'Customize')}
 												</button>
@@ -1020,18 +1068,20 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 														setIsOpen(false);
 														triggerBtnRef.current?.focus();
 													}}
-													className="rounded bg-foreground px-2.5 py-1 text-[11px] font-medium text-background transition-opacity hover:opacity-90"
+													className="rounded bg-foreground px-2.5 py-1 text-[11px] font-medium text-background transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 												>
 													{t('common.done', 'Done')}
 												</button>
 											</div>
 										</div>
 									) : null}
-								</>
+								</div>
 							) : (
 								/* Appearance Tab Inside Popover (Zero Form Layout Shift) */
 								<div
 									id={studioId}
+									role="tabpanel"
+									aria-labelledby={appearanceTabId}
 									data-rw-icon-studio="true"
 									className="max-h-96 space-y-3.5 overflow-y-auto p-3.5"
 								>
@@ -1087,9 +1137,10 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 												<button
 													type="button"
 													disabled={isDisabled}
+													aria-pressed={current.variant === 'outline'}
 													onClick={() => commit({ variant: 'outline' })}
 													className={cn(
-														'rounded border px-2.5 py-1 text-xs font-medium',
+														'rounded border px-2.5 py-1 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
 														current.variant === 'outline'
 															? 'border-foreground bg-foreground text-background'
 															: 'border-border bg-background text-foreground hover:bg-muted'
@@ -1100,9 +1151,10 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 												<button
 													type="button"
 													disabled={isDisabled || !selectedCachedEntry?.hasFilled}
+													aria-pressed={current.variant === 'filled'}
 													onClick={() => commit({ variant: 'filled' })}
 													className={cn(
-														'rounded border px-2.5 py-1 text-xs font-medium',
+														'rounded border px-2.5 py-1 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
 														current.variant === 'filled'
 															? 'border-foreground bg-foreground text-background'
 															: 'border-border bg-background text-foreground hover:bg-muted',
@@ -1129,9 +1181,10 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 														key={sz}
 														type="button"
 														disabled={isDisabled}
+														aria-pressed={current.size === sz}
 														onClick={() => commit({ size: sz })}
 														className={cn(
-															'rounded border px-2 py-1 text-xs font-medium',
+															'rounded border px-2 py-1 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
 															current.size === sz
 																? 'border-foreground bg-foreground text-background'
 																: 'border-border bg-background text-foreground hover:bg-muted'
@@ -1166,9 +1219,10 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 														key={sw}
 														type="button"
 														disabled={isDisabled}
+														aria-pressed={current.strokeWidth === sw}
 														onClick={() => commit({ strokeWidth: sw })}
 														className={cn(
-															'rounded border px-2.5 py-1 text-xs font-medium',
+															'rounded border px-2.5 py-1 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
 															current.strokeWidth === sw
 																? 'border-foreground bg-foreground text-background'
 																: 'border-border bg-background text-foreground hover:bg-muted'
@@ -1198,6 +1252,7 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 															key={swatch || 'auto'}
 															type="button"
 															disabled={isDisabled}
+															aria-pressed={active}
 															aria-label={
 																isAuto
 																	? t('icon.colorAuto', 'Auto (currentColor)')
@@ -1210,7 +1265,7 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 															}
 															onClick={() => commit({ color: swatch })}
 															className={cn(
-																'flex size-6 items-center justify-center rounded-full border transition-transform',
+																'flex size-6 items-center justify-center rounded-full border transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
 																active
 																	? 'scale-110 ring-2 ring-foreground ring-offset-1'
 																	: 'border-border hover:scale-105'
@@ -1260,6 +1315,7 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 															key={swatch || 'none'}
 															type="button"
 															disabled={isDisabled}
+															aria-pressed={active}
 															aria-label={
 																isNone ? t('icon.bgNone', 'No background') : swatch
 															}
@@ -1268,7 +1324,7 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 															}
 															onClick={() => commit({ background: swatch })}
 															className={cn(
-																'flex size-6 items-center justify-center rounded-full border transition-transform',
+																'flex size-6 items-center justify-center rounded-full border transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
 																active
 																	? 'scale-110 ring-2 ring-foreground ring-offset-1'
 																	: 'border-border hover:scale-105'
@@ -1305,18 +1361,19 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 															key={opt.value}
 															type="button"
 															disabled={isDisabled}
+															aria-pressed={current.radius === opt.value}
 															onClick={() =>
 																commit({ radius: opt.value as IconBadgeRadius })
 															}
 															style={{ borderRadius: badgeRadiusCssValue(opt.value) }}
 															className={cn(
-																'border px-2 py-0.5 text-[11px] font-medium',
+																'border px-2 py-0.5 text-[11px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
 																current.radius === opt.value
 																	? 'border-foreground bg-foreground text-background'
 																	: 'border-border bg-background text-foreground hover:bg-muted'
 															)}
 														>
-															{opt.label}
+															{t(opt.labelKey, opt.label)}
 														</button>
 													))}
 												</div>
@@ -1331,7 +1388,7 @@ export function IconField(props: ReactInputfieldProps & { __isIslandHost?: boole
 												setIsOpen(false);
 												triggerBtnRef.current?.focus();
 											}}
-											className="rounded bg-foreground px-3 py-1 text-xs font-medium text-background transition-opacity hover:opacity-90"
+											className="rounded bg-foreground px-3 py-1 text-xs font-medium text-background transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 										>
 											{t('common.done', 'Done')}
 										</button>

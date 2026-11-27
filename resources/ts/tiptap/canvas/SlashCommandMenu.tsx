@@ -197,6 +197,9 @@ export function createSlashCommandExtension(
 					key: SLASH_PLUGIN_KEY,
 					props: {
 						handleKeyDown(_view, event) {
+							if (event.isComposing || event.keyCode === 229) {
+								return false;
+							}
 							if (!keyboardBridgeRef.current.isOpen) {
 								return false;
 							}
@@ -573,6 +576,9 @@ export function SlashCommandPalette({
 
 		keyboardBridgeRef.current.isOpen = true;
 		keyboardBridgeRef.current.onKeyDown = (event: KeyboardEvent): boolean => {
+			if (event.isComposing || event.keyCode === 229) {
+				return false;
+			}
 			if (event.key === 'Escape') {
 				event.preventDefault();
 				keyboardBridgeRef.current.dismiss();
@@ -712,54 +718,60 @@ export function SlashCommandPalette({
 		);
 	};
 
-	const paletteNode = (
-		<div
-			id={resolvedListboxId}
-			ref={listRef}
-			role="listbox"
-			aria-label={t('slash.menuAria', 'Insert block command menu')}
-			data-rw-tiptap-slash-menu=""
-			data-rw-portal-overlay=""
-			style={positionStyle}
-			className="fixed z-50 overflow-y-auto rounded-lg border border-border bg-popover p-1.5 text-popover-foreground shadow-lg"
-		>
-			{filtered.length === 0 ? (
+	const paletteNode =
+		filtered.length === 0 ? (
+			<div
+				ref={listRef}
+				role="status"
+				data-rw-tiptap-slash-menu=""
+				data-rw-portal-overlay=""
+				style={positionStyle}
+				className="fixed z-50 overflow-y-auto rounded-lg border border-border bg-popover p-1.5 text-popover-foreground shadow-lg"
+			>
 				<div className="px-2.5 py-3 text-center text-xs text-muted-foreground">
 					{t('slash.noMatches', 'No matching blocks')}
 				</div>
-			) : (
-				<>
-					{miniGroup.length > 0 ? (
-						<div role="group" aria-labelledby={miniHeadingId}>
-							<div
-								id={miniHeadingId}
-								className="px-2 py-1 text-[11px] font-medium text-muted-foreground"
-							>
-								{t('slash.editorialBlocksHeading', 'Editorial blocks')}
-							</div>
-							{miniGroup.map(renderRow)}
+			</div>
+		) : (
+			<div
+				id={resolvedListboxId}
+				ref={listRef}
+				role="listbox"
+				aria-label={t('slash.menuAria', 'Insert block command menu')}
+				data-rw-tiptap-slash-menu=""
+				data-rw-portal-overlay=""
+				style={positionStyle}
+				className="fixed z-50 overflow-y-auto rounded-lg border border-border bg-popover p-1.5 text-popover-foreground shadow-lg"
+			>
+				{miniGroup.length > 0 ? (
+					<div role="group" aria-labelledby={miniHeadingId}>
+						<div
+							id={miniHeadingId}
+							className="px-2 py-1 text-[11px] font-medium text-muted-foreground"
+						>
+							{t('slash.editorialBlocksHeading', 'Editorial blocks')}
 						</div>
-					) : null}
+						{miniGroup.map(renderRow)}
+					</div>
+				) : null}
 
-					{miniGroup.length > 0 && basicGroup.length > 0 ? (
-						<hr className="my-1 border-border/70" />
-					) : null}
+				{miniGroup.length > 0 && basicGroup.length > 0 ? (
+					<hr role="presentation" className="my-1 border-border/70" />
+				) : null}
 
-					{basicGroup.length > 0 ? (
-						<div role="group" aria-labelledby={basicHeadingId}>
-							<div
-								id={basicHeadingId}
-								className="px-2 py-1 text-[11px] font-medium text-muted-foreground"
-							>
-								{t('slash.basicBlocksHeading', 'Basic formatting')}
-							</div>
-							{basicGroup.map(renderRow)}
+				{basicGroup.length > 0 ? (
+					<div role="group" aria-labelledby={basicHeadingId}>
+						<div
+							id={basicHeadingId}
+							className="px-2 py-1 text-[11px] font-medium text-muted-foreground"
+						>
+							{t('slash.basicBlocksHeading', 'Basic formatting')}
 						</div>
-					) : null}
-				</>
-			)}
-		</div>
-	);
+						{basicGroup.map(renderRow)}
+					</div>
+				) : null}
+			</div>
+		);
 
 	let anchorEl: HTMLElement | null = null;
 	try {

@@ -1,7 +1,8 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useId, useMemo, useRef, useState } from 'react';
 import { t } from '../../lib/i18n';
 import { cn, DynamicIcon, sanitizeHref } from '../../lib/utils';
 import { Textarea } from '../../ui';
+import { navigateTablistByKey } from '../schemaRuntimeHelpers';
 import type { ReactInputfieldProps } from '../types';
 
 type MarkdownMode = 'write' | 'preview' | 'split';
@@ -230,6 +231,12 @@ export function renderMarkdownNodes(markdown: string): React.ReactNode[] {
 }
 
 export function MarkdownField(props: ReactInputfieldProps): React.ReactElement {
+	const uid = useId();
+	const writeTabId = `${uid}-tab-write`;
+	const previewTabId = `${uid}-tab-preview`;
+	const splitTabId = `${uid}-tab-split`;
+	const writePaneId = `${uid}-pane-write`;
+	const previewPaneId = `${uid}-pane-preview`;
 	const incoming = props.value === null || props.value === undefined ? '' : String(props.value);
 	const [prevIncoming, setPrevIncoming] = useState<string>(incoming);
 	const [text, setText] = useState<string>(incoming);
@@ -320,16 +327,24 @@ export function MarkdownField(props: ReactInputfieldProps): React.ReactElement {
 			) : null}
 
 			<div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/30 px-2.5 py-1.5">
-				<div role="tablist" aria-label={t('markdown.viewMode', 'Markdown mode')} className="inline-flex items-center gap-1 rounded-md border border-border bg-card p-0.5">
+				<div
+					role="tablist"
+					aria-label={t('markdown.viewMode', 'Markdown mode')}
+					onKeyDown={(e) => navigateTablistByKey(e, 'horizontal')}
+					className="inline-flex items-center gap-1 rounded-md border border-border bg-card p-0.5"
+				>
 					<button
+						id={writeTabId}
 						type="button"
 						role="tab"
+						tabIndex={mode === 'write' ? 0 : -1}
 						data-rw-md-tab="write"
 						aria-selected={mode === 'write'}
+						aria-controls={mode === 'write' || mode === 'split' ? writePaneId : undefined}
 						disabled={props.disabled}
 						onClick={() => setMode('write')}
 						className={cn(
-							'inline-flex h-6 items-center gap-1 rounded px-2 text-[11px] font-medium transition-colors cursor-pointer',
+							'inline-flex h-6 items-center gap-1 rounded px-2 text-[11px] font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
 							mode === 'write'
 								? 'bg-primary text-primary-foreground'
 								: 'text-muted-foreground hover:text-foreground',
@@ -339,14 +354,17 @@ export function MarkdownField(props: ReactInputfieldProps): React.ReactElement {
 						<span>{t('markdown.write', 'Write')}</span>
 					</button>
 					<button
+						id={previewTabId}
 						type="button"
 						role="tab"
+						tabIndex={mode === 'preview' ? 0 : -1}
 						data-rw-md-tab="preview"
 						aria-selected={mode === 'preview'}
+						aria-controls={mode === 'preview' || mode === 'split' ? previewPaneId : undefined}
 						disabled={props.disabled}
 						onClick={() => setMode('preview')}
 						className={cn(
-							'inline-flex h-6 items-center gap-1 rounded px-2 text-[11px] font-medium transition-colors cursor-pointer',
+							'inline-flex h-6 items-center gap-1 rounded px-2 text-[11px] font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
 							mode === 'preview'
 								? 'bg-primary text-primary-foreground'
 								: 'text-muted-foreground hover:text-foreground',
@@ -357,14 +375,17 @@ export function MarkdownField(props: ReactInputfieldProps): React.ReactElement {
 					</button>
 					{allowSplit ? (
 						<button
+							id={splitTabId}
 							type="button"
 							role="tab"
+							tabIndex={mode === 'split' ? 0 : -1}
 							data-rw-md-tab="split"
 							aria-selected={mode === 'split'}
+							aria-controls={mode === 'split' ? `${writePaneId} ${previewPaneId}` : undefined}
 							disabled={props.disabled}
 							onClick={() => setMode('split')}
 							className={cn(
-								'hidden md:inline-flex h-6 items-center gap-1 rounded px-2 text-[11px] font-medium transition-colors cursor-pointer',
+								'hidden md:inline-flex h-6 items-center gap-1 rounded px-2 text-[11px] font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
 								mode === 'split'
 									? 'bg-primary text-primary-foreground'
 									: 'text-muted-foreground hover:text-foreground',
@@ -408,7 +429,12 @@ export function MarkdownField(props: ReactInputfieldProps): React.ReactElement {
 				)}
 			>
 				{mode === 'write' || mode === 'split' ? (
-					<div className="min-w-0 p-2">
+					<div
+						id={writePaneId}
+						role="tabpanel"
+						aria-labelledby={mode === 'split' ? splitTabId : writeTabId}
+						className="min-w-0 p-2"
+					>
 						<Textarea
 							ref={textareaRef}
 							id={props.id}
@@ -432,6 +458,9 @@ export function MarkdownField(props: ReactInputfieldProps): React.ReactElement {
 
 				{mode === 'preview' || mode === 'split' ? (
 					<div
+						id={previewPaneId}
+						role="tabpanel"
+						aria-labelledby={mode === 'split' ? splitTabId : previewTabId}
 						data-rw-md-preview=""
 						className="min-h-32 min-w-0 overflow-x-auto px-3.5 py-2.5 text-xs text-foreground"
 					>

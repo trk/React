@@ -53,7 +53,7 @@ export const DataCardsCanvas: React.FC<ViewportCanvasProps> = ({
 	const cardsSortable = useSortableList<Record<string, unknown>>({
 		items: records,
 		getId: (r) => String(r.id ?? ''),
-		getLabel: (r, idx) => String(r.title || r.label || r.name || r.id || `Card ${idx + 1}`),
+		getLabel: (r, idx) => String(r.title || r.label || r.name || r.id || t('viewport.cardNumber', { number: idx + 1 }, 'Card {number}')),
 		axis: 'grid',
 		disabled: !canReorder || busy,
 		onReorder: (nextRecords) => {
@@ -82,7 +82,7 @@ export const DataCardsCanvas: React.FC<ViewportCanvasProps> = ({
 	}
 
 	const primaryColKey = resolvePrimaryColumnKey(cols);
-	const primaryColDef = cols[primaryColKey] || { label: 'Title' };
+	const primaryColDef = cols[primaryColKey] || { label: t('viewport.defaultTitleLabel', 'Title') };
 	const secondaryCols = colEntries.filter(
 		([k, d]) => k !== primaryColKey && !isVisualOnlyColumn(k, d)
 	);
@@ -230,7 +230,7 @@ export const DataCardsCanvas: React.FC<ViewportCanvasProps> = ({
 												)}
 												checked={isSelected}
 												onChange={() => dispatch('select_row', { id: recordId })}
-												aria-label={`Select ${rowLabel}`}
+												aria-label={t('viewport.selectRow', { label: rowLabel }, 'Select {label}')}
 											/>
 										)}
 										{inlineThumb ? (
@@ -262,7 +262,7 @@ export const DataCardsCanvas: React.FC<ViewportCanvasProps> = ({
 									{menuItems.length > 0 ? (
 										<DropdownMenu
 											items={menuItems}
-											triggerAriaLabel={`Actions for ${rowLabel}`}
+											triggerAriaLabel={t('viewport.actionsForRow', { label: rowLabel }, 'Actions for {label}')}
 											triggerDataAttr={recordId}
 											disabled={busy}
 										/>

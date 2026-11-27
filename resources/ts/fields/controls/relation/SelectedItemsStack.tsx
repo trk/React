@@ -1,3 +1,4 @@
+import { t } from '../../../lib/i18n';
 import { DynamicIcon } from '../../../lib/utils';
 import { Badge, SortableHandle, type useSortableList } from '../../../ui';
 import type { RelationItemData } from '../../types';
@@ -76,7 +77,7 @@ export function SelectedItemsStack({
 							) : null}
 							{item.status === 'unpublished' ? (
 								<Badge variant="outline" className="px-1.5 py-0 text-[10px] text-warning shrink-0">
-									Unpub
+									{t('relation.unpublishedShort', 'Unpub')}
 								</Badge>
 							) : null}
 						</div>
@@ -86,8 +87,8 @@ export function SelectedItemsStack({
 								<button
 									type="button"
 									onClick={() => onRemove(tok)}
-									title={`Remove ${item.label}`}
-									aria-label={`Remove ${item.label}`}
+									title={t('relation.removeNamed', { label: item.label }, 'Remove {label}')}
+									aria-label={t('relation.removeNamed', { label: item.label }, 'Remove {label}')}
 									className="rounded p-1 text-muted-foreground hover:bg-destructive/12 hover:text-destructive cursor-pointer"
 								>
 									<DynamicIcon name="x" className="size-3.5" />

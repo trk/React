@@ -47,6 +47,8 @@ export function RepeaterField(props: ReactInputfieldProps): React.ReactElement {
 
 	const [rows, setRows] = useState<RepeaterRowItem[]>(() => buildRowsFromProp(props.value));
 	const lastEmittedSigRef = useRef<string>(JSON.stringify(rows.map((r) => r.cells)));
+	const rowsRef = useRef<RepeaterRowItem[]>(rows);
+	rowsRef.current = rows;
 
 	useEffect(() => {
 		const candidate = buildRowsFromProp(props.value);
@@ -55,6 +57,7 @@ export function RepeaterField(props: ReactInputfieldProps): React.ReactElement {
 			return;
 		}
 		lastEmittedSigRef.current = candidateSig;
+		rowsRef.current = candidate;
 		setRows(candidate);
 	}, [props.value, buildRowsFromProp]);
 
@@ -65,35 +68,32 @@ export function RepeaterField(props: ReactInputfieldProps): React.ReactElement {
 	};
 
 	const updateCell = (rowId: string, subName: string, val: string) => {
-		setRows((prev) => {
-			const next = prev.map((r) =>
-				r._rowId === rowId ? { ...r, cells: { ...r.cells, [subName]: val } } : r
-			);
-			emitRows(next);
-			return next;
-		});
+		const next = rowsRef.current.map((r) =>
+			r._rowId === rowId ? { ...r, cells: { ...r.cells, [subName]: val } } : r
+		);
+		rowsRef.current = next;
+		setRows(next);
+		emitRows(next);
 	};
 
 	const addRow = () => {
-		if (props.readOnly || props.disabled || rows.length >= maxRows) {
+		if (props.readOnly || props.disabled || rowsRef.current.length >= maxRows) {
 			return;
 		}
-		setRows((prev) => {
-			const next = [...prev, { _rowId: nextRowId(), cells: createEmptyCells() }];
-			emitRows(next);
-			return next;
-		});
+		const next = [...rowsRef.current, { _rowId: nextRowId(), cells: createEmptyCells() }];
+		rowsRef.current = next;
+		setRows(next);
+		emitRows(next);
 	};
 
 	const removeRow = (rowId: string) => {
-		if (props.readOnly || props.disabled || rows.length <= minRows) {
+		if (props.readOnly || props.disabled || rowsRef.current.length <= minRows) {
 			return;
 		}
-		setRows((prev) => {
-			const next = prev.filter((r) => r._rowId !== rowId);
-			emitRows(next);
-			return next;
-		});
+		const next = rowsRef.current.filter((r) => r._rowId !== rowId);
+		rowsRef.current = next;
+		setRows(next);
+		emitRows(next);
 	};
 
 	const isLocked = Boolean(props.readOnly || props.disabled);
@@ -104,6 +104,7 @@ export function RepeaterField(props: ReactInputfieldProps): React.ReactElement {
 		axis: 'vertical',
 		disabled: isLocked,
 		onReorder: (next) => {
+			rowsRef.current = next;
 			setRows(next);
 			emitRows(next);
 		},

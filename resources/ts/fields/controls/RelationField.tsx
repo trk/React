@@ -346,24 +346,57 @@ export const RelationFieldControl: React.FC<RelationFieldProps> = (rawProps) => 
 				}
 			})
 			.catch(() => {})
-			.finally(() => setLoadingOptions(false));
+			.finally(() => {
+				if (!ctrl.signal.aborted) {
+					setLoadingOptions(false);
+				}
+			});
 
 		return () => ctrl.abort();
 	}, [isEagerWidget, relationToken, dependsOn, effectiveDependsValue, callRelationEndpoint]);
 
 	// Hydrate any missing selected items if initial payload only carried raw values
+	const attemptedHydrateIdsRef = useRef<Set<string>>(new Set());
+	const hydrateTokenRef = useRef<string>(relationToken);
 	useEffect(() => {
+		if (hydrateTokenRef.current !== relationToken) {
+			hydrateTokenRef.current = relationToken;
+			attemptedHydrateIdsRef.current.clear();
+		}
 		if (!relationToken || cardinality === 'o2m') {
 			return;
 		}
 		const activeTokens = isMultiple ? multiVals : scalarVal ? [scalarVal] : [];
-		const missing = activeTokens.filter((tok) => !itemCache[tok]);
+		const activeSet = new Set(activeTokens);
+		for (const tracked of attemptedHydrateIdsRef.current) {
+			if (!activeSet.has(tracked)) {
+				attemptedHydrateIdsRef.current.delete(tracked);
+			}
+		}
+		const missing = activeTokens.filter(
+			(tok) => !itemCache[tok] && !attemptedHydrateIdsRef.current.has(tok)
+		);
 		if (missing.length === 0) {
 			return;
 		}
+		for (const tok of missing) {
+			attemptedHydrateIdsRef.current.add(tok);
+		}
+		let settled = false;
 		const ctrl = new AbortController();
-		callRelationEndpoint({ action: 'hydrate', values: missing }, false, ctrl.signal).catch(() => {});
-		return () => ctrl.abort();
+		callRelationEndpoint({ action: 'hydrate', values: missing }, false, ctrl.signal)
+			.catch(() => {})
+			.finally(() => {
+				settled = true;
+			});
+		return () => {
+			ctrl.abort();
+			if (!settled) {
+				for (const tok of missing) {
+					attemptedHydrateIdsRef.current.delete(tok);
+				}
+			}
+		};
 	}, [relationToken, cardinality, isMultiple, multiVals, scalarVal, itemCache, callRelationEndpoint]);
 
 	// Clear stale incompatible selection when a user-driven `dependsResourceMap` switch changes `activeResourceName`
@@ -468,7 +501,7 @@ export const RelationFieldControl: React.FC<RelationFieldProps> = (rawProps) => 
 			setQuickCreateOpen(false);
 		} catch (err: unknown) {
 			const errMsg = err instanceof Error ? err.message : '';
-			setQuickCreateError(errMsg || 'Quick create failed.');
+			setQuickCreateError(errMsg || t('relation.quickCreateFailed', 'Quick create failed.'));
 		} finally {
 			setQuickCreateBusy(false);
 		}
@@ -588,6 +621,7 @@ export const RelationFieldControl: React.FC<RelationFieldProps> = (rawProps) => 
 			) : widget === 'radios' || widget === 'radio-cards' ? (
 				<>
 					<RadioRelationWidget
+						label={resolved.label}
 						cards={widget === 'radio-cards'}
 						options={options}
 						loading={loadingOptions}
@@ -732,8 +766,12 @@ export const RelationFieldControl: React.FC<RelationFieldProps> = (rawProps) => 
 			<Dialog
 				open={quickCreateOpen}
 				onOpenChange={setQuickCreateOpen}
-				title={`New ${quickCreateMeta.label}`}
-				description={`Create a new ${quickCreateMeta.label.toLowerCase()} record and link it immediately.`}
+				title={t('relation.newResource', { resource: quickCreateMeta.label }, 'New {resource}')}
+				description={t(
+					'relation.quickCreateDescription',
+					{ resource: quickCreateMeta.label.toLowerCase() },
+					'Create a new {resource} record and link it immediately.'
+				)}
 				maxWidth="max-w-md"
 				footer={
 					<>
@@ -765,8 +803,15 @@ export const RelationFieldControl: React.FC<RelationFieldProps> = (rawProps) => 
 							id={`${quickCreateBaseId}-title`}
 							value={quickCreateTitle}
 							onChange={(e) => setQuickCreateTitle(e.target.value)}
-							placeholder={`Enter ${activeResourceMeta.label.toLowerCase()} title...`}
+							placeholder={t(
+								'relation.enterResourceTitle',
+								{ resource: quickCreateMeta.label.toLowerCase() },
+								'Enter {resource} title...'
+							)}
 							onKeyDown={(e) => {
+								if (e.nativeEvent.isComposing || e.keyCode === 229) {
+									return;
+								}
 								if (e.key === 'Enter') {
 									e.preventDefault();
 									void handleQuickCreateSubmit();

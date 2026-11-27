@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { t } from '../../../lib/i18n';
 import { cn } from '../../../lib/utils';
 import { Badge, Button, Input } from '../../../ui';
@@ -6,6 +6,7 @@ import type { RelationItemData } from '../../types';
 import { QuickEditButton, RelationItemVisual } from './typesAndHelpers';
 
 export function RadioRelationWidget({
+	label,
 	cards,
 	options,
 	loading,
@@ -19,6 +20,7 @@ export function RadioRelationWidget({
 	onSelect,
 	onOpenQuickCreate,
 }: {
+	label?: string;
 	cards: boolean;
 	options: RelationItemData[];
 	loading: boolean;
@@ -32,6 +34,7 @@ export function RadioRelationWidget({
 	onSelect: (tok: string, item?: RelationItemData) => void;
 	onOpenQuickCreate: () => void;
 }) {
+	const radioGroupName = useId();
 	const gridCols =
 		optionColumns === 4
 			? 'grid-cols-1 @sm/rw-rel:grid-cols-2 @lg/rw-rel:grid-cols-4'
@@ -55,6 +58,7 @@ export function RadioRelationWidget({
 						: 'divide-y divide-border overflow-hidden rounded-md border border-border'
 				)}
 				role="radiogroup"
+				aria-label={label || t('common.selectOption', 'Select an option...')}
 			>
 				{options.map((opt) => {
 					const tok = String(opt.value);
@@ -80,6 +84,7 @@ export function RadioRelationWidget({
 							<div className="flex min-w-0 flex-1 items-start gap-2.5">
 								<input
 									type="radio"
+									name={radioGroupName}
 									checked={checked}
 									disabled={disabled || opt.disabled}
 									onChange={() => onSelect(tok, opt)}

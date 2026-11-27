@@ -947,15 +947,15 @@ export function InputfieldTiptap(rawProps: InputfieldTiptapComponentProps): Reac
 			return;
 		}
 		const dom = editor.view.dom as HTMLElement;
-		if (slashState.active) {
+		if (slashState.active && activeSlashOptionId) {
+			dom.setAttribute('role', 'combobox');
+			dom.setAttribute('aria-haspopup', 'listbox');
 			dom.setAttribute('aria-controls', slashListboxId);
 			dom.setAttribute('aria-expanded', 'true');
-			if (activeSlashOptionId) {
-				dom.setAttribute('aria-activedescendant', activeSlashOptionId);
-			} else {
-				dom.removeAttribute('aria-activedescendant');
-			}
+			dom.setAttribute('aria-activedescendant', activeSlashOptionId);
 		} else {
+			dom.removeAttribute('role');
+			dom.removeAttribute('aria-haspopup');
 			dom.removeAttribute('aria-controls');
 			dom.removeAttribute('aria-expanded');
 			dom.removeAttribute('aria-activedescendant');
@@ -1777,7 +1777,7 @@ export function InputfieldTiptap(rawProps: InputfieldTiptapComponentProps): Reac
 						ref={toolbarRef}
 						role="toolbar"
 						aria-label={t('editor.formattingToolbar', 'Rich text formatting')}
-						aria-controls={editorDomId}
+						aria-controls={!isSourceMode ? editorDomId : undefined}
 						data-rw-tiptap-toolbar=""
 						{...({ focusgroup: 'toolbar wrap' } as Record<string, string>)}
 						className={cn(

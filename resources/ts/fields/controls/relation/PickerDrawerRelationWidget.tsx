@@ -85,7 +85,11 @@ export function PickerDrawerRelationWidget({
 					}
 				})
 				.catch(() => {})
-				.finally(() => setLoading(false));
+				.finally(() => {
+					if (!ctrl.signal.aborted) {
+						setLoading(false);
+					}
+				});
 		}, 180);
 		return () => {
 			window.clearTimeout(timer);
@@ -155,7 +159,9 @@ export function PickerDrawerRelationWidget({
 							icon="search"
 							onClick={() => setOpen(true)}
 						>
-							{cardinality === 'm2a' ? 'Browse Resources...' : `Browse ${resourceMeta.label}...`}
+							{cardinality === 'm2a'
+								? t('relation.browseResources', 'Browse Resources...')
+								: t('relation.browseResource', { resource: resourceMeta.label }, 'Browse {resource}...')}
 						</Button>
 						{(() => {
 							if (!creatable) return null;
@@ -174,7 +180,7 @@ export function PickerDrawerRelationWidget({
 							if (!tabMeta?.supportsQuickCreate) return null;
 							return (
 								<Button type="button" variant="outline" size="xs" icon="plus" onClick={() => onOpenQuickCreate(tabMeta.name)}>
-									New {tabMeta.label}
+									{t('relation.newResource', { resource: tabMeta.label }, 'New {resource}')}
 								</Button>
 							);
 						})()}
@@ -201,8 +207,16 @@ export function PickerDrawerRelationWidget({
 			<Sheet
 				open={open}
 				onOpenChange={setOpen}
-				title={cardinality === 'm2a' ? 'Select Resource Items' : `Select ${resourceMeta.label}`}
-				subtitle={total > 0 ? `${total} matching record(s)` : undefined}
+				title={
+					cardinality === 'm2a'
+						? t('relation.selectResourceItems', 'Select Resource Items')
+						: t('relation.selectResource', { resource: resourceMeta.label }, 'Select {resource}')
+				}
+				subtitle={
+					total > 0
+						? t('relation.matchingRecordsCount', { count: total }, '{count} matching record(s)')
+						: undefined
+				}
 			>
 				<div className="space-y-4">
 					{cardinality === 'm2a' && allowedResources.length > 1 ? (
@@ -258,6 +272,7 @@ export function PickerDrawerRelationWidget({
 									key={item.key || tok}
 									type="button"
 									disabled={item.disabled}
+									aria-pressed={checked}
 									onClick={() => toggleRow(item)}
 									className={cn(
 										'flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-xs transition-colors hover:bg-muted/60 cursor-pointer',
@@ -298,7 +313,9 @@ export function PickerDrawerRelationWidget({
 
 						{items.length === 0 ? (
 							<div className="p-6 text-center text-xs text-muted-foreground">
-								{loading ? 'Loading records...' : 'No records match your search.'}
+								{loading
+									? t('relation.loadingShort', 'Loading records...')
+									: t('relation.noRecordsMatchSearch', 'No records match your search.')}
 							</div>
 						) : null}
 					</div>

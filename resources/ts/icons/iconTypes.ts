@@ -84,12 +84,12 @@ export interface IconCatalogRuntime {
 
 export const ICON_SIZE_PRESETS: readonly number[] = [16, 20, 24, 32, 40, 48];
 export const ICON_STROKE_PRESETS: readonly number[] = [1.25, 1.5, 1.75, 2, 2.5];
-export const ICON_RADIUS_OPTIONS: ReadonlyArray<{ value: IconBadgeRadius; label: string }> = [
-	{ value: 'none', label: 'Square' },
-	{ value: 'sm', label: 'Small' },
-	{ value: 'md', label: 'Medium' },
-	{ value: 'lg', label: 'Large' },
-	{ value: 'full', label: 'Circle' },
+export const ICON_RADIUS_OPTIONS: ReadonlyArray<{ value: IconBadgeRadius; labelKey: string; label: string }> = [
+	{ value: 'none', labelKey: 'icon.radius.none', label: 'Square' },
+	{ value: 'sm', labelKey: 'icon.radius.sm', label: 'Small' },
+	{ value: 'md', labelKey: 'icon.radius.md', label: 'Medium' },
+	{ value: 'lg', labelKey: 'icon.radius.lg', label: 'Large' },
+	{ value: 'full', labelKey: 'icon.radius.full', label: 'Circle' },
 ];
 
 export const ICON_COLOR_SWATCHES: readonly string[] = [
@@ -378,4 +378,49 @@ export function escapeXmlAttr(value: string): string {
 		.replace(/"/g, '&quot;')
 		.replace(/</g, '&lt;')
 		.replace(/>/g, '&gt;');
+}
+
+export const ALLOWED_SVG_NODE_TAGS = new Set([
+	'path',
+	'circle',
+	'rect',
+	'line',
+	'polyline',
+	'polygon',
+	'ellipse',
+]);
+
+const SAFE_SVG_ATTR_KEY_RE = /^[a-zA-Z][a-zA-Z0-9-]*$/;
+const UNSAFE_SVG_ATTR_VAL_RE = /(?:url\s*\(|javascript:|data:|vbscript:)/i;
+
+export function sanitizeSvgNodeAttrs(
+	rawAttrs?: Record<string, string> | null,
+	allowStringStyle = false
+): Record<string, string> {
+	const safe: Record<string, string> = {};
+	if (!rawAttrs || typeof rawAttrs !== 'object') {
+		return safe;
+	}
+	for (const [k, v] of Object.entries(rawAttrs)) {
+		const lowerKey = k.toLowerCase();
+		if (
+			k === 'key' ||
+			k === 'dangerouslySetInnerHTML' ||
+			/^on/i.test(k) ||
+			!SAFE_SVG_ATTR_KEY_RE.test(k) ||
+			lowerKey === 'href' ||
+			lowerKey === 'xlink:href'
+		) {
+			continue;
+		}
+		if (typeof v !== 'string' && typeof v !== 'number') {
+			continue;
+		}
+		const strVal = String(v);
+		if (lowerKey === 'style' && (!allowStringStyle || UNSAFE_SVG_ATTR_VAL_RE.test(strVal))) {
+			continue;
+		}
+		safe[k] = strVal;
+	}
+	return safe;
 }

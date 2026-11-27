@@ -1,7 +1,7 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { SafeLink as Link } from '../lib/inertia-bridge';
 import { t } from '../lib/i18n';
-import { cn, DynamicIcon, sanitizeHref } from '../lib/utils';
+import { cn, DynamicIcon, sanitizeHref, shouldIgnoreEscapeEvent } from '../lib/utils';
 import { Badge, PortalRoot } from '../ui';
 import type { AppShellNavItem } from './types';
 
@@ -133,6 +133,9 @@ export function ModuleSectionNav({
 		};
 		const onKeyDown = (e: KeyboardEvent) => {
 			if (e.key === 'Escape') {
+				if (shouldIgnoreEscapeEvent(e, moreMenuRef.current)) {
+					return;
+				}
 				e.preventDefault();
 				e.stopPropagation();
 				setMoreOpen(false);
