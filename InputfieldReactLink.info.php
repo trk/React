@@ -6,7 +6,7 @@ namespace ProcessWire;
 
 return [
 	'title' => __('React Link & Media Target', __FILE__),
-	'version' => 33,
+	'version' => 34,
 	'summary' => __('All-in-one link and media selector supporting Pages, URLs, Phone numbers, Email addresses, custom resources, and uploaded files, images, or videos.', __FILE__),
 	'author' => 'Iskender TOTOGLU @trk @ukyo',
 	'icon' => 'link',
