@@ -1383,9 +1383,18 @@ export function validateFieldNodesRecursive(
 	failedTabIds: Set<string>,
 	scopePrefix?: string,
 	enclosingTabId?: string,
-	skipRequiredFields?: ReadonlySet<string>
+	skipRequiredFields?: ReadonlySet<string>,
+	depth = 0,
+	visited: WeakSet<SchemaFieldDefinition> = new WeakSet()
 ): void {
+	if (depth >= 16 || !Array.isArray(fields)) {
+		return;
+	}
 	for (const field of fields) {
+		if (!field || typeof field !== 'object' || visited.has(field)) {
+			continue;
+		}
+		visited.add(field);
 		const fieldState = resolveFieldState(field, values, scopePrefix);
 		if (!fieldState.visible || fieldState.disabled) {
 			continue;
@@ -1405,7 +1414,9 @@ export function validateFieldNodesRecursive(
 					failedTabIds,
 					scopePrefix,
 					pane.id || enclosingTabId,
-					skipRequiredFields
+					skipRequiredFields,
+					depth + 1,
+					visited
 				);
 			}
 			continue;
@@ -1423,7 +1434,9 @@ export function validateFieldNodesRecursive(
 				failedTabIds,
 				scopePrefix,
 				enclosingTabId,
-				skipRequiredFields
+				skipRequiredFields,
+				depth + 1,
+				visited
 			);
 			continue;
 		}

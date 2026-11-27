@@ -1005,28 +1005,30 @@ export function useSchemaFormController(props: SchemaFormProps) {
 
 	const confirmDeleteFieldNames = useMemo(() => {
 		const names = new Set<string>(['delete_page']);
-		const collect = (list?: SchemaFieldDefinition[]) => {
-			if (!Array.isArray(list)) {
+		const visited = new WeakSet<SchemaFieldDefinition>();
+		const collect = (list?: SchemaFieldDefinition[], depth = 0) => {
+			if (depth >= 16 || !Array.isArray(list)) {
 				return;
 			}
 			for (const field of list) {
-				if (!field) {
+				if (!field || visited.has(field)) {
 					continue;
 				}
+				visited.add(field);
 				if (field.confirmDelete && field.name) {
 					names.add(field.name);
 				}
 				if (Array.isArray(field.children)) {
-					collect(field.children);
+					collect(field.children, depth + 1);
 				}
 				if (Array.isArray(field.fields)) {
-					collect(field.fields);
+					collect(field.fields, depth + 1);
 				} else if (field.fields && typeof field.fields === 'object') {
-					collect(Object.values(field.fields));
+					collect(Object.values(field.fields), depth + 1);
 				}
 				if (Array.isArray(field.tabs)) {
 					for (const subTab of field.tabs) {
-						collect(subTab.fields);
+						collect(subTab.fields, depth + 1);
 					}
 				}
 			}

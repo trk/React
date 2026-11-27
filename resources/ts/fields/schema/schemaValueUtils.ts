@@ -54,11 +54,22 @@ export function valuesShallowEqual(a: unknown, b: unknown): boolean {
 	return false;
 }
 
+const MAX_SCHEMA_WALK_DEPTH = 16;
+
 export function extractFieldsInitialValues(
 	fields: SchemaFieldDefinition[],
-	target: Record<string, unknown>
+	target: Record<string, unknown>,
+	depth = 0,
+	visited: WeakSet<SchemaFieldDefinition> = new WeakSet()
 ): void {
+	if (depth >= MAX_SCHEMA_WALK_DEPTH || !Array.isArray(fields)) {
+		return;
+	}
 	for (const f of fields) {
+		if (!f || typeof f !== 'object' || visited.has(f)) {
+			continue;
+		}
+		visited.add(f);
 		const isMedia = isMediaSchemaField(f);
 		if (f.name && (target[f.name] === undefined || (isMedia && isMediaValueEmpty(target[f.name])))) {
 			const rawType = String(f.type || f.inputfieldClass || '').toLowerCase();
@@ -107,16 +118,16 @@ export function extractFieldsInitialValues(
 			}
 		}
 		if (Array.isArray(f.fields)) {
-			extractFieldsInitialValues(f.fields, target);
+			extractFieldsInitialValues(f.fields, target, depth + 1, visited);
 		} else if (f.fields && typeof f.fields === 'object') {
-			extractFieldsInitialValues(Object.values(f.fields), target);
+			extractFieldsInitialValues(Object.values(f.fields), target, depth + 1, visited);
 		}
 		if (Array.isArray(f.children)) {
-			extractFieldsInitialValues(f.children, target);
+			extractFieldsInitialValues(f.children, target, depth + 1, visited);
 		}
 		if (Array.isArray(f.tabs)) {
 			for (const t of f.tabs) {
-				extractFieldsInitialValues(t.fields || [], target);
+				extractFieldsInitialValues(t.fields || [], target, depth + 1, visited);
 			}
 		}
 	}
@@ -146,29 +157,37 @@ export function extractSchemaInitialValues(
 
 export function collectFieldsIntoMap(
 	fields: SchemaFieldDefinition[] | undefined,
-	map: Map<string, SchemaFieldDefinition>
+	map: Map<string, SchemaFieldDefinition>,
+	depth = 0,
+	visited: WeakSet<SchemaFieldDefinition> = new WeakSet()
 ): void {
-	if (!Array.isArray(fields)) {
+	if (depth >= MAX_SCHEMA_WALK_DEPTH || !Array.isArray(fields)) {
 		return;
 	}
 	for (const f of fields) {
+		if (!f || typeof f !== 'object' || visited.has(f)) {
+			continue;
+		}
+		visited.add(f);
 		if (f.name && !map.has(f.name)) {
 			map.set(f.name, f);
 		}
 		if (Array.isArray(f.fields)) {
-			collectFieldsIntoMap(f.fields, map);
+			collectFieldsIntoMap(f.fields, map, depth + 1, visited);
 		} else if (f.fields && typeof f.fields === 'object') {
 			collectFieldsIntoMap(
 				Object.entries(f.fields).map(([name, def]) => ({ ...def, name: def.name || name })),
-				map
+				map,
+				depth + 1,
+				visited
 			);
 		}
 		if (Array.isArray(f.children)) {
-			collectFieldsIntoMap(f.children, map);
+			collectFieldsIntoMap(f.children, map, depth + 1, visited);
 		}
 		if (Array.isArray(f.tabs)) {
 			for (const t of f.tabs) {
-				collectFieldsIntoMap(t.fields, map);
+				collectFieldsIntoMap(t.fields, map, depth + 1, visited);
 			}
 		}
 	}
@@ -178,12 +197,18 @@ export function hasVisibleNonInlineFields(
 	fields: SchemaFieldDefinition[] | undefined,
 	values: Record<string, unknown>,
 	errors: Record<string, string>,
-	scopePrefix?: string
+	scopePrefix?: string,
+	depth = 0,
+	visited: WeakSet<SchemaFieldDefinition> = new WeakSet()
 ): boolean {
-	if (!Array.isArray(fields) || fields.length === 0) {
+	if (depth >= MAX_SCHEMA_WALK_DEPTH || !Array.isArray(fields) || fields.length === 0) {
 		return false;
 	}
 	for (const f of fields) {
+		if (!f || typeof f !== 'object' || visited.has(f)) {
+			continue;
+		}
+		visited.add(f);
 		if (!resolveFieldState(f, values, scopePrefix).visible) {
 			continue;
 		}
@@ -195,7 +220,7 @@ export function hasVisibleNonInlineFields(
 				f.tabs.some(
 					(pane) =>
 						resolveFieldState(pane, values, scopePrefix).visible &&
-						hasVisibleNonInlineFields(pane.fields, values, errors, scopePrefix)
+						hasVisibleNonInlineFields(pane.fields, values, errors, scopePrefix, depth + 1, visited)
 				)
 			) {
 				return true;
@@ -210,7 +235,7 @@ export function hasVisibleNonInlineFields(
 					? f.children
 					: null;
 		if (nested && nested.length > 0) {
-			if (hasVisibleNonInlineFields(nested, values, errors, scopePrefix)) {
+			if (hasVisibleNonInlineFields(nested, values, errors, scopePrefix, depth + 1, visited)) {
 				return true;
 			}
 			continue;

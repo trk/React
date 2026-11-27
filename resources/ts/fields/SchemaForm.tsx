@@ -63,6 +63,8 @@ export type {
 	FormatConditionSummaryLabels,
 } from './conditionEngine';
 
+const MAX_SCHEMA_DEPTH = 16;
+
 export const SchemaForm: React.FC<SchemaFormProps> = (props) => {
 	const {
 		instanceId,
@@ -113,7 +115,19 @@ export const SchemaForm: React.FC<SchemaFormProps> = (props) => {
 		[]
 	);
 
-	const renderFieldNode = (field: SchemaFieldDefinition, idx: number): React.ReactNode => {
+	const renderFieldNode = (
+		field: SchemaFieldDefinition,
+		idx: number,
+		depth = 0,
+		visited: ReadonlySet<SchemaFieldDefinition> = new Set()
+	): React.ReactNode => {
+		if (depth >= MAX_SCHEMA_DEPTH || visited.has(field)) {
+			return null;
+		}
+		const nextVisited = new Set(visited);
+		nextVisited.add(field);
+		const childRenderFieldsGrid = makeRenderFieldsGrid(depth + 1, nextVisited);
+
 		const fieldState = resolveFieldState(field, conditionValues, scopePrefix);
 		if (!fieldState.visible) {
 			return null;
@@ -133,7 +147,7 @@ export const SchemaForm: React.FC<SchemaFormProps> = (props) => {
 						errors={errors}
 						scopePrefix={scopePrefix}
 						tabSlots={props.tabSlots}
-						renderFieldsGrid={renderFieldsGrid}
+						renderFieldsGrid={childRenderFieldsGrid}
 					/>
 				</div>
 			);
@@ -149,7 +163,7 @@ export const SchemaForm: React.FC<SchemaFormProps> = (props) => {
 				<div key={key} className={spanClass}>
 					<SchemaSectionNode
 						field={field}
-						renderFieldsGrid={renderFieldsGrid}
+						renderFieldsGrid={childRenderFieldsGrid}
 						errors={errors}
 					/>
 				</div>
@@ -232,18 +246,28 @@ export const SchemaForm: React.FC<SchemaFormProps> = (props) => {
 		);
 	};
 
-	function renderFieldsGrid(items: SchemaFieldDefinition[]): React.ReactNode {
-		return (
-			<div
-				className={cn(
-					'@container/rw-grid grid grid-cols-12',
-					schema.isFragment ? 'gap-3 @lg/rw-grid:gap-3.5' : 'gap-3.5 @lg/rw-grid:gap-4'
-				)}
-			>
-				{items.map((field, idx) => renderFieldNode(field, idx))}
-			</div>
-		);
+	function makeRenderFieldsGrid(
+		depth = 0,
+		visited: ReadonlySet<SchemaFieldDefinition> = new Set()
+	): (items: SchemaFieldDefinition[]) => React.ReactNode {
+		return (items: SchemaFieldDefinition[]): React.ReactNode => {
+			if (depth >= MAX_SCHEMA_DEPTH) {
+				return null;
+			}
+			return (
+				<div
+					className={cn(
+						'@container/rw-grid grid grid-cols-12',
+						schema.isFragment ? 'gap-3 @lg/rw-grid:gap-3.5' : 'gap-3.5 @lg/rw-grid:gap-4'
+					)}
+				>
+					{items.map((field, idx) => renderFieldNode(field, idx, depth, visited))}
+				</div>
+			);
+		};
 	}
+
+	const renderFieldsGrid = makeRenderFieldsGrid(0);
 
 	const renderSubmitButtons = (isHeaderClone = false) => {
 		const visibleSubmits = submits.filter(

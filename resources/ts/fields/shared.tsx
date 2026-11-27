@@ -864,11 +864,20 @@ export function resolveFieldState(
 
 export function countNestedErrors(
 	fields: SchemaFieldDefinition[],
-	errors: Record<string, string>
+	errors: Record<string, string>,
+	depth = 0,
+	visited: WeakSet<SchemaFieldDefinition> = new WeakSet()
 ): number {
+	if (depth >= 16 || !Array.isArray(fields)) {
+		return 0;
+	}
 	let count = 0;
 	const errorKeys = Object.keys(errors).filter((k) => Boolean(errors[k]));
 	for (const f of fields) {
+		if (!f || typeof f !== 'object' || visited.has(f)) {
+			continue;
+		}
+		visited.add(f);
 		if (f.error || (f.name && errors[f.name])) {
 			count++;
 		}
@@ -883,16 +892,16 @@ export function countNestedErrors(
 			}
 		}
 		if (Array.isArray(f.fields)) {
-			count += countNestedErrors(f.fields, errors);
+			count += countNestedErrors(f.fields, errors, depth + 1, visited);
 		} else if (f.fields && typeof f.fields === 'object') {
-			count += countNestedErrors(Object.values(f.fields), errors);
+			count += countNestedErrors(Object.values(f.fields), errors, depth + 1, visited);
 		}
 		if (Array.isArray(f.children)) {
-			count += countNestedErrors(f.children, errors);
+			count += countNestedErrors(f.children, errors, depth + 1, visited);
 		}
 		if (Array.isArray(f.tabs)) {
 			for (const t of f.tabs) {
-				count += countNestedErrors(t.fields || [], errors);
+				count += countNestedErrors(t.fields || [], errors, depth + 1, visited);
 			}
 		}
 	}
