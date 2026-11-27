@@ -31,20 +31,46 @@ function isNavItemActive(item: AppShellNavItem, activeNav?: string): boolean {
 	return item.active ?? (activeNav !== undefined && getNavItemKey(item) === activeNav);
 }
 
-function hasActiveDescendant(item: AppShellNavItem, activeNav?: string): boolean {
+const MAX_NAV_DEPTH = 12;
+
+function hasActiveDescendant(
+	item: AppShellNavItem,
+	activeNav?: string,
+	depth = 0,
+	visited: ReadonlySet<AppShellNavItem> = new Set()
+): boolean {
+	if (depth >= MAX_NAV_DEPTH || visited.has(item)) {
+		return false;
+	}
 	if (!Array.isArray(item.children) || item.children.length === 0) {
 		return false;
 	}
+	const nextVisited = new Set(visited);
+	nextVisited.add(item);
 	return item.children.some(
-		(child) => isNavItemActive(child, activeNav) || hasActiveDescendant(child, activeNav)
+		(child) =>
+			!nextVisited.has(child) &&
+			(isNavItemActive(child, activeNav) || hasActiveDescendant(child, activeNav, depth + 1, nextVisited))
 	);
 }
 
 function findActiveNavTrail(groups: AppShellNavSection[], activeNav?: string): AppShellNavItem[] {
-	const searchItems = (items: AppShellNavItem[]): AppShellNavItem[] => {
+	const searchItems = (
+		items: AppShellNavItem[],
+		depth = 0,
+		visited: ReadonlySet<AppShellNavItem> = new Set()
+	): AppShellNavItem[] => {
+		if (depth >= MAX_NAV_DEPTH) {
+			return [];
+		}
 		for (const item of items) {
+			if (visited.has(item)) {
+				continue;
+			}
+			const nextVisited = new Set(visited);
+			nextVisited.add(item);
 			if (Array.isArray(item.children) && item.children.length > 0) {
-				const childTrail = searchItems(item.children);
+				const childTrail = searchItems(item.children, depth + 1, nextVisited);
 				if (childTrail.length > 0) {
 					return [item, ...childTrail];
 				}
@@ -168,11 +194,23 @@ function SidebarNavTree({
 		setExpandedItems((prev) => ({ ...prev, [itemKey]: !currentlyExpanded }));
 	};
 
-	const renderNavItem = (item: AppShellNavItem, depth = 0): React.ReactNode => {
+	const renderNavItem = (
+		item: AppShellNavItem,
+		depth = 0,
+		visited: ReadonlySet<AppShellNavItem> = new Set()
+	): React.ReactNode => {
+		if (depth >= MAX_NAV_DEPTH || visited.has(item)) {
+			return null;
+		}
+		const nextVisited = new Set(visited);
+		nextVisited.add(item);
 		const itemKey = getNavItemKey(item);
 		const isDirectActive = isNavItemActive(item, resolvedActiveNav);
-		const isDescendantActive = hasActiveDescendant(item, resolvedActiveNav);
-		const hasChildren = Array.isArray(item.children) && item.children.length > 0;
+		const isDescendantActive = hasActiveDescendant(item, resolvedActiveNav, depth, visited);
+		const hasChildren =
+			depth + 1 < MAX_NAV_DEPTH &&
+			Array.isArray(item.children) &&
+			item.children.some((child) => !nextVisited.has(child));
 		const safeHref = resolveNavHref(item.href, shellMode, workspace);
 		const hasAction = Boolean(item.onClick || safeHref);
 		const hasBadge = item.badge !== undefined && item.badge !== null && item.badge !== '';
@@ -297,7 +335,7 @@ function SidebarNavTree({
 		if (hasChildren) {
 			const childrenList = isExpanded ? (
 				<div className="mt-1 space-y-0.5 border-l border-sidebar-border/70 pl-3 ml-4">
-					{item.children!.map((child) => renderNavItem(child, depth + 1))}
+					{item.children!.map((child) => renderNavItem(child, depth + 1, nextVisited))}
 				</div>
 			) : null;
 

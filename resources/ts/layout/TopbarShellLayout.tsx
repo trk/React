@@ -1,4 +1,5 @@
 import React from 'react';
+import { t } from '../lib/i18n';
 import { MobileNavDrawer } from './MobileNavDrawer';
 import { ModuleHeaderBar } from './ModuleHeaderBar';
 import { WorkspaceFlashNotices } from './noticeMarkup';
@@ -70,6 +71,15 @@ export function TopbarShellLayout({
 	setShellLayout,
 	children,
 }: ShellLayoutRendererProps): React.ReactElement {
+	const sidebarLayoutOpt = availableShellLayouts.find((l) => l.id === 'sidebar');
+	const sidebarSwitchLabel = sidebarLayoutOpt?.labelKey
+		? t(sidebarLayoutOpt.labelKey, sidebarLayoutOpt.label)
+		: sidebarLayoutOpt?.label || t('shell.layoutSidebar', 'Sidebar');
+	const onSwitchToSidebar =
+		isClassicAdminShell && availableShellLayouts.length > 1 && sidebarLayoutOpt
+			? () => void setShellLayout(sidebarLayoutOpt.id)
+			: undefined;
+
 	return (
 		<>
 			{showGlobalWorkspaceBar ? (
@@ -140,6 +150,9 @@ export function TopbarShellLayout({
 					enableShortcuts={enableShortcuts}
 					openInWorkspaceHref={openInWorkspaceHref}
 					onOpenCommandPalette={onOpenCommandPalette}
+					sidebarSwitchLabel={sidebarSwitchLabel}
+					layoutPending={layoutPending}
+					onSwitchToSidebar={onSwitchToSidebar}
 					resolvedNavItems={resolvedNavItems}
 					resolvedActiveNav={resolvedActiveNav}
 				/>

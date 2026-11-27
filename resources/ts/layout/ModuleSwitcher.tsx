@@ -202,6 +202,7 @@ export function ModuleSwitcher({
 
 	const safeLauncherHref = sanitizeHref(workspace?.launcherUrl);
 	const safeAdminHref = sanitizeHref(workspace?.adminUrl);
+	const hasInteractiveMenu = workspaces.length > 0 || Boolean(safeLauncherHref);
 
 	const renderWorkspaceRow = (ws: WorkspaceDefinitionDto, flatIndex: number) => {
 		const isCurrent = isWorkspaceActive(ws);
@@ -315,6 +316,39 @@ export function ModuleSwitcher({
 	};
 
 	const isSearching = query.trim() !== '';
+
+	if (!hasInteractiveMenu) {
+		return collapsed ? (
+			<div
+				title={activeTitle}
+				className={cn(
+					'mx-auto flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-2xs',
+					className
+				)}
+			>
+				<DynamicIcon name={activeIcon} className="size-4.5" aria-hidden="true" />
+			</div>
+		) : (
+			<div
+				className={cn(
+					'flex w-full items-center gap-2.5 rounded-lg border border-transparent px-2 py-1.5 text-left',
+					className
+				)}
+			>
+				<span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-2xs">
+					<DynamicIcon name={activeIcon} className="size-4" aria-hidden="true" />
+				</span>
+				<span className="min-w-0 flex-1">
+					<span className="block truncate text-[13px] font-semibold leading-tight text-sidebar-foreground">
+						{activeTitle}
+					</span>{' '}
+					<span className="block truncate text-[11px] leading-tight text-muted-foreground">
+						{activeSubtitle}
+					</span>
+				</span>
+			</div>
+		);
+	}
 
 	return (
 		<Popover open={open} onOpenChange={handleOpenChange} modal={false}>

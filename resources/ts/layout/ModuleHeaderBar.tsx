@@ -17,6 +17,9 @@ export interface ModuleHeaderBarProps {
 	enableShortcuts: boolean;
 	openInWorkspaceHref: string;
 	onOpenCommandPalette: () => void;
+	sidebarSwitchLabel?: string;
+	layoutPending?: boolean;
+	onSwitchToSidebar?: () => void;
 	resolvedNavItems: AppShellNavItem[];
 	resolvedActiveNav?: string;
 }
@@ -33,6 +36,9 @@ export function ModuleHeaderBar({
 	enableShortcuts,
 	openInWorkspaceHref,
 	onOpenCommandPalette,
+	sidebarSwitchLabel,
+	layoutPending = false,
+	onSwitchToSidebar,
 	resolvedNavItems,
 	resolvedActiveNav,
 }: ModuleHeaderBarProps): React.ReactElement {
@@ -69,12 +75,25 @@ export function ModuleHeaderBar({
 
 					{(!hasRecordHeader && resolvedHeaderActions) ||
 					openInWorkspaceHref ||
-					(isClassicAdminShell && enableShortcuts) ? (
+					(isClassicAdminShell && (enableShortcuts || Boolean(onSwitchToSidebar))) ? (
 						<div
 							data-rw-header-actions=""
 							className="flex min-w-0 max-w-full flex-wrap items-center gap-2 md:justify-end"
 						>
 							{!hasRecordHeader ? resolvedHeaderActions : null}
+							{isClassicAdminShell && onSwitchToSidebar ? (
+								<button
+									type="button"
+									disabled={layoutPending}
+									onClick={onSwitchToSidebar}
+									data-rw-shell-layout-option="sidebar"
+									title={sidebarSwitchLabel || t('shell.layoutSidebar', 'Sidebar')}
+									className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-input-surface px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 shrink-0 cursor-pointer"
+								>
+									<DynamicIcon name="layout-sidebar" className="size-3.5" aria-hidden="true" />
+									<span>{sidebarSwitchLabel || t('shell.layoutSidebar', 'Sidebar')}</span>
+								</button>
+							) : null}
 							{isClassicAdminShell && enableShortcuts ? (
 								<button
 									type="button"
