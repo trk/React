@@ -65,6 +65,9 @@ Value,Wert,,site/modules/React/InputfieldReactKeyValue.module.php,689202409e4874
 "Keep keys whose value is left blank instead of omitting them.","Schlüssel mit leerem Wert beibehalten, anstatt sie auszulassen.",,site/modules/React/InputfieldReactKeyValue.module.php,8f25b7ba51ae24620d095512bb3aaa1a
 "React Link & Media Target","React Link- & Medienziel",,site/modules/React/InputfieldReactLink.info.php,a531caf428140f5a29cf7d19fb3d2940
 "All-in-one link and media selector supporting Pages, URLs, Phone numbers, Email addresses, custom resources, and uploaded files, images, or videos.","All-in-One-Link- und Medienauswahl mit Unterstützung für Seiten, URLs, Telefonnummern, E-Mail-Adressen, benutzerdefinierte Ressourcen sowie hochgeladene Dateien, Bilder oder Videos.",,site/modules/React/InputfieldReactLink.info.php,1aebad3da3aff59c8fcfc7e646b27220
+Image,Bild,,site/modules/React/InputfieldReactLink.module.php,be53a0541a6d36f6ecb879fa2c584b08
+Video,Video,,site/modules/React/InputfieldReactLink.module.php,34e2d1989a1dbf75cd631596133ee5ee
+File,Datei,,site/modules/React/InputfieldReactLink.module.php,0b27918290ff5323bea1e3b78a9cf04e
 "Phone number may only contain digits and a leading + sign.","Die Telefonnummer darf nur Ziffern und ein führendes +-Zeichen enthalten.",,site/modules/React/InputfieldReactLink.module.php,0598e3665cdb9f3216db26f52e57ba93
 "Link type ""%s"" is not permitted on this field.","Der Link-Typ ""%s"" ist für dieses Feld nicht zulässig.",,site/modules/React/InputfieldReactLink.module.php,a6075e4e6bdbc370d673e7d67e48c5fa
 "Please enter a valid email address.","Bitte geben Sie eine gültige E-Mail-Adresse ein.",,site/modules/React/InputfieldReactLink.module.php,b5bccda6d3a04e1d8f79846355290435
@@ -374,6 +377,7 @@ Duplicate,Duplizieren,,site/modules/React/InputfieldTiptap.module.php,ed75712b0e
 "Interactive responsive card grid with search, filters, bulk actions, and pagination.","Interaktives responsives Kartenraster mit Suche, Filtern, Massenaktionen und Seitennavigation.",,site/modules/React/MarkupReactCards.info.php,5978e6de4cd6f6cf8294fbeeb7f0729b
 "React Tab Viewport & Container","React-Tab-Ansicht & Container",,site/modules/React/MarkupReactTab.info.php,977257fd63d7f2029f28f0649ded249b
 "Organize fields and panels into accessible tabs (line, segmented, or vertical layout).","Organisieren Sie Felder und Bereiche in barrierefreien Tabs (Linien-, Segment- oder Vertikallayout).",,site/modules/React/MarkupReactTab.info.php,4781564a5e10bb746bd7589e2773cb1b
+"Missing required value","Erforderlicher Wert fehlt",,site/modules/React/MarkupReactTab.module.php,d6a6d393040fe53b20243c9abeee036b
 General,Allgemein,,site/modules/React/MarkupReactTab.module.php,0db377921f4ce762c62526131097968f
 Sections,Abschnitte,,site/modules/React/MarkupReactTab.module.php,855c3eca6c7aaef477b4f03e4699944d
 "Tab Bar Style Variant","Stilvariante der Tableiste",,site/modules/React/MarkupReactTab.module.php,ba01477907bfa826253790e6c5605d16
@@ -426,9 +430,16 @@ Teal,Petrol,,site/modules/React/React.module.php,e20385a2b41df1743f787ebef18222b
 Yes,Ja,,site/modules/React/src/Data/ReactRecord.php,93cba07454f06a4a960172bbd6e2a435
 No,Nein,,site/modules/React/src/Data/ReactRecord.php,bafd7322c6e97d25b6299b5d6fe8920b
 Submit,Absenden,,site/modules/React/src/Form/FormSchemaSerializer.php,a4d3b161ce1309df1c4e25df28694b7b
+Key,Schlüssel,,site/modules/React/src/Form/FormSchemaSerializer.php,897356954c2cd3d41b221e3f24f99bba
+Value,Wert,,site/modules/React/src/Form/FormSchemaSerializer.php,689202409e48743b914713f96d93947c
+"Add Row","Zeile hinzufügen",,site/modules/React/src/Form/FormSchemaSerializer.php,03e0c5bbd5488f1e5ec282529dac9635
+"Remove row","Zeile entfernen",,site/modules/React/src/Form/FormSchemaSerializer.php,f22cc12954f8a6326b87efac5ab3bbd4
 Yes,Ja,,site/modules/React/src/Form/FormSchemaSerializer.php,93cba07454f06a4a960172bbd6e2a435
 No,Nein,,site/modules/React/src/Form/FormSchemaSerializer.php,bafd7322c6e97d25b6299b5d6fe8920b
 Other,Sonstige,,site/modules/React/src/Form/FormSchemaSerializer.php,6311ae17c1ee52b36e68aaf4ad066387
+Image,Bild,,site/modules/React/src/Form/FormSchemaSerializer.php,be53a0541a6d36f6ecb879fa2c584b08
+Video,Video,,site/modules/React/src/Form/FormSchemaSerializer.php,34e2d1989a1dbf75cd631596133ee5ee
+File,Datei,,site/modules/React/src/Form/FormSchemaSerializer.php,0b27918290ff5323bea1e3b78a9cf04e
 Delete,Löschen,,site/modules/React/src/Form/FormSchemaSerializer.php,f2a6c498fb90ee345d997f888fce3b18
 "Confirm Deletion","Löschen bestätigen",,site/modules/React/src/Form/FormSchemaSerializer.php,44928cfda52bc66163d158d1ff69d415
 record,Eintrag,,site/modules/React/src/Form/FormSchemaSerializer.php,de17f0f24b49f8364187891f8550ffbb
@@ -565,7 +576,49 @@ Preview,Vorschau,,site/modules/React/src/Form/ReactControlRegistry.php,31fde7b05
 "Vector Icon",Vektor-Symbol,,site/modules/React/src/Hook/FieldIntegrationHooks.php,3b8ba766a67302eea93b73f89375cf76
 "Select a vector icon. When populated, this overrides the standard ProcessWire icon above.","Wählen Sie ein Vektor-Symbol aus. Wenn ausgefüllt, überschreibt dies das obige Standard-ProcessWire-Symbol.",,site/modules/React/src/Hook/FieldIntegrationHooks.php,7cd34d6d99b289c33e05ccaf30109f55
 "Access denied.","Zugriff verweigert.",,site/modules/React/src/Http/ReactGatewayRouter.php,652122103181aa2752efaecab300edf0
+"Viewport request failed.","Viewport-Anfrage fehlgeschlagen.",,site/modules/React/src/Http/ReactGatewayRouter.php,bd17576997e78ab86f1f58186a68c56f
+"Authentication required.","Authentifizierung erforderlich.",,site/modules/React/src/Http/ReactGatewayRouter.php,27d1d715bcd77c610edb102f776c63c6
+"Method not allowed. POST required.","Methode nicht erlaubt. POST erforderlich.",,site/modules/React/src/Http/ReactGatewayRouter.php,ca1b5305d7c7bec2f322612a92dd8f57
+"Mutations are disabled in demo mode.","Änderungen sind im Demo-Modus deaktiviert.",,site/modules/React/src/Http/ReactGatewayRouter.php,de8f26d905adbc8d23127d43d71a3a91
+"Missing viewport stateToken.","Fehlendes Viewport-stateToken.",,site/modules/React/src/Http/ReactGatewayRouter.php,ae7d76b46703cd188a2f15f3b94b1a4d
+"Invalid or expired viewport stateToken.","Ungültiges oder abgelaufenes Viewport-stateToken.",,site/modules/React/src/Http/ReactGatewayRouter.php,7e286c3e1cc7bd35821c481286446193
+"CSRF token validation failed.","CSRF-Token-Überprüfung fehlgeschlagen.",,site/modules/React/src/Http/ReactGatewayRouter.php,e1b850614e8638b71a2de10cbfd31e49
+"Viewport action failed.","Viewport-Aktion fehlgeschlagen.",,site/modules/React/src/Http/ReactGatewayRouter.php,8e2530e537af1fddd87b8853d34fcad9
+"Workspace or page edit access required.","Zugriff auf Arbeitsbereich oder Seitenbearbeitung erforderlich.",,site/modules/React/src/Http/ReactGatewayRouter.php,d4ca4e570bf54fedad2bd2e64f33029a
+"Workspace preference request failed.","Anfrage für Arbeitsbereich-Einstellungen fehlgeschlagen.",,site/modules/React/src/Http/ReactGatewayRouter.php,4cf0cecc64da91e240d3e65634d5374e
+"Unsupported workspace preference action.","Nicht unterstützte Arbeitsbereich-Einstellungsaktion.",,site/modules/React/src/Http/ReactGatewayRouter.php,865d2e5c37715b5126f2d9d91be29819
+"Dashboard layout preset exceeds maximum size.","Dashboard-Layout-Voreinstellung überschreitet die maximale Größe.",,site/modules/React/src/Http/ReactGatewayRouter.php,15ca79283ffe61c2f45460a20e3054ab
+"Invalid JSON format in dashboard layout preset.","Ungültiges JSON-Format in der Dashboard-Layout-Voreinstellung.",,site/modules/React/src/Http/ReactGatewayRouter.php,d3443c6c7a9f540b1788dfa8cb67cfe6
+"Dashboard layout preset must be a JSON object.","Die Dashboard-Layout-Voreinstellung muss ein JSON-Objekt sein.",,site/modules/React/src/Http/ReactGatewayRouter.php,3d6fc3f033e070b78f34645db61bf8d4
+"Invalid themeMode value.","Ungültiger themeMode-Wert.",,site/modules/React/src/Http/ReactGatewayRouter.php,723dff1fae6fa5b524dcd7d8b284ee9e
+"Invalid themePreset value.","Ungültiger themePreset-Wert.",,site/modules/React/src/Http/ReactGatewayRouter.php,8c4f6e94d0d9036535c452bd0df7e56c
+"Invalid shellLayout value.","Ungültiger shellLayout-Wert.",,site/modules/React/src/Http/ReactGatewayRouter.php,c778ffef88f2a41dacbe5af9e9353457
+"Invalid collapsed value.","Ungültiger collapsed-Wert.",,site/modules/React/src/Http/ReactGatewayRouter.php,462db6b403d7fe8ac57221deef5288a2
+"Workspace access required.","Zugriff auf den Arbeitsbereich erforderlich.",,site/modules/React/src/Http/ReactGatewayRouter.php,3bb65ffefd5b2186a15bf8b2395fe304
+"Presence request failed.","Präsenz-Anfrage fehlgeschlagen.",,site/modules/React/src/Http/ReactGatewayRouter.php,5c945067325958bfd7bf132116b2fed9
+"Unsupported presence action.","Nicht unterstützte Präsenz-Aktion.",,site/modules/React/src/Http/ReactGatewayRouter.php,dd5badf6c690cd61ca153f335c01f274
+"Invalid or expired presenceToken.","Ungültiges oder abgelaufenes presenceToken.",,site/modules/React/src/Http/ReactGatewayRouter.php,254c84abb03a98d92bc056f395089504
+"Presence token does not match requested resource.","Präsenz-Token stimmt nicht mit der angeforderten Ressource überein.",,site/modules/React/src/Http/ReactGatewayRouter.php,4e44808406631385bb80de257973d141
+"You do not have permission to mark this resource as saved.","Sie haben keine Berechtigung, diese Ressource als gespeichert zu markieren.",,site/modules/React/src/Http/ReactGatewayRouter.php,c139a9e282b8f27cbd7a88046c2bc568
 "Relation request failed.","Beziehungsanfrage fehlgeschlagen.",,site/modules/React/src/Http/ReactGatewayRouter.php,417311c0a499db762f631392d723fa39
+"Missing relationToken.","Fehlendes relationToken.",,site/modules/React/src/Http/ReactGatewayRouter.php,0f00ff55aea63bbe04296d60c50f4251
+"Invalid or expired relationToken.","Ungültiges oder abgelaufenes relationToken.",,site/modules/React/src/Http/ReactGatewayRouter.php,beb16718c3fd9b9eb814bff97af56207
+"Relation field is read-only.","Beziehungsfeld ist schreibgeschützt.",,site/modules/React/src/Http/ReactGatewayRouter.php,effb7c361cdbdd75b31bccf1051a7095
+"No allowed resources configured for this polymorphic field.","Keine zulässigen Ressourcen für dieses polymorphe Feld konfiguriert.",,site/modules/React/src/Http/ReactGatewayRouter.php,2ecbd48ae528478aed8bbf3c6c4d0d61
+"Requested resource is not permitted for this polymorphic field.","Die angeforderte Ressource ist für dieses polymorphe Feld nicht zulässig.",,site/modules/React/src/Http/ReactGatewayRouter.php,f81b77d0ad3a7dee790df2cf316265fb
+"Unknown relation resource ""%s"".","Unbekannte Beziehungsressource „%s“.",,site/modules/React/src/Http/ReactGatewayRouter.php,2e682fcb389404116c9ac5a604834765
+"Unknown relation resource.","Unbekannte Beziehungsressource.",,site/modules/React/src/Http/ReactGatewayRouter.php,ad157b2a55add556a4e72c4ac3720fe9
+"Inline creation is not enabled for this field.","Die Inline-Erstellung ist für dieses Feld nicht aktiviert.",,site/modules/React/src/Http/ReactGatewayRouter.php,ab2111d4ba71713a76b480911e00e9bf
+"O2M relation action requires cardinality o2m.","Die O2M-Beziehungsaktion erfordert die Kardinalität o2m.",,site/modules/React/src/Http/ReactGatewayRouter.php,d015234e60309fed4166845cdd51ed6c
+"Linking existing records is not enabled for this field.","Das Verknüpfen vorhandener Datensätze ist für dieses Feld nicht aktiviert.",,site/modules/React/src/Http/ReactGatewayRouter.php,70dadc34e6689a9c186cbe426d041865
+"Unlinking records is not enabled for this field.","Das Aufheben der Verknüpfung von Datensätzen ist für dieses Feld nicht aktiviert.",,site/modules/React/src/Http/ReactGatewayRouter.php,fab3cedaadd1517d7a2e8fd504ce342d
+"Missing ownerId, foreignField, or targetValue.","ownerId, foreignField oder targetValue fehlt.",,site/modules/React/src/Http/ReactGatewayRouter.php,e8f56fcddc1f181ba04f76f0f372e506
+"Operation denied or failed.","Vorgang verweigert oder fehlgeschlagen.",,site/modules/React/src/Http/ReactGatewayRouter.php,a5f553a1d4aa8a693d687089d676f6aa
+"Unsupported relation action ""%s"".","Nicht unterstützte Beziehungsaktion „%s“.",,site/modules/React/src/Http/ReactGatewayRouter.php,08739f1b32043d6735a7718242d50f11
+"Media request failed.","Medienanfrage fehlgeschlagen.",,site/modules/React/src/Http/ReactGatewayRouter.php,7b0ac343754af8ed8fc63adb67ccc0a5
+"Editor media request failed.","Editor-Medienanfrage fehlgeschlagen.",,site/modules/React/src/Http/ReactGatewayRouter.php,5f12e59e090038d682225db194eba258
+"Method not allowed. GET required.","Methode nicht zulässig. GET erforderlich.",,site/modules/React/src/Http/ReactGatewayRouter.php,0975b8760a465b4720a8d9753a73f247
+"Search request failed.","Suchanfrage fehlgeschlagen.",,site/modules/React/src/Http/ReactGatewayRouter.php,501b10060d36fb8e5cb7606976287f44
 Save,Speichern,,site/modules/React/src/I18n/TranslationCatalogService.php,c9cc8cce247e49bae79f15173ce97354
 Saving...,"Wird gespeichert...",,site/modules/React/src/I18n/TranslationCatalogService.php,575f5f86d2c7ea113c6710c1037c4465
 Cancel,Abbrechen,,site/modules/React/src/I18n/TranslationCatalogService.php,ea4788705e6873b424c65e91c2846b19
@@ -582,6 +635,7 @@ Reload,"Neu laden",,site/modules/React/src/I18n/TranslationCatalogService.php,4d
 Retry,"Erneut versuchen",,site/modules/React/src/I18n/TranslationCatalogService.php,6327b4e59f58137083214a1fec358855
 Search,Suchen,,site/modules/React/src/I18n/TranslationCatalogService.php,13348442cc6a27032d2b4aa28b75a5d3
 Clear,Leeren,,site/modules/React/src/I18n/TranslationCatalogService.php,dc30bc0c7914db5918da4263fce93ad2
+"Clear all","Alles löschen",,site/modules/React/src/I18n/TranslationCatalogService.php,81aa2078d1eceede831b2976dbf32e62
 Create,Erstellen,,site/modules/React/src/I18n/TranslationCatalogService.php,686e697538050e4664636337cc3b834f
 Edit,Bearbeiten,,site/modules/React/src/I18n/TranslationCatalogService.php,7dce122004969d56ae2e0245cb754d35
 Delete,Löschen,,site/modules/React/src/I18n/TranslationCatalogService.php,f2a6c498fb90ee345d997f888fce3b18
@@ -592,6 +646,7 @@ Confirm,Bestätigen,,site/modules/React/src/I18n/TranslationCatalogService.php,7
 "I understand the impact of this operation and wish to proceed.","Ich verstehe die Auswirkungen dieses Vorgangs und möchte fortfahren.",,site/modules/React/src/I18n/TranslationCatalogService.php,719ddb902afa805552fb15479a75fee1
 Copy,Kopieren,,site/modules/React/src/I18n/TranslationCatalogService.php,5fb63579fc981698f97d55bfecb213ea
 Copied,Kopiert,,site/modules/React/src/I18n/TranslationCatalogService.php,a588b1abc58b8b758c4b34b69b9e10bb
+"Copy failed","Kopieren fehlgeschlagen",,site/modules/React/src/I18n/TranslationCatalogService.php,5496a81d145ee0c172e6c616cabbf89c
 "Copy command","Befehl kopieren",,site/modules/React/src/I18n/TranslationCatalogService.php,ec5eefe5a1b8d46ef1126992881fd5d4
 Export,Exportieren,,site/modules/React/src/I18n/TranslationCatalogService.php,0095a9fa74d1713e43e370a7d7846224
 Import,Importieren,,site/modules/React/src/I18n/TranslationCatalogService.php,72d6d7a1885885bb55a565fd1070581a
@@ -613,6 +668,8 @@ More,Mehr,,site/modules/React/src/I18n/TranslationCatalogService.php,d3da97e2d9a
 Notifications,Benachrichtigungen,,site/modules/React/src/I18n/TranslationCatalogService.php,a274f4d4670213a9045ce258c6c56b80
 Back,Zurück,,site/modules/React/src/I18n/TranslationCatalogService.php,0557fa923dcee4d0f86b1409f5c2167f
 Change,Ändern,,site/modules/React/src/I18n/TranslationCatalogService.php,f4ec5f57bd4d31b803312d873be40da9
+Expand,Erweitern,,site/modules/React/src/I18n/TranslationCatalogService.php,8098b34f582537833b36b58273c3545b
+Collapse,Einklappen,,site/modules/React/src/I18n/TranslationCatalogService.php,2b31634e3cfef1bfdd7d0d2cdfdc3f9d
 Unavailable,"Nicht verfügbar",,site/modules/React/src/I18n/TranslationCatalogService.php,453e6aa38d87b28ccae545967c53004f
 Workspace,Arbeitsbereich,,site/modules/React/src/I18n/TranslationCatalogService.php,03a21915504df93cf5dba0636080f62e
 Workspaces,Arbeitsbereiche,,site/modules/React/src/I18n/TranslationCatalogService.php,d5e92609cf510f5f97ac326e907a0540
@@ -791,6 +848,13 @@ Trash,Papierkorb,,site/modules/React/src/I18n/TranslationCatalogService.php,a7e2
 "Export {format}","Als {format} exportieren",,site/modules/React/src/I18n/TranslationCatalogService.php,4be41c6b0710e5e38d8fbc3725475bf3
 "Open Full Editor","Vollständigen Editor öffnen",,site/modules/React/src/I18n/TranslationCatalogService.php,51d2518ea49f2aebdc7f37c9d40598a8
 "Failed to load form assets.","Formular-Assets konnten nicht geladen werden.",,site/modules/React/src/I18n/TranslationCatalogService.php,9a4296ba302022e15756b5cdde8fba44
+Locked,Gesperrt,,site/modules/React/src/I18n/TranslationCatalogService.php,d0f2e5376298c880665077b565ffd7dd
+"Select {label}","{label} auswählen",,site/modules/React/src/I18n/TranslationCatalogService.php,f1c17d884b56aec31896bbe05d25819a
+"Actions for {label}","Aktionen für {label}",,site/modules/React/src/I18n/TranslationCatalogService.php,0abce5594f33541edf0c8dc011f35571
+"Row {number}","Zeile {number}",,site/modules/React/src/I18n/TranslationCatalogService.php,b64fbc721d4ea62285bf87619809324d
+"Card {number}","Karte {number}",,site/modules/React/src/I18n/TranslationCatalogService.php,1bcd04ad5f5e374bc8bf2ea6e95c1482
+Table,Tabelle,,site/modules/React/src/I18n/TranslationCatalogService.php,51c45b795d5d18a3e4e0c37e8b20a141
+Title,Titel,,site/modules/React/src/I18n/TranslationCatalogService.php,b78a3223503896721cca1303f776159b
 Required,Erforderlich,,site/modules/React/src/I18n/TranslationCatalogService.php,b651efdb98a5d6bd2b3935d0c3f4a5e2
 "You have unsaved changes.","Sie haben ungespeicherte Änderungen.",,site/modules/React/src/I18n/TranslationCatalogService.php,604a9a8f13d447df5c82b824ef2de820
 "Unsaved changes","Ungespeicherte Änderungen",,site/modules/React/src/I18n/TranslationCatalogService.php,c227ad77f168e7fd3e21583b324eddf4
@@ -914,13 +978,47 @@ Value,Wert,,site/modules/React/src/I18n/TranslationCatalogService.php,689202409e
 "Quick create",Schnellerstellung,,site/modules/React/src/I18n/TranslationCatalogService.php,956eaa6186169471a13345860cad0757
 Creating...,"Wird erstellt...",,site/modules/React/src/I18n/TranslationCatalogService.php,d930f4451cc35bdcd216273a273cb891
 "Create & Select","Erstellen & Auswählen",,site/modules/React/src/I18n/TranslationCatalogService.php,5fbf6630ad0e74e257c6221f551d6e13
-Title,Titel,,site/modules/React/src/I18n/TranslationCatalogService.php,b78a3223503896721cca1303f776159b
 "Name / Slug (optional)","Name / URL-Name (optional)",,site/modules/React/src/I18n/TranslationCatalogService.php,b3cdb9702e78f45ebd3faeea0f0ed5b3
 Reference,Referenz,,site/modules/React/src/I18n/TranslationCatalogService.php,63d5049791d9d79d86e9a108b0a999ca
 "Type / Status","Typ / Status",,site/modules/React/src/I18n/TranslationCatalogService.php,88cf1d6af905d5a419bbb35f779cd96e
 "Link existing","Vorhandenes verknüpfen",,site/modules/React/src/I18n/TranslationCatalogService.php,18add7649141635f4ba1dff73c13b5c9
 Unlink,Trennen,,site/modules/React/src/I18n/TranslationCatalogService.php,c1a39b6a60f8b2f87e23d60ab649d994
 "Unlink {label}","Verknüpfung von {label} lösen",,site/modules/React/src/I18n/TranslationCatalogService.php,400c37fc5635f0ed1793e997cdb2ba1c
+"Create New","Neu erstellen",,site/modules/React/src/I18n/TranslationCatalogService.php,49e5878c7a1901b0a9baae9e0c774150
+"Save this record first before adding or linking related records.","Speichern Sie diesen Datensatz zuerst, bevor Sie verknüpfte Datensätze hinzufügen oder verknüpfen.",,site/modules/React/src/I18n/TranslationCatalogService.php,7de375c1279a973f2dfe2251f9604e97
+"Filter incoming {resource}...","Eingehende {resource} filtern...",,site/modules/React/src/I18n/TranslationCatalogService.php,db2c76a51a34ee96bf6853bf4d95f46d
+"Loading related records...","Verknüpfte Datensätze werden geladen...",,site/modules/React/src/I18n/TranslationCatalogService.php,14314cc1a5e1d1ee5d1193578efe371c
+"Link Existing {resource}","Vorhandene {resource} verknüpfen",,site/modules/React/src/I18n/TranslationCatalogService.php,c0913559c587ec8812933b48c8b7817c
+"Attach existing {resource} records to this owner.","Vorhandene {resource}-Datensätze mit diesem Eigentümer verknüpfen.",,site/modules/React/src/I18n/TranslationCatalogService.php,2c7d192a1ea1fc693c33fe2ac0db8442
+"Search {resource}...","{resource} suchen...",,site/modules/React/src/I18n/TranslationCatalogService.php,1f3b8bfebd5f365a7255d0cd374bd498
+"Search to select...","Zum Auswählen suchen...",,site/modules/React/src/I18n/TranslationCatalogService.php,dbfffe13bcfcb2269ad8bf8ffcb8f7c3
+"All Types","Alle Typen",,site/modules/React/src/I18n/TranslationCatalogService.php,90b2f7433dcfc30b034860cef231c65e
+"New {resource}","Neu: {resource}",,site/modules/React/src/I18n/TranslationCatalogService.php,1027517a67b8dc220547f30781fbea10
+Unpub,Unveröff.,,site/modules/React/src/I18n/TranslationCatalogService.php,f40271af9378ba3b92b006eb2f2441bb
+"Load more results...","Weitere Ergebnisse laden...",,site/modules/React/src/I18n/TranslationCatalogService.php,f1c4834bf65b8b7b98a62dc23856f3a8
+"Add {resource}","{resource} hinzufügen",,site/modules/React/src/I18n/TranslationCatalogService.php,7a3c2a40bd22c5ce280f97ec885024d0
+"Select {resource}","{resource} auswählen",,site/modules/React/src/I18n/TranslationCatalogService.php,7e8e8d60743cde7044c464399956977c
+"Loading {resource} options...","{resource}-Optionen werden geladen...",,site/modules/React/src/I18n/TranslationCatalogService.php,a0bd75c7b66105b8da7ef6605972db61
+"Maximum {max} selected","Maximal {max} ausgewählt",,site/modules/React/src/I18n/TranslationCatalogService.php,3186112e66d98509f815f747448d093a
+"+ Add {resource}...","+ {resource} hinzufügen...",,site/modules/React/src/I18n/TranslationCatalogService.php,629b1ec7ed2435be0318dc0922fb9187
+"Select {resource}...","{resource} auswählen...",,site/modules/React/src/I18n/TranslationCatalogService.php,d3fce869f1130f9e218032c493915fab
+"Quick create failed.","Schnellerstellung fehlgeschlagen.",,site/modules/React/src/I18n/TranslationCatalogService.php,415a694124de940c058c42b89797f551
+"Create a new {resource} record and link it immediately.","Erstellen Sie einen neuen {resource}-Datensatz und verknüpfen Sie ihn sofort.",,site/modules/React/src/I18n/TranslationCatalogService.php,174c99f95c304665ee0eb09b1fbd7d9f
+"Enter {resource} title...","{resource}-Titel eingeben...",,site/modules/React/src/I18n/TranslationCatalogService.php,a725a1ef22858f7b34284f3929c8c3cb
+"Browse Resources...","Ressourcen durchsuchen...",,site/modules/React/src/I18n/TranslationCatalogService.php,617c021a3c0607686fd266e46146a8e9
+"Browse {resource}...","{resource} durchsuchen...",,site/modules/React/src/I18n/TranslationCatalogService.php,ea2a50ce1af1a1a35f4c5cf66de64b24
+"Select Resource Items","Ressourcenelemente auswählen",,site/modules/React/src/I18n/TranslationCatalogService.php,e169a3d69ce0bca4c34f2e6fc2ba8774
+"{count} matching record(s)","{count} passende Datensätze",,site/modules/React/src/I18n/TranslationCatalogService.php,3a5bd4942c8e13617748140a74307565
+"Loading records...","Datensätze werden geladen...",,site/modules/React/src/I18n/TranslationCatalogService.php,1d485c59d5c559e9f9bddc7aec884f2f
+"No records match your search.","Keine Datensätze entsprechen Ihrer Suche.",,site/modules/React/src/I18n/TranslationCatalogService.php,4fa427e0aa244b0cdf4da9f7c191cc14
+"Available ({count})","Verfügbar ({count})",,site/modules/React/src/I18n/TranslationCatalogService.php,709fdc0747d2f071bf90051017d95dd7
+"Selected ({count})","Ausgewählt ({count})",,site/modules/React/src/I18n/TranslationCatalogService.php,7953dd005e328e5a936ef77ce7c46926
+"Add all","Alle hinzufügen",,site/modules/React/src/I18n/TranslationCatalogService.php,4f513db70f4e183177ac2ee3b3b7d76f
+"Remove {label}","{label} entfernen",,site/modules/React/src/I18n/TranslationCatalogService.php,a328d916e4fcd38c68922611b2d95af3
+"Open {label}","{label} öffnen",,site/modules/React/src/I18n/TranslationCatalogService.php,a31ae9e34561b3f2a846c3054dc31085
+"Hide Page Tree","Seitenbaum ausblenden",,site/modules/React/src/I18n/TranslationCatalogService.php,30c995fbc9e38c2ffffe0a2b52693e02
+"Browse Tree...","Baum durchsuchen...",,site/modules/React/src/I18n/TranslationCatalogService.php,b027293cf1b5413c7f6fe599c0164474
+"Select from Page Tree...","Aus Seitenbaum auswählen...",,site/modules/React/src/I18n/TranslationCatalogService.php,7c2ff6afcbc94108c60fb69d5e883051
 "Click to choose images, paste, or drag and drop","Klicken, einfügen oder Bilder per Drag & Drop ablegen",,site/modules/React/src/I18n/TranslationCatalogService.php,03e3ef1655ba17ad045259b94555a2d9
 "Click to choose files, paste, or drag and drop","Klicken, einfügen oder Dateien per Drag & Drop ablegen",,site/modules/React/src/I18n/TranslationCatalogService.php,79427c5a78e6e0275a50f59ea1619728
 "Choose image","Bild auswählen",,site/modules/React/src/I18n/TranslationCatalogService.php,5a31ca938eff79f9dd79786b57b19173
@@ -1046,6 +1144,21 @@ Searching...,"Suche läuft...",,site/modules/React/src/I18n/TranslationCatalogSe
 "Edit media details & alt text for {name}","Mediendetails & Alt-Text für {name} bearbeiten",,site/modules/React/src/I18n/TranslationCatalogService.php,c2e087a3a42a5ca4e023631c84894ca5
 "Edit media details, alt text & focal point","Mediendetails, Alt-Text & Fokuspunkt bearbeiten",,site/modules/React/src/I18n/TranslationCatalogService.php,15455322cb5ed157ae075a5e6c553741
 "New tab","Neuer Tab",,site/modules/React/src/I18n/TranslationCatalogService.php,c8a19ea6c79e23a1ee5372c8dbf3c6cf
+"Page #{id}","Seite #{id}",,site/modules/React/src/I18n/TranslationCatalogService.php,52a1522400bc43d037f119835802f4e8
+"{name} — Alt: {alt}","{name} — Alt: {alt}",,site/modules/React/src/I18n/TranslationCatalogService.php,357b76262171ad2411efb0a4eef632d1
+Page,Seite,,site/modules/React/src/I18n/TranslationCatalogService.php,193cfc9be3b995831c6af2fea6650e60
+URL,URL,,site/modules/React/src/I18n/TranslationCatalogService.php,e6b391a8d2c4d45902a23a8b6585703d
+Image,Bild,,site/modules/React/src/I18n/TranslationCatalogService.php,be53a0541a6d36f6ecb879fa2c584b08
+Video,Video,,site/modules/React/src/I18n/TranslationCatalogService.php,34e2d1989a1dbf75cd631596133ee5ee
+Email,E-Mail,,site/modules/React/src/I18n/TranslationCatalogService.php,ce8ae9da5b7cd6c3df2929543a9af92d
+Phone,Telefon,,site/modules/React/src/I18n/TranslationCatalogService.php,bcc254b55c4a1babdf1dcb82c207506b
+"Search pages by title or path...","Seiten nach Titel oder Pfad suchen...",,site/modules/React/src/I18n/TranslationCatalogService.php,7289711690f128438f68a39e349db64c
+"https://example.com, /path/, or #section","https://example.com, /pfad/ oder #abschnitt",,site/modules/React/src/I18n/TranslationCatalogService.php,e4d4a444fadf8835e0f346842867b667
+name@example.com,name@example.com,,site/modules/React/src/I18n/TranslationCatalogService.php,a130ced3f36ffd4604f4dae04b2b3bcd
+"+1 555 010 2030","+49 30 55501020",,site/modules/React/src/I18n/TranslationCatalogService.php,cfa05f6b04c447a8d56a1c0b2f3a6464
+"Select or upload a file...","Datei auswählen oder hochladen...",,site/modules/React/src/I18n/TranslationCatalogService.php,0618b55428f6c886ac999d229995f37c
+"Select or upload an image...","Bild auswählen oder hochladen...",,site/modules/React/src/I18n/TranslationCatalogService.php,9aeeedc3654db963144105287eea934a
+"Select or upload a video...","Video auswählen oder hochladen...",,site/modules/React/src/I18n/TranslationCatalogService.php,a6d0197c76f68af06e8fb721245e8f4b
 "Selected icon","Ausgewähltes Symbol",,site/modules/React/src/I18n/TranslationCatalogService.php,c3f172d89f52a265985eab184b7c2f20
 "Select an icon...","Symbol auswählen...",,site/modules/React/src/I18n/TranslationCatalogService.php,cd625882db0b286414cedd94738e8b32
 "Clear icon","Symbol entfernen",,site/modules/React/src/I18n/TranslationCatalogService.php,18276346bd3773253fdc4c1c5e496eb2
@@ -1072,6 +1185,11 @@ Popular,Beliebt,,site/modules/React/src/I18n/TranslationCatalogService.php,2cc19
 "No matching icons found.","Keine passenden Symbole gefunden.",,site/modules/React/src/I18n/TranslationCatalogService.php,6fe730153d19457d273abdb1d0b92039
 icon,Symbol,,site/modules/React/src/I18n/TranslationCatalogService.php,baec6461b0d69dde1b861aefbe375d8a
 icons,Symbole,,site/modules/React/src/I18n/TranslationCatalogService.php,bd21190449b7e88db48fa0f580a8f666
+Square,Quadratisch,,site/modules/React/src/I18n/TranslationCatalogService.php,ceb46ca115d05c51aa5a16a8867c3304
+Small,Klein,,site/modules/React/src/I18n/TranslationCatalogService.php,2660064e68655415da2628c2ae2f7592
+Medium,Mittel,,site/modules/React/src/I18n/TranslationCatalogService.php,87f8a6ab85c9ced3702b4ea641ad4bb5
+Large,Groß,,site/modules/React/src/I18n/TranslationCatalogService.php,3a69b34ce86dacb205936a8094f6c743
+Circle,Kreis,,site/modules/React/src/I18n/TranslationCatalogService.php,30954d90085f6eaaf5817917fc5fecb3
 "Data grid",Datenraster,,site/modules/React/src/I18n/TranslationCatalogService.php,7a295345749190b5a5897a59e7e18b01
 "Resize column","Spaltenbreite ändern",,site/modules/React/src/I18n/TranslationCatalogService.php,7df1f65fec6e37b0f79119bc0ce720ff
 "Select row","Zeile auswählen",,site/modules/React/src/I18n/TranslationCatalogService.php,bc2a8d43c82f4a68a6779ba2f249476c
@@ -1085,7 +1203,6 @@ icons,Symbole,,site/modules/React/src/I18n/TranslationCatalogService.php,bd21190
 "Pick start and end date","Start- und Enddatum wählen",,site/modules/React/src/I18n/TranslationCatalogService.php,f11ed975547c8661e033b0b9d6f14e82
 "{count} days","{count} Tage",,site/modules/React/src/I18n/TranslationCatalogService.php,e95149fdcf04766422eed97a88467852
 Hr,Std,,site/modules/React/src/I18n/TranslationCatalogService.php,08ee99e4c183670239a50ae73fcd39d6
-Min,Min,,site/modules/React/src/I18n/TranslationCatalogService.php,78d811e98514cd165dda532286610fd2
 Sec,Sek,,site/modules/React/src/I18n/TranslationCatalogService.php,2d5cc554c126edb041901fa7d79b558b
 AM/PM,AM/PM,,site/modules/React/src/I18n/TranslationCatalogService.php,194a919001a5a2044b9f3716bb21591b
 "Picked up {label}","{label} aufgenommen",,site/modules/React/src/I18n/TranslationCatalogService.php,ce93e3720beea6b49d923d43987919b0
@@ -1138,7 +1255,6 @@ Operator,Operator,,site/modules/React/src/I18n/TranslationCatalogService.php,e1b
 "{field} minimum","{field} Minimum",,site/modules/React/src/I18n/TranslationCatalogService.php,0ddd23a3003dbd021c73bf78917c5791
 "{field} maximum","{field} Maximum",,site/modules/React/src/I18n/TranslationCatalogService.php,dd179343cc2bc7129ebab0f0d063eb7c
 Max,Max,,site/modules/React/src/I18n/TranslationCatalogService.php,6a061313d22e51e0f25b7cd4dc065233
-"Remove {label}","{label} entfernen",,site/modules/React/src/I18n/TranslationCatalogService.php,a328d916e4fcd38c68922611b2d95af3
 "{field} add value","{field} Wert hinzufügen",,site/modules/React/src/I18n/TranslationCatalogService.php,61e6f24361afa791dbe6f0e89b440b25
 "Select value to add...","Wert zum Hinzufügen auswählen...",,site/modules/React/src/I18n/TranslationCatalogService.php,1ee7fa58e7b01690ce01e2b320af5ca8
 "{field} comma-separated values","{field} kommagetrennte Werte",,site/modules/React/src/I18n/TranslationCatalogService.php,792babde8060bc28d4d4f85782e03b08
@@ -1157,7 +1273,6 @@ field_key,feld_schluessel,,site/modules/React/src/I18n/TranslationCatalogService
 "Search fields...","Felder durchsuchen...",,site/modules/React/src/I18n/TranslationCatalogService.php,81b821146a1918c100c41797ed6e22df
 "No matching fields","Keine passenden Felder",,site/modules/React/src/I18n/TranslationCatalogService.php,ca832bfdaea5c89b8d1dc8e958fc5350
 0,0,,site/modules/React/src/I18n/TranslationCatalogService.php,cfcd208495d565ef66e7dff9f98764da
-"Clear all","Alles löschen",,site/modules/React/src/I18n/TranslationCatalogService.php,81aa2078d1eceede831b2976dbf32e62
 IF,WENN,,site/modules/React/src/I18n/TranslationCatalogService.php,de6ee2b5d856295add4d5e3631fbfb93
 AND,UND,,site/modules/React/src/I18n/TranslationCatalogService.php,558ffc8f5770d8e4f95f51d822685532
 OR,ODER,,site/modules/React/src/I18n/TranslationCatalogService.php,1d00e7dce692e8dc3f6877f035e3a616
@@ -1208,6 +1323,8 @@ After,Nach,,site/modules/React/src/I18n/TranslationCatalogService.php,7bfcadb553
 "Is false","Ist falsch",,site/modules/React/src/I18n/TranslationCatalogService.php,bb2a170589a6780d337872d115f00dd1
 "Is empty","Ist leer",,site/modules/React/src/I18n/TranslationCatalogService.php,84e80facc02b55a3427bd8046464ffd8
 "Is not empty","Ist nicht leer",,site/modules/React/src/I18n/TranslationCatalogService.php,3ef66d75e223103f2191fd4b6c282101
+Min,Min,"Context: minute",site/modules/React/src/I18n/TranslationCatalogService.php,98234fa7dbc6bcfdbd606f314a460ce2
+Min,Min,"Context: minimum",site/modules/React/src/I18n/TranslationCatalogService.php,3b40b71f6fc0aa852f16b1a47fc1a622
 "Please select at least %d item(s).","Bitte wählen Sie mindestens %d Element(e) aus.",,site/modules/React/src/Media/InteractWithReactMediaInputfield.php,cfecdec3aa548f6f05dd7fb4aac1f0fa
 "Authentication required.","Authentifizierung erforderlich.",,site/modules/React/src/Media/MediaGateway.php,27d1d715bcd77c610edb102f776c63c6
 "Missing mediaToken.","mediaToken fehlt.",,site/modules/React/src/Media/MediaGateway.php,2800ea5493d7e5e07b3dac69293b5215
@@ -1301,6 +1418,7 @@ Restore,Wiederherstellen,,site/modules/React/src/Provider/PagesDataProvider.php,
 "Please fix the highlighted errors.","Bitte beheben Sie die hervorgehobenen Fehler.",,site/modules/React/src/Provider/PagesDataProvider.php,e2eed598923815a1a37d01af64835f2f
 "Page updated.","Seite aktualisiert.",,site/modules/React/src/Provider/PagesDataProvider.php,fa571a7ead810e1494280d19f634e887
 "Field is not editable.","Das Feld ist nicht bearbeitbar.",,site/modules/React/src/Provider/PagesDataProvider.php,4c1acf67c453400c6bbbff2abdea519d
+"Missing required value","Erforderlicher Wert fehlt",,site/modules/React/src/Provider/PagesDataProvider.php,d6a6d393040fe53b20243c9abeee036b
 "Provider descriptor cannot be empty.","Der Provider-Deskriptor darf nicht leer sein.",,site/modules/React/src/Provider/ProviderRegistry.php,6151eeb136331a45d4eaae6cbafa3c69
 "Provider descriptor '%s' is missing a scheme prefix (expected '<scheme>:<target>') or is not registered.","Dem Provider-Deskriptor '%s' fehlt ein Schema-Präfix ('<scheme>:<target>' erwartet) oder er ist nicht registriert.",,site/modules/React/src/Provider/ProviderRegistry.php,debf09b06f6ea3548d56814c10f5f1fd
 "Provider descriptor '%s' has an empty scheme prefix.","Der Provider-Deskriptor '%s' hat ein leeres Schema-Präfix.",,site/modules/React/src/Provider/ProviderRegistry.php,565cc9a004b582c559b3170645b557e8
@@ -1320,6 +1438,7 @@ Restore,Wiederherstellen,,site/modules/React/src/Provider/PagesDataProvider.php,
 "Allow Inline Quick Create","Inline-Schnellerstellung erlauben",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,4f2f55e4fc2b10f739f67704cdfe67ba
 "Allow Custom Free-Text Value","Freitextwerte erlauben",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,fb45974d23738865bb9f9aa8ba0c28db
 "Show Quick Edit Link","Schnellbearbeitungs-Link anzeigen",,site/modules/React/src/Relation/AbstractInputfieldReactRelation.php,00a50f5a25c047c56272ce0815116644
+"Resource ""%s"" does not support inline quick creation.","Die Ressource „%s“ unterstützt keine direkte Schnellerstellung.",,site/modules/React/src/Relation/Resource/AbstractRelationResource.php,5cccc3af60f462483cfea53059a174ac
 Field,Feld,,site/modules/React/src/Relation/Resource/FieldResourceAdapter.php,6f16a5f8ff5d75ab84c018adacdfcbb7
 Language,Sprache,,site/modules/React/src/Relation/Resource/LanguageResourceAdapter.php,4994a8ffeba4ac3140beb89e8d41f174
 "Default language",Standardsprache,,site/modules/React/src/Relation/Resource/LanguageResourceAdapter.php,c96a77fb323a41898c3b6941a58dc741
@@ -1340,6 +1459,18 @@ Page,Seite,,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,193
 "Parent template does not allow creating pages of the selected template.","Die übergeordnete Vorlage erlaubt keine Seitenerstellung der ausgewählten Vorlage.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,9be4526f87fcc1ed9ca2a708b5faad3e
 "You do not have permission to create pages of this template under the selected parent.","Sie haben keine Berechtigung, Seiten dieser Vorlage unter der gewählten übergeordneten Seite zu erstellen.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,650cf8afe817f4c8b01a51b9959bbf9a
 "You do not have permission to edit the default language.","Sie haben keine Berechtigung, die Standardsprache zu bearbeiten.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,589ad4ffbd6ad14d0e52aa09ae04af67
+"Target page does not exist.","Zielseite existiert nicht.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,116119e410806f0c3dc8df3461d2f1cd
+"Owner page does not exist.","Besitzerseite existiert nicht.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,fbe6ac12d089a2775c9ffea344e03fb4
+"Cannot mutate relations on a trashed owner page.","Beziehungen auf einer im Papierkorb befindlichen Besitzerseite können nicht geändert werden.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,61dfbe5632544f0e289320e7f331489f
+"Cannot mutate relations on system or admin owner pages.","Beziehungen auf System- oder Admin-Besitzerseiten können nicht geändert werden.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,bb9db3845a28f7ab0fbfd8d752341de7
+"You do not have permission to edit the owner page.","Sie haben keine Berechtigung, die Besitzerseite zu bearbeiten.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,437efa92243bc1e86b4a5f9231ec60eb
+"Cannot link or unlink trashed target pages.","Zielseiten im Papierkorb können nicht verknüpft oder getrennt werden.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,bececb41dcecd3578e8511f4714f4240
+"Target page is outside the permitted scope.","Die Zielseite liegt außerhalb des zulässigen Bereichs.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,f54904770442beb0649f7ca50772b203
+"Target page does not contain the configured foreign field.","Die Zielseite enthält das konfigurierte Fremdfeld nicht.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,34a32a09b470b760b7f2731850508f29
+"You do not have permission to edit the target page relation field.","Sie haben keine Berechtigung, das Beziehungsfeld der Zielseite zu bearbeiten.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,f508d4ec2b57f52e65c4bd42ac0f6c04
+"Target page template is not permitted for this relation field.","Die Zielseitenvorlage ist für dieses Beziehungsfeld nicht zulässig.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,d2f0f391cd00d0762189ad3d4a6d02e0
+"Target page is outside the configured parent hierarchy.","Die Zielseite liegt außerhalb der konfigurierten übergeordneten Hierarchie.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,e82e1ee4f48e03071853b2f0e55a20a5
+"Target page does not match the configured selector constraints.","Die Zielseite entspricht nicht den konfigurierten Selektor-Einschränkungen.",,site/modules/React/src/Relation/Resource/PageResourceAdapter.php,08be344072c9d362ebebeaa1c3eb7a41
 Permission,Berechtigung,,site/modules/React/src/Relation/Resource/PermissionResourceAdapter.php,ed5dea09095f671b801bee34ea28a319
 Role,Rolle,,site/modules/React/src/Relation/Resource/RoleResourceAdapter.php,bbbabdbe1b262f75d99d62880b953be1
 "%d permissions","%d Berechtigungen",,site/modules/React/src/Relation/Resource/RoleResourceAdapter.php,f2387342894ffddabc85cd8f0551c18a
@@ -1468,7 +1599,7 @@ Pages,Seiten,,site/modules/React/src/Workspace/CommandSearchRegistry.php,453aceb
 Sidebar,Seitenleiste,,site/modules/React/src/Workspace/ShellLayoutRegistry.php,219ff7705d67d0c798779951dcf82e95
 "Collapsible left navigation sidebar with module switcher and account footer.","Einklappbare linke Navigationsleiste mit Modulwechsler und Konto-Fußzeile.",,site/modules/React/src/Workspace/ShellLayoutRegistry.php,5af5cba992901f1b822ddcdcfec60788
 Workspace,Arbeitsbereich,,site/modules/React/src/Workspace/WorkspaceLauncherProcess.php,03a21915504df93cf5dba0636080f62e
-"Manage site content, menus, forms, SEO, API access, and system operations from your personalized dashboard.","Verwalten Sie Website-Inhalte, Menüs, Formulare, SEO, API-Zugriff und Systemvorgänge über Ihr persönliches Dashboard.",,site/modules/React/src/Workspace/WorkspaceLauncherProcess.php,983a78b14f319f495894d70da7b761f0
+"Access your registered workspaces, widgets, and administrative tools from one unified dashboard.","Greifen Sie über ein einheitliches Dashboard auf Ihre registrierten Arbeitsbereiche, Widgets und Verwaltungswerkzeuge zu.",,site/modules/React/src/Workspace/WorkspaceLauncherProcess.php,b30ee6c7992496dcfa7be0cbe5ea3741
 "UI Showcase",UI-Showcase,,site/modules/React/src/Workspace/WorkspaceLauncherProcess.php,6670953443b48f1a034c35c795d1189f
 "UI Showcase is available only to superusers when debug mode is active.","Das UI-Showcase ist nur für Superuser verfügbar, wenn der Debug-Modus aktiv ist.",,site/modules/React/src/Workspace/WorkspaceLauncherProcess.php,42ba6141cb9b8fc389d92a8b5317db7e
 "Inspect form controls, media, links, relations, and UI primitives across responsive viewports.","Prüfen Sie Formularsteuerelemente, Medien, Links, Relationen und UI-Grundbausteine über verschiedene Viewports hinweg.",,site/modules/React/src/Workspace/WorkspaceLauncherProcess.php,4801ef02cbf3116c58695a238469e027
