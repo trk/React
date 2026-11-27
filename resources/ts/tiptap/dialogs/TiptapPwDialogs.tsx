@@ -222,6 +222,8 @@ function NativeModalDialog({
  * Shared ProcessWire Page Tree Browser (`pwlink` & Cross-Page `pwimage`)
  * ========================================================================== */
 
+const MAX_PW_TREE_DEPTH = 24;
+
 function PageTreeBrowser({
 	pwContext,
 	langId,
@@ -243,9 +245,23 @@ function PageTreeBrowser({
 	const [childrenByParent, setChildrenByParent] = useState<Record<number, PwPagePickerItem[]>>({});
 	const [expandedIds, setExpandedIds] = useState<Record<number, boolean>>({ [rootParentId]: true });
 	const [loadingIds, setLoadingIds] = useState<Record<number, boolean>>({});
+	const treeGenRef = useRef<number>(0);
+	const inFlightIdsRef = useRef<Set<number>>(new Set());
+
+	useEffect(() => {
+		return () => {
+			treeGenRef.current += 1;
+			inFlightIdsRef.current.clear();
+		};
+	}, []);
 
 	const loadChildren = useCallback(
 		async (parentId: number, withRoot = false) => {
+			if (!Number.isFinite(parentId) || parentId < 0 || inFlightIdsRef.current.has(parentId)) {
+				return;
+			}
+			inFlightIdsRef.current.add(parentId);
+			const gen = treeGenRef.current;
 			setLoadingIds((prev) => ({ ...prev, [parentId]: true }));
 			try {
 				const res = await fetchTiptapGet<{ ok: boolean; items: PwPagePickerItem[] }>(pwContext, {
@@ -255,33 +271,52 @@ function PageTreeBrowser({
 					editPageId: pwContext.editPageId || pwContext.pageId || undefined,
 					langId: langId && langId > 0 ? langId : undefined,
 				});
+				if (gen !== treeGenRef.current) {
+					return;
+				}
 				setChildrenByParent((prev) => ({
 					...prev,
 					[parentId]: res?.ok && Array.isArray(res.items) ? res.items : [],
 				}));
 			} finally {
-				setLoadingIds((prev) => ({ ...prev, [parentId]: false }));
+				inFlightIdsRef.current.delete(parentId);
+				if (gen === treeGenRef.current) {
+					setLoadingIds((prev) => ({ ...prev, [parentId]: false }));
+				}
 			}
 		},
 		[pwContext, langId]
 	);
 
 	useEffect(() => {
+		treeGenRef.current += 1;
+		inFlightIdsRef.current.clear();
+		setChildrenByParent({});
+		setExpandedIds({ [rootParentId]: true });
+		setLoadingIds({});
 		void loadChildren(rootParentId, includeRoot);
 	}, [loadChildren, rootParentId, includeRoot]);
 
 	const toggleExpand = (page: PwPagePickerItem) => {
-		if (page.isHome || page.numChildren <= 0) {
+		const pageId = Number(page.id);
+		if (page.isHome || !Number.isFinite(pageId) || pageId <= 0 || page.numChildren <= 0) {
 			return;
 		}
-		const nextOpen = !expandedIds[page.id];
-		setExpandedIds((prev) => ({ ...prev, [page.id]: nextOpen }));
-		if (nextOpen && !childrenByParent[page.id]) {
-			void loadChildren(page.id, false);
+		const nextOpen = !expandedIds[pageId];
+		setExpandedIds((prev) => ({ ...prev, [pageId]: nextOpen }));
+		if (nextOpen && childrenByParent[pageId] === undefined) {
+			void loadChildren(pageId, false);
 		}
 	};
 
-	const renderBranch = (parentId: number, depth: number): React.ReactNode => {
+	const renderBranch = (
+		parentId: number,
+		depth: number,
+		ancestors: ReadonlySet<number> = new Set([rootParentId])
+	): React.ReactNode => {
+		if (depth >= MAX_PW_TREE_DEPTH) {
+			return null;
+		}
 		const list = childrenByParent[parentId];
 		if (list === undefined || (loadingIds[parentId] && list.length === 0)) {
 			return (
@@ -301,11 +336,17 @@ function PageTreeBrowser({
 		return (
 			<ul className={cn('space-y-px', depth > 0 && 'ms-[0.6875rem] border-s border-border ps-1.5 mt-px')}>
 				{list.map((item) => {
-					const canExpand = !item.isHome && item.numChildren > 0;
-					const isExpanded = Boolean(expandedIds[item.id]);
-					const isSelected = selectedPageId === item.id;
+					const itemId = Number(item.id);
+					const isCyclic = !Number.isFinite(itemId) || itemId <= 0 || ancestors.has(itemId);
+					const canExpand = !item.isHome && !isCyclic && item.numChildren > 0;
+					const isExpanded = canExpand && Boolean(expandedIds[itemId]);
+					const isSelected = selectedPageId === itemId;
+					const nextAncestors = new Set(ancestors);
+					if (Number.isFinite(itemId) && itemId > 0) {
+						nextAncestors.add(itemId);
+					}
 					return (
-						<li key={`${parentId}-${item.id}-${item.isHome ? 'home' : 'node'}`}>
+						<li key={`${parentId}-${itemId}-${item.isHome ? 'home' : 'node'}`}>
 							<div
 								className={cn(
 									'group flex items-center gap-1 rounded-md pe-1.5 text-xs transition-colors',
@@ -339,7 +380,7 @@ function PageTreeBrowser({
 									onClick={() => onSelectPage(item)}
 									aria-pressed={isSelected}
 									className="flex min-w-0 flex-1 items-baseline gap-2 rounded-sm py-1.5 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
-									data-rw-pw-tree-page={item.id}
+									data-rw-pw-tree-page={itemId}
 								>
 									<span className={cn('truncate', isSelected && 'font-semibold')}>{item.title}</span>
 									<span className="truncate text-[11px] text-muted-foreground">{item.path}</span>
@@ -350,7 +391,9 @@ function PageTreeBrowser({
 									</Badge>
 								) : null}
 							</div>
-							{canExpand && isExpanded ? renderBranch(item.id, depth + 1) : null}
+							{canExpand && isExpanded && depth + 1 < MAX_PW_TREE_DEPTH
+								? renderBranch(itemId, depth + 1, nextAncestors)
+								: null}
 						</li>
 					);
 				})}

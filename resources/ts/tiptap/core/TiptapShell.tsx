@@ -826,6 +826,8 @@ export function InputfieldTiptap(rawProps: InputfieldTiptapComponentProps): Reac
 			editorProps: {
 				attributes: {
 					id: editorDomId,
+					role: 'textbox',
+					'aria-multiline': 'true',
 					class: 'rw-tiptap-prose focus:outline-none',
 					spellcheck: enableSpellcheck ? 'true' : 'false',
 					...(merged.label ? { 'aria-label': merged.label } : {}),
@@ -949,12 +951,14 @@ export function InputfieldTiptap(rawProps: InputfieldTiptapComponentProps): Reac
 		const dom = editor.view.dom as HTMLElement;
 		if (slashState.active && activeSlashOptionId) {
 			dom.setAttribute('role', 'combobox');
+			dom.removeAttribute('aria-multiline');
 			dom.setAttribute('aria-haspopup', 'listbox');
 			dom.setAttribute('aria-controls', slashListboxId);
 			dom.setAttribute('aria-expanded', 'true');
 			dom.setAttribute('aria-activedescendant', activeSlashOptionId);
 		} else {
-			dom.removeAttribute('role');
+			dom.setAttribute('role', 'textbox');
+			dom.setAttribute('aria-multiline', 'true');
 			dom.removeAttribute('aria-haspopup');
 			dom.removeAttribute('aria-controls');
 			dom.removeAttribute('aria-expanded');
