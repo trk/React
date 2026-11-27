@@ -60,7 +60,8 @@ import { useToolbarRovingFallback } from './useToolbarRovingFallback';
 import type { InputfieldLanguageItem } from '../../fields/types';
 
 const runtime = getReactWorkspaceRuntime();
-const { React, UI, cn, useTranslations } = runtime;
+const { React, UI, Utils, useTranslations } = runtime;
+const { cn } = Utils;
 const { useCallback, useEffect, useId, useMemo, useRef, useState } = React;
 const { Button, Textarea } = UI;
 

@@ -58,98 +58,85 @@ final class MiniBlockHtmlSanitizer
 		$replacements = [];
 		$slotIndex = 0;
 
-		$prevErrors = libxml_use_internal_errors(true);
-		try {
-			$dom = new \DOMDocument('1.0', 'UTF-8');
-			$wrapped = '<?xml encoding="utf-8" ?><div id="__rw_tiptap_mb_root__">' . $html . '</div>';
-			$loaded = $dom->loadHTML($wrapped, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD | LIBXML_NONET);
-			if (!$loaded) {
+		return DomFragmentHelper::withFragment(
+			$html,
+			'__rw_tiptap_mb_root__',
+			static function (\DOMDocument $dom, \DOMElement $root) use (
+				$tokenSeed,
+				&$replacements,
+				&$slotIndex,
+				$activeDefinitions,
+				$sanitizeRichHtml
+			): array {
+				$xpath = new \DOMXPath($dom);
+
+				// 1. Enforce flat mini-blocks (`depth = 1`): unwrap any nested `[data-tiptap-block]` inside another `[data-tiptap-block]`
+				$nestedList = $xpath->query('.//*[@data-tiptap-block]//*[@data-tiptap-block]', $root);
+				if ($nestedList !== false && $nestedList->length > 0) {
+					$nestedElements = [];
+					foreach ($nestedList as $nestedNode) {
+						if ($nestedNode instanceof \DOMElement) {
+							$nestedElements[] = $nestedNode;
+						}
+					}
+					for ($i = count($nestedElements) - 1; $i >= 0; $i--) {
+						DomFragmentHelper::unwrapElement($nestedElements[$i], true);
+					}
+				}
+
+				// 2. Process remaining top-level `[data-tiptap-block]` elements
+				$blockList = $xpath->query('.//*[@data-tiptap-block]', $root);
+				if ($blockList !== false && $blockList->length > 0) {
+					$topBlocks = [];
+					foreach ($blockList as $blockNode) {
+						if ($blockNode instanceof \DOMElement) {
+							$topBlocks[] = $blockNode;
+						}
+					}
+
+					foreach ($topBlocks as $el) {
+						$rawName = $el->getAttribute('data-tiptap-block');
+						$name = MiniBlockRegistry::sanitizeIdentifier($rawName);
+
+						if ($name === '' || !isset($activeDefinitions[$name])) {
+							DomFragmentHelper::unwrapElement($el, true);
+							continue;
+						}
+
+						$canonicalHtml = self::sanitizeBlockElement(
+							$dom,
+							$el,
+							$name,
+							$activeDefinitions[$name],
+							$sanitizeRichHtml,
+						);
+
+						$parent = $el->parentNode;
+						if ($parent === null) {
+							continue;
+						}
+
+						if ($canonicalHtml === '') {
+							$parent->removeChild($el);
+							continue;
+						}
+
+						$token = '__RW_TIPTAP_MB_' . $tokenSeed . '_' . $slotIndex . '__';
+						$slotIndex++;
+						$replacements[$token] = $canonicalHtml;
+
+						$placeholder = $dom->createElement('p', $token);
+						$parent->replaceChild($placeholder, $el);
+					}
+				}
+
 				return [
-					'html' => '',
-					'replacements' => [],
+					'html' => DomFragmentHelper::innerHtml($dom, $root),
+					'replacements' => $replacements,
 				];
-			}
-
-			$root = self::locateRootElement($dom, '__rw_tiptap_mb_root__');
-			if (!$root instanceof \DOMElement) {
-				return [
-					'html' => '',
-					'replacements' => [],
-				];
-			}
-
-			$xpath = new \DOMXPath($dom);
-
-			// 1. Enforce flat mini-blocks (`depth = 1`): unwrap any nested `[data-tiptap-block]` inside another `[data-tiptap-block]`
-			$nestedList = $xpath->query('.//*[@data-tiptap-block]//*[@data-tiptap-block]', $root);
-			if ($nestedList !== false && $nestedList->length > 0) {
-				$nestedElements = [];
-				foreach ($nestedList as $nestedNode) {
-					if ($nestedNode instanceof \DOMElement) {
-						$nestedElements[] = $nestedNode;
-					}
-				}
-				for ($i = count($nestedElements) - 1; $i >= 0; $i--) {
-					self::unwrapElement($nestedElements[$i]);
-				}
-			}
-
-			// 2. Process remaining top-level `[data-tiptap-block]` elements
-			$blockList = $xpath->query('.//*[@data-tiptap-block]', $root);
-			if ($blockList !== false && $blockList->length > 0) {
-				$topBlocks = [];
-				foreach ($blockList as $blockNode) {
-					if ($blockNode instanceof \DOMElement) {
-						$topBlocks[] = $blockNode;
-					}
-				}
-
-				foreach ($topBlocks as $el) {
-					$rawName = $el->getAttribute('data-tiptap-block');
-					$name = MiniBlockRegistry::sanitizeIdentifier($rawName);
-
-					if ($name === '' || !isset($activeDefinitions[$name])) {
-						self::unwrapElement($el);
-						continue;
-					}
-
-					$canonicalHtml = self::sanitizeBlockElement(
-						$dom,
-						$el,
-						$name,
-						$activeDefinitions[$name],
-						$sanitizeRichHtml,
-					);
-
-					$parent = $el->parentNode;
-					if ($parent === null) {
-						continue;
-					}
-
-					if ($canonicalHtml === '') {
-						$parent->removeChild($el);
-						continue;
-					}
-
-					$token = '__RW_TIPTAP_MB_' . $tokenSeed . '_' . $slotIndex . '__';
-					$slotIndex++;
-					$replacements[$token] = $canonicalHtml;
-
-					$placeholder = $dom->createElement('p', $token);
-					$parent->replaceChild($placeholder, $el);
-				}
-			}
-
-			$serializedOuter = self::innerHtml($dom, $root);
-
-			return [
-				'html' => $serializedOuter,
-				'replacements' => $replacements,
-			];
-		} finally {
-			libxml_clear_errors();
-			libxml_use_internal_errors($prevErrors);
-		}
+			},
+			['html' => '', 'replacements' => []],
+		);
 	}
 
 	/**
@@ -240,8 +227,8 @@ final class MiniBlockHtmlSanitizer
 		$title = self::sanitizePlainText($el->getAttribute('data-title'), 300);
 		$titleAttr = $title !== '' ? ' data-title="' . self::escapeAttr($title) . '"' : '';
 
-		$bodyContainer = self::findFirstChildWithAttr($el, 'data-tiptap-body') ?? $el;
-		$bodyHtml = self::sanitizeFlatBody($sanitizeRichHtml(self::innerHtml($dom, $bodyContainer)));
+		$bodyContainer = DomFragmentHelper::findFirstChildWithAttr($el, 'data-tiptap-body') ?? $el;
+		$bodyHtml = self::sanitizeFlatBody($sanitizeRichHtml(DomFragmentHelper::innerHtml($dom, $bodyContainer)));
 
 		return '<aside data-tiptap-block="callout" data-variant="' . $variant . '"' . $titleAttr . '>'
 			. $bodyHtml
@@ -278,7 +265,7 @@ final class MiniBlockHtmlSanitizer
 		$captionHtml = '';
 		$captions = $el->getElementsByTagName('figcaption');
 		if ($captions->length > 0 && $captions->item(0) instanceof \DOMElement) {
-			$captionHtml = self::sanitizeInlineCaption($sanitizeRichHtml(self::innerHtml($dom, $captions->item(0))));
+			$captionHtml = self::sanitizeInlineCaption($sanitizeRichHtml(DomFragmentHelper::innerHtml($dom, $captions->item(0))));
 		} elseif ($el->hasAttribute('data-caption')) {
 			$plainCaption = self::sanitizePlainText($el->getAttribute('data-caption'), 500);
 			$captionHtml = $plainCaption !== '' ? self::escapeHtml($plainCaption) : '';
@@ -304,7 +291,7 @@ final class MiniBlockHtmlSanitizer
 		$summaryText = '';
 		$bodyRawParts = [];
 
-		$bodyContainer = self::findFirstChildWithAttr($el, 'data-tiptap-details-body');
+		$bodyContainer = DomFragmentHelper::findFirstChildWithAttr($el, 'data-tiptap-details-body');
 
 		foreach ($el->childNodes as $child) {
 			if ($child instanceof \DOMElement && strtolower($child->tagName) === 'summary') {
@@ -330,7 +317,7 @@ final class MiniBlockHtmlSanitizer
 		}
 
 		$rawBody = $bodyContainer instanceof \DOMElement
-			? self::innerHtml($dom, $bodyContainer)
+			? DomFragmentHelper::innerHtml($dom, $bodyContainer)
 			: implode('', $bodyRawParts);
 		$bodyHtml = self::sanitizeFlatBody($sanitizeRichHtml($rawBody));
 		$openAttr = $isOpen ? ' open' : '';
@@ -358,7 +345,7 @@ final class MiniBlockHtmlSanitizer
 				$childTag = strtolower($child->tagName);
 				if ($childTag === 'figcaption') {
 					if ($captionHtml === '') {
-						$captionHtml = self::sanitizeInlineCaption($sanitizeRichHtml(self::innerHtml($dom, $child)));
+						$captionHtml = self::sanitizeInlineCaption($sanitizeRichHtml(DomFragmentHelper::innerHtml($dom, $child)));
 					}
 					continue;
 				}
@@ -379,7 +366,7 @@ final class MiniBlockHtmlSanitizer
 		}
 
 		$rawQuote = $blockquoteEl instanceof \DOMElement
-			? self::innerHtml($dom, $blockquoteEl)
+			? DomFragmentHelper::innerHtml($dom, $blockquoteEl)
 			: implode('', $quoteRawParts);
 		$quoteHtml = self::sanitizeFlatBody($sanitizeRichHtml($rawQuote));
 		$captionMarkup = $captionHtml !== '' ? '<figcaption>' . $captionHtml . '</figcaption>' : '';
@@ -449,8 +436,8 @@ final class MiniBlockHtmlSanitizer
 
 		$innerMarkup = '';
 		if ($editableBody) {
-			$bodyContainer = self::findFirstChildWithAttr($el, 'data-tiptap-body') ?? $el;
-			$bodyHtml = self::sanitizeFlatBody($sanitizeRichHtml(self::innerHtml($dom, $bodyContainer)));
+			$bodyContainer = DomFragmentHelper::findFirstChildWithAttr($el, 'data-tiptap-body') ?? $el;
+			$bodyHtml = self::sanitizeFlatBody($sanitizeRichHtml(DomFragmentHelper::innerHtml($dom, $bodyContainer)));
 			$innerMarkup = '<div data-tiptap-body="1">' . $bodyHtml . '</div>';
 		} elseif ($atomSummaryParts !== []) {
 			$first = self::escapeHtml($atomSummaryParts[0]);
@@ -560,66 +547,6 @@ final class MiniBlockHtmlSanitizer
 		$inlineOnly = strip_tags($trimmed, '<a><strong><b><em><i><u><s><code><mark><span><sub><sup>');
 
 		return trim($inlineOnly);
-	}
-
-	private static function findFirstChildWithAttr(\DOMElement $parent, string $attrName): ?\DOMElement
-	{
-		foreach ($parent->childNodes as $child) {
-			if ($child instanceof \DOMElement && $child->hasAttribute($attrName)) {
-				return $child;
-			}
-		}
-
-		return null;
-	}
-
-	private static function unwrapElement(\DOMElement $el): void
-	{
-		$parent = $el->parentNode;
-		if ($parent === null) {
-			return;
-		}
-		// Drop internal atom preview shells so disabled atom blocks do not leak synthetic markup
-		$atoms = [];
-		foreach ($el->getElementsByTagName('*') as $desc) {
-			if ($desc instanceof \DOMElement && $desc->hasAttribute('data-tiptap-atom')) {
-				$atoms[] = $desc;
-			}
-		}
-		foreach ($atoms as $atom) {
-			$atom->parentNode?->removeChild($atom);
-		}
-		while ($el->firstChild !== null) {
-			$parent->insertBefore($el->firstChild, $el);
-		}
-		$parent->removeChild($el);
-	}
-
-	private static function locateRootElement(\DOMDocument $dom, string $id): ?\DOMElement
-	{
-		$root = $dom->getElementById($id);
-		if ($root instanceof \DOMElement) {
-			return $root;
-		}
-		$xpath = new \DOMXPath($dom);
-		$found = $xpath->query('//*[@id="' . $id . '"]');
-
-		return ($found !== false && $found->length > 0 && $found->item(0) instanceof \DOMElement)
-			? $found->item(0)
-			: null;
-	}
-
-	private static function innerHtml(\DOMDocument $dom, \DOMElement $el): string
-	{
-		$buffer = '';
-		foreach ($el->childNodes as $child) {
-			$saved = $dom->saveHTML($child);
-			if (is_string($saved)) {
-				$buffer .= $saved;
-			}
-		}
-
-		return $buffer;
 	}
 
 	private static function escapeAttr(string $val): string

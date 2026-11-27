@@ -62,6 +62,14 @@ final class MiniBlockRegistry
 	private static array $directoryCache = [];
 
 	/**
+	 * Reset static directory cache (invoked on `React::uninstall()`).
+	 */
+	public static function resetCache(): void
+	{
+		self::$directoryCache = [];
+	}
+
+	/**
 	 * Return canonical built-in flat mini-block definitions.
 	 *
 	 * @param callable(string): string|null $translate

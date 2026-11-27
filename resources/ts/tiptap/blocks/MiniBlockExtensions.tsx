@@ -29,7 +29,8 @@ export type {
 };
 
 const runtime = getReactWorkspaceRuntime();
-const { React, UI, cn } = runtime;
+const { React, UI, Utils } = runtime;
+const { cn } = Utils;
 const { useId, useState } = React;
 const { Badge, Input, Textarea } = UI;
 

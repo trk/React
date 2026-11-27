@@ -5,7 +5,8 @@ import { getReactWorkspaceRuntime } from '../../runtime';
 import type { TiptapTranslateFn } from './tiptapTypes';
 
 const runtime = getReactWorkspaceRuntime();
-const { React, UI, cn } = runtime;
+const { React, UI, Utils } = runtime;
+const { cn } = Utils;
 const { Badge } = UI;
 
 export function TiptapStatusbar({

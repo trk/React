@@ -16,7 +16,8 @@ import type {
 } from '../core/tiptapTypes';
 
 const runtime = getReactWorkspaceRuntime();
-const { React, Portal, cn } = runtime;
+const { React, Portal, Utils } = runtime;
+const { cn } = Utils;
 const { PortalRoot } = Portal;
 const { useEffect, useId, useMemo, useRef, useState } = React;
 

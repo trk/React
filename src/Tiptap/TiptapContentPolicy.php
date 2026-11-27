@@ -663,7 +663,7 @@ final class TiptapContentPolicy
 				return '';
 			}
 
-			$root = self::locateRootElement($dom, '__rw_tiptap_root__');
+			$root = DomFragmentHelper::locateRootElement($dom, '__rw_tiptap_root__');
 			if (!$root instanceof \DOMElement) {
 				return '';
 			}
@@ -1036,69 +1036,40 @@ final class TiptapContentPolicy
 	 */
 	private static function restoreMarkElements(string $html): string
 	{
-		$prevErrors = libxml_use_internal_errors(true);
-		try {
-			$dom = new \DOMDocument('1.0', 'UTF-8');
-			$wrapped = '<?xml encoding="utf-8" ?><div id="__rw_tiptap_mark_root__">' . $html . '</div>';
-			if (!$dom->loadHTML($wrapped, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD | LIBXML_NONET)) {
-				return $html;
-			}
-
-			$root = self::locateRootElement($dom, '__rw_tiptap_mark_root__');
-			if (!$root instanceof \DOMElement) {
-				return $html;
-			}
-
-			$xpath = new \DOMXPath($dom);
-			$spans = $xpath->query('.//span[@class="rw-tiptap-mark"]', $root);
-			if ($spans === false || $spans->length === 0) {
-				return $html;
-			}
-
-			$nodes = [];
-			foreach ($spans as $node) {
-				if ($node instanceof \DOMElement) {
-					$nodes[] = $node;
+		return DomFragmentHelper::withFragment(
+			$html,
+			'__rw_tiptap_mark_root__',
+			static function (\DOMDocument $dom, \DOMElement $root) use ($html): string {
+				$xpath = new \DOMXPath($dom);
+				$spans = $xpath->query('.//span[@class="rw-tiptap-mark"]', $root);
+				if ($spans === false || $spans->length === 0) {
+					return $html;
 				}
-			}
 
-			for ($i = count($nodes) - 1; $i >= 0; $i--) {
-				$span = $nodes[$i];
-				$parent = $span->parentNode;
-				if ($parent === null) {
-					continue;
+				$nodes = [];
+				foreach ($spans as $node) {
+					if ($node instanceof \DOMElement) {
+						$nodes[] = $node;
+					}
 				}
-				$mark = $dom->createElement('mark');
-				while ($span->firstChild !== null) {
-					$mark->appendChild($span->firstChild);
+
+				for ($i = count($nodes) - 1; $i >= 0; $i--) {
+					$span = $nodes[$i];
+					$parent = $span->parentNode;
+					if ($parent === null) {
+						continue;
+					}
+					$mark = $dom->createElement('mark');
+					while ($span->firstChild !== null) {
+						$mark->appendChild($span->firstChild);
+					}
+					$parent->replaceChild($mark, $span);
 				}
-				$parent->replaceChild($mark, $span);
-			}
 
-			$serialized = '';
-			foreach ($root->childNodes as $child) {
-				$serialized .= (string) $dom->saveHTML($child);
-			}
-
-			return $serialized;
-		} finally {
-			libxml_clear_errors();
-			libxml_use_internal_errors($prevErrors);
-		}
-	}
-
-	private static function locateRootElement(\DOMDocument $dom, string $id): ?\DOMElement
-	{
-		$el = $dom->getElementById($id);
-		if ($el instanceof \DOMElement) {
-			return $el;
-		}
-		$xpath = new \DOMXPath($dom);
-		$found = $xpath->query('//*[@id="' . $id . '"]');
-
-		return ($found !== false && $found->length > 0 && $found->item(0) instanceof \DOMElement)
-			? $found->item(0)
-			: null;
+				return DomFragmentHelper::innerHtml($dom, $root);
+			},
+			$html,
+		);
 	}
 
 	/**

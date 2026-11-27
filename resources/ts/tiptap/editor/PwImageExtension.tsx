@@ -14,7 +14,8 @@ import { getReactTiptapRuntime } from '../core/tiptapRuntime';
 import type { PwImageAttrs, PwImageConfig, TiptapTranslateFn } from '../core/tiptapTypes';
 
 const runtime = getReactWorkspaceRuntime();
-const { React, cn } = runtime;
+const { React, Utils } = runtime;
+const { cn } = Utils;
 const { useRef, useState } = React;
 
 function parseAlignmentAndClasses(
@@ -160,7 +161,15 @@ export function createPwImageExtension(options: CreatePwImageExtensionOptions) {
 		const isEditable = editor.isEditable;
 
 		const imgRef = useRef<HTMLImageElement | null>(null);
+		const resizeCleanupRef = useRef<(() => void) | null>(null);
 		const [liveDragDims, setLiveDragDims] = useState<{ w: number; h: number } | null>(null);
+
+		React.useEffect(() => {
+			return () => {
+				resizeCleanupRef.current?.();
+				resizeCleanupRef.current = null;
+			};
+		}, []);
 
 		const openEditModal = (e?: React.MouseEvent) => {
 			if (e) {
@@ -212,10 +221,17 @@ export function createPwImageExtension(options: CreatePwImageExtensionOptions) {
 				setLiveDragDims({ w: latestW, h: latestH });
 			};
 
-			const onUp = (upEvt: PointerEvent) => {
+			const cleanupListeners = () => {
 				window.removeEventListener('pointermove', onMove);
 				window.removeEventListener('pointerup', onUp);
 				window.removeEventListener('pointercancel', onUp);
+				if (resizeCleanupRef.current === cleanupListeners) {
+					resizeCleanupRef.current = null;
+				}
+			};
+
+			const onUp = (upEvt: PointerEvent) => {
+				cleanupListeners();
 				try {
 					targetBtn.releasePointerCapture(upEvt.pointerId);
 				} catch {
@@ -234,6 +250,8 @@ export function createPwImageExtension(options: CreatePwImageExtensionOptions) {
 				}
 			};
 
+			resizeCleanupRef.current?.();
+			resizeCleanupRef.current = cleanupListeners;
 			window.addEventListener('pointermove', onMove);
 			window.addEventListener('pointerup', onUp);
 			window.addEventListener('pointercancel', onUp);

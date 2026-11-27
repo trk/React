@@ -268,8 +268,21 @@ export const BlockHandleOverlay: TiptapCanvasCapability['BlockHandleOverlay'] = 
 	menuOpenRef.current = menuOpen;
 	const isDraggingRef = useRef(false);
 	const justDraggedRef = useRef(false);
+	const justDraggedTimerRef = useRef<number | null>(null);
+	const dragCleanupRef = useRef<(() => void) | null>(null);
 	const lockedBlockIndexRef = useRef<number | null>(null);
 	lockedBlockIndexRef.current = lockedBlockIndex;
+
+	useEffect(() => {
+		return () => {
+			dragCleanupRef.current?.();
+			dragCleanupRef.current = null;
+			if (justDraggedTimerRef.current !== null) {
+				window.clearTimeout(justDraggedTimerRef.current);
+				justDraggedTimerRef.current = null;
+			}
+		};
+	}, []);
 
 	const syncBlockAtIndex = useCallback(
 		(targetIndex: number) => {
@@ -505,13 +518,13 @@ export const BlockHandleOverlay: TiptapCanvasCapability['BlockHandleOverlay'] = 
 			typeof HTMLElement !== 'undefined' && 'focusGroup' in HTMLElement.prototype;
 		const buttons = Array.from(listEl.querySelectorAll<HTMLButtonElement>('button'));
 
-		if (!hasNativeFocusGroup) {
-			listEl.setAttribute('role', 'menu');
-			buttons.forEach((btn, idx) => {
-				btn.setAttribute('role', 'menuitem');
+		listEl.setAttribute('role', 'menu');
+		buttons.forEach((btn, idx) => {
+			btn.setAttribute('role', 'menuitem');
+			if (!hasNativeFocusGroup) {
 				btn.tabIndex = idx === 0 ? 0 : -1;
-			});
-		}
+			}
+		});
 
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (e.key === 'Escape') {
@@ -654,6 +667,9 @@ export const BlockHandleOverlay: TiptapCanvasCapability['BlockHandleOverlay'] = 
 				window.removeEventListener('pointerup', onPointerEnd);
 				window.removeEventListener('pointercancel', onPointerCancel);
 				window.removeEventListener('keydown', onEscapeKey, true);
+				if (dragCleanupRef.current === clearDragState) {
+					dragCleanupRef.current = null;
+				}
 			};
 
 			const computeDropSlot = (clientY: number): DropTargetSlot | null => {
@@ -757,8 +773,12 @@ export const BlockHandleOverlay: TiptapCanvasCapability['BlockHandleOverlay'] = 
 
 				if (wasDragging) {
 					justDraggedRef.current = true;
-					window.setTimeout(() => {
+					if (justDraggedTimerRef.current !== null) {
+						window.clearTimeout(justDraggedTimerRef.current);
+					}
+					justDraggedTimerRef.current = window.setTimeout(() => {
 						justDraggedRef.current = false;
+						justDraggedTimerRef.current = null;
 					}, 120);
 					if (slotToCommit) {
 						moveTopLevelBlock(editor, sourceIndex, slotToCommit.slotIndex, t, onAnnounce);
@@ -766,6 +786,8 @@ export const BlockHandleOverlay: TiptapCanvasCapability['BlockHandleOverlay'] = 
 				}
 			};
 
+			dragCleanupRef.current?.();
+			dragCleanupRef.current = clearDragState;
 			window.addEventListener('pointermove', onPointerMove);
 			window.addEventListener('pointerup', onPointerEnd);
 			window.addEventListener('pointercancel', onPointerCancel);

@@ -753,7 +753,7 @@ class InputfieldTiptap extends InputfieldTextarea implements ConfigurableModule,
 	}
 
 	/**
-	 * Extract ordered `html` and structured `miniBlock` segments for React / Inertia / Headless rendering.
+	 * Extract ordered `html` and structured `miniBlock` segments for React / Inertia / API rendering.
 	 *
 	 * @return list<array<string, mixed>>
 	 */

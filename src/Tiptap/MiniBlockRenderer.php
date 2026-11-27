@@ -10,7 +10,7 @@ use ProcessWire\Wire;
 use Totoglu\React\Security\UrlSanitizer;
 
 /**
- * Frontend PHP template renderer and structured Headless/Inertia segment extractor
+ * Frontend PHP template renderer and structured API / Inertia segment extractor
  * for `InputfieldTiptap` flat editorial mini-blocks.
  *
  * When `./site/templates/tiptap/{name}.php` (or `{kebab-name}.php`) exists, that template
@@ -45,75 +45,75 @@ final class MiniBlockRenderer
 		$replacements = [];
 		$slotIndex = 0;
 
-		$prevErrors = libxml_use_internal_errors(true);
-		try {
-			$dom = new \DOMDocument('1.0', 'UTF-8');
-			$wrapped = '<?xml encoding="utf-8" ?><div id="__rw_tiptap_render_root__">' . $html . '</div>';
-			if (!$dom->loadHTML($wrapped, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD | LIBXML_NONET)) {
-				return $html;
-			}
-
-			$root = self::locateRootElement($dom, '__rw_tiptap_render_root__');
-			if (!$root instanceof \DOMElement) {
-				return $html;
-			}
-
-			$xpath = new \DOMXPath($dom);
-			$blockNodes = $xpath->query('.//*[@data-tiptap-block]', $root);
-			if ($blockNodes === false || $blockNodes->length === 0) {
-				return $html;
-			}
-
-			$elements = [];
-			foreach ($blockNodes as $node) {
-				if ($node instanceof \DOMElement && !self::hasMiniBlockAncestor($node, $root)) {
-					$elements[] = $node;
-				}
-			}
-
-			foreach ($elements as $el) {
-				$name = MiniBlockRegistry::sanitizeIdentifier($el->getAttribute('data-tiptap-block'));
-				if ($name === '') {
-					continue;
+		return DomFragmentHelper::withFragment(
+			$html,
+			'__rw_tiptap_render_root__',
+			static function (\DOMDocument $dom, \DOMElement $root) use (
+				$html,
+				$templatesDir,
+				$resolvedCatalog,
+				$tokenSeed,
+				&$replacements,
+				&$slotIndex,
+				$page,
+				$field,
+				$context
+			): string {
+				$xpath = new \DOMXPath($dom);
+				$blockNodes = $xpath->query('.//*[@data-tiptap-block]', $root);
+				if ($blockNodes === false || $blockNodes->length === 0) {
+					return $html;
 				}
 
-				$templateFile = self::locateTemplateFile($templatesDir, $name);
-				if ($templateFile === null) {
-					continue;
+				$elements = [];
+				foreach ($blockNodes as $node) {
+					if ($node instanceof \DOMElement && !self::hasMiniBlockAncestor($node, $root)) {
+						$elements[] = $node;
+					}
 				}
 
-				$blockPayload = self::parseBlockElement($dom, $el, $name, $resolvedCatalog[$name] ?? null);
-				$rendered = self::renderTemplateFile($templateFile, $blockPayload, $page, $field, $context);
+				foreach ($elements as $el) {
+					$name = MiniBlockRegistry::sanitizeIdentifier($el->getAttribute('data-tiptap-block'));
+					if ($name === '') {
+						continue;
+					}
 
-				$token = '__RW_TIPTAP_RENDER_' . $tokenSeed . '_' . $slotIndex . '__';
-				$slotIndex++;
-				$replacements[$token] = $rendered;
+					$templateFile = self::locateTemplateFile($templatesDir, $name);
+					if ($templateFile === null) {
+						continue;
+					}
 
-				$parent = $el->parentNode;
-				if ($parent !== null) {
-					$placeholder = $dom->createTextNode($token);
-					$parent->replaceChild($placeholder, $el);
+					$blockPayload = self::parseBlockElement($dom, $el, $name, $resolvedCatalog[$name] ?? null);
+					$rendered = self::renderTemplateFile($templateFile, $blockPayload, $page, $field, $context);
+
+					$token = '__RW_TIPTAP_RENDER_' . $tokenSeed . '_' . $slotIndex . '__';
+					$slotIndex++;
+					$replacements[$token] = $rendered;
+
+					$parent = $el->parentNode;
+					if ($parent !== null) {
+						$placeholder = $dom->createTextNode($token);
+						$parent->replaceChild($placeholder, $el);
+					}
 				}
-			}
 
-			if ($replacements === []) {
-				return $html;
-			}
+				if ($replacements === []) {
+					return $html;
+				}
 
-			$serialized = self::innerHtml($dom, $root);
-			foreach ($replacements as $token => $renderedBlock) {
-				$serialized = str_replace($token, $renderedBlock, $serialized);
-			}
+				$serialized = DomFragmentHelper::innerHtml($dom, $root);
+				foreach ($replacements as $token => $renderedBlock) {
+					$serialized = str_replace($token, $renderedBlock, $serialized);
+				}
 
-			return $serialized;
-		} finally {
-			libxml_clear_errors();
-			libxml_use_internal_errors($prevErrors);
-		}
+				return $serialized;
+			},
+			$html,
+		);
 	}
 
 	/**
-	 * Extract ordered rich-HTML and structured `miniBlock` segments for React / Inertia / Headless rendering.
+	 * Extract ordered rich-HTML and structured `miniBlock` segments for React / Inertia / API rendering.
 	 *
 	 * @param array<string, array<string, mixed>> $catalog
 	 * @return list<array<string, mixed>>
@@ -136,75 +136,62 @@ final class MiniBlockRenderer
 
 		$resolvedCatalog = $catalog !== [] ? $catalog : self::resolveDefaultCatalog($context);
 
-		$prevErrors = libxml_use_internal_errors(true);
-		try {
-			$dom = new \DOMDocument('1.0', 'UTF-8');
-			$wrapped = '<?xml encoding="utf-8" ?><div id="__rw_tiptap_extract_root__">' . $trimmed . '</div>';
-			if (!$dom->loadHTML($wrapped, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD | LIBXML_NONET)) {
-				return [
-					[
-						'type' => 'html',
-						'html' => $trimmed,
-					],
-				];
-			}
+		$fallback = [
+			[
+				'type' => 'html',
+				'html' => $trimmed,
+			],
+		];
 
-			$root = self::locateRootElement($dom, '__rw_tiptap_extract_root__');
-			if (!$root instanceof \DOMElement) {
-				return [
-					[
-						'type' => 'html',
-						'html' => $trimmed,
-					],
-				];
-			}
-
-			$segments = [];
-			$htmlBuffer = '';
-
-			$flushHtml = static function () use (&$segments, &$htmlBuffer): void {
-				$chunk = trim($htmlBuffer);
-				if ($chunk !== '') {
-					$segments[] = [
-						'type' => 'html',
-						'html' => $chunk,
-					];
-				}
+		return DomFragmentHelper::withFragment(
+			$trimmed,
+			'__rw_tiptap_extract_root__',
+			static function (\DOMDocument $dom, \DOMElement $root) use ($resolvedCatalog): array {
+				$segments = [];
 				$htmlBuffer = '';
-			};
 
-			foreach ($root->childNodes as $child) {
-				if ($child instanceof \DOMElement && $child->hasAttribute('data-tiptap-block')) {
-					$name = MiniBlockRegistry::sanitizeIdentifier($child->getAttribute('data-tiptap-block'));
-					if ($name !== '') {
-						$flushHtml();
-						$parsed = self::parseBlockElement($dom, $child, $name, $resolvedCatalog[$name] ?? null);
+				$flushHtml = static function () use (&$segments, &$htmlBuffer): void {
+					$chunk = trim($htmlBuffer);
+					if ($chunk !== '') {
 						$segments[] = [
-							'type' => 'miniBlock',
-							'name' => $parsed['name'],
-							'kind' => $parsed['kind'],
-							'tag' => $parsed['tag'],
-							'props' => $parsed['props'],
-							'body' => $parsed['body'],
-							'html' => $parsed['html'],
+							'type' => 'html',
+							'html' => $chunk,
 						];
-						continue;
+					}
+					$htmlBuffer = '';
+				};
+
+				foreach ($root->childNodes as $child) {
+					if ($child instanceof \DOMElement && $child->hasAttribute('data-tiptap-block')) {
+						$name = MiniBlockRegistry::sanitizeIdentifier($child->getAttribute('data-tiptap-block'));
+						if ($name !== '') {
+							$flushHtml();
+							$parsed = self::parseBlockElement($dom, $child, $name, $resolvedCatalog[$name] ?? null);
+							$segments[] = [
+								'type' => 'miniBlock',
+								'name' => $parsed['name'],
+								'kind' => $parsed['kind'],
+								'tag' => $parsed['tag'],
+								'props' => $parsed['props'],
+								'body' => $parsed['body'],
+								'html' => $parsed['html'],
+							];
+							continue;
+						}
+					}
+
+					$saved = $dom->saveHTML($child);
+					if (is_string($saved)) {
+						$htmlBuffer .= $saved;
 					}
 				}
 
-				$saved = $dom->saveHTML($child);
-				if (is_string($saved)) {
-					$htmlBuffer .= $saved;
-				}
-			}
+				$flushHtml();
 
-			$flushHtml();
-
-			return $segments;
-		} finally {
-			libxml_clear_errors();
-			libxml_use_internal_errors($prevErrors);
-		}
+				return $segments;
+			},
+			$fallback,
+		);
 	}
 
 	/**
@@ -292,8 +279,8 @@ final class MiniBlockRenderer
 		if ($name === 'callout') {
 			$props['variant'] = $el->getAttribute('data-variant') !== '' ? $el->getAttribute('data-variant') : 'info';
 			$props['title'] = $el->getAttribute('data-title');
-			$bodyNode = self::findFirstChildWithAttr($el, 'data-tiptap-body') ?? $el;
-			$body = trim(self::innerHtml($dom, $bodyNode));
+			$bodyNode = DomFragmentHelper::findFirstChildWithAttr($el, 'data-tiptap-body') ?? $el;
+			$body = trim(DomFragmentHelper::innerHtml($dom, $bodyNode));
 		} elseif ($name === 'figure') {
 			$imgs = $el->getElementsByTagName('img');
 			$img = ($imgs->length > 0 && $imgs->item(0) instanceof \DOMElement) ? $imgs->item(0) : null;
@@ -302,7 +289,7 @@ final class MiniBlockRenderer
 			$props['src'] = $img instanceof \DOMElement ? MiniBlockHtmlSanitizer::sanitizeImageUrl($img->getAttribute('src')) : '';
 			$props['alt'] = $img instanceof \DOMElement ? $img->getAttribute('alt') : '';
 			$props['align'] = $el->getAttribute('data-align') !== '' ? $el->getAttribute('data-align') : 'inline';
-			$props['caption'] = $caption instanceof \DOMElement ? trim(self::innerHtml($dom, $caption)) : '';
+			$props['caption'] = $caption instanceof \DOMElement ? trim(DomFragmentHelper::innerHtml($dom, $caption)) : '';
 		} elseif ($name === 'details') {
 			$summaryText = '';
 			foreach ($el->childNodes as $child) {
@@ -311,10 +298,10 @@ final class MiniBlockRenderer
 					break;
 				}
 			}
-			$bodyNode = self::findFirstChildWithAttr($el, 'data-tiptap-details-body');
+			$bodyNode = DomFragmentHelper::findFirstChildWithAttr($el, 'data-tiptap-details-body');
 			$props['summary'] = $summaryText;
 			$props['open'] = $el->hasAttribute('open');
-			$body = $bodyNode instanceof \DOMElement ? trim(self::innerHtml($dom, $bodyNode)) : '';
+			$body = $bodyNode instanceof \DOMElement ? trim(DomFragmentHelper::innerHtml($dom, $bodyNode)) : '';
 		} elseif ($name === 'pullquote') {
 			$quoteEl = null;
 			$captionEl = null;
@@ -328,8 +315,8 @@ final class MiniBlockRenderer
 					}
 				}
 			}
-			$props['citation'] = $captionEl instanceof \DOMElement ? trim(self::innerHtml($dom, $captionEl)) : '';
-			$body = $quoteEl instanceof \DOMElement ? trim(self::innerHtml($dom, $quoteEl)) : '';
+			$props['citation'] = $captionEl instanceof \DOMElement ? trim(DomFragmentHelper::innerHtml($dom, $captionEl)) : '';
+			$body = $quoteEl instanceof \DOMElement ? trim(DomFragmentHelper::innerHtml($dom, $quoteEl)) : '';
 		} else {
 			$declaredFields = is_array($definition['fields'] ?? null) ? $definition['fields'] : [];
 			if ($declaredFields !== []) {
@@ -357,9 +344,9 @@ final class MiniBlockRenderer
 				}
 			}
 
-			$bodyNode = self::findFirstChildWithAttr($el, 'data-tiptap-body');
+			$bodyNode = DomFragmentHelper::findFirstChildWithAttr($el, 'data-tiptap-body');
 			if ($bodyNode instanceof \DOMElement) {
-				$body = trim(self::innerHtml($dom, $bodyNode));
+				$body = trim(DomFragmentHelper::innerHtml($dom, $bodyNode));
 			}
 		}
 
@@ -443,43 +430,5 @@ final class MiniBlockRenderer
 		}
 
 		return false;
-	}
-
-	private static function findFirstChildWithAttr(\DOMElement $parent, string $attrName): ?\DOMElement
-	{
-		foreach ($parent->childNodes as $child) {
-			if ($child instanceof \DOMElement && $child->hasAttribute($attrName)) {
-				return $child;
-			}
-		}
-
-		return null;
-	}
-
-	private static function locateRootElement(\DOMDocument $dom, string $id): ?\DOMElement
-	{
-		$root = $dom->getElementById($id);
-		if ($root instanceof \DOMElement) {
-			return $root;
-		}
-		$xpath = new \DOMXPath($dom);
-		$found = $xpath->query('//*[@id="' . $id . '"]');
-
-		return ($found !== false && $found->length > 0 && $found->item(0) instanceof \DOMElement)
-			? $found->item(0)
-			: null;
-	}
-
-	private static function innerHtml(\DOMDocument $dom, \DOMElement $el): string
-	{
-		$buffer = '';
-		foreach ($el->childNodes as $child) {
-			$saved = $dom->saveHTML($child);
-			if (is_string($saved)) {
-				$buffer .= $saved;
-			}
-		}
-
-		return $buffer;
 	}
 }

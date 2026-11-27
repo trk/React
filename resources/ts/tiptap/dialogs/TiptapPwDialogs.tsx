@@ -25,7 +25,8 @@ export type {
 };
 
 const runtime = getReactWorkspaceRuntime();
-const { React, Portal, UI, cn, DynamicIcon } = runtime;
+const { React, Portal, UI, Utils } = runtime;
+const { cn, DynamicIcon } = Utils;
 const { PortalRoot } = Portal;
 const { useCallback, useEffect, useId, useMemo, useRef, useState } = React;
 const { Badge, Button, Input, Label, Select, Tabs, TabsContent, TabsList, TabsTrigger } = UI;
