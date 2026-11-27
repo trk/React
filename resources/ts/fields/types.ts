@@ -210,8 +210,8 @@ export interface InputfieldMediaItem {
 export interface LinkFieldValue {
 	type: string;
 	pageId: number;
-	entryType: string;
-	entryId: string;
+	resourceType: string;
+	resourceId: string;
 	url: string;
 	file: string;
 	query: string;
@@ -346,9 +346,24 @@ export type ConditionFieldType =
 	| 'currency'
 	| 'date';
 
+export interface DynamicBlockOptionsSource {
+	blockField: string;
+	blockTypes?: string[];
+	valueKey: string;
+	labelKey?: string;
+	typeKey?: string;
+	optionsKey?: string;
+	typeMap?: Record<string, ConditionFieldType>;
+	fallbackToTextWhenNoOptions?: boolean;
+	allowCustomKey?: string;
+	excludeTypes?: string[];
+	excludeSelf?: boolean;
+}
+
 export interface ConditionFieldOption {
 	value: string;
 	label: string;
+	description?: string;
 }
 
 export interface ConditionFieldSpec {
@@ -357,6 +372,14 @@ export interface ConditionFieldSpec {
 	type: ConditionFieldType;
 	options?: ConditionFieldOption[];
 	operators?: string[];
+	group?: string;
+	icon?: string;
+	description?: string;
+	placeholder?: string;
+	sourceOnly?: boolean;
+	targetOnly?: boolean;
+	comparableTypes?: ConditionFieldType[];
+	allowCustomValue?: boolean;
 }
 
 export interface ConditionRuleItem {
@@ -364,11 +387,13 @@ export interface ConditionRuleItem {
 	field: string;
 	operator: string;
 	value: unknown;
+	valueSource?: 'manual' | 'field';
 }
 
 export interface ConditionGroupItem {
 	id: string;
 	match: ConditionMatchMode;
+	negate?: boolean;
 	rules: ConditionRuleItem[];
 }
 
@@ -528,6 +553,18 @@ export interface ReactInputfieldProps {
 	inlinePortal?: boolean;
 	iconConfig?: IconFieldConfig;
 	conditionFields?: ConditionFieldSpec[];
+	conditionFieldsSource?: DynamicBlockOptionsSource;
+	dynamicOptionsFromBlocks?: DynamicBlockOptionsSource;
+	allowFieldComparison?: boolean;
+	allowNegate?: boolean;
+	showSummary?: boolean;
+	layout?: 'auto' | 'inline' | 'compact';
+	maxGroups?: number;
+	maxRulesPerGroup?: number;
+	emptyMessage?: string;
+	showLabel?: boolean;
+	heading?: string;
+	allowRawExpression?: boolean;
 	formId?: string;
 	error?: string;
 	errorId?: string;
@@ -834,6 +871,30 @@ export interface SchemaFieldDefinition {
 	allowSplit?: boolean;
 	showToolbar?: boolean;
 	conditionFields?: ConditionFieldSpec[];
+	conditionFieldsSource?: DynamicBlockOptionsSource;
+	dynamicOptionsFromBlocks?: DynamicBlockOptionsSource;
+	allowFieldComparison?: boolean;
+	allowNegate?: boolean;
+	showSummary?: boolean;
+	layout?: 'auto' | 'inline' | 'compact';
+	maxGroups?: number;
+	maxRulesPerGroup?: number;
+	emptyMessage?: string;
+	showLabel?: boolean;
+	heading?: string;
+	allowRawExpression?: boolean;
+}
+
+export interface ConditionBuilderFieldProps
+	extends Omit<ReactInputfieldProps, 'controlType' | 'id' | 'name'> {
+	controlType?: ReactControlType;
+	id?: string;
+	name?: string;
+	showLabel?: boolean;
+	heading?: string;
+	allowRawExpression?: boolean;
+	control?: Record<string, unknown>;
+	onChange?: (nextValue: ConditionBuilderValue) => void;
 }
 
 export interface SchemaTabPaneDefinition {
@@ -880,6 +941,7 @@ export interface SchemaFormPayload {
 	surface?: 'plain' | 'card' | null;
 	tabsLayout?: 'horizontal' | 'vertical' | null;
 	presenceKey?: string | null;
+	presenceToken?: string | null;
 	presenceEndpoint?: string | null;
 	csrf?: { name: string; value: string } | null;
 	hiddenInputs?: Array<{ id?: string; name: string; value: string }>;

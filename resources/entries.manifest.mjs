@@ -20,6 +20,7 @@ export const ISOLATED_BUILD_ENTRIES = [
 	'MarkupReactTab',
 	'InputfieldReactKeyValue',
 	'InputfieldReactIcon',
+	'InputfieldReactCondition',
 	'InputfieldReactLink',
 	'ReactMedia',
 	'InputfieldReactFile',
