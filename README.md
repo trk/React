@@ -190,7 +190,7 @@ echo React::instance($this)->icons()->renderSvg('sparkles', [
 
 ## Configuration
 
-Configure site-wide defaults under **Modules > Configure > React** ([`React::getModuleConfigInputfields()`](./React.module.php#L2563-L2687)):
+Configure site-wide defaults under **Modules > Configure > React** ([`React::getModuleConfigInputfields()`](./React.module.php#L2643-L2767)):
 
 | Setting | Type | Default | Description |
 |---|---|---|---|
@@ -211,18 +211,18 @@ Configure site-wide defaults under **Modules > Configure > React** ([`React::get
 
 ## Hooks & Extension Seams
 
-All discovery hooks execute lazily on first registry access (`React::deferModuleRegistration`, `deferShellLayoutRegistration`, `deferCommandSearchRegistration`, `deferProviderRegistration`, `deferRelationRegistration`, `deferMediaHostRegistration` in [`React.module.php`](./React.module.php#L1203,L1474,L1535,L1926,L2021,L738)):
+All discovery hooks execute lazily on first registry access via `'autoload' => false` + `'reactCapabilities' => [...]` pull-discovery (`React::deferModuleRegistration`, `deferShellLayoutRegistration`, `deferCommandSearchRegistration`, `deferProviderRegistration`, `deferRelationRegistration`, `deferMediaHostRegistration`, `deferViewportModeRegistration`, `deferLinkResolverRegistration`, plus `React::forgetSharedViewportMode()` cleanup in [`React.module.php`](./React.module.php)):
 
 - **Hookable `React` Methods:** `___registerWorkspaces()`, `___registerWidgets()`, `___registerShellLayouts()`, `___registerCommandSearch()`, `___registerProviders()`, `___registerRelationResources()`, `___registerMediaHosts()`, `___registerViewportModes()`, `___registerLinkResolvers()`, `___translations()`.
 - **Editorial Mini-Block Hook:** `InputfieldTiptap::registerMiniBlocks` for adding custom flat `[data-tiptap-block]` types rendered via `./site/templates/tiptap/{name}.php`.
-- **Hooks & Signatures:** See [API.md](./API.md) (including `FormSchemaSerializer` `surface: 'card'` native tabs-over-card `[data-rw-card-tabs="above"]`, `appendDeleteTab()`, `WireTab` metadata preservation, `[data-rw-meta-*]`/`[data-rw-ref-*]`/`[data-rw-rev-table]`/`[data-rw-diff-pill]` semantic CSS contracts, and canonical controls: `date`, `time`, `datetime`, `daterange`, `color`, `tags`, `combobox`, `unit_number`/`currency` with `unitVariant: 'currency'`, `segmented`, `spacing`, `range`, `range_slider`, `colspan`, `otp`, `password`, `markdown`, `rating`, `signature`, `calculation`, `repeater`, `keyvalue`, `link`, `icon`, `relation`, `file`, `image`, `tiptap`).
+- **Hooks & Signatures:** See [API.md](./API.md) (including `FormSchemaSerializer` `surface: 'card'` native tabs-over-card `[data-rw-card-tabs="above"]`, `appendDeleteTab()`, `presenceToken` co-edit banners, `WireTab` metadata preservation, `[data-rw-meta-*]`/`[data-rw-ref-*]`/`[data-rw-rev-table]`/`[data-rw-diff-pill]` semantic CSS contracts, `InputfieldReactLink` `typeLabels`, and canonical controls: `date`, `time`, `datetime`, `daterange`, `color`, `tags`, `combobox` (`country`, `countries`, `timezone`, `currency_code`), `phone`, `unit_number`/`currency` with `unitVariant: 'currency'`, `segmented`, `spacing`, `range`, `range_slider`, `colspan`, `otp`, `password`, `markdown`, `condition_builder`, `rating`, `signature`, `calculation`, `repeater`, `keyvalue`, `link`, `icon`, `relation`, `file`, `image`, `tiptap`).
 - **Full Signature Dictionary:** See [API.md](./API.md) and chapters [`02`](./docs/02-workspaces-and-admin-shell.md)–[`04`](./docs/04-viewports-and-data-providers.md).
 
 ---
 
 ## Internal Endpoints & Multi-Language Packs
 
-`React` registers eight URL hooks ([`React.module.php`](./React.module.php#L372-L380)) and delivers native ProcessWire `LanguageTranslator` catalogs via locale-scoped Inertia `OnceProp` keys (`languages/{en,tr,de,fr,es,ru}.csv`):
+`React` registers eight URL hooks ([`React.module.php`](./React.module.php#L372-L381)) and delivers native ProcessWire `LanguageTranslator` catalogs via locale-scoped Inertia `OnceProp` keys (`languages/{en,tr,de,fr,es,ru}.csv`):
 
 | Endpoint | Purpose |
 |---|---|

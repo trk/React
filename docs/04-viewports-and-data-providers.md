@@ -17,7 +17,7 @@ Core `ReactInertia.js` and `ReactViewports.js` ship only the shared viewport she
 - `MarkupReactTable.module.php` -> `dist/MarkupReactTable.js` (`DataTableCanvas`)
 - `MarkupReactCards.module.php` -> `dist/MarkupReactCards.js` (`DataCardsCanvas`)
 - Optional interactive layout engines (`dist/ReactGrid.js`, `dist/ReactDnd.js`, `dist/ReactCalendar.js` + `dist/ReactCalendar.css`) load dynamically on demand via `viewScripts` and `viewStyles`.
-- Extension modules can register additional layout modes via [`$react->registerViewportMode(string $mode, string $moduleName, string $providerContract = '', array $meta = [])`](../React.module.php#L894).
+- Extension modules can register additional layout modes lazily via `React::deferViewportModeRegistration()` / [`$react->registerViewportMode(string $mode, string $moduleName, string $providerContract = '', array $meta = [])`](../React.module.php#L898) and clean up on uninstall via `React::forgetSharedViewportMode()`.
 
 ---
 
@@ -29,7 +29,7 @@ Core `ReactInertia.js` and `ReactViewports.js` ship only the shared viewport she
 |---|---|---|
 | `'pages:<selector>'` or `PageArray` | [`PagesDataProvider`](../src/Provider/PagesDataProvider.php#L45-L150) | Runs selector queries with bounded top-level pagination (`stripTopLevelPaginationClauses()`), enforces ProcessWire `viewable()`/`editable()` RBAC, supports `columnSchemas()`, `iconField`, `thumbField`, `subtitleField`, `showTemplateIcon`, and mutates statuses (`OP_PUBLISH`, `OP_DRAFT`, `OP_TRASH`, `OP_RESTORE`, `OP_DELETE`, `OP_LOCK`, `OP_UNLOCK`). |
 | `'array:<id>'` or `array` / `Closure` | [`ArrayDataProvider`](../src/Provider/ArrayDataProvider.php#L28-L180) | Wraps in-memory or dynamic array datasets with uniform filtering, sorting, pagination, `columnSchemas()`, and record/cell visual descriptors. |
-| Custom `'namespace:key'` | Custom `ReactDataProviderInterface` | Register lazily via `React::deferProviderRegistration($this, function (ProviderRegistry $providers): void { $providers->registerFactory('custom:', ...); })` ([React.module.php](../React.module.php#L1926)). |
+| Custom `'namespace:key'` | Custom `ReactDataProviderInterface` | Register lazily via `React::deferProviderRegistration($this, function (ProviderRegistry $providers): void { $providers->registerFactory('custom:', ...); })` ([React.module.php](../React.module.php#L2084)). |
 
 ```php
 <?php
@@ -90,7 +90,7 @@ Every provider must implement `ReactDataProviderInterface` ([ReactDataProviderIn
 - **Column & Filter Configuration Options (`MarkupReactViewport`):**
   - Column schemas accept presentation hints (`type`, `align`, `valign`, `mono`, `tabular`, `nowrap`, `truncate`, `copyable`, `subtitleMono`, `maxBadges`), paired with table-level `rowValign` (`'middle' | 'top' | 'bottom'`).
   - Filter definitions support `display => 'pills'` with optional `counts`, `icons`, and `totalCount`.
-  - Toolbar controls honor `allowedViewModes`, `saveViewEnabled`, `columnPickerEnabled`, `toolbarActions`, and multi-option `createActions` ([API.md](../API.md#L230)).
+  - Toolbar controls honor `allowedViewModes`, `saveViewEnabled`, `columnPickerEnabled`, `toolbarActions`, and multi-option `createActions` ([API.md](../API.md#L231)).
 
 ---
 
@@ -98,9 +98,9 @@ Every provider must implement `ReactDataProviderInterface` ([ReactDataProviderIn
 
 When a user sorts, filters, switches view modes, edits inline, triggers bulk actions, or exports data, the React client posts `{ stateToken, action, state, payload }` to `/_react/viewport` ([ReactGatewayRouter.php](../src/Http/ReactGatewayRouter.php#L306-L410)):
 
-1. **Authentication & Method Checks:** Rejects unauthenticated guests (`403`). If `$action` is in [`ReactGatewayRouter::MUTATING_VIEWPORT_ACTIONS`](../src/Http/ReactGatewayRouter.php#L45-L65), enforces `POST` (`405`), rejects `$config->demo === true` (`403`), and validates ProcessWire's `$session->CSRF` token (`419`).
+1. **Authentication & Method Checks:** Rejects unauthenticated guests (`403`). If `$action` is in [`ReactGatewayRouter::MUTATING_VIEWPORT_ACTIONS`](../src/Http/ReactGatewayRouter.php#L47-L66), enforces `POST` (`405`), rejects `$config->demo === true` (`403`), and validates ProcessWire's `$session->CSRF` token (`419`).
 2. **Signed `stateToken` Verification:** `verifyViewportState()` decodes the HMAC-SHA256 envelope bound to the current `$user->id` (`typ = 'viewport'`), instantiates the target viewport class (`MarkupReactTable`, `MarkupReactCards`, etc.), refills allowed client state keys (`searchQuery`, `filterValues`, `sortField`, `sortDirection`, `page`, `limit`, `selectedIds`, `hiddenColumns`, `activeView`, `viewMode`, `quickEditRecordId`, plus any active pluggable mode keys declared via `modeMutableStateKeys()`), and dispatches `executeAction($action, $actionPayload)`.
-3. **CSV Formula Neutralization:** Exports sanitize cells via [`MarkupReactViewport::sanitizeCsvCell()`](../src/Viewport/MarkupReactViewport.php#L3308) to neutralize spreadsheet formula injection triggers.
+3. **CSV Formula Neutralization:** Exports sanitize cells via [`MarkupReactViewport::sanitizeCsvCell()`](../src/Viewport/MarkupReactViewport.php#L3307) to neutralize spreadsheet formula injection triggers.
 4. **Per-User Preference Persistence (`ReactViewPreferenceStore`):** Column visibility, active view mode, page size, sort state, and user-saved filter presets are cached in session (`ReactViewPrefs`) and persisted to `$user->meta('react_view_prefs_*')` whenever `config->demo` is false ([ReactViewPreferenceStore.php](../src/Viewport/ReactViewPreferenceStore.php#L17-L84)).
 
 ---

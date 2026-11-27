@@ -18,9 +18,9 @@ For complete class and method signatures, read `site/modules/React/API.md`, and 
 1. **Verify active modules and schema:**
    - Run `pw_module_list` and `pw_schema_read` (MCP) or `php vendor/bin/wire module:list --json` to confirm `Inertia` and `React` are installed (`ProcessReactWorkspace` is optional).
    - _Criterion:_ Downstream modules list `'React'` (never `'ProcessReactWorkspace'`) in `requires` so they operate both standalone (`Setup > <Module>`) and inside the optional `Workspace` hub.
-2. **Register workspaces, widgets, shell layouts, command search providers, providers, relations, and media hosts lazily:**
-   - Inside an `autoload` module's `init()` / `ready()`, wrap registrations in `React::deferModuleRegistration()`, `deferShellLayoutRegistration()`, `deferCommandSearchRegistration()`, `deferProviderRegistration()`, `deferRelationRegistration()`, or `deferMediaHostRegistration()`.
-   - _Criterion:_ Zero workspace stat queries, widget callbacks, or adapter instantiations run on frontend or unrelated admin requests, and zero `\ReflectionProperty` workarounds are used.
+2. **Register workspaces, widgets, shell layouts, command search providers, viewport modes, providers, relations, media hosts, and link resolvers lazily:**
+   - Keep downstream modules `'autoload' => false` and declare `'reactCapabilities' => [...]` (subset of `['workspace', 'icons', 'commandSearch', 'providers', 'relations', 'linkResolvers', 'media', 'viewportModes']`) in `getModuleInfo()`. Inside `init()` / `ready()`, wrap registrations in `React::deferModuleRegistration()`, `deferShellLayoutRegistration()`, `deferCommandSearchRegistration()`, `deferViewportModeRegistration()`, `deferProviderRegistration()`, `deferRelationRegistration()`, `deferMediaHostRegistration()`, or `deferLinkResolverRegistration()`.
+   - _Criterion:_ Zero module loading, workspace stat queries, widget callbacks, or adapter instantiations run on frontend or unrelated admin requests, and zero `\ReflectionProperty` workarounds are used.
 3. **Extend `ProcessReact` for dual-context admin modules and `MarkupReactViewport` / `FormSchemaSerializer` for views:**
    - Extend `Totoglu\React\Inertia\ProcessReact`, return `$this->inertiaRender('Module/Workspace', [...])` wrapped in `<AppShell>`, and expose module UI strings from `public function ___translations(): array`.
    - `ProcessReact` automatically adapts the same single React view to both entry contexts: opening via `Setup > <Module>` runs natively through `wire/core/admin.php` (`Process::execute` + `EmbeddedAdminPageResponse`, `shellMode: 'admin'`) inside whichever `AdminTheme` is active (`AdminThemeUikit`, `AdminThemeDefault`, `AdminThemeReno`, or custom `AdminTheme`) with an `"Open in Workspace"` switch when `ProcessReactWorkspace` is installed, whereas opening via `Admin > Workspace` (`?ws=1`) renders the full-screen Workspace shell (`views/admin.php`, `shellMode: 'workspace'`).
@@ -186,11 +186,12 @@ $schema = $react->serializeForm($form, [
 ]);
 
 // Declarative array definitions -> SchemaForm JSON schema
-// Canonical controls: text, textarea, number, email, url, tel, date, time, datetime,
-// daterange, color, tags, combobox, unit_number (or currency / unitVariant: 'currency'),
-// segmented, spacing, range, range_slider, colspan, otp, password, markdown, rating,
-// signature, calculation, select, radios, checkboxes, asmselect, multiselect, checkbox,
-// toggle, repeater, keyvalue, link, icon, relation (m2o/m2m/o2m/m2a), file, image, tiptap.
+// Canonical controls: text, textarea, number, email, url, tel, phone, date, time, datetime,
+// daterange, color, tags, combobox (country, countries, timezone, currency_code), unit_number
+// (or currency / unitVariant: 'currency'), segmented, spacing, range, range_slider, colspan, otp,
+// password, markdown, condition_builder, rating, signature, calculation, select, radios, checkboxes,
+// asmselect, multiselect, checkbox, toggle, repeater, keyvalue, link, icon, relation
+// (m2o/m2m/o2m/m2a), file, image, tiptap.
 $declarativeSchema = $react->serializeFormDefinitions([
 	[
 		'name' => 'title',
@@ -253,7 +254,7 @@ React::instance($this)->notifyResourceSaved(
 | `MarkupReactTab` | Accessible WAI-ARIA tabbed container (`line`, `segmented`, `vertical`) with `lazyLoad`, error-count badges, and `showIf`. Loads only its standalone `MarkupReactTab.js` bundle. |
 | `InputfieldReactIcon` & `IconManager` | Searchable `6,545`-icon vector picker (`Outline` & `Filled`), `ReactIconValue` formatted output, and non-destructive Admin `Template`/`Field` vector icon overrides. Loads `InputfieldReactIcon.js` + `ReactIcons.js`. |
 | `InputfieldReactImage` & `InputfieldReactFile` | AJAX media studio (`/_react/media`) with focal point + zoom, crop/rotate/flip, dominant color & palette inspection, multi-language descriptions, tags, and per-file `fileSchema`. Loads shared `ReactMedia.js` + `ReactMedia.css` alongside the lean `InputfieldReactImage.js` or `InputfieldReactFile.js` bundle. |
-| `InputfieldReactLink` | Polymorphic destination & isolated media link field (`page`, custom resolvers such as `record` with canonical `resourceType`/`resourceId` resolved via `React::registerLinkResolver()`, `url` with `#anchor`, strict `tel`, `email`, and `file`/`image`/`video` profiles). Loads `InputfieldReactLink.js`, enqueues `ReactMedia.css` only when media types are configured, and fetches `ReactMedia.js` lazily only when inspecting media files. |
+| `InputfieldReactLink` | Polymorphic destination & isolated media link field (`page`, custom resolvers such as `record` with canonical `resourceType`/`resourceId` resolved via `React::registerLinkResolver()` / `React::deferLinkResolverRegistration()`, `typeLabels`, `url` with `#anchor`, strict `tel`, `email`, and `file`/`image`/`video` profiles). Loads `InputfieldReactLink.js`, enqueues `ReactMedia.css` only when media types are configured, and fetches `ReactMedia.js` lazily only when inspecting media files. |
 | `InputfieldReactKeyValue` | Associative `Record<string, string>` editor with `minItems`, `maxItems`, ReDoS-safe `keyPattern`, and TSV paste. Loads only `InputfieldReactKeyValue.js`. |
 | `InputfieldReactCondition` & `ConditionEvaluator` | Visual 2-level condition rule builder (`source + operator + value/field`, AND/OR/NOT groups, live summary, categorized field picker, optional `allowCustomValue`, optional `allowRawExpression`, extensible `DynamicBlockOptionsSource` with `optionsKey`/`typeMap`/`fallbackToTextWhenNoOptions`/`allowCustomKey`, optional standalone `<ConditionBuilder value onChange heading />`) plus shared PHP `ConditionEvaluator::evaluate()` & TS `@pw/react/fields` `evaluateConditionTree()` (`allowWildcards`), `serializeConditionToExpression()`, `parseConditionStringToObject()` (`|` pipe lists), and `formatConditionSummary()`. Loads only `InputfieldReactCondition.js`. |
 | `InputfieldReactM2O` / `M2M` / `O2M` / `M2A` | Relational pickers (`/_react/relation`) over `page`, `template`, `field`, `user`, `role`, `permission`, `language`, `module`, or custom `RelationResourceInterface` adapters via shared `InputfieldReactRelation.js`. |
@@ -274,7 +275,7 @@ React::instance($this)->notifyResourceSaved(
 
 ## 5. Anti-Patterns & Loophole Closing
 
-- ❌ **Calling `$react->workspaces()->register()` eagerly inside `init()` on `autoload => true` modules:** Evaluates workspace/widget closures on every frontend request. Always use `React::deferModuleRegistration($this, ...)`, and clean up with `React::forgetSharedWorkspace()`, `React::forgetSharedWidget()`, and `React::forgetDeferredRegistrations($this)` inside `___uninstall()`.
+- ❌ **Marking consumer modules `'autoload' => true` or calling `$react->workspaces()->register()` eagerly inside `init()`:** Loads module files and evaluates workspace/widget closures on unrelated frontend requests. Keep downstream modules `'autoload' => false` with `'reactCapabilities' => [...]`, use `React::defer*Registration($this, ...)`, and clean up with `React::forgetSharedWorkspace()`, `React::forgetSharedWidget()`, `React::forgetSharedViewportMode()`, and `React::forgetDeferredRegistrations($this)` inside `___uninstall()`.
 - ❌ **Hardcoding raw hex colors or `text-primary` on subtle `bg-primary/10` pills:** Fails WCAG 2.1 AA `4.5:1` contrast when `--pw-main-color` is a mid-tone accent. Use semantic tokens (`bg-primary text-primary-foreground` for solid pills, `bg-primary/12 text-primary-ink` for subtle pills, `bg-[var(--button-bg)] text-[var(--button-fg)]` via `<Button>`).
 - ❌ **Rendering user-supplied `href` attributes without `sanitizeHref()` / `UrlSanitizer::sanitizeHref()`:** Allows `javascript:` / `data:` XSS vectors. Always pass untrusted links through `sanitizeHref()`.
 - ❌ **Skipping `<?php // __(file-not-translatable)` on line 1 of PHP test files:** Causes `LanguagePorter` to extract test fixture strings into `languages/*.csv`. Every PHP file under `tests/` must begin with `<?php // __(file-not-translatable)`.

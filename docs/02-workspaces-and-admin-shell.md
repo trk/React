@@ -6,7 +6,7 @@ Guide to building ProcessWire admin modules on `Totoglu\React\Inertia\ProcessRea
 
 ## Dual-Context Execution Model (`ProcessReact` & `InteractWithReact`)
 
-A single React screen written for `ProcessReact` adapts automatically across two admin contexts ([InteractWithReact.php](../src/Inertia/InteractWithReact.php#L25-L32), [React.module.php](../React.module.php#L448)):
+A single React screen written for `ProcessReact` adapts automatically across two admin contexts ([InteractWithReact.php](../src/Inertia/InteractWithReact.php#L25-L32), [React.module.php](../React.module.php#L449)):
 
 1. **Classic Admin Embedded Mode (`shellMode === 'admin'`):**
    When opened via `Setup > <Module>` without `?ws=1`, `_rw_ws=1`, or `X-React-Shell: workspace`, initial HTTP requests run natively through ProcessWire's `wire/core/admin.php` -> `ProcessController::execute()`. `InteractWithReact::inertiaRender()` returns an [`EmbeddedAdminPageResponse`](../src/Inertia/EmbeddedAdminPageResponse.php#L25-L209), which:
@@ -48,7 +48,7 @@ Every `ProcessReact` module inherits `___executeNavJSON(array $options = []): st
 
 - **Clickable Root / Overview URLs:** [`ProcessReact::___executeNavJSON()`](../src/Inertia/ProcessReact.php#L42-L66) and `normalizeAdminNavJSONData()` rewrite empty (`""`) or `"./"` URLs to `resolveAdminProcessRootUrl()`, ensuring `Overview` items always receive an absolute admin root `href` in ProcessWire's dropdown menu JS instead of becoming unclickable `<a>` tags.
 - **Structured Flyout Builder (`buildAdminNavJSON()`):** Accepts normalized item maps and handles entity decoding, badge labels (`badge`), section separators (`separator`), optional `"New ..."` header links (`add`, `addLabel`, `addIcon`), and icon normalization (`resolveAdminNavIcon()`).
-- **Icon Registration Timing:** Call `IconManager::registerAdminIcons([...])` in an autoload module's `init()` hook (not deferred!) for any `rwv--*` vector icons displayed in `Setup > <Module>` flyouts so `React::ready()` includes them in `site/assets/vector-icons/VectorIcons.css` even while browsing unrelated admin pages like Page List. For user-configured custom icons, pass `'dynamicIcon' => true` and `'fallbackIcon' => '...'` so unregistered slugs fall back safely.
+- **Icon Registration Timing:** Keep downstream modules `'autoload' => false` and declare `'reactCapabilities' => ['icons', ...]` in `getModuleInfo()`, then call `IconManager::registerAdminIcons([...])` inside `init()` so `React` pulls the module lazily when generating `site/assets/vector-icons/VectorIcons.css` (without incurring cold-boot overhead on unrelated requests). For user-configured custom icons, pass `'dynamicIcon' => true` and `'fallbackIcon' => '...'` so unregistered slugs fall back safely.
 
 ### Canonical `ProcessReact` & `executeNavJSON()` Pattern
 
@@ -139,7 +139,7 @@ class ProcessCatalog extends ProcessReact
 
 ### Lazy Workspace, Widget, Shell Layout & Command Search Registration
 
-Register definitions lazily via [`React::deferModuleRegistration()`](../React.module.php#L1203), [`React::deferShellLayoutRegistration()`](../React.module.php#L1474), and [`React::deferCommandSearchRegistration()`](../React.module.php#L1535) so `statsCallback`, `dataCallback`, and page/index queries execute only when requested:
+Register definitions lazily via [`React::deferModuleRegistration()`](../React.module.php#L1315), [`React::deferShellLayoutRegistration()`](../React.module.php#L1599), and [`React::deferCommandSearchRegistration()`](../React.module.php#L1663) so `statsCallback`, `dataCallback`, and page/index queries execute only when requested:
 
 - **Workspaces (`WorkspaceDefinition`):** Accepts `id`, `title`, `description`, `icon`, `process`, `url`, `permission`, `accessCallback`, `category`, `badge`, `order`, `logoUrl`, `component`, `stats`, `statsCallback`, `scripts`, `styles` ([WorkspaceDefinition.php](../src/Workspace/WorkspaceDefinition.php#L13-L60)).
 - **Bento Dashboard Widgets (`WorkspaceWidgetDefinition`):** Accepts `id`, `title`, `workspaceId`, `subtitle`, `description`, `icon`, `size` (`'sm'`, `'md'`, `'lg'`, `'full'`, or grid span `'1'`–`'12'`), `order`, `permission`, `accessCallback`, `data`, and lazy `dataCallback` returning normalized keys `metrics`, `items`, `actions`, `status`, and `emptyText` ([WorkspaceWidgetDefinition.php](../src/Workspace/WorkspaceWidgetDefinition.php#L13-L80)).
@@ -164,10 +164,10 @@ Register definitions lazily via [`React::deferModuleRegistration()`](../React.mo
 
 [`ThemeManager`](../src/Theme/ThemeManager.php#L21-L120) unifies light/dark mode and color tokens across Workspaces, embedded `AdminTheme` panels, Inputfield islands, and top-layer `<dialog>` overlays ([`TOKEN_SCOPE`](../src/Theme/ThemeManager.php#L27-L32)):
 
-1. **Theme Modes:** `system` (prefers-color-scheme), `light`, or `dark`. Authenticated users can toggle personal mode from the Workspace account menu (`/_react/workspace-prefs` `action=set_theme_mode`), synchronizing `{user-id}.json` and ProcessWire's `$user->meta('adminDarkMode')` ([ReactGatewayRouter.php](../src/Http/ReactGatewayRouter.php#L661-L683)). Respects `AdminThemeUikit` `noDarkMode`.
+1. **Theme Modes:** `system` (prefers-color-scheme), `light`, or `dark`. Authenticated users can toggle personal mode from the Workspace account menu (`/_react/workspace-prefs` `action=set_theme_mode`), synchronizing `{user-id}.json` and ProcessWire's `$user->meta('adminDarkMode')` ([ReactGatewayRouter.php](../src/Http/ReactGatewayRouter.php#L676-L687)). Respects `AdminThemeUikit` `noDarkMode`.
 2. **Built-in Presets (`ThemePreset`):** `native` (inherits ProcessWire `--pw-*` variables directly), `neutral`, `slate`, `stone`, `ocean`, `indigo`, `teal`, and `custom` ([ThemePreset.php](../src/Theme/ThemePreset.php#L13-L60)).
-3. **Precedence:** Personal user override (`{user-id}.json` `themePreset`) -> site-wide default configured under `Modules > Configure > React` (`themePreset`) -> `native` fallback. Passing `""` or `'default'` to `set_theme_preset` clears the personal override ([ReactGatewayRouter.php](../src/Http/ReactGatewayRouter.php#L684-L699)).
-4. **Validated Custom CSS Tokens (`ThemeTokenParser`):** Parses `:root { ... }`, `.dark { ... }`, and `@media (prefers-color-scheme: dark)` blocks from `themeCustomTokens` into an allowlist of color, radius, font, and shadow tokens, rejecting `url()`, `expression()`, `@import`, CSS escapes, and markup-breaking characters ([API.md](../API.md#L126)). Custom tokens must define at least `--background`, `--foreground`, `--primary`, and `--primary-foreground` (`ThemeTokenParser::isComplete()`).
+3. **Precedence:** Personal user override (`{user-id}.json` `themePreset`) -> site-wide default configured under `Modules > Configure > React` (`themePreset`) -> `native` fallback. Passing `""` or `'default'` to `set_theme_preset` clears the personal override ([ReactGatewayRouter.php](../src/Http/ReactGatewayRouter.php#L688-L698)).
+4. **Validated Custom CSS Tokens (`ThemeTokenParser`):** Parses `:root { ... }`, `.dark { ... }`, and `@media (prefers-color-scheme: dark)` blocks from `themeCustomTokens` into an allowlist of color, radius, font, and shadow tokens, rejecting `url()`, `expression()`, `@import`, CSS escapes, and markup-breaking characters ([API.md](../API.md#L127)). Custom tokens must define at least `--background`, `--foreground`, `--primary`, and `--primary-foreground` (`ThemeTokenParser::isComplete()`).
 5. **Derived & Surface Mapping:** [`ThemeManager`](../src/Theme/ThemeManager.php#L39-L82) automatically derives card, popover, sidebar, button, masthead, and `--radius-button` tokens so partial palettes stay cohesive in both light and dark modes.
 
 ---

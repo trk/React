@@ -22,7 +22,7 @@ flowchart TD
 
 - **Strict UI-Layer Isolation:** `React` declares `requires => ['PHP>=8.4', 'ProcessWire>=3.0.271', 'Inertia']` and registers zero admin pages on its own. It contains zero hardcoded references to downstream modules (`tests/Unit/LayeringTest.php`).
 - **Single-Point Namespace Registration:** `React::__construct()` registers `Totoglu\React` -> `__DIR__ . '/src/'` once via `WireClassLoader::addNamespace()`, without `require_once` or `class_exists` shims.
-- **Lazy Discovery Deferral:** Downstream modules attach work lazily via `React::deferModuleRegistration()`, `React::deferShellLayoutRegistration()`, `React::deferCommandSearchRegistration()`, `React::deferProviderRegistration()`, `React::deferRelationRegistration()`, and `React::deferMediaHostRegistration()`, ensuring frontend and unrelated admin requests incur zero registry or query cost.
+- **Lazy Discovery Deferral:** Downstream modules stay `'autoload' => false`, declare `'reactCapabilities' => [...]`, and attach work lazily via `React::deferModuleRegistration()`, `React::deferShellLayoutRegistration()`, `React::deferCommandSearchRegistration()`, `React::deferProviderRegistration()`, `React::deferRelationRegistration()`, `React::deferMediaHostRegistration()`, `React::deferViewportModeRegistration()`, and `React::deferLinkResolverRegistration()`, ensuring frontend and unrelated admin requests incur zero registry or query cost.
 
 ---
 
@@ -39,17 +39,17 @@ flowchart TD
 
 ## 3. Forms, Media, Icons, Relations, Viewports & Tiptap
 
-- **Forms (`FormSchemaSerializer`):** Normalizes native `InputfieldForm` / `InputfieldWrapper` trees (`rwControl`) and declarative definitions onto `<SchemaForm />` (`dist/SchemaForm.js` + lazy `dist/ReactExtraFields.js` and `dist/ReactCalendar.{js,css}`), supporting `surface: 'card'` (rendering flush `[data-rw-card-tabs="above"]` over `<Card>` when 2+ top tabs exist) and `appendDeleteTab()` `[Configuration | Delete]` promotion.
+- **Forms (`FormSchemaSerializer`):** Normalizes native `InputfieldForm` / `InputfieldWrapper` trees (`rwControl`, including `phone`, `country`/`countries`, `timezone`, `currency_code`, `condition_builder`) and declarative definitions onto `<SchemaForm />` (`dist/SchemaForm.js` + lazy `dist/ReactExtraFields.js`, `dist/InputfieldReactCondition.js`, and `dist/ReactCalendar.{js,css}`), supporting `surface: 'card'` (rendering flush `[data-rw-card-tabs="above"]` over `<Card>` when 2+ top tabs exist), `appendDeleteTab()` `[Configuration | Delete]` promotion, and signed `presenceToken` co-edit banners.
 - **Tiptap Rich Text (`InputfieldTiptap` & `TextformatterTiptapMiniBlocks`):** Uses modular bundle loading (`TiptapCore.{js,css}` + conditional `TiptapEditor.js` / `TiptapCanvas.js` / `TiptapBlocks.js` + lazy `TiptapDialogs.js`) with `TiptapContentPolicy` HTML sanitization and flat `[data-tiptap-block]` mini-blocks.
-- **Viewports, Icons, Media & Relations:** `MarkupReactTable` / `MarkupReactCards` (`DataViewport`, `PagesDataProvider`, `ArrayDataProvider`, capability contracts), `IconManager` (`6,545` vector icons + `VectorIcons.css`), `MediaGateway` (`64 MP` / `16,384 px` bounds), and `InputfieldReactM2O`/`M2M`/`O2M`/`M2A`.
+- **Viewports, Icons, Media, Links & Relations:** `MarkupReactTable` / `MarkupReactCards` (`DataViewport`, `PagesDataProvider`, `ArrayDataProvider`, capability contracts, pluggable viewport modes), `IconManager` (`6,545` vector icons + `VectorIcons.css`), `MediaGateway` (`64 MP` / `16,384 px` bounds), `InputfieldReactLink` (`typeLabels`, isolated link media, custom resolvers), and `InputfieldReactM2O`/`M2M`/`O2M`/`M2A`.
 
 ---
 
 ## 4. Isolated Vite Build Pipeline & Security Model
 
 - **22-Pass Build Isolation (`build-bundles.mjs`):** Compiles 6 core JS + 4 core CSS bundles + `vector-icons.json` (`32` total `dist/` files), plus 21 isolated IIFE entries consuming `window.ReactWorkspaceRuntime` with zero shared `ReactInertia-*.js` chunks.
-- **32-Layer Delta CSS (`tailwind-layers.mjs`):** Downstream `module-delta.css` stylesheets compile unprefixed Tailwind utilities without Preflight and preserve deterministic `@layer utilities.*` specificity order alongside `ReactInertia.css`.
+- **39-Layer Delta CSS (`tailwind-layers.mjs`):** Downstream `module-delta.css` stylesheets compile unprefixed Tailwind utilities without Preflight and preserve deterministic `@layer utilities.*` specificity order alongside `ReactInertia.css`.
 - **HMAC, CSRF & Lifecycle Security:**
-  - `SignedTokenCodec` signs endpoint-scoped `stateToken`, `relationToken`, `mediaToken`, and `tiptapToken` envelopes using `$config->userAuthSalt` bound to `$user->id` (`uid`) and 24-hour `iat` TTL.
+  - `SignedTokenCodec` signs endpoint-scoped `stateToken`, `presenceToken`, `relationToken`, `mediaToken`, and `tiptapToken` envelopes using `$config->userAuthSalt` bound to `$user->id` (`uid`) and 24-hour `iat` TTL.
   - Mutating `/_react/*` gateways enforce authenticated users (`AccessGuard`), HTTP `POST`, `$session->CSRF`, `$config->demo` guards, and bounded JSON sizes (`2 MiB`, depth `64`).
-  - `___uninstall()` clears `pages_meta` (`react_view_prefs_%`), `ReactViewPrefs` session data, presence/preference caches, `site/assets/vector-icons/`, and `site/assets/cache/React/`, and downstream modules detach hooks cleanly with `React::forgetSharedWorkspace()`, `React::forgetSharedWidget()`, and `React::forgetDeferredRegistrations()`.
+  - `___uninstall()` clears `pages_meta` (`react_view_prefs_%`), `ReactViewPrefs` session data, presence/preference caches, `site/assets/vector-icons/`, and `site/assets/cache/React/`, and downstream modules detach hooks cleanly with `React::forgetSharedWorkspace()`, `React::forgetSharedWidget()`, `React::forgetSharedViewportMode()`, and `React::forgetDeferredRegistrations()`.

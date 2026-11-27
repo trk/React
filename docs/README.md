@@ -15,7 +15,7 @@ Documentation for `ProcessWire\React` (`Totoglu\React`) and the optional `Proces
 | Build a dual-context `Setup > <Module>` / `Admin > Workspace` `Process` module | [02 — Workspaces, Dual-Context Shell & Themes](./02-workspaces-and-admin-shell.md) | [API.md §1–2](../API.md#L7-L147) |
 | Configure or build `SchemaForm`, media, relation, icon, link, key-value, tab, or Tiptap fields | [03 — Inputfields, Forms & Rich Text (`InputfieldTiptap`)](./03-inputfields-forms-and-tiptap.md) | [API.md §3–8](../API.md#L149-L226) |
 | Render interactive tables, cards, custom viewports, or `ReactDataProviderInterface` adapters | [04 — Viewports & Data Providers](./04-viewports-and-data-providers.md) | [API.md §9](../API.md#L228-L235) |
-| Bundle downstream TypeScript with `@pw/react/*`, delta CSS, i18n packs, or audit `/_react/*` security | [05 — Frontend Runtime, Typed SDK, i18n & Security](./05-frontend-runtime-sdk-and-security.md) | [API.md §10](../API.md#L238-L260) |
+| Bundle downstream TypeScript with `@pw/react/*`, delta CSS, i18n packs, or audit `/_react/*` security | [05 — Frontend Runtime, Typed SDK, i18n & Security](./05-frontend-runtime-sdk-and-security.md) | [API.md §10](../API.md#L238-L261) |
 | Look up exact PHP signatures, return shapes, or companion module names | [API Reference](../API.md) | [Module README](../README.md) |
 
 ---
@@ -29,7 +29,7 @@ Documentation for `ProcessWire\React` (`Totoglu\React`) and the optional `Proces
 | **[02](./02-workspaces-and-admin-shell.md)** | **Workspaces, Dual-Context Shell & Themes** | `ProcessReact` & `InteractWithReact`, `EmbeddedAdminPageResponse` vs `views/admin.php`, `___executeNavJSON()` / `buildAdminNavJSON()`, multi-shell `AppShell` (`topbar` / `sidebar`), `CommandSearchRegistry`, optional `ProcessReactWorkspace`, Bento widgets, preferences & edit presence, and `ThemeManager` presets. |
 | **[03](./03-inputfields-forms-and-tiptap.md)** | **Inputfields, Forms & Rich Text (`InputfieldTiptap`)** | `InputfieldReact` dual-mode islands, `FormSchemaSerializer` (`surface: 'card'`, `appendDeleteTab`), `MarkupReactTab`, `InputfieldReactKeyValue`, `InputfieldReactLink`, `InputfieldReactIcon` & `IconManager`, `MediaGateway`, `M2O`/`M2M`/`O2M`/`M2A` relations, `InputfieldTiptap` capability packs, and flat mini-blocks. |
 | **[04](./04-viewports-and-data-providers.md)** | **Viewports & Data Providers** | `MarkupReactViewport`, `MarkupReactTable`, `MarkupReactCards`, pluggable view modes, `ProviderRegistry` (`pages:`, `array:`, deferred adapters), all 9 capability contracts, `ReactRecord` visuals, and `/_react/viewport` mutations. |
-| **[05](./05-frontend-runtime-sdk-and-security.md)** | **Frontend Runtime, Typed SDK, i18n & Security** | Multi-pass Vite isolation (`build-bundles.mjs`), 32 `dist/` artifacts, `@pw/react/*` subpaths, Tailwind v4 `module-delta.css` 32 utility sub-layers, ProcessWire `OnceProp` `i18n`, `SignedTokenCodec`, CSRF, and gateway threat controls. |
+| **[05](./05-frontend-runtime-sdk-and-security.md)** | **Frontend Runtime, Typed SDK, i18n & Security** | Multi-pass Vite isolation (`build-bundles.mjs`), 32 `dist/` artifacts, `@pw/react/*` subpaths, Tailwind v4 `module-delta.css` 39 utility sub-layers, ProcessWire `OnceProp` `i18n`, `SignedTokenCodec`, CSRF, and gateway threat controls. |
 
 ---
 
