@@ -23,7 +23,7 @@ Deep architectural guides, subsystem walkthroughs, and API references live in [`
 | **Admin Modules, Dual-Context Shell, Flyout Nav, Hub & Central Themes** | [02 — Workspaces, Dual-Context Shell & Themes](./docs/02-workspaces-and-admin-shell.md) |
 | **`SchemaForm`, Tabs, Key-Value, Links, Icons, Media Studio, Relations & Tiptap** | [03 — Inputfields, Forms & Rich Text (`InputfieldTiptap`)](./docs/03-inputfields-forms-and-tiptap.md) |
 | **`MarkupReactTable`, `MarkupReactCards`, Pluggable Modes & Capability Providers** | [04 — Viewports & Data Providers](./docs/04-viewports-and-data-providers.md) |
-| **21-Pass Vite Build, `@pw/react/*` SDK, Delta CSS Layers, i18n & Security** | [05 — Frontend Runtime, Typed SDK, i18n & Security](./docs/05-frontend-runtime-sdk-and-security.md) |
+| **22-Pass Vite Build, `@pw/react/*` SDK, Delta CSS Layers, i18n & Security** | [05 — Frontend Runtime, Typed SDK, i18n & Security](./docs/05-frontend-runtime-sdk-and-security.md) |
 | **Complete PHP & Asset Reference Dictionary** | [API.md](./API.md) |
 | **Internal Contributor Invariants & Boundaries** | [AGENTS.md](./AGENTS.md) |
 
@@ -46,13 +46,14 @@ php vendor/bin/wire module:install --name=React --json
 php vendor/bin/wire module:install --name=ProcessReactWorkspace --json
 ```
 
-Installing `React` automatically installs all **14 companion modules** (`ProcessReactWorkspace` remains optional):
+Installing `React` automatically installs all **15 companion modules** (`ProcessReactWorkspace` remains optional):
 
 | Companion Modules | Role & Guide |
 |---|---|
 | `MarkupReactTable`, `MarkupReactCards` | Sortable, filterable, inline-editable table and responsive card viewports ([04 — Viewports](./docs/04-viewports-and-data-providers.md)) |
 | `MarkupReactTab` | WAI-ARIA tab container (`line`, `segmented`, `vertical`) with `lazyLoad` and nested asset handling ([03 — Inputfields](./docs/03-inputfields-forms-and-tiptap.md#tabs-key-value--polymorphic-link-controls)) |
 | `InputfieldReactKeyValue`, `InputfieldReactLink` | Associative key-value editor and multi-target polymorphic link control with isolated link media ([03 — Inputfields](./docs/03-inputfields-forms-and-tiptap.md#tabs-key-value--polymorphic-link-controls)) |
+| `InputfieldReactCondition` | Visual 2-level condition rule builder (`source + condition + value/field`, AND/OR/NOT groups, live summary preview) paired with `ConditionEvaluator` & TS `evaluateConditionTree` ([API.md](./API.md#6-key-value-inputfield-tabs--form-schema-serializer)) |
 | `InputfieldReactIcon` | Searchable `6,545`-variant vector icon picker (`5,491` outline + `1,054` filled) and CSS `mask-image` admin icon engine ([03 — Vector Icons](./docs/03-inputfields-forms-and-tiptap.md#centralized-vector-icon-engine-inputfieldreacticon--iconmanager)) |
 | `InputfieldReactM2O`, `M2M`, `O2M`, `M2A` | Relational pickers backed by 8 core resource adapters and lazy custom adapters ([03 — Relations](./docs/03-inputfields-forms-and-tiptap.md#relational-pickers-m2o-m2m-o2m-m2a--_reactrelation)) |
 | `InputfieldTiptap`, `TextformatterTiptapMiniBlocks` | Tiptap v3 rich text editor (`core`/`editor`/`canvas`/`blocks`), native link/image dialogs, and flat mini-blocks ([03 — Tiptap](./docs/03-inputfields-forms-and-tiptap.md#rich-text-editor-inputfieldtiptap--textformattertiptapminiblocks)) |
@@ -189,7 +190,7 @@ echo React::instance($this)->icons()->renderSvg('sparkles', [
 
 ## Configuration
 
-Configure site-wide defaults under **Modules > Configure > React** ([`React::getModuleConfigInputfields()`](./React.module.php#L2414-L2538)):
+Configure site-wide defaults under **Modules > Configure > React** ([`React::getModuleConfigInputfields()`](./React.module.php#L2563-L2687)):
 
 | Setting | Type | Default | Description |
 |---|---|---|---|
@@ -210,9 +211,9 @@ Configure site-wide defaults under **Modules > Configure > React** ([`React::get
 
 ## Hooks & Extension Seams
 
-All discovery hooks execute lazily on first registry access (`React::deferModuleRegistration`, `deferShellLayoutRegistration`, `deferCommandSearchRegistration`, `deferProviderRegistration`, `deferRelationRegistration`, `deferMediaHostRegistration` in [`React.module.php`](./React.module.php#L1194,L1493,L1551,L1812,L1909,L735)):
+All discovery hooks execute lazily on first registry access (`React::deferModuleRegistration`, `deferShellLayoutRegistration`, `deferCommandSearchRegistration`, `deferProviderRegistration`, `deferRelationRegistration`, `deferMediaHostRegistration` in [`React.module.php`](./React.module.php#L1203,L1474,L1535,L1926,L2021,L738)):
 
-- **Hookable `React` Methods:** `___initWorkspaceRegistry()`, `___registerWorkspaces()`, `___getWorkspaceDefinitions()`, `___initWidgetRegistry()`, `___registerWidgets()`, `___getWidgetDefinitions()`, `___registerShellLayouts()`, `___registerCommandSearch()`, `___initProviderRegistry()`, `___registerProviders()`, `___initRelationRegistry()`, `___registerRelationResources()`, `___registerMediaHosts()`, `___translations()`.
+- **Hookable `React` Methods:** `___registerWorkspaces()`, `___registerWidgets()`, `___registerShellLayouts()`, `___registerCommandSearch()`, `___registerProviders()`, `___registerRelationResources()`, `___registerMediaHosts()`, `___registerViewportModes()`, `___registerLinkResolvers()`, `___translations()`.
 - **Editorial Mini-Block Hook:** `InputfieldTiptap::registerMiniBlocks` for adding custom flat `[data-tiptap-block]` types rendered via `./site/templates/tiptap/{name}.php`.
 - **Hooks & Signatures:** See [API.md](./API.md) (including `FormSchemaSerializer` `surface: 'card'` native tabs-over-card `[data-rw-card-tabs="above"]`, `appendDeleteTab()`, `WireTab` metadata preservation, `[data-rw-meta-*]`/`[data-rw-ref-*]`/`[data-rw-rev-table]`/`[data-rw-diff-pill]` semantic CSS contracts, and canonical controls: `date`, `time`, `datetime`, `daterange`, `color`, `tags`, `combobox`, `unit_number`/`currency` with `unitVariant: 'currency'`, `segmented`, `spacing`, `range`, `range_slider`, `colspan`, `otp`, `password`, `markdown`, `rating`, `signature`, `calculation`, `repeater`, `keyvalue`, `link`, `icon`, `relation`, `file`, `image`, `tiptap`).
 - **Full Signature Dictionary:** See [API.md](./API.md) and chapters [`02`](./docs/02-workspaces-and-admin-shell.md)–[`04`](./docs/04-viewports-and-data-providers.md).
@@ -221,7 +222,7 @@ All discovery hooks execute lazily on first registry access (`React::deferModule
 
 ## Internal Endpoints & Multi-Language Packs
 
-`React` registers eight URL hooks ([`React.module.php`](./React.module.php#L371-L378)) and delivers native ProcessWire `LanguageTranslator` catalogs via locale-scoped Inertia `OnceProp` keys (`languages/{en,tr,de,fr,es,ru}.csv`):
+`React` registers eight URL hooks ([`React.module.php`](./React.module.php#L372-L380)) and delivers native ProcessWire `LanguageTranslator` catalogs via locale-scoped Inertia `OnceProp` keys (`languages/{en,tr,de,fr,es,ru}.csv`):
 
 | Endpoint | Purpose |
 |---|---|

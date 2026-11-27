@@ -1,6 +1,6 @@
 # React Architecture
 
-`React` (`ProcessWire\React` / `Totoglu\React`) supplies the shared **React 19 + Inertia v3 + Tailwind CSS v4** UI runtime, dual-context admin controller (`ProcessReact`), **14 companion modules**, typed downstream SDK (`@pw/react/*`), CSS delta system (`module-delta.css`), and optional `ProcessReactWorkspace` (`Admin > Workspace`) hub for ProcessWire 3.0.271+ and PHP 8.4+.
+`React` (`ProcessWire\React` / `Totoglu\React`) supplies the shared **React 19 + Inertia v3 + Tailwind CSS v4** UI runtime, dual-context admin controller (`ProcessReact`), **15 companion modules**, typed downstream SDK (`@pw/react/*`), CSS delta system (`module-delta.css`), and optional `ProcessReactWorkspace` (`Admin > Workspace`) hub for ProcessWire 3.0.271+ and PHP 8.4+.
 
 > [!NOTE]
 > Deep-dive subsystem chapters live alongside this overview in [`docs/01-architecture.md`](./01-architecture.md)–[`docs/05-frontend-runtime-sdk-and-security.md`](./05-frontend-runtime-sdk-and-security.md) and [`API.md`](../API.md).
@@ -14,7 +14,7 @@ flowchart TD
     core["ProcessWire 3.0.271+ & Inertia"] --> react["React Module (Autoload Singleton + $wire->react)"]
     react --> shell["ProcessReact (Setup > Module & Workspace Mode)"]
     react --> hub["ProcessReactWorkspace (Optional Admin > Workspace Hub)"]
-    react --> mods["14 Companion Modules (MarkupReact*, InputfieldReact*, Tiptap)"]
+    react --> mods["15 Companion Modules (MarkupReact*, InputfieldReact*, Tiptap)"]
     react --> gw["8 /_react/* JSON, Search & Multipart Gateways"]
     react --> sdk["dist/ReactInertia.js + @pw/react/* + module-delta.css"]
     ext["Downstream Extension Modules"] -. "defer*Registration() + @pw/react/*" .-> react
@@ -47,7 +47,7 @@ flowchart TD
 
 ## 4. Isolated Vite Build Pipeline & Security Model
 
-- **21-Pass Build Isolation (`build-bundles.mjs`):** Compiles 6 core JS + 4 core CSS bundles + `vector-icons.json` (`31` total `dist/` files), plus 20 isolated IIFE entries consuming `window.ReactWorkspaceRuntime` with zero shared `ReactInertia-*.js` chunks.
+- **22-Pass Build Isolation (`build-bundles.mjs`):** Compiles 6 core JS + 4 core CSS bundles + `vector-icons.json` (`32` total `dist/` files), plus 21 isolated IIFE entries consuming `window.ReactWorkspaceRuntime` with zero shared `ReactInertia-*.js` chunks.
 - **32-Layer Delta CSS (`tailwind-layers.mjs`):** Downstream `module-delta.css` stylesheets compile unprefixed Tailwind utilities without Preflight and preserve deterministic `@layer utilities.*` specificity order alongside `ReactInertia.css`.
 - **HMAC, CSRF & Lifecycle Security:**
   - `SignedTokenCodec` signs endpoint-scoped `stateToken`, `relationToken`, `mediaToken`, and `tiptapToken` envelopes using `$config->userAuthSalt` bound to `$user->id` (`uid`) and 24-hour `iat` TTL.
